@@ -10,6 +10,8 @@
 
 
 ; Puts the image onto the clipboard.
+; extension - File encoding. ("png", "jpg")
+; quality - quality level of the jpeg image. (Lowest to Highest: 0 - 100)
 ImagePutBase64(ByRef image, extension := "", quality := "") {
    return ImagePut("base64", image,,, extension, quality)
 }
@@ -27,13 +29,14 @@ ImagePutCursor(ByRef image, xHotspot := "", yHotspot := "") {
 }
 
 ; Puts the image into a file.
-; filename - name of the file with a extension. (png)
+; filename - name of the file with a extension. ("mypic.png")
 ; quality - quality level of the jpeg image. (Lowest to Highest: 0 - 100)
 ImagePutFile(ByRef image, filename := "", quality := "") {
    return ImagePut("file", image,,, filename, quality)
 }
 
 ; Puts the image onto the clipboard.
+; alpha - the color to set all transparent pixels to.
 ImagePutHBitmap(ByRef image, alpha := "") {
    return ImagePut("hBitmap", image,,, alpha)
 }
@@ -1063,7 +1066,7 @@ class ImagePut {
       global gdiplus
       gdiplus := gdiplus - 1
 
-      if (gdiplus == 0) {
+      if (this.pToken && gdiplus == 0) {
          DllCall("gdiplus\GdiplusShutdown", "ptr", this.pToken)
          DllCall("FreeLibrary", "ptr", DllCall("GetModuleHandle", "str", "gdiplus", "ptr"))
       }
