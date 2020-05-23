@@ -97,7 +97,7 @@ class ImagePut {
       if !(cotype = "pBitmap" || cotype = "bitmap")
          DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
 
-      this.gdiplusShutdown()
+      this.gdiplusShutdown(cotype)
 
       return coimage
    }
@@ -215,7 +215,7 @@ class ImagePut {
             throw Exception("Image data is an empty string.")
 
       if IsObject(image) {
-         ; An "object" is an object that implements a Bitmap() method returning a pointer to a GDI bitmap.
+         ; An "object" is an object that implements a Bitmap() method returning a pointer to a GDI+ bitmap.
          if IsFunc(image.Bitmap)
             return "object"
 
@@ -242,11 +242,11 @@ class ImagePut {
          if FileExist(image)
             return "file"
 
-         ; A "pBitmap" is a pointer to a GDI Bitmap.
+         ; A "pBitmap" is a pointer to a GDI+ Bitmap.
          if (DllCall("gdiplus\GdipGetImageType", "ptr", image, "ptr*", ErrorLevel) == 0)
             return "pBitmap"
 
-         ; A "hBitmap" is a handle to a GDI Bitmap.
+         ; A "hBitmap" is a handle to a GDI+ Bitmap.
          if (DllCall("GetObjectType", "ptr", image) == 7)
             return "hBitmap"
 
@@ -1062,11 +1062,15 @@ class ImagePut {
       }
    }
 
-   gdiplusShutdown() {
+   gdiplusShutdown(cotype := "") {
       global gdiplus
       gdiplus := gdiplus - 1
 
       if (this.pToken && gdiplus == 0) {
+         if (cotype = "pBitmap" || cotype = "bitmap")
+            throw Exception("Out of scope error. `n`nIf you wish to handle raw pointers to GDI+ bitmaps, add the line"
+               . "`n`n`t`t" this.__class ".gdiplusStartup()`n`nor 'pToken := Gdip_Startup()' to the top of your script."
+               . "`nYou can copy this message by pressing Ctrl + C.")
          DllCall("gdiplus\GdiplusShutdown", "ptr", this.pToken)
          DllCall("FreeLibrary", "ptr", DllCall("GetModuleHandle", "str", "gdiplus", "ptr"))
       }
