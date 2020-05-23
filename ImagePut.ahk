@@ -225,8 +225,7 @@ class ImagePut {
             return "buffer"
 
          ; A "screenshot" is an array of 4 numbers.
-         if (  image.1 ~= "^-?\d+(\.\d*)?%?$" && image.2 ~= "^-?\d+(\.\d*)?%?$"
-            && image.3 ~= "^-?\d+(\.\d*)?%?$" && image.4 ~= "^-?\d+(\.\d*)?%?$")
+         if (image.1 ~= "^-?\d+$" && image.2 ~= "^-?\d+$" && image.3 ~= "^-?\d+$" && image.4 ~= "^-?\d+$")
             return "screenshot"
       }
 
@@ -264,7 +263,8 @@ class ImagePut {
             return "window"
 
          ; A "base64" string is binary image data encoded into text using only 64 characters.
-         if (image ~= "^\s*(?:data:image\/[a-z]+;base64,)?(?:[A-Za-z0-9+\/]{4})*+(?:[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{2}==)?\s*$")
+         if (image ~= "^\s*(?:data:image\/[a-z]+;base64,)?"
+         . "(?:[A-Za-z0-9+\/]{4})*+(?:[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{2}==)?\s*$")
             return "base64"
 
       throw Exception("Image type could not be identified.")
@@ -508,6 +508,12 @@ class ImagePut {
 
    from_screenshot(ByRef image) {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
+
+      ; Parse and subtract negative values from the edge.
+      image.3 := (image.3 < 0) ?  A_ScreenWidth - Abs(image.3) - Abs(image.1) : image.3
+      image.4 := (image.4 < 0) ? A_ScreenHeight - Abs(image.4) - Abs(image.2) : image.4
+      image.1 := Abs(image.1)
+      image.2 := Abs(image.2)
 
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
       hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
