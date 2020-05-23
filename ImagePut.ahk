@@ -801,13 +801,14 @@ class ImagePut {
       DllCall("gdiplus\GdipGetImageGraphicsContext", "ptr", dBitmap, "ptr*", dGraphics)
       DllCall("gdiplus\GdipGetDC", "ptr", dGraphics, "ptr*", ddc)
 
-      DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "ptr", sBitmap, "ptr*", hBitmap, "uint", 0xFFFFFFFF)
+      ; Keep any existing transparency for whatever reason.
+      hBitmap := this.put_hBitmap(sBitmap) ; Could copy this code here for even more speed.
 
-
-
+      ; Create a source device context and associate the source hBitmap.
       sdc := DllCall("CreateCompatibleDC", "ptr", ddc, "ptr")
       obm := DllCall("SelectObject", "ptr", sdc, "ptr", hBitmap, "ptr")
 
+      ; Copy the image making the top-left pixel the color key.
       DllCall("msimg32\TransparentBlt"
                , "ptr", ddc, "int", 0, "int", 0, "int", width, "int", height  ; destination
                , "ptr", sdc, "int", 0, "int", 0, "int", width, "int", height  ; source
@@ -952,6 +953,7 @@ class ImagePut {
    }
 
    put_hBitmap(ByRef pBitmap, alpha := "") {
+      ; Revert to built in functionality if a replacement color is declared.
       if (alpha != "") {
          DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "ptr", pBitmap, "ptr*", hBitmap, "uint", alpha)
          return hBitmap
@@ -977,7 +979,7 @@ class ImagePut {
       VarSetCapacity(Rect, 16, 0)              ; sizeof(Rect) = 16
          , NumPut(  width, Rect,  8,   "uint") ; Width
          , NumPut( height, Rect, 12,   "uint") ; Height
-      VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)       ; sizeof(BitmapData) = 24, 32
+      VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)     ; sizeof(BitmapData) = 24, 32
          , NumPut(     width, BitmapData,  0,   "uint") ; Width
          , NumPut(    height, BitmapData,  4,   "uint") ; Height
          , NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
