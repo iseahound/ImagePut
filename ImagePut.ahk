@@ -1046,15 +1046,10 @@ class ImagePut {
    }
 
    gdiplusStartup() {
-      global gdiplus
-      gdiplus := (gdiplus == "") ? 1 : gdiplus + 1
+      this.gdiplus := (this.gdiplus == "") ? 1 : this.gdiplus + 1
 
-      if (18 != DllCall("gdiplus\GdipCreateImageAttributes", "ptr*", ImageAttr)) {
-         DllCall("gdiplus\GdipDisposeImageAttributes", "ptr", ImageAttr)
-         return
-      }
-
-      if (gdiplus == 1) {
+      ; Startup gdiplus when counter goes from 0 -> 1 or "" -> 1.
+      if (this.gdiplus == 1) {
          DllCall("LoadLibrary", "str", "gdiplus")
          VarSetCapacity(si, A_PtrSize = 8 ? 24 : 16, 0), si := Chr(1)
          DllCall("gdiplus\GdiplusStartup", "ptr*", pToken, "ptr", &si, "ptr", 0)
@@ -1063,16 +1058,24 @@ class ImagePut {
    }
 
    gdiplusShutdown(cotype := "") {
-      global gdiplus
-      gdiplus := gdiplus - 1
+      this.gdiplus := this.gdiplus - 1
 
-      if (this.pToken && gdiplus == 0) {
+      ; Shutdown gdiplus if pToken is owned and when counter goes from 1 -> 0.
+      if (this.gdiplus == 0) {
+         DllCall("gdiplus\GdiplusShutdown", "ptr", this.pToken)
+         DllCall("FreeLibrary", "ptr", DllCall("GetModuleHandle", "str", "gdiplus", "ptr"))
+
+         ; Exit if GDI+ is still loaded. GdiplusNotInitialized = 18
+         if (18 != DllCall("gdiplus\GdipCreateImageAttributes", "ptr*", ImageAttr)) {
+            DllCall("gdiplus\GdipDisposeImageAttributes", "ptr", ImageAttr)
+            return
+         }
+
+         ; Otherwise GDI+ has been truly unloaded from the script and objects are out of scope.
          if (cotype = "bitmap" || cotype = "buffer")
             throw Exception("Out of scope error. `n`nIf you wish to handle raw pointers to GDI+ bitmaps, add the line"
                . "`n`n`t`t" this.__class ".gdiplusStartup()`n`nor 'pToken := Gdip_Startup()' to the top of your script."
                . "`nYou can copy this message by pressing Ctrl + C.")
-         DllCall("gdiplus\GdiplusShutdown", "ptr", this.pToken)
-         DllCall("FreeLibrary", "ptr", DllCall("GetModuleHandle", "str", "gdiplus", "ptr"))
       }
    }
 } ; End of ImagePut class.
