@@ -2,18 +2,23 @@
 ; Author:    iseahound
 ; License:   GPLv3
 ; Version:   2020-05-22
-; Release:   2020-05-22
+; Release:   2020-05-23
 
 ; ImagePut - Puts an image from anywhere to anywhere.
 ; This is a simple functor designed to be intuitive.
 ; I hope people find this useful.
 
 
-; Puts the image onto the clipboard.
+; Puts the image into a base64 encoding of a file format.
 ; extension - File encoding. ("png", "jpg")
 ; quality - quality level of the jpeg image. (Lowest to Highest: 0 - 100)
 ImagePutBase64(ByRef image, extension := "", quality := "") {
    return ImagePut("base64", image,,, extension, quality)
+}
+
+; Puts the image into a pointer to a GDI+ Bitmap.
+ImagePutBitmap(ByRef image) {
+   return ImagePut("bitmap", image)
 }
 
 ; Puts the image onto the clipboard.
@@ -29,21 +34,16 @@ ImagePutCursor(ByRef image, xHotspot := "", yHotspot := "") {
 }
 
 ; Puts the image into a file.
-; filename - name of the file with a extension. ("mypic.png")
+; filename - name of the file with a extension. ("pic.png")
 ; quality - quality level of the jpeg image. (Lowest to Highest: 0 - 100)
 ImagePutFile(ByRef image, filename := "", quality := "") {
    return ImagePut("file", image,,, filename, quality)
 }
 
-; Puts the image onto the clipboard.
+; Puts the image into a native display-compatible hBitmap.
 ; alpha - the color to set all transparent pixels to.
 ImagePutHBitmap(ByRef image, alpha := "") {
    return ImagePut("hBitmap", image,,, alpha)
-}
-
-; Puts the image into a pBitmap.
-ImagePutPBitmap(ByRef image) {
-   return ImagePut("pBitmap", image)
 }
 
 
@@ -94,7 +94,7 @@ class ImagePut {
       coimage := this.toCotype(cotype, pBitmap, terms*)
 
       ; Clean up the pBitmap copy.
-      if !(cotype = "pBitmap" || cotype = "bitmap")
+      if !(cotype = "bitmap" || cotype = "buffer")
          DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
 
       this.gdiplusShutdown(cotype)
@@ -106,12 +106,12 @@ class ImagePut {
    ;             |                 | Don'tVerify | ImageType | toBitmap | toCotype |
    ; clipboard   | ClipboardAll    |     yes     |    yes    |    yes   |    yes   | - no transparency
    ; object      | object.Bitmap() |     yes     |    yes    |    yes   |          |
-   ; bitmap      | bitmap.ptr      |     yes     |    yes    |    yes   |          |
+   ; buffer      | bitmap.ptr      |     yes     |    yes    |    yes   |          |
    ; screenshot  | [x,y,w,h]       |     yes     |    yes    |    yes   |          |
    ; cursor      | A_Cursor        |     yes     |    yes    |    yes   |    yes   |
    ; url         | https://        |     yes     |    yes    |    yes   |          |
    ; file        | picture.bmp     |     yes     |    yes    |    yes   |    yes   |
-   ; pBitmap     | some number     |     yes     |    yes    |    yes   |    yes   |
+   ; bitmap      | some number     |     yes     |    yes    |    yes   |    yes   |
    ; hBitmap     | some number     |     yes     |    yes    |    yes   |    yes   |
    ; monitor     | 0 or # < 10     |     yes     |    yes    |          |          |
    ; hwnd        | 0x              |     yes     |    yes    |    yes   |          |
@@ -142,9 +142,9 @@ class ImagePut {
          return "object"
       }
 
-      if ObjHasKey(image, "bitmap") {
-         image := image.bitmap
-         return "bitmap"
+      if ObjHasKey(image, "buffer") {
+         image := image.buffer
+         return "buffer"
       }
 
       if ObjHasKey(image, "screenshot") {
@@ -167,9 +167,9 @@ class ImagePut {
          return "file"
       }
 
-      if ObjHasKey(image, "pBitmap") {
-         image := image.pBitmap
-         return "pBitmap"
+      if ObjHasKey(image, "bitmap") {
+         image := image.bitmap
+         return "bitmap"
       }
 
       if ObjHasKey(image, "hBitmap") {
@@ -219,9 +219,9 @@ class ImagePut {
          if IsFunc(image.Bitmap)
             return "object"
 
-         ; A "bitmap" is a buffer object. (v2)
+         ; A "buffer" is an AutoHotkey v2 buffer object.
          if ObjHasKey(image, "ptr")
-            return "bitmap"
+            return "buffer"
 
          ; A "screenshot" is an array of 4 numbers.
          if (  image.1 ~= "^-?\d+(\.\d*)?%?$" && image.2 ~= "^-?\d+(\.\d*)?%?$"
@@ -242,11 +242,11 @@ class ImagePut {
          if FileExist(image)
             return "file"
 
-         ; A "pBitmap" is a pointer to a GDI+ Bitmap.
+         ; A "bitmap" is a pointer to a GDI+ Bitmap.
          if (DllCall("gdiplus\GdipGetImageType", "ptr", image, "ptr*", ErrorLevel) == 0)
-            return "pBitmap"
+            return "bitmap"
 
-         ; A "hBitmap" is a handle to a GDI+ Bitmap.
+         ; A "hBitmap" is a handle to a GDI Bitmap.
          if (DllCall("GetObjectType", "ptr", image) == 7)
             return "hBitmap"
 
@@ -277,7 +277,7 @@ class ImagePut {
       if (type = "object")
          return image.Bitmap()
 
-      if (type = "bitmap") {
+      if (type = "buffer") {
          DllCall("gdiplus\GdipCloneImage", "ptr", image.ptr, "ptr*", pBitmap)
          return pBitmap
       }
@@ -296,7 +296,7 @@ class ImagePut {
          return pBitmap
       }
 
-      if (type = "pBitmap") {
+      if (type = "bitmap") {
          DllCall("gdiplus\GdipCloneImage", "ptr", image, "ptr*", pBitmap)
          return pBitmap
       }
@@ -324,13 +324,13 @@ class ImagePut {
       if (cotype = "clipboard")
          return this.put_clipboard(pBitmap)
 
-      ; toCotype("bitmap", pBitmap)
-      if (cotype = "bitmap")
+      ; toCotype("buffer", pBitmap)
+      if (cotype = "buffer")
          return new this.outer.safe_bitmap(pBitmap)
 
       ; toCotype("screenshot", pBitmap, style)
       if (cotype = "screenshot") {
-         renderer := this.Render({"pBitmap":pBitmap}, terms.1)
+         renderer := this.Render({"bitmap":pBitmap}, terms.1)
          return [renderer.x1(), renderer.y1(), renderer.width(), renderer.height()]
       }
 
@@ -349,14 +349,14 @@ class ImagePut {
 
       ; toCotype("window", pBitmap)
       if (cotype = "window")
-         return "ahk_id " . this.Render({"pBitmap":pBitmap}).AlwaysOnTop().ToolWindow().Caption().hwnd
+         return "ahk_id " . this.Render({"bitmap":pBitmap}).AlwaysOnTop().ToolWindow().Caption().hwnd
 
       ; toCotype("hwnd", pBitmap)
       if (cotype = "hwnd")
-         return this.Render({"pBitmap":pBitmap}).hwnd
+         return this.Render({"bitmap":pBitmap}).hwnd
 
-      ; toCotype("pBitmap", pBitmap)
-      if (cotype = "pBitmap")
+      ; toCotype("bitmap", pBitmap)
+      if (cotype = "bitmap")
          return pBitmap
 
       ; toCotype("hBitmap", pBitmap, alpha)
@@ -374,7 +374,7 @@ class ImagePut {
    toDispose(type, ByRef pBitmap) {
       ; Do not delete the pBitmap if it was not originally created by this script.
       ; Only delete copies of pBitmap.
-      ; if !(type = "pBitmap" || type = "bitmap")
+      ; if !(type = "bitmap" || type = "buffer")
          DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
    }
 
@@ -1067,7 +1067,7 @@ class ImagePut {
       gdiplus := gdiplus - 1
 
       if (this.pToken && gdiplus == 0) {
-         if (cotype = "pBitmap" || cotype = "bitmap")
+         if (cotype = "bitmap" || cotype = "buffer")
             throw Exception("Out of scope error. `n`nIf you wish to handle raw pointers to GDI+ bitmaps, add the line"
                . "`n`n`t`t" this.__class ".gdiplusStartup()`n`nor 'pToken := Gdip_Startup()' to the top of your script."
                . "`nYou can copy this message by pressing Ctrl + C.")
