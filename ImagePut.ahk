@@ -206,13 +206,14 @@ class ImagePut {
    }
 
    ImageType(ByRef image) {
-         ; Must be first as ClipboardAll can match an empty string.
+         ; Must be first as ClipboardAll is just an empty string when passed through functions.
          if this.is_clipboard(image)
             return "clipboard"
 
          ; Throw if the image is an empty string.
          if (image == "")
-            throw Exception("Image data is an empty string.")
+            throw Exception("Image data is an empty string."
+            . "`nIf you passed ClipboardAll it does not contain compatible image data.")
 
       if IsObject(image) {
          ; An "object" is an object that implements a Bitmap() method returning a pointer to a GDI+ bitmap.
@@ -463,8 +464,8 @@ class ImagePut {
    }
 
    is_clipboard(c) {
-      ; Only ClipboardAll can hold image data.
-      if (c != ClipboardAll)
+      ; ClipboardAll is always an empty string when passed into a function.
+      if (c != "") ; Must be an empty string.
          return false
 
       ; Look through the clipboard for a memory object containing a BITMAPINFO structure followed by the bitmap bits.
@@ -475,8 +476,8 @@ class ImagePut {
             return true
       }
 
-      ; Throw because (ClipboardAll == "") throws in the next line of ImageType().
-      throw Exception("Clipboard does not contain compatible image data.")
+      ; Error messages are inaccurate and it can't be helped.
+      return false
    }
 
    is_url(url) {
