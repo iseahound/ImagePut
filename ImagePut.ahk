@@ -21,6 +21,12 @@ ImagePutBitmap(ByRef image) {
    return ImagePut("bitmap", image)
 }
 
+; Puts the image into a buffer object that has GDI+ scope.
+; NOTE: Access the pointer like this: buffer.pBitmap
+ImagePutBuffer(ByRef image) {
+   return ImagePut("buffer", image)
+}
+
 ; Puts the image onto the clipboard.
 ImagePutClipboard(ByRef image) {
    return ImagePut("clipboard", image)
@@ -42,9 +48,9 @@ ImagePutFile(ByRef image, filename := "", quality := "") {
 
 ; Puts the image into a native display-compatible hBitmap.
 ; NOTE: Images converted to hBitmap will not be identical to the original.
-; hBitmaps are pre-multiplied pARGB, meaning there will be rounding errors
-; in the conversion back. This format is designed for displays and printers.
-; However there will be no noticeable visual differences.
+;  hBitmaps are pre-multiplied pARGB, meaning there will be rounding errors
+;  in the conversion back. This format is designed for displays and printers.
+;  However there will be no noticeable visual differences.
 ; alpha - Changes the replacement color for all transparent pixels.
 ImagePutHBitmap(ByRef image, alpha := "") {
    return ImagePut("hBitmap", image,,, alpha)
@@ -97,7 +103,7 @@ class ImagePut {
       ; Put the pBitmap to wherever the cotype specifies.
       coimage := this.toCotype(cotype, pBitmap, terms*)
 
-      ; Clean up the pBitmap copy.
+      ; Clean up the pBitmap copy. Export raw pointers if requested.
       if !(cotype = "bitmap" || cotype = "buffer")
          DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
 
@@ -110,7 +116,7 @@ class ImagePut {
    ;             |                 | Don'tVerify | ImageType | toBitmap | toCotype |
    ; clipboard   | ClipboardAll    |     yes     |    yes    |    yes   |    yes   | - no transparency
    ; object      | object.Bitmap() |     yes     |    yes    |    yes   |          |
-   ; buffer      | bitmap.ptr      |     yes     |    yes    |    yes   |          |
+   ; buffer      | bitmap.pBitmap  |     yes     |    yes    |    yes   |    yes   |
    ; screenshot  | [x,y,w,h]       |     yes     |    yes    |    yes   |          |
    ; cursor      | A_Cursor        |     yes     |    yes    |    yes   |    yes   |
    ; url         | https://        |     yes     |    yes    |    yes   |          |
@@ -225,7 +231,7 @@ class ImagePut {
             return "object"
 
          ; A "buffer" is an AutoHotkey v2 buffer object.
-         if ObjHasKey(image, "ptr")
+         if ObjHasKey(image, "pBitmap")
             return "buffer"
 
          ; A "screenshot" is an array of 4 numbers.
@@ -283,7 +289,7 @@ class ImagePut {
          return image.Bitmap()
 
       if (type = "buffer") {
-         DllCall("gdiplus\GdipCloneImage", "ptr", image.ptr, "ptr*", pBitmap)
+         DllCall("gdiplus\GdipCloneImage", "ptr", image.pBitmap, "ptr*", pBitmap)
          return pBitmap
       }
 
@@ -330,8 +336,12 @@ class ImagePut {
          return this.put_clipboard(pBitmap)
 
       ; toCotype("buffer", pBitmap)
-      if (cotype = "buffer")
-         return new this.outer.safe_bitmap(pBitmap)
+      if (cotype = "buffer") {
+         this.gdiplus := this.gdiplus + 1 ; Increment GDI+ reference count.
+         return {"pBitmap": pBitmap       ; When this object is deleted it will decrement this.gdiplus.
+            , base: {__New: ObjBindMethod(this, "gdiplusStartup") ; for symmetry
+               ,  __Delete: ObjBindMethod(this, "gdiplusShutdown", "buffer")}}
+      }
 
       ; toCotype("screenshot", pBitmap, style)
       if (cotype = "screenshot") {
@@ -1092,7 +1102,7 @@ class ImagePut {
          }
 
          ; Otherwise GDI+ has been truly unloaded from the script and objects are out of scope.
-         if (cotype = "bitmap" || cotype = "buffer")
+         if (cotype = "bitmap")
             throw Exception("Out of scope error. `n`nIf you wish to handle raw pointers to GDI+ bitmaps, add the line"
                . "`n`n`t`t" this.__class ".gdiplusStartup()`n`nor 'pToken := Gdip_Startup()' to the top of your script."
                . "`nYou can copy this message by pressing Ctrl + C.")
