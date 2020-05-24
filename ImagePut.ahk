@@ -1,6 +1,6 @@
 ; Script:    ImagePut.ahk
 ; Author:    iseahound
-; License:   GPLv3
+; License:   MIT License
 ; Version:   2020-05-22
 ; Release:   2020-05-23
 
@@ -37,6 +37,11 @@ ImagePutClipboard(ByRef image) {
 ; yHotspot - y coordinate of the click point. (pixels: 0 - height)
 ImagePutCursor(ByRef image, xHotspot := "", yHotspot := "") {
    return ImagePut("cursor", image,,, xHotspot, yHotspot)
+}
+
+; Unsupported. Proof of concept only. May break on future versions of windows.
+ImagePutDesktop(ByRef image, fill := ""){
+   return ImagePut("desktop", image,,, fill)
 }
 
 ; Puts the image into a file.
