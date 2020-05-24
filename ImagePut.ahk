@@ -39,9 +39,11 @@ ImagePutCursor(ByRef image, xHotspot := "", yHotspot := "") {
    return ImagePut("cursor", image,,, xHotspot, yHotspot)
 }
 
-; Unsupported. Proof of concept only. May break on future versions of windows.
-ImagePutDesktop(ByRef image, fill := ""){
-   return ImagePut("desktop", image,,, fill)
+; Puts the image on an invisible temporary window behind the desktop icons.
+; NOTE:  Unsupported! Proof of concept only. May break on future versions of windows.
+; scale - Try A_ScreenWidth / width or A_ScreenHeight / Height.
+ImagePutDesktop(ByRef image, scale := 1) {
+   return ImagePut("desktop", image,, scale)
 }
 
 ; Puts the image into a file.
@@ -167,6 +169,11 @@ class ImagePut {
          return "screenshot"
       }
 
+      if ObjHasKey(image, "desktop") {
+         image := image.desktop
+         return "desktop"
+      }
+
       if ObjHasKey(image, "cursor") {
          image := image.cursor
          return "cursor"
@@ -243,6 +250,9 @@ class ImagePut {
          if (image.1 ~= "^-?\d+$" && image.2 ~= "^-?\d+$" && image.3 ~= "^-?\d+$" && image.4 ~= "^-?\d+$")
             return "screenshot"
       }
+         ; A "desktop" is the desktop.
+         if (image = "desktop")
+            return "desktop"
 
          ; A "cursor" is the name of a known cursor name.
          if (image ~= "i)^(IDC|OCR)?_?(AppStarting|Arrow|Cross|Help|IBeam|Icon|No|"
@@ -301,6 +311,9 @@ class ImagePut {
       if (type = "screenshot")
          return this.from_screenshot(image)
 
+      if (type = "desktop")
+         return this.from_desktop()
+
       if (type = "cursor")
          return this.from_cursor()
 
@@ -353,6 +366,10 @@ class ImagePut {
          renderer := this.Render({"bitmap":pBitmap}, terms.1)
          return [renderer.x1(), renderer.y1(), renderer.width(), renderer.height()]
       }
+
+      ; toCotype("desktop", fill)
+      if (cotype = "desktop")
+         return this.put_desktop(pBitmap, terms.1)
 
       ; toCotype("cursor", pBitmap, xHotspot, yHotspot)
       if (cotype = "cursor")
@@ -546,6 +563,36 @@ class ImagePut {
 
       ; Release the device context to the screen.
       DllCall("ReleaseDC", "ptr", 0, "ptr", sdc)
+
+      ; Convert the hBitmap to a Bitmap using a built in function as there is no transparency.
+      DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", hbm, "ptr", 0, "ptr*", pBitmap)
+
+      ; Cleanup the hBitmap and device contexts.
+      DllCall("SelectObject", "ptr", hdc, "ptr", obm)
+      DllCall("DeleteObject", "ptr", hbm)
+      DllCall("DeleteDC",     "ptr", hdc)
+
+      return pBitmap
+   }
+
+   from_desktop() {
+      ; Get the width and height of all monitors.
+      width  := DllCall("GetSystemMetrics", "int", 78)
+      height := DllCall("GetSystemMetrics", "int", 79)
+
+      ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
+      hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
+      VarSetCapacity(bi, 40, 0)               ; sizeof(bi) = 40
+         , NumPut(      40, bi,  0,   "uint") ; Size
+         , NumPut(   width, bi,  4,   "uint") ; Width
+         , NumPut( -height, bi,  8,    "int") ; Height - Negative so (0, 0) is top-left.
+         , NumPut(       1, bi, 12, "ushort") ; Planes
+         , NumPut(      32, bi, 14, "ushort") ; BitCount / BitsPerPixel
+      hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits, "ptr", 0, "uint", 0, "ptr")
+      obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
+
+      ; Paints the desktop.
+      DllCall("PaintDesktop", "ptr", hdc)
 
       ; Convert the hBitmap to a Bitmap using a built in function as there is no transparency.
       DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", hbm, "ptr", 0, "ptr*", pBitmap)
@@ -858,6 +905,53 @@ class ImagePut {
       DllCall("EmptyClipboard")
       DllCall("SetClipboardData", "uint", 8, "ptr", hdib)
       DllCall("CloseClipboard")
+   }
+
+   put_desktop(ByRef pBitmap) {
+      ; Thanks Gerald Degeneve - https://www.codeproject.com/Articles/856020/Draw-Behind-Desktop-Icons-in-Windows-plus
+
+      ; Get Bitmap width and height.
+      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width)
+      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height)
+
+      ; Convert the Bitmap to a hBitmap and associate a device context for blitting.
+      hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
+      hbm := this.put_hBitmap(pBitmap)
+      obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
+
+      ; Post-Creator's Update Windows 10. WM_SPAWN_WORKER = 0x052C
+      DllCall("SendMessage", "ptr", WinExist("ahk_class Progman"), "uint", 0x052C, "ptr", 0x0000000D, "ptr", 0)
+      DllCall("SendMessage", "ptr", WinExist("ahk_class Progman"), "uint", 0x052C, "ptr", 0x0000000D, "ptr", 1)
+      WinGet windows, List, ahk_class WorkerW
+      Loop % windows
+         if (DllCall("FindWindowEx", "ptr", windows%A_Index%, "ptr", 0, "str", "SHELLDLL_DefView", "ptr", 0) != 0)
+            WorkerW := DllCall("FindWindowEx", "ptr", 0, "ptr", windows%A_Index%, "str", "WorkerW", "ptr", 0, "ptr")
+
+      ; Maybe this hack gets patched. Tough luck!
+      if (!WorkerW)
+         throw Exception("Could not draw on the desktop.")
+
+      ; Position the image in the center. This line can be removed.
+      DllCall("SetWindowPos", "ptr", WorkerW, "ptr", 1
+               , "int", (A_ScreenWidth - width) / 2      ; x
+               , "int", (A_ScreenHeight - height) / 2    ; y
+               , "int", width, "int", height, "uint", 0)
+
+      ; Get device context of spawned window.
+      ddc := DllCall("GetDCEx", "ptr", WorkerW, "ptr", 0, "int", 0x403, "ptr")
+
+      ; Copies a portion of the screen to a new device context.
+      DllCall("gdi32\BitBlt"
+               , "ptr", ddc, "int", 0, "int", 0, "int", width, "int", height
+               , "ptr", hdc, "int", 0, "int", 0, "uint", 0x00CC0020) ; SRCCOPY
+
+      ; Release device context of spawned window.
+      DllCall("ReleaseDC", "ptr", 0, "ptr", ddc)
+
+      ; Cleanup the hBitmap and device contexts.
+      DllCall("SelectObject", "ptr", hdc, "ptr", obm)
+      DllCall("DeleteObject", "ptr", hbm)
+      DllCall("DeleteDC",     "ptr", hdc)
    }
 
    put_cursor(ByRef pBitmap, xHotspot := "", yHotspot := "") {
