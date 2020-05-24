@@ -17,7 +17,7 @@ Skip typing with ease.
 * `MsgBox % ImageEqual({url:"https://i.imgur.com/F4k7o1e.png"}, {file:"swift.png"}`
 
 ## Supports over 12 input types and 6 output types. The list is still growing!
-* Input: base64, bitmap, buffer, clipboard, cursor, desktop, file, hBitmap, hwnd, object, screenshot, url, window
+* Input: base64, bitmap, buffer, clipboard, cursor, desktop, file, hBitmap, hwnd, object, screenshot, sprite, url, window
 * Output: base64, bitmap, buffer, clipboard, cursor, desktop, file, hBitmap
 
 ## Input Types
@@ -43,6 +43,8 @@ Skip typing with ease.
 **object** - A custom object (made by you) that implements a `.Bitmap()` method returning a pointer to a GDI+ bitmap. 
 
 **screenshot** - `[x,y,w,h]` array. 
+
+**sprite** - Must be explicitly declared as: `{sprite:"character.bmp"}`. Can be a file or a url. This will sample the top-left pixel and set all pixels of that color as transparent. 
 
 **url** - A url that begins with `https://` or `ftp://`. To override this behavior, declare your url explicitly like `{url:"www.example.com"}`. 
 
