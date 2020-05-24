@@ -41,7 +41,7 @@ ImagePutCursor(ByRef image, xHotspot := "", yHotspot := "") {
 
 ; Puts the image on an invisible temporary window behind the desktop icons.
 ; NOTE:  Unsupported! Proof of concept only. May break on future versions of windows.
-; scale - Try A_ScreenWidth / width or A_ScreenHeight / Height.
+; scale - Try A_ScreenWidth / width or A_ScreenHeight / height.
 ImagePutDesktop(ByRef image, scale := 1) {
    return ImagePut("desktop", image,, scale)
 }
@@ -367,9 +367,9 @@ class ImagePut {
          return [renderer.x1(), renderer.y1(), renderer.width(), renderer.height()]
       }
 
-      ; toCotype("desktop", fill)
+      ; toCotype("desktop", pBitmap)
       if (cotype = "desktop")
-         return this.put_desktop(pBitmap, terms.1)
+         return this.put_desktop(pBitmap)
 
       ; toCotype("cursor", pBitmap, xHotspot, yHotspot)
       if (cotype = "cursor")
@@ -922,10 +922,13 @@ class ImagePut {
       ; Post-Creator's Update Windows 10. WM_SPAWN_WORKER = 0x052C
       DllCall("SendMessage", "ptr", WinExist("ahk_class Progman"), "uint", 0x052C, "ptr", 0x0000000D, "ptr", 0)
       DllCall("SendMessage", "ptr", WinExist("ahk_class Progman"), "uint", 0x052C, "ptr", 0x0000000D, "ptr", 1)
+
+      ; Find the child window.
       WinGet windows, List, ahk_class WorkerW
       Loop % windows
-         if (DllCall("FindWindowEx", "ptr", windows%A_Index%, "ptr", 0, "str", "SHELLDLL_DefView", "ptr", 0) != 0)
-            WorkerW := DllCall("FindWindowEx", "ptr", 0, "ptr", windows%A_Index%, "str", "WorkerW", "ptr", 0, "ptr")
+         hwnd := windows%A_Index%
+      until DllCall("FindWindowEx", "ptr", hwnd, "ptr", 0, "str", "SHELLDLL_DefView", "ptr", 0)
+      WorkerW := DllCall("FindWindowEx", "ptr", 0, "ptr", hwnd, "str", "WorkerW", "ptr", 0, "ptr")
 
       ; Maybe this hack gets patched. Tough luck!
       if (!WorkerW)
@@ -933,8 +936,8 @@ class ImagePut {
 
       ; Position the image in the center. This line can be removed.
       DllCall("SetWindowPos", "ptr", WorkerW, "ptr", 1
-               , "int", (A_ScreenWidth - width) / 2      ; x
-               , "int", (A_ScreenHeight - height) / 2    ; y
+               , "int", (A_ScreenWidth - width) / 2      ; x coordinate
+               , "int", (A_ScreenHeight - height) / 2    ; y coordinate
                , "int", width, "int", height, "uint", 0)
 
       ; Get device context of spawned window.
