@@ -355,10 +355,11 @@ class ImagePut {
 
       ; toCotype("buffer", pBitmap)
       if (cotype = "buffer") {
-         this.gdiplus := this.gdiplus + 1 ; Increment GDI+ reference count.
+         this.gdiplus := this.gdiplus + 1 ; Increment GDI+ reference count manually.
          return {"pBitmap": pBitmap       ; When this object is deleted it will decrement this.gdiplus.
-            , base: {__New: ObjBindMethod(this, "gdiplusStartup") ; for symmetry
-               ,  __Delete: ObjBindMethod(this, "gdiplusShutdown", "buffer")}}
+            , base: {__New: ObjBindMethod(this, "gdiplusStartup") ; For symmetry.
+               ,  __Delete: ObjBindMethod(this, "gdiplusShutdown", "smart_pointer")}}
+               ; A buffer object will dispose of the bitmap when deleted.
       }
 
       ; toCotype("screenshot", pBitmap, style)
@@ -1191,6 +1192,10 @@ class ImagePut {
 
    gdiplusShutdown(cotype := "") {
       this.gdiplus := this.gdiplus - 1
+
+      ; If called by a buffer object, dispose of the bitmap.
+      if (cotype == "smart_pointer")
+         DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap)
 
       ; Shutdown gdiplus if pToken is owned and when counter goes from 1 -> 0.
       if (this.gdiplus == 0) {
