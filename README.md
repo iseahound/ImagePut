@@ -1,20 +1,22 @@
 # ImagePut
 Puts an image from anywhere to anywhere
 
-## Examples
+## Automatic Type Detection
 
-Features automatic type detection. Don't worry about converting an image to a common format. 
+Don't worry about converting an image to a common format. 
 * `str := ImagePutBase64("https://i.imgur.com/F4k7o1e.png", "png")` - Encodes a URL as a base64 png. 
 * `ImagePutCursor(str)` - Sets a base64 string as the mouse cursor.
 * `ImagePutFile(A_Cursor, "swift.png")` - Saves the current cursor as a file. 
 
-Image verification based on pixels, not hashes. 
+## Image verification based on pixels, not hashes. 
+Different files can have the same images. Different hashes can be the same picture.
 * `MsgBox % ImageEqual("https://i.imgur.com/F4k7o1e.png", "swift.png")`
 
-Explicit typing for faster execution. 
-* `MsgBox % ImageEqual({url:"https://i.imgur.com/F4k7o1e.png"}, {file:"swift.png"}
+## Explicit typing for faster execution. 
+Skip typing with ease. 
+* `MsgBox % ImageEqual({url:"https://i.imgur.com/F4k7o1e.png"}, {file:"swift.png"}`
 
-Supports over 12 input types and 6 output types. The list is still growing!
+## Supports over 12 input types and 6 output types. The list is still growing!
 * Input: base64, bitmap, buffer, clipboard, cursor, desktop, file, hBitmap, hwnd, object, screenshot, url, window
 * Output: base64, bitmap, buffer, clipboard, cursor, desktop, file, hBitmap
 
