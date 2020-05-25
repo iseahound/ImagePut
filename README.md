@@ -14,7 +14,7 @@ Different files can have the same images. Different hashes can be the same pictu
 
 ## Explicit typing for faster execution. 
 Skip typing with ease. 
-* `MsgBox % ImageEqual({url:"https://i.imgur.com/F4k7o1e.png"}, {file:"swift.png"}`
+* `MsgBox % ImageEqual({url:"https://i.imgur.com/F4k7o1e.png"}, {file:"swift.png"})`
 
 ## Supports over 12 input types and 6 output types. The list is still growing!
 * Input: base64, bitmap, buffer, clipboard, cursor, desktop, file, hBitmap, hwnd, object, screenshot, sprite, url, window
@@ -52,3 +52,37 @@ Skip typing with ease.
 
 ### Overriding Input Types
 Use an object such as `{file:"pic.bmp"}`. This will skip automatic type detection and speed up your script. 
+
+## Output Functions
+
+**ImagePutBase64** - Returns a base64 string. The image can be encoded using a specifed file format. For JPG images, a quality level can be set as well. Supported file formats: bmp, gif, jpg, png, tiff. Quality: 0 - 100. 
+
+**ImagePutBitmap** - Returns a pointer to a GDI+ bitmap. You are responsible for calling `ImagePut.DisposeImage()` when finished to prevent a GDI+ object leak. Use `ImagePutBuffer` instead. 
+
+**ImagePutBuffer** - Returns a buffer object. This is a smart pointer. It will automatically dispose of the bitmap when the variable is freed, e.g. `buffer := ""`. It also contains its own GDI+ scope, meaning it is not necessary to place `pToken := Gdip_Startup()` at the top of the script. Access the raw pointer via `buffer.pBitmap`. 
+
+**ImagePutClipboard** - Returns an empty string. Puts the image onto the clipboard. 
+
+**ImagePutCursor** - Returns `"A_Cursor"`. Puts the image as the cursor. Specify the cursor hotspot ("click point") using x and y coordinates. 
+
+**ImagePutDesktop** - Returns `"desktop"`. Puts the image on an invisible temporary window behind the desktop icons. This functionality relies on an unsupported and undocumented feature. If the desire is to set the wallpaper, `	DllCall("SystemParametersInfo", "uint", 20, "uint", 0, "str", ImagePutFile(image), "uint", 2)` will suffice. 
+
+**ImagePutFile** - Returns a filename. Supported file formats: bmp, gif, jpg, png, tiff. Quality: 0 - 100.
+
+**ImagePutHBitmap** - Returns an hBitmap handle. The pixel format of an hBitmap is in pARGB, so any conversion between pre-multiplied ARGB and ARGB will introduce rounding errors. The result is that any image with transparency will look visually identical to the source, but not be pixel perfect causing `ImageEqual` to fail. RGB images without an alpha channel are unaffected. An alpha color can be specified as the replacement color of transparent pixels. 
+
+### Cropping and Scaling Images
+
+**ImagePut(cotype, image, crop := "", scale := "", terms\*)**
+
+**cotype** - The output type as a string. `"file"`
+
+**crop** - `[x,y,w,h]` array. Negative values will be subtracted from the edge. Percentages are permitted. `["-20%","-20%","-20%","-20%"]`
+
+**scale** - A real number. A scale of `1` does nothing. 
+
+## Comments
+
+Please visit https://www.autohotkey.com/boards/viewtopic.php?f=6&t=76301
+
+Pull requests are welcome!
