@@ -140,6 +140,10 @@ class ImagePut {
    ; printer     |                 |             |           |          |          |
    ; findtext    |                 |             |           |          |          |
    ; thumbnail   |                 |       ?     |           |          |          | DwmRegisterThumbnail
+   ; video       |                 |             |           |          |          |
+   ; formdata    |                 |             |           |          |          |
+   ; stream      |                 |             |           |          |          |
+   ; randomaccessstream | pointer  |             |           |          |          |
 
 
    DontVerifyImageType(ByRef image) {
@@ -907,6 +911,9 @@ class ImagePut {
       DllCall("EmptyClipboard")
       DllCall("SetClipboardData", "uint", 8, "ptr", hdib)
       DllCall("CloseClipboard")
+
+      ; Returns an empty string as ClipboardAll would also be an empty string.
+      return ""
    }
 
    put_desktop(ByRef pBitmap) {
@@ -957,6 +964,8 @@ class ImagePut {
       DllCall("SelectObject", "ptr", hdc, "ptr", obm)
       DllCall("DeleteObject", "ptr", hbm)
       DllCall("DeleteDC",     "ptr", hdc)
+
+      return "desktop"
    }
 
    put_cursor(ByRef pBitmap, xHotspot := "", yHotspot := "") {
@@ -993,6 +1002,9 @@ class ImagePut {
 
       ; Destroy the original hIcon. DestroyCursor and DestroyIcon are the same function in C.
       DllCall("DestroyCursor", "ptr", hIcon)
+
+      ; Returns the word A_Cursor so that it doesn't evaluate immediately.
+      return "A_Cursor"
    }
 
    put_file(ByRef pBitmap, sOutput, Quality:=75) {
@@ -1068,7 +1080,7 @@ class ImagePut {
 
    put_hBitmap(ByRef pBitmap, alpha := "") {
       ; Revert to built in functionality if a replacement color is declared.
-      if (alpha != "") { ; This built-in version is about 25% slower. 
+      if (alpha != "") { ; This built-in version is about 25% slower.
          DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "ptr", pBitmap, "ptr*", hBitmap, "uint", alpha)
          return hBitmap
       }
