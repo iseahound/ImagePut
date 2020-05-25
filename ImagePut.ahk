@@ -2,7 +2,7 @@
 ; Author:    iseahound
 ; License:   MIT License
 ; Version:   2020-05-22
-; Release:   2020-05-23
+; Release:   2020-05-24
 
 ; ImagePut - Puts an image from anywhere to anywhere.
 ; This is a simple functor designed to be intuitive.
@@ -125,6 +125,7 @@ class ImagePut {
    ; object      | object.Bitmap() |     yes     |    yes    |    yes   |          |
    ; buffer      | bitmap.pBitmap  |     yes     |    yes    |    yes   |    yes   |
    ; screenshot  | [x,y,w,h]       |     yes     |    yes    |    yes   |          |
+   ; desktop     | "desktop"       |     yes     |    yes    |    yes   |    yes   |
    ; cursor      | A_Cursor        |     yes     |    yes    |    yes   |    yes   |
    ; url         | https://        |     yes     |    yes    |    yes   |          |
    ; file        | picture.bmp     |     yes     |    yes    |    yes   |    yes   |
@@ -667,7 +668,7 @@ class ImagePut {
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
                ,    "ptr", &Rect
-               ,   "uint", 7            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadWrite
+               ,   "uint", 6            ; ImageLockMode.UserInputBuffer | ImageLockMode.WriteOnly
                ,    "int", 0xE200B      ; Format32bppPArgb
                ,    "ptr", &BitmapData) ; Contains the pointer (pBits) to the hbm.
 
@@ -710,7 +711,7 @@ class ImagePut {
          , bpp    := NumGet(dib, 18, "ushort")
 
       ; Fallback to built-in method if pixels are not 32-bit ARGB.
-      if (bpp != 32) {
+      if (bpp != 32) { ; This built-in version is 120% faster but ignores transparency.
          DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", image, "ptr", 0, "ptr*", pBitmap)
          return pBitmap
       }
@@ -752,7 +753,7 @@ class ImagePut {
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
                ,    "ptr", &Rect
-               ,   "uint", 7            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadWrite
+               ,   "uint", 6            ; ImageLockMode.UserInputBuffer | ImageLockMode.WriteOnly
                ,    "int", 0xE200B      ; Format32bppPArgb
                ,    "ptr", &BitmapData) ; Contains the pointer (pBits) to the hbm.
 
@@ -937,8 +938,8 @@ class ImagePut {
 
       ; Position the image in the center. This line can be removed.
       DllCall("SetWindowPos", "ptr", WorkerW, "ptr", 1
-               , "int", (A_ScreenWidth - width) / 2      ; x coordinate
-               , "int", (A_ScreenHeight - height) / 2    ; y coordinate
+               , "int", Round((A_ScreenWidth - width) / 2)   ; x coordinate
+               , "int", Round((A_ScreenHeight - height) / 2) ; y coordinate
                , "int", width, "int", height, "uint", 0)
 
       ; Get device context of spawned window.
@@ -1067,7 +1068,7 @@ class ImagePut {
 
    put_hBitmap(ByRef pBitmap, alpha := "") {
       ; Revert to built in functionality if a replacement color is declared.
-      if (alpha != "") {
+      if (alpha != "") { ; This built-in version is about 25% slower. 
          DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "ptr", pBitmap, "ptr*", hBitmap, "uint", alpha)
          return hBitmap
       }
