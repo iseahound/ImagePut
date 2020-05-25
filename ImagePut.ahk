@@ -260,8 +260,8 @@ class ImagePut {
             return "desktop"
 
          ; A "cursor" is the name of a known cursor name.
-         if (image ~= "i)^(IDC|OCR)?_?(AppStarting|Arrow|Cross|Help|IBeam|Icon|No|"
-            . "Size|SizeAll|SizeNESW|SizeNS|SizeNWSE|SizeWE|UpArrow|Wait|Unknown)$")
+         if (image ~= "(?i)^(IDC|OCR)?_?(A_Cursor|AppStarting|Arrow|Cross|Help|IBeam|"
+         . "Icon|No|Size|SizeAll|SizeNESW|SizeNS|SizeNWSE|SizeWE|UpArrow|Wait|Unknown)$")
             return "cursor"
 
          ; A "url" satisfies the url format.
