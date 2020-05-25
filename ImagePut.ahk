@@ -2,7 +2,7 @@
 ; Author:    iseahound
 ; License:   MIT License
 ; Version:   2020-05-22
-; Release:   2020-05-24
+; Release:   2020-05-25
 
 ; ImagePut - Puts an image from anywhere to anywhere.
 ; This is a simple functor designed to be intuitive.
@@ -40,7 +40,7 @@ ImagePutCursor(ByRef image, xHotspot := "", yHotspot := "") {
 }
 
 ; Puts the image on an invisible temporary window behind the desktop icons.
-; NOTE:  Unsupported! Proof of concept only. May break on future versions of windows.
+; NOTE: Unsupported! Proof of concept only. May break on future versions of windows.
 ; scale - Try A_ScreenWidth / width or A_ScreenHeight / height.
 ImagePutDesktop(ByRef image, scale := 1) {
    return ImagePut("desktop", image,, scale)
@@ -63,6 +63,10 @@ ImagePutHBitmap(ByRef image, alpha := "") {
    return ImagePut("hBitmap", image,,, alpha)
 }
 
+; Puts the image as the desktop wallpaper.
+ImagePutWallpaper(ByRef image) {
+   return ImagePut("wallpaper", image)
+}
 
 ; ImagePut() - Puts an image from anywhere to anywhere.
 ; cotype - Name of the output type as a case insensitive string.
@@ -96,14 +100,14 @@ class ImagePut {
       ; Crop the image.
       if (_crop) {
          pBitmap2 := this.BitmapCrop(pBitmap, crop)
-         this.toDispose(type, pBitmap)
+         DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
          pBitmap := pBitmap2
       }
 
       ; Scale the image.
       if (_scale) {
          pBitmap2 := this.BitmapScale(pBitmap, scale)
-         this.toDispose(type, pBitmap)
+         DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
          pBitmap := pBitmap2
       }
 
@@ -125,7 +129,8 @@ class ImagePut {
    ; object      | object.Bitmap() |     yes     |    yes    |    yes   |          |
    ; buffer      | bitmap.pBitmap  |     yes     |    yes    |    yes   |    yes   |
    ; screenshot  | [x,y,w,h]       |     yes     |    yes    |    yes   |          |
-   ; desktop     | "desktop"       |     yes     |    yes    |    yes   |    yes   |
+   ; desktop     | "desktop"       |     yes     |    yes    |    no    |    yes   |
+   ; wallpaper   | "wallpaper"     |     yes     |    yes    |    yes   |    yes   |
    ; cursor      | A_Cursor        |     yes     |    yes    |    yes   |    yes   |
    ; url         | https://        |     yes     |    yes    |    yes   |          |
    ; file        | picture.bmp     |     yes     |    yes    |    yes   |    yes   |
@@ -177,6 +182,11 @@ class ImagePut {
       if ObjHasKey(image, "desktop") {
          image := image.desktop
          return "desktop"
+      }
+
+      if ObjHasKey(image, "wallpaper") {
+         image := image.wallpaper
+         return "wallpaper"
       }
 
       if ObjHasKey(image, "cursor") {
@@ -255,9 +265,13 @@ class ImagePut {
          if (image.1 ~= "^-?\d+$" && image.2 ~= "^-?\d+$" && image.3 ~= "^-?\d+$" && image.4 ~= "^-?\d+$")
             return "screenshot"
       }
-         ; A "desktop" is the desktop.
+         ; A "desktop" is a hidden window behind the desktop icons created by ImagePutDesktop.
          if (image = "desktop")
             return "desktop"
+
+         ; A "wallpaper" is the desktop wallpaper.
+         if (image = "wallpaper")
+            return "wallpaper"
 
          ; A "cursor" is the name of a known cursor name.
          if (image ~= "(?i)^(IDC|OCR)?_?(A_Cursor|AppStarting|Arrow|Cross|Help|IBeam|"
@@ -319,6 +333,9 @@ class ImagePut {
       if (type = "desktop")
          return this.from_desktop()
 
+      if (type = "wallpaper")
+         return this.from_wallpaper()
+
       if (type = "cursor")
          return this.from_cursor()
 
@@ -377,6 +394,10 @@ class ImagePut {
       if (cotype = "desktop")
          return this.put_desktop(pBitmap)
 
+      ; toCotype("wallpaper", pBitmap)
+      if (cotype = "wallpaper")
+         return this.put_wallpaper(pBitmap)
+
       ; toCotype("cursor", pBitmap, xHotspot, yHotspot)
       if (cotype = "cursor")
          return this.put_cursor(pBitmap, terms.1, terms.2)
@@ -411,11 +432,8 @@ class ImagePut {
          return this.put_base64(pBitmap, terms.1, terms.2)
    }
 
-   toDispose(type, ByRef pBitmap) {
-      ; Do not delete the pBitmap if it was not originally created by this script.
-      ; Only delete copies of pBitmap.
-      ; if !(type = "bitmap" || type = "buffer")
-         DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
+   DisposeImage(ByRef pBitmap) {
+      return DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
    }
 
    BitmapCrop(ByRef pBitmap, crop) {
@@ -581,7 +599,7 @@ class ImagePut {
       return pBitmap
    }
 
-   from_desktop() {
+   from_wallpaper() {
       ; Get the width and height of all monitors.
       width  := DllCall("GetSystemMetrics", "int", 78)
       height := DllCall("GetSystemMetrics", "int", 79)
@@ -864,6 +882,8 @@ class ImagePut {
 
       ; Create a destination pBitmap in 32-bit ARGB and get its device context though GDI+.
       ; Note that a device context from a graphics context can only be drawn on, not read.
+      ; Also note that using a graphics context and blitting does not create a pixel perfect image.
+      ; Using a DIB and LockBits is about 5% faster.
       DllCall("gdiplus\GdipCreateBitmapFromScan0"
                , "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", dBitmap)
       DllCall("gdiplus\GdipGetImageGraphicsContext", "ptr", dBitmap, "ptr*", dGraphics)
@@ -966,6 +986,17 @@ class ImagePut {
       DllCall("DeleteDC",     "ptr", hdc)
 
       return "desktop"
+   }
+
+   put_wallpaper(ByRef pBitmap) {
+      path := this.put_file(pBitmap, "temp.png")
+      cc := DllCall("GetFullPathName", "str", path, "uint", 0, "ptr", 0, "ptr", 0, "uint")
+      VarSetCapacity(buf, cc*(A_IsUnicode?2:1))
+      DllCall("GetFullPathName", "str", path, "uint", cc, "str", buf, "ptr", 0, "uint")
+      DllCall("SystemParametersInfo", "uint", 20, "uint", 0, "str", buf, "uint", 2)
+      Sleep 1 ; Needed as there is some lag.
+      FileDelete % path
+      return "wallpaper"
    }
 
    put_cursor(ByRef pBitmap, xHotspot := "", yHotspot := "") {
