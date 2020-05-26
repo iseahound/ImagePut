@@ -63,6 +63,14 @@ ImagePutHBitmap(ByRef image, alpha := "") {
    return ImagePut("hBitmap", image,,, alpha)
 }
 
+; Puts the image on the screen at the specified position.
+; NOTE: The screen is a shared resource and images will be overdrawn.
+; screenshot - [x,y,w,h] array. Parameters may be omitted. Ex. [0,0]
+; alpha - Changes the replacement color for all transparent pixels.
+ImagePutScreenshot(ByRef image, screenshot := "", alpha := "") {
+   return ImagePut("screenshot", image,,, screenshot, alpha)
+}
+
 ; Puts the image as the desktop wallpaper.
 ImagePutWallpaper(ByRef image) {
    return ImagePut("wallpaper", image)
@@ -384,11 +392,9 @@ class ImagePut {
                ; A buffer object will dispose of the bitmap when deleted.
       }
 
-      ; toCotype("screenshot", pBitmap, style)
-      if (cotype = "screenshot") {
-         renderer := this.Render({"bitmap":pBitmap}, terms.1)
-         return [renderer.x1(), renderer.y1(), renderer.width(), renderer.height()]
-      }
+      ; toCotype("screenshot", pBitmap, screenshot, alpha)
+      if (cotype = "screenshot")
+         return this.put_screenshot(pBitmap, terms.1, terms.2)
 
       ; toCotype("desktop", pBitmap)
       if (cotype = "desktop")
@@ -934,6 +940,41 @@ class ImagePut {
 
       ; Returns an empty string as ClipboardAll would also be an empty string.
       return ""
+   }
+
+   put_screenshot(ByRef pBitmap, screenshot := "", alpha := "") {
+      ; Get Bitmap width and height.
+      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width)
+      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height)
+
+      x := (screenshot.1 != "") ? screenshot.1 : Round((A_ScreenWidth - width) / 2)
+      y := (screenshot.2 != "") ? screenshot.2 : Round((A_ScreenHeight - height) / 2)
+      w := (screenshot.3 != "") ? screenshot.3 : width
+      h := (screenshot.4 != "") ? screenshot.4 : height
+
+      ; Convert the Bitmap to a hBitmap and associate a device context for blitting.
+      hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
+      hbm := this.put_hBitmap(pBitmap, alpha)
+      obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
+
+      ; Get device context of spawned window.
+      ddc := DllCall("GetDC", "ptr", 0, "ptr")
+
+      ; Copies a portion of the screen to a new device context.
+      DllCall("gdi32\StretchBlt"
+               , "ptr", ddc, "int", x, "int", y, "int", w,     "int", h
+               , "ptr", hdc, "int", 0, "int", 0, "int", width, "int", height
+               , "uint", 0x00CC0020) ; SRCCOPY
+
+      ; Release device context of spawned window.
+      DllCall("ReleaseDC", "ptr", 0, "ptr", ddc)
+
+      ; Cleanup the hBitmap and device contexts.
+      DllCall("SelectObject", "ptr", hdc, "ptr", obm)
+      DllCall("DeleteObject", "ptr", hbm)
+      DllCall("DeleteDC",     "ptr", hdc)
+
+      return [x,y,w,h]
    }
 
    put_desktop(ByRef pBitmap) {
