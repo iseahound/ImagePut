@@ -71,6 +71,10 @@ Use an object such as `{file:"pic.bmp"}`. This will skip automatic type detectio
 
 **ImagePutHBitmap** - Returns an hBitmap handle. The pixel format of an hBitmap is in pARGB, so any conversion between pre-multiplied ARGB and ARGB will introduce rounding errors. The result is that any image with transparency will look visually identical to the source, but not be pixel perfect causing `ImageEqual` to fail. RGB images without an alpha channel are unaffected. An alpha color can be specified as the replacement color of transparent pixels. 
 
+**ImagePutScreenshot** - Returns an `[x,y,w,h]` array. Puts the image directly on the screen's device context. Therefore the image will be drawn over by other applications. Takes an `[x,y,w,h]` array. Parameters can be omitted like `[0,0]`. An alpha color can be specified as the replacement color of transparent pixels. 
+
+**ImagePutWallpaper** - Returns `"wallpaper"`. Puts the image as the wallpaper. Whether the image will be streched, filled, tiled, etc. depends on your desktop personalization settings. 
+
 ### Cropping and Scaling Images
 
 **ImagePut(cotype, image, crop := "", scale := "", terms\*)**
