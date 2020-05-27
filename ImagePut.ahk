@@ -2,7 +2,7 @@
 ; Author:    iseahound
 ; License:   MIT License
 ; Version:   2020-05-22
-; Release:   2020-05-25
+; Release:   2020-05-26
 
 ; ImagePut - Puts an image from anywhere to anywhere.
 ; This is a simple functor designed to be intuitive.
@@ -376,6 +376,8 @@ class ImagePut {
 
       if (type = "sprite")
          return this.from_sprite(image)
+
+      throw Exception("Conversion from this type is not supported.")
    }
 
    toCotype(cotype, ByRef pBitmap, terms*) {
@@ -385,11 +387,11 @@ class ImagePut {
 
       ; toCotype("buffer", pBitmap)
       if (cotype = "buffer") {
-         this.gdiplus := this.gdiplus + 1 ; Increment GDI+ reference count manually.
-         return {"pBitmap": pBitmap       ; When this object is deleted it will decrement this.gdiplus.
-            , base: {__New: ObjBindMethod(this, "gdiplusStartup") ; For symmetry.
-               ,  __Delete: ObjBindMethod(this, "gdiplusShutdown", "smart_pointer")}}
-               ; A buffer object will dispose of the bitmap when deleted.
+         buffer := {__New: ObjBindMethod(this, "gdiplusStartup") ; Increment GDI+ reference count
+               , __Delete: ObjBindMethod(this, "gdiplusShutdown", "smart_pointer", pBitmap)}
+         buffer := new buffer      ; On deletion the buffer object will dispose of the bitmap.
+         buffer.pBitmap := pBitmap ; And it will decrement this.gdiplus.
+         return buffer
       }
 
       ; toCotype("screenshot", pBitmap, screenshot, alpha)
@@ -436,6 +438,8 @@ class ImagePut {
       ; toCotype("base64", pBitmap, extension, quality)
       if (cotype = "base64") ; Thanks to noname.
          return this.put_base64(pBitmap, terms.1, terms.2)
+
+      throw Exception("Conversion to this type is not supported.")
    }
 
    DisposeImage(ByRef pBitmap) {
@@ -1275,12 +1279,13 @@ class ImagePut {
       }
    }
 
-   gdiplusShutdown(cotype := "") {
+   gdiplusShutdown(cotype := "", ByRef pBitmap := "") {
       this.gdiplus := this.gdiplus - 1
 
-      ; If called by a buffer object, dispose of the bitmap.
+      ; When a buffer object is deleted a bitmap is sent here for disposal.
       if (cotype == "smart_pointer")
-         DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap)
+         if DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
+            throw Exception("The bitmap of this buffer object has already been deleted.")
 
       ; Shutdown gdiplus if pToken is owned and when counter goes from 1 -> 0.
       if (this.gdiplus == 0) {
