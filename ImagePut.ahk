@@ -6,82 +6,77 @@
 
 ; ImagePut - Puts an image from anywhere to anywhere.
 ; This is a simple functor designed to be intuitive.
-; I hope people find this useful.
+; I hope people find this reference library useful.
 
 
-; Puts the image into a base64 encoding of a file format.
-; extension - File encoding. ("png", "jpg")
-; quality - quality level of the jpeg image. (Lowest to Highest: 0 - 100)
+; Puts the image into a file format and returns a base64 encoded string.
+;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
+;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
 ImagePutBase64(ByRef image, extension := "", quality := "") {
    return ImagePut("base64", image,,, extension, quality)
 }
 
-; Puts the image into a pointer to a GDI+ Bitmap.
+; Puts the image into a GDI+ Bitmap and returns a pointer.
 ImagePutBitmap(ByRef image) {
    return ImagePut("bitmap", image)
 }
 
-; Puts the image into a buffer object that has GDI+ scope.
-; NOTE: Access the pointer like this: buffer.pBitmap
+; Puts the image into a GDI+ Bitmap and returns a buffer object with GDI+ scope.
 ImagePutBuffer(ByRef image) {
    return ImagePut("buffer", image)
 }
 
-; Puts the image onto the clipboard.
+; Puts the image onto the clipboard and returns an empty string.
 ImagePutClipboard(ByRef image) {
    return ImagePut("clipboard", image)
 }
 
-; Puts the image as the cursor.
-; xHotspot - x coordinate of the click point. (pixels: 0 - width)
-; yHotspot - y coordinate of the click point. (pixels: 0 - height)
+; Puts the image as the cursor and returns the string "A_Cursor".
+;   xHotspot   -  X Click Point           |  pixel    ->   0 - width
+;   yHotspot   -  Y Click Point           |  pixel    ->   0 - height
 ImagePutCursor(ByRef image, xHotspot := "", yHotspot := "") {
    return ImagePut("cursor", image,,, xHotspot, yHotspot)
 }
 
-; Puts the image on an invisible temporary window behind the desktop icons.
-; NOTE: Unsupported! Proof of concept only. May break on future versions of windows.
-; scale - Try A_ScreenWidth / width or A_ScreenHeight / height.
+; Puts the image behind the desktop icons and returns the string "desktop".
+;   scale      -  Scale Factor            |  real     ->   A_ScreenHeight / height.
 ImagePutDesktop(ByRef image, scale := 1) {
    return ImagePut("desktop", image,, scale)
 }
 
-; Puts the image into a file.
-; filename - name of the file with a extension. ("pic.png")
-; quality - quality level of the jpeg image. (Lowest to Highest: 0 - 100)
+; Puts the image into a file and returns the file name. 
+;   filename   -  File Extension          |  string   ->   *.bmp, *.gif, *.jpg, *.png, *.tiff
+;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
 ImagePutFile(ByRef image, filename := "", quality := "") {
    return ImagePut("file", image,,, filename, quality)
 }
 
-; Puts the image into a native display-compatible hBitmap.
-; NOTE: Images converted to hBitmap will not be identical to the original.
-;  hBitmaps are pre-multiplied pARGB, meaning there will be rounding errors
-;  in the conversion back. This format is designed for displays and printers.
-;  However there will be no noticeable visual differences.
-; alpha - Changes the replacement color for all transparent pixels.
+; Puts the image into a device independent bitmap and returns a handle.
+;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
+;   alpha      -  Alpha Replacement Color |  RGB      ->   0xFFFFFF
 ImagePutHBitmap(ByRef image, alpha := "") {
    return ImagePut("hBitmap", image,,, alpha)
 }
 
-; Puts the image on the screen at the specified position.
-; NOTE: The screen is a shared resource and images will be overdrawn.
-; screenshot - [x,y,w,h] array. Parameters may be omitted. Ex. [0,0]
-; alpha - Changes the replacement color for all transparent pixels.
+; Puts the image on the shared screen device context and returns an array of coordinates.
+;   screenshot -  Screen Coordinates      |  array    ->   [x,y,w,h] or [0,0]
+;   alpha      -  Alpha Replacement Color |  RGB      ->   0xFFFFFF
 ImagePutScreenshot(ByRef image, screenshot := "", alpha := "") {
    return ImagePut("screenshot", image,,, screenshot, alpha)
 }
 
-; Puts the image as the desktop wallpaper.
+; Puts the image as the desktop wallpaper and returns the string "wallpaper".
 ImagePutWallpaper(ByRef image) {
    return ImagePut("wallpaper", image)
 }
 
+
 ; ImagePut() - Puts an image from anywhere to anywhere.
-; cotype - Name of the output type as a case insensitive string.
-; image - Any image data to be determined. An input type can be specified as {type:image}.
-; crop - [x,y,w,h] - Value can be negative (subtract from edge) or percents.
-; scale - A real number to scale by.
-; terms* - Additional parameters depending on the cotype.
+;   cotype     -  Output Type             |  string   ->   Case Insensitive. Read documentation.
+;   image      -  Input Image             |  image    ->   Anything. Refer to ImageType().
+;   crop       -  Crop Coordinates        |  array    ->   [x,y,w,h] could be negative or percent.
+;   scale      -  Scale Factor            |  real     ->   2.0
+;   terms*     -  Additional Parameters   |  variadic ->   Extra parameters found in toCotype(). 
 ImagePut(cotype, ByRef image, crop := "", scale := "", terms*) {
    return ImagePut.call(cotype, image, crop, scale, terms*)
 }
