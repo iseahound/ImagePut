@@ -20,8 +20,10 @@ class ImageEqual extends ImagePut {
          try type := this.DontVerifyImageType(image)
          catch
             try type := this.ImageType(image)
-            catch
-               return false ; Not a valid image.
+            catch { ; Not a valid image.
+               result := false
+               break
+            }
 
          if (A_Index == 1) {
             pBitmap1 := this.toBitmap(type, image)
@@ -31,8 +33,10 @@ class ImageEqual extends ImagePut {
             DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap2)
             if (result)
                continue
-            else
-               return false
+            else {
+               result := false
+               break
+            }
          }
       }
 
@@ -40,7 +44,7 @@ class ImageEqual extends ImagePut {
 
       this.gdiplusShutdown()
 
-      return true
+      return result
    }
 
    isBitmapEqual(ByRef pBitmap1, ByRef pBitmap2, Format := 0x26200A) {
@@ -89,7 +93,7 @@ class ImageEqual extends ImagePut {
             DllCall("gdiplus\GdipCloneImage", "ptr", pBitmap%i%, "ptr*", pBitmapClone)
             DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap%i%) ; Permanently deletes.
             pBitmap%i% := pBitmapClone
-            i--
+            i-- ; "Let's go around again! Ha!" https://bit.ly/2AWWcM3
          }
 
          ; Get Scan0 (top-left first pixel).
