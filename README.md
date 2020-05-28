@@ -65,7 +65,7 @@ Use an object such as `{file:"pic.bmp"}`. This will skip automatic type detectio
 
 **ImagePutCursor** - Returns `"A_Cursor"`. Puts the image as the cursor. Specify the cursor hotspot ("click point") using x and y coordinates. 
 
-**ImagePutDesktop** - Returns `"desktop"`. Puts the image on an invisible temporary window behind the desktop icons. This functionality relies on an unsupported and undocumented feature. If the desire is to set the wallpaper, `	DllCall("SystemParametersInfo", "uint", 20, "uint", 0, "str", ImagePutFile(image), "uint", 2)` will suffice. 
+**ImagePutDesktop** - Returns `"desktop"`. Puts the image on an invisible temporary window behind the desktop icons. This functionality relies on an unsupported and undocumented feature.
 
 **ImagePutFile** - Returns a filename. Supported file formats: bmp, gif, jpg, png, tiff. Quality: 0 - 100.
 
@@ -81,9 +81,9 @@ Use an object such as `{file:"pic.bmp"}`. This will skip automatic type detectio
 
 **cotype** - The output type as a string. `"file"`
 
-**crop** - `[x,y,w,h]` array. Negative values will be subtracted from the edge. Percentages are permitted. `["-20%","-20%","-20%","-20%"]`
+**crop** - `[x,y,w,h]` array. Negative values will be subtracted from the edge. Percentages are permitted. `"-20%"`
 
-**scale** - A real number. A scale of `1` does nothing. 
+**scale** - A real number. Factor to scale by. A scale of `1` does nothing. 
 
 ## Comments
 
