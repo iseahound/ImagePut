@@ -2,7 +2,7 @@
 ; Author:    iseahound
 ; License:   MIT License
 ; Version:   2020-05-22
-; Release:   2020-05-26
+; Release:   2020-06-07
 
 ; ImagePut - Puts an image from anywhere to anywhere.
 ; This is a simple functor designed to be intuitive.
@@ -644,9 +644,10 @@ class ImagePut {
       ; Thanks 23W - https://stackoverflow.com/a/13295280
 
       ; struct CURSORINFO - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-cursorinfo
-      NumPut(VarSetCapacity(ci, 16+A_PtrSize, 0), ci, "int") ; sizeof(CURSORINFO) = 20, 24
+      VarSetCapacity(ci, size := 16+A_PtrSize, 0)        ; sizeof(CURSORINFO) = 20, 24
+         , NumPut(size, ci, "int")
       DllCall("GetCursorInfo", "ptr", &ci)
-         ; cShow   := NumGet(ci,  4, "int")                  ; 0x1 = CURSOR_SHOWING, 0x2 = CURSOR_SUPPRESSED
+         ; cShow   := NumGet(ci,  4, "int")              ; 0x1 = CURSOR_SHOWING, 0x2 = CURSOR_SUPPRESSED
          , hCursor := NumGet(ci,  8, "ptr")
          ; xCursor := NumGet(ci,  8+A_PtrSize, "int")
          ; yCursor := NumGet(ci, 12+A_PtrSize, "int")
@@ -660,10 +661,8 @@ class ImagePut {
          , hbmColor := NumGet(ii, 8+2*A_PtrSize, "ptr")  ; x86:16, x64:24
 
       ; struct BITMAP - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmap
-      DllCall("GetObject"
-               ,    "ptr", hbmMask
-               ,    "int", VarSetCapacity(bm, 16+2*A_PtrSize)   ; sizeof(BITMAP) = 24, 32
-               ,    "ptr", &bm)
+      VarSetCapacity(bm, size := 16+2*A_PtrSize)         ; sizeof(BITMAP) = 24, 32
+      DllCall("GetObject", "ptr", hbmMask, "int", size, "ptr", &bm)
          , width  := NumGet(bm, 4, "uint")
          , height := NumGet(bm, 8, "uint") / (hbmColor ? 1 : 2) ; Black and White cursors have doubled height.
 
@@ -735,10 +734,8 @@ class ImagePut {
 
    from_hBitmap(ByRef image) {
       ; struct BITMAP - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmap
-      DllCall("GetObject"
-               ,    "ptr", image
-               ,    "int", VarSetCapacity(dib, 76+2*(A_PtrSize=8?4:0)+2*A_PtrSize)
-               ,    "ptr", &dib) ; sizeof(DIBSECTION) = 84, 104
+      VarSetCapacity(dib, size := 76+2*(A_PtrSize=8?4:0)+2*A_PtrSize) ; sizeof(DIBSECTION) = 84, 104
+      DllCall("GetObject", "ptr", image, "int", size, "ptr", &dib)
          , width  := NumGet(dib, 4, "uint")
          , height := NumGet(dib, 8, "uint")
          , bpp    := NumGet(dib, 18, "ushort")
@@ -832,10 +829,10 @@ class ImagePut {
          DllCall("ShowWindow", "ptr", image, "int", 4)
 
       ; Get the width and height of the client window.
-      VarSetCapacity(rect, 16) ; sizeof(RECT) = 16
-      DllCall("GetClientRect", "ptr", image, "ptr", &rect)
-         , width  := NumGet(rect, 8, "int")
-         , height := NumGet(rect, 12, "int")
+      VarSetCapacity(Rect, 16) ; sizeof(RECT) = 16
+      DllCall("GetClientRect", "ptr", image, "ptr", &Rect)
+         , width  := NumGet(Rect, 8, "int")
+         , height := NumGet(Rect, 12, "int")
 
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
       hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
@@ -931,7 +928,8 @@ class ImagePut {
 
       off1 := A_PtrSize = 8 ? 52 : 44, off2 := A_PtrSize = 8 ? 32 : 24
       DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "ptr", pBitmap, "ptr*", hBitmap:=0, "uint", 0xFFFFFFFF)
-      DllCall("GetObject", "ptr", hBitmap, "int", VarSetCapacity(oi, A_PtrSize = 8 ? 104 : 84, 0), "ptr", &oi)
+      VarSetCapacity(oi, size := A_PtrSize = 8 ? 104 : 84, 0)
+      DllCall("GetObject", "ptr", hBitmap, "int", size, "ptr", &oi)
       hdib := DllCall("GlobalAlloc", "uint", 2, "ptr", 40+NumGet(oi, off1, "uint"), "ptr")
       pdib := DllCall("GlobalLock", "ptr", hdib, "ptr")
       DllCall("RtlMoveMemory", "ptr", pdib, "ptr", &oi+off2, "uptr", 40)
@@ -1055,13 +1053,13 @@ class ImagePut {
       ; Sets the hotspot of the cursor by changing the icon into a cursor.
       if (xHotspot != "" || yHotspot != "") {
          ; struct ICONINFO - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-iconinfo
-         VarSetCapacity(ii, 8+3*A_PtrSize, 0)                      ; sizeof(ICONINFO) = 20, 32
-         DllCall("GetIconInfo", "ptr", hIcon, "ptr", &ii)          ; Fill the ICONINFO structure.
-         DllCall("DestroyIcon", "ptr", hIcon)                      ; Destroy the icon after getting the ICONINFO structure.
-         NumPut(false, ii, 0, "uint")                              ; true/false are icon/cursor respectively.
-         (xHotspot != "") ? NumPut(xHotspot, ii, 4, "uint") : ""   ; Set the xHotspot value. (Default: center point)
-         (yHotspot != "") ? NumPut(yHotspot, ii, 8, "uint") : ""   ; Set the yHotspot value. (Default: center point)
-         hIcon := DllCall("CreateIconIndirect", "ptr", &ii, "ptr") ; Create a new cursor using ICONINFO.
+         VarSetCapacity(ii, 8+3*A_PtrSize, 0)                         ; sizeof(ICONINFO) = 20, 32
+         DllCall("GetIconInfo", "ptr", hIcon, "ptr", &ii)             ; Fill the ICONINFO structure.
+            , NumPut(false, ii, 0, "uint")                            ; true/false are icon/cursor respectively.
+            , (xHotspot != "") ? NumPut(xHotspot, ii, 4, "uint") : "" ; Set the xHotspot value. (Default: center point)
+            , (yHotspot != "") ? NumPut(yHotspot, ii, 8, "uint") : "" ; Set the yHotspot value. (Default: center point)
+         DllCall("DestroyIcon", "ptr", hIcon)                         ; Destroy the icon after getting the ICONINFO structure.
+         hIcon := DllCall("CreateIconIndirect", "ptr", &ii, "ptr")    ; Create a new cursor using ICONINFO.
 
          ; Clean up hbmMask and hbmColor created as a result of GetIconInfo.
          DllCall("DeleteObject", "ptr", NumGet(ii, 8+A_PtrSize, "ptr"))   ; hbmMask
