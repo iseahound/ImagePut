@@ -2,7 +2,7 @@
 ; Author:    iseahound
 ; License:   MIT License
 ; Version:   2020-05-22
-; Release:   2020-06-07
+; Release:   2020-06-12
 
 ; ImagePut - Puts an image from anywhere to anywhere.
 ; This is a simple functor designed to be intuitive.
@@ -734,7 +734,7 @@ class ImagePut {
 
    from_hBitmap(ByRef image) {
       ; struct BITMAP - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmap
-      VarSetCapacity(dib, size := 76+2*(A_PtrSize=8?4:0)+2*A_PtrSize) ; sizeof(DIBSECTION) = 84, 104
+      VarSetCapacity(dib, size := 68+4*A_PtrSize) ; sizeof(DIBSECTION) = 84, 100
       DllCall("GetObject", "ptr", image, "int", size, "ptr", &dib)
          , width  := NumGet(dib, 4, "uint")
          , height := NumGet(dib, 8, "uint")
@@ -1274,8 +1274,8 @@ class ImagePut {
       ; Startup gdiplus when counter goes from 0 -> 1 or "" -> 1.
       if (this.gdiplus == 1) {
          DllCall("LoadLibrary", "str", "gdiplus")
-         VarSetCapacity(si, A_PtrSize = 8 ? 24 : 16, 0)
-         NumPut(0x1, si)
+         VarSetCapacity(si, A_PtrSize = 8 ? 24 : 16, 0) ; sizeof(GdiplusStartupInput) = 16, 24
+            , NumPut(0x1, si, "uint")
          DllCall("gdiplus\GdiplusStartup", "ptr*", pToken:=0, "ptr", &si, "ptr", 0)
          this.pToken := pToken
       }
