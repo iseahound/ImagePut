@@ -2,7 +2,7 @@
 ; Author:    iseahound
 ; License:   MIT License
 ; Version:   2020-05-22
-; Release:   2020-07-24
+; Release:   2020-07-25
 
 ; ImagePut - Puts an image from anywhere to anywhere.
 ; This is a simple functor designed to be intuitive.
@@ -295,6 +295,7 @@ class ImagePut {
          if FileExist(image)
             return "file"
 
+      if (image is integer) {
          ; A "bitmap" is a pointer to a GDI+ Bitmap.
          if (!DllCall("gdiplus\GdipGetImageType", "ptr", image, "ptr*", type:=0) && type == 1)
             return "bitmap"
@@ -310,7 +311,7 @@ class ImagePut {
          ; A "hwnd" is a handle to a window and more commonly known as ahk_id.
          if DllCall("IsWindow", "ptr", image)
             return "hwnd"
-
+      }
          ; A "window" is anything considered a Window Title including ahk_class and "A".
          if WinExist(image)
             return "window"
@@ -378,7 +379,7 @@ class ImagePut {
       if (type = "sprite")
          return this.from_sprite(image)
 
-      throw Exception("Conversion from this type is not supported.")
+      throw Exception("Conversion from type " type " is not supported.")
    }
 
    toCotype(cotype, ByRef pBitmap, terms*) {
@@ -422,11 +423,11 @@ class ImagePut {
 
       ; toCotype("window", pBitmap)
       if (cotype = "window")
-         return "ahk_id " . this.Render({"bitmap":pBitmap}).AlwaysOnTop().ToolWindow().Caption().hwnd
+         return "ahk_id " . this.Render({bitmap:pBitmap}).AlwaysOnTop().ToolWindow().Caption().hwnd
 
       ; toCotype("hwnd", pBitmap)
       if (cotype = "hwnd")
-         return this.Render({"bitmap":pBitmap}).hwnd
+         return this.Render({bitmap:pBitmap}).hwnd
 
       ; toCotype("bitmap", pBitmap)
       if (cotype = "bitmap")
@@ -440,7 +441,7 @@ class ImagePut {
       if (cotype = "base64") ; Thanks to noname.
          return this.put_base64(pBitmap, terms[1], terms[2])
 
-      throw Exception("Conversion to this type is not supported.")
+      throw Exception("Conversion to type " cotype " is not supported.")
    }
 
    DisposeImage(ByRef pBitmap) {
@@ -1081,40 +1082,33 @@ class ImagePut {
       return "A_Cursor"
    }
 
-   put_file(ByRef pBitmap, filepath, Quality:=75) {
+   put_file(ByRef pBitmap, filepath, quality := "") {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
 
       ; Seperate the filepath and default the extension to PNG.
-      SplitPath filepath,, _dir, _ext, _filename
-      _ext := (_ext ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$") ? _ext : "png"
-      filepath := _dir . _filename "." _ext
+      SplitPath filepath,, _dir, extension, _filename
+      extension := (extension ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$") ? extension : "png"
+      filepath := _dir . _filename "." extension
 
       ; Fill a buffer with the available encoders.
       DllCall("gdiplus\GdipGetImageEncodersSize", "uint*", count:=0, "uint*", size:=0)
       VarSetCapacity(ci, size)
       DllCall("gdiplus\GdipGetImageEncoders", "uint", count, "uint", size, "ptr", &ci)
+      if !(count && size)
+         throw Exception("Could not get a list of image codec encoders on this system.")
 
       ; Search for an encoder with a matching extension.
-      If (A_IsUnicode){
-         Loop % count
-            EncoderExtensions := StrGet(NumGet(ci, (idx:=(48+7*A_PtrSize)*(A_Index-1))+32+3*A_PtrSize, "uptr"), "UTF-16")
-         until InStr(EncoderExtensions, "*." _ext)
-      } else {
-         Loop % count {
-            Location := NumGet(ci, 76*(A_Index-1)+44)
-            nSize := DllCall("WideCharToMultiByte", "uint", 0, "uint", 0, "uint", Location, "int", -1, "uint", 0, "int",  0, "uint", 0, "uint", 0)
-            VarSetCapacity(EncoderExtensions, nSize)
-            DllCall("WideCharToMultiByte", "uint", 0, "uint", 0, "uint", Location, "int", -1, "str", EncoderExtensions, "int", nSize, "uint", 0, "uint", 0)
-            idx := 76*(A_Index-1)
-         } until InStr(EncoderExtensions, "*." _ext)
-      }
+      Loop % count
+         EncoderExtensions := StrGet(NumGet(ci, (idx:=(48+7*A_PtrSize)*(A_Index-1))+32+3*A_PtrSize, "uptr"), "UTF-16")
+      until InStr(EncoderExtensions, "*." extension)
 
       ; Get the pointer to the index/offset of the matching encoder.
       if !(pCodec := &ci + idx)
          throw Exception("Could not find a matching encoder for the specified file format.")
 
       ; JPEG is a lossy image format that requires a quality value from 0-100. Default quality is 75.
-      if (0 <= quality && quality <= 100 && quality != 75 && _ext ~= "^(?i:jpg|jpeg|jpe|jfif)$") {
+      if (extension ~= "^(?i:jpg|jpeg|jpe|jfif)$"
+      && 0 <= quality && quality <= 100 && quality != 75) {
          DllCall("gdiplus\GdipGetEncoderParameterListSize", "ptr", pBitmap, "ptr", pCodec, "uint*", size:=0)
          VarSetCapacity(EncoderParameters, size, 0)
          DllCall("gdiplus\GdipGetEncoderParameterList", "ptr", pBitmap, "ptr", pCodec, "uint", size, "ptr", &EncoderParameters)
@@ -1185,67 +1179,65 @@ class ImagePut {
       return hbm
    }
 
-   put_base64(ByRef pBitmap, file := "", Quality := "") {
+   put_base64(ByRef pBitmap, extension := "", quality := "") {
       ; Thanks noname - https://www.autohotkey.com/boards/viewtopic.php?style=7&p=144247#p144247
 
-      if !(file ~= "(?i)bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png")
-         file := "png"
-      Extension := "." file
+      ; Default extension is PNG.
+      if !(extension ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$")
+         extension := "png"
 
-      DllCall("gdiplus\GdipGetImageEncodersSize", "uint*",nCount:=0, "uint*",nSize:=0)
-      VarSetCapacity(ci, nSize)
-      DllCall("gdiplus\GdipGetImageEncoders", "uint",nCount, "uint",nSize, "ptr",&ci)
-      if !(nCount && nSize)
+      ; Fill a buffer with the available encoders.
+      DllCall("gdiplus\GdipGetImageEncodersSize", "uint*", count:=0, "uint*", size:=0)
+      VarSetCapacity(ci, size)
+      DllCall("gdiplus\GdipGetImageEncoders", "uint", count, "uint", size, "ptr", &ci)
+      if !(count && size)
          throw Exception("Could not get a list of image codec encoders on this system.")
 
-      _nCount := (A_AhkVersion < 2) ? nCount : "nCount"
-      Loop %_nCount%
-      {
-         sString := StrGet(NumGet(ci, (idx := (48+7*A_PtrSize)*(A_Index-1))+32+3*A_PtrSize), "UTF-16")
-         if InStr(sString, "*" Extension)
-            break
+      ; Search for an encoder with a matching extension.
+      Loop % count
+         EncoderExtensions := StrGet(NumGet(ci, (idx:=(48+7*A_PtrSize)*(A_Index-1))+32+3*A_PtrSize, "uptr"), "UTF-16")
+      until InStr(EncoderExtensions, "*." extension)
+
+      ; Get the pointer to the index/offset of the matching encoder.
+      if !(pCodec := &ci + idx)
+         throw Exception("Could not find a matching encoder for the specified file format.")
+
+      ; JPEG is a lossy image format that requires a quality value from 0-100. Default quality is 75.
+      if (extension ~= "^(?i:jpg|jpeg|jpe|jfif)$"
+      && 0 <= quality && quality <= 100 && quality != 75) {
+         DllCall("gdiplus\GdipGetEncoderParameterListSize", "ptr", pBitmap, "ptr", pCodec, "uint*", size:=0)
+         VarSetCapacity(EncoderParameters, size, 0)
+         DllCall("gdiplus\GdipGetEncoderParameterList", "ptr", pBitmap, "ptr", pCodec, "uint", size, "ptr", &EncoderParameters)
+
+         ; Search for an encoder parameter with 1 value of type 6.
+         Loop % NumGet(EncoderParameters, "uint")
+            elem := (24+A_PtrSize)*(A_Index-1) + A_PtrSize
+         until (NumGet(EncoderParameters, elem+16, "uint") = 1) && (NumGet(EncoderParameters, elem+20, "uint") = 6)
+
+         ; struct EncoderParameter - http://www.jose.it-berater.org/gdiplus/reference/structures/encoderparameter.htm
+         ep := &EncoderParameters + elem - A_PtrSize                     ; sizeof(EncoderParameter) = 28, 32
+            , NumPut(      1, ep+0,            0,   "uptr")              ; Must be 1.
+            , NumPut(      4, ep+0, 20+A_PtrSize,   "uint")              ; Type
+            , NumPut(quality, NumGet(ep+24+A_PtrSize, "uptr"), "uint")   ; Value (pointer)
       }
 
-      if !(pCodec := &ci+idx)
-         throw Exception("Could not find matching encoder for specified file format.")
-
-      if RegExMatch(Extension, "^\.(?i:JPG|JPEG|JPE|JFIF)$")
-      {
-         Quality := (Quality < 0) ? 0 : (Quality > 100) ? 90 : Quality ; Default JPEG is 90.
-         DllCall("gdiplus\GdipGetEncoderParameterListSize", "ptr",pBitmap, "ptr",pCodec, "uint*",nSize:=0)
-         VarSetCapacity(EncoderParameters, nSize, 0)
-         DllCall("gdiplus\GdipGetEncoderParameterList", "ptr",pBitmap, "ptr",pCodec, "uint",nSize, "ptr",&EncoderParameters)
-         nCount := NumGet(EncoderParameters, "uint")
-         N := (A_AhkVersion < 2) ? nCount : "nCount"
-         Loop %N%
-         {
-            elem := (24+A_PtrSize)*(A_Index-1) + 4 + (pad := A_PtrSize = 8 ? 4 : 0)
-            if (NumGet(EncoderParameters, elem+16, "uint") = 1) && (NumGet(EncoderParameters, elem+20, "uint") = 6)
-            {
-               p := elem+&EncoderParameters-pad-4
-               NumPut(Quality, NumGet(NumPut(4, NumPut(1, p+0)+20, "uint")), "uint")
-               break
-            }
-         }
-      }
-
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr",0, "int",true, "ptr*",pStream:=0)
-      DllCall("gdiplus\GdipSaveImageToStream", "ptr",pBitmap, "ptr",pStream, "ptr",pCodec, "uint",p ? p : 0)
-      DllCall("ole32\GetHGlobalFromStream", "ptr",pStream, "uint*",hData:=0)
-      pData := DllCall("GlobalLock", "ptr",hData, "ptr")
-      nSize := DllCall("GlobalSize", "uint",pData)
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", true, "ptr*", pStream:=0)
+      DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", pStream, "ptr", pCodec, "uint", p ? p : 0)
+      DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "uint*", hData:=0)
+      pData := DllCall("GlobalLock", "ptr", hData, "ptr")
+      nSize := DllCall("GlobalSize", "uint", pData)
 
       VarSetCapacity(bin, nSize, 0)
-      DllCall("RtlMoveMemory", "ptr",&bin, "ptr",pData, "uptr",nSize)
-      DllCall("GlobalUnlock", "ptr",hData)
+      DllCall("RtlMoveMemory", "ptr", &bin, "ptr", pData, "uptr", nSize)
+      DllCall("GlobalUnlock", "ptr", hData)
       ObjRelease(pStream)
-      DllCall("GlobalFree", "ptr",hData)
+      DllCall("GlobalFree", "ptr", hData)
 
       ; Using CryptBinaryToStringA saves about 2MB in memory.
       base64Length := 0
-      DllCall("Crypt32.dll\CryptBinaryToStringA", "ptr",&bin, "uint",nSize, "uint",0x40000001, "ptr",0, "uint*",base64Length)
+      DllCall("Crypt32.dll\CryptBinaryToStringA", "ptr", &bin, "uint", nSize, "uint", 0x40000001, "ptr", 0, "uint*", base64Length)
       VarSetCapacity(base64, base64Length, 0)
-      DllCall("Crypt32.dll\CryptBinaryToStringA", "ptr",&bin, "uint",nSize, "uint",0x40000001, "ptr",&base64, "uint*",base64Length)
+      DllCall("Crypt32.dll\CryptBinaryToStringA", "ptr", &bin, "uint", nSize, "uint", 0x40000001, "ptr", &base64, "uint*", base64Length)
       VarSetCapacity(bin, 0)
 
       return StrGet(&base64, base64Length, "CP0")
