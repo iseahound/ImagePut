@@ -44,11 +44,11 @@ ImagePutDesktop(ByRef image, scale := 1) {
    return ImagePut("desktop", image,, scale)
 }
 
-; Puts the image into a file and returns the file name.
-;   filename   -  File Extension          |  string   ->   *.bmp, *.gif, *.jpg, *.png, *.tiff
+; Puts the image into a file and returns the filepath.
+;   filepath   -  Filepath + Extension    |  string   ->   *.bmp, *.gif, *.jpg, *.png, *.tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
-ImagePutFile(ByRef image, filename := "", quality := "") {
-   return ImagePut("file", image,,, filename, quality)
+ImagePutFile(ByRef image, filepath := "", quality := "") {
+   return ImagePut("file", image,,, filepath, quality)
 }
 
 ; Puts the image into a device independent bitmap and returns a handle.
@@ -63,6 +63,20 @@ ImagePutHBitmap(ByRef image, alpha := "") {
 ;   alpha      -  Alpha Replacement Color |  RGB      ->   0xFFFFFF
 ImagePutScreenshot(ByRef image, screenshot := "", alpha := "") {
    return ImagePut("screenshot", image,,, screenshot, alpha)
+}
+
+; Puts the image into a file format and returns a memory stream.
+;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
+;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
+ImagePutStream(ByRef image, extension := "", quality := "") {
+   return ImagePut("stream", image,,, extension, quality)
+}
+
+; Puts the image into a file format and returns a RandomAccessStream.
+;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
+;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
+ImagePutRandomAccessStream(ByRef image, extension := "", quality := "") {
+   return ImagePut("randomAccessStream", image,,, extension, quality)
 }
 
 ; Puts the image as the desktop wallpaper and returns the string "wallpaper".
@@ -128,35 +142,35 @@ class ImagePut {
       return coimage
    }
 
-   ; Types       | Example         | Explicit    | Inferred  | Input    | Output   |
-   ;             |                 | Don'tVerify | ImageType | toBitmap | toCotype |
-   ; clipboard   | ClipboardAll    |     yes     |    yes    |    yes   |    yes   | - no transparency
-   ; object      | object.Bitmap() |     yes     |    yes    |    yes   |          |
-   ; buffer      | bitmap.pBitmap  |     yes     |    yes    |    yes   |    yes   |
-   ; screenshot  | [x,y,w,h]       |     yes     |    yes    |    yes   |          |
-   ; desktop     | "desktop"       |     yes     |    yes    |    no    |    yes   |
-   ; wallpaper   | "wallpaper"     |     yes     |    yes    |    yes   |    yes   |
-   ; cursor      | A_Cursor        |     yes     |    yes    |    yes   |    yes   |
-   ; url         | https://        |     yes     |    yes    |    yes   |          |
-   ; file        | picture.bmp     |     yes     |    yes    |    yes   |    yes   |
-   ; bitmap      | some number     |     yes     |    yes    |    yes   |    yes   |
-   ; hBitmap     | some number     |     yes     |    yes    |    yes   |    yes   |
-   ; monitor     | 0 or # < 10     |     yes     |    yes    |          |          |
-   ; hwnd        | 0x              |     yes     |    yes    |    yes   |          |
-   ; window      | A               |     yes     |    yes    |    yes   |          |
-   ; base64      | base64 data     |     yes     |    yes    |    yes   |    yes   |
-   ; sprite      | file or url     |     yes     |    no     |    yes   |    no    |
-   ; icon        |                 |             |           |          |          |
-   ; printer     |                 |             |           |          |          |
-   ; findtext    |                 |             |           |          |          |
-   ; thumbnail   |                 |       ?     |           |          |          | DwmRegisterThumbnail
-   ; video       |                 |             |           |          |          |
-   ; formdata    |                 |             |           |          |          |
-   ; stream      |                 |             |           |          |          |
-   ; randomaccessstream | pointer  |             |           |          |          |
-   ; hIcon       |                 |             |           |          |          |
-   ; trayicon    |                 |             |           |          |          |
-   ; hash        | aHash, p, d, w  |             |           |          |          |
+   ; Types              | Data type       | Example         | Explicit    | Inferred  | Input    | Output   | Notes
+   ;                    |                 |                 | Don'tVerify | ImageType | toBitmap | toCotype |
+   ; clipboard          | null string?    | ClipboardAll    |     yes     |    yes    |    yes   |    yes   | - no transparency
+   ; object             | object          | object.Bitmap() |     yes     |    yes    |    yes   |          |
+   ; buffer             | object          | bitmap.pBitmap  |     yes     |    yes    |    yes   |    yes   |
+   ; screenshot         | object          | [x,y,w,h]       |     yes     |    yes    |    yes   |    yes   |
+   ; desktop            | string (abc)    | "desktop"       |     yes     |    yes    |    no    |    yes   |
+   ; wallpaper          | string (abc)    | "wallpaper"     |     yes     |    yes    |    yes   |    yes   |
+   ; cursor             | string (abc)    | A_Cursor        |     yes     |    yes    |    yes   |    yes   |
+   ; url                | string (abc)    | https://        |     yes     |    yes    |    yes   |          |
+   ; file               | string (abc)    | picture.bmp     |     yes     |    yes    |    yes   |    yes   |
+   ; stream             | pointer         |                 |             |           |          |    yes   |
+   ; randomaccessstream | pointer         |                 |             |           |          |    yes   |
+   ; bitmap             | pointer         | some number     |     yes     |    yes    |    yes   |    yes   |
+   ; hBitmap            | pointer         | some number     |     yes     |    yes    |    yes   |    yes   |
+   ; hIcon              | pointer         |                 |             |           |          |          |
+   ; monitor            | integer         | 0 or # < 10     |     yes     |    yes    |          |          |
+   ; hwnd               | integer         | 0x              |     yes     |    yes    |    yes   |          |
+   ; window             | string (123)    | A               |     yes     |    yes    |    yes   |          |
+   ; base64             | string (123)    | base64 data     |     yes     |    yes    |    yes   |    yes   |
+   ; sprite             | N/A             |                 |     yes     |    no     |    yes   |    no    |
+   ; icon               |                 |             |           |          |          |
+   ; printer            |                 |             |           |          |          |
+   ; findtext           |                 |             |           |          |          |
+   ; thumbnail          |                 |       ?     |           |          |          | DwmRegisterThumbnail
+   ; video              |                 |             |           |          |          |
+   ; formdata           |                 |             |           |          |          |
+   ; trayicon           |                 |             |           |          |          |
+   ; hash               | aHash, p, d, w  |             |           |          |          |
    ; Animal Crossing QR code       |             |           |          |          |
 
 
@@ -304,7 +318,7 @@ class ImagePut {
          if (DllCall("GetObjectType", "ptr", image) == 7)
             return "hBitmap"
 
-         ; A "monitor" is a number like 0 and 1.
+         ; A non-zero "monitor" number identifies each display uniquely; and 0 refers to the entire virtual screen.
          if (image = 0) ;if (image ~= "^\d+$" && image <= GetMonitorCount())
             return "monitor"
 
@@ -421,13 +435,13 @@ class ImagePut {
       if (cotype = "file")
          return this.put_file(pBitmap, terms[1], terms[2])
 
-      ; toCotype("window", pBitmap)
-      if (cotype = "window")
-         return "ahk_id " . this.Render({bitmap:pBitmap}).AlwaysOnTop().ToolWindow().Caption().hwnd
+      ; toCotype("stream", pBitmap, extension, quality)
+      if (cotype = "stream")
+         return this.put_stream(pBitmap, terms[1], terms[2])
 
-      ; toCotype("hwnd", pBitmap)
-      if (cotype = "hwnd")
-         return this.Render({bitmap:pBitmap}).hwnd
+      ; toCotype("randomAccessStream", pBitmap, extension, quality)
+      if (cotype = "randomAccessStream")
+         return this.put_randomAccessStream(pBitmap, terms[1], terms[2])
 
       ; toCotype("bitmap", pBitmap)
       if (cotype = "bitmap")
@@ -437,8 +451,16 @@ class ImagePut {
       if (cotype = "hBitmap")
          return this.put_hBitmap(pBitmap, terms[1])
 
+      ; toCotype("hwnd", pBitmap)
+      if (cotype = "hwnd")
+         return this.Render({bitmap:pBitmap}).hwnd
+
+      ; toCotype("window", pBitmap)
+      if (cotype = "window")
+         return "ahk_id " . this.Render({bitmap:pBitmap}).AlwaysOnTop().ToolWindow().Caption().hwnd
+
       ; toCotype("base64", pBitmap, extension, quality)
-      if (cotype = "base64") ; Thanks to noname.
+      if (cotype = "base64")
          return this.put_base64(pBitmap, terms[1], terms[2])
 
       throw Exception("Conversion to type " cotype " is not supported.")
@@ -808,11 +830,11 @@ class ImagePut {
 
    from_monitor(ByRef image) {
       if (image > 0) {
-      ;   M := GetMonitorInfo(image)
-         x := M.Left
-         y := M.Top
-         w := M.Right - M.Left
-         h := M.Bottom - M.Top
+         ; MonitorGet(image, Left, Top, Right, Bottom)
+         x := Left
+         y := Top
+         w := Right - Left
+         h := Bottom - Top
       } else {
          x := DllCall("GetSystemMetrics", "int", 76)
          y := DllCall("GetSystemMetrics", "int", 77)
@@ -1086,9 +1108,10 @@ class ImagePut {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
 
       ; Seperate the filepath and default the extension to PNG.
-      SplitPath filepath,, _dir, extension, _filename
+      SplitPath filepath,, directory, extension, filename
+      filename := (filename != "") ? filename : "___date___"
       extension := (extension ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$") ? extension : "png"
-      filepath := _dir . _filename "." extension
+      filepath := directory . filename "." extension
 
       ; Fill a buffer with the available encoders.
       DllCall("gdiplus\GdipGetImageEncodersSize", "uint*", count:=0, "uint*", size:=0)
@@ -1125,10 +1148,87 @@ class ImagePut {
             , NumPut(quality, NumGet(ep+24+A_PtrSize, "uptr"), "uint")   ; Value (pointer)
       }
 
+      ; Write the file to disk using the specified encoder and encoding parameters.
       if DllCall("gdiplus\GdipSaveImageToFile", "ptr", pBitmap, "wstr", filepath, "ptr", pCodec, "uint", (ep) ? ep : 0)
          throw Exception("Could not save file to disk.")
 
+      ; If the filename was omitted, replace it with the current time (accurate to the second).
+      ; Multiple files that are created within 1 second will be overwritten with the last file.
+      ; The replacement colon is called a Modifier Letter Colon found at <U+A789>.
+      if (filename == "___date___") {
+         FileGetTime filename, % filepath
+         FormatTime filename, % filename, % "yyyy-MM-dd HH꞉mm꞉ss"
+         FileMove % filepath, % directory . filename "." extension, true
+      }
+
       return filepath
+   }
+
+   put_stream(ByRef pBitmap, extension := "", quality := "") {
+      ; Default extension is PNG.
+      if !(extension ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$")
+         extension := "png"
+
+      ; Fill a buffer with the available encoders.
+      DllCall("gdiplus\GdipGetImageEncodersSize", "uint*", count:=0, "uint*", size:=0)
+      VarSetCapacity(ci, size)
+      DllCall("gdiplus\GdipGetImageEncoders", "uint", count, "uint", size, "ptr", &ci)
+      if !(count && size)
+         throw Exception("Could not get a list of image codec encoders on this system.")
+
+      ; Search for an encoder with a matching extension.
+      Loop % count
+         EncoderExtensions := StrGet(NumGet(ci, (idx:=(48+7*A_PtrSize)*(A_Index-1))+32+3*A_PtrSize, "uptr"), "UTF-16")
+      until InStr(EncoderExtensions, "*." extension)
+
+      ; Get the pointer to the index/offset of the matching encoder.
+      if !(pCodec := &ci + idx)
+         throw Exception("Could not find a matching encoder for the specified file format.")
+
+      ; JPEG is a lossy image format that requires a quality value from 0-100. Default quality is 75.
+      if (extension ~= "^(?i:jpg|jpeg|jpe|jfif)$"
+      && 0 <= quality && quality <= 100 && quality != 75) {
+         DllCall("gdiplus\GdipGetEncoderParameterListSize", "ptr", pBitmap, "ptr", pCodec, "uint*", size:=0)
+         VarSetCapacity(EncoderParameters, size, 0)
+         DllCall("gdiplus\GdipGetEncoderParameterList", "ptr", pBitmap, "ptr", pCodec, "uint", size, "ptr", &EncoderParameters)
+
+         ; Search for an encoder parameter with 1 value of type 6.
+         Loop % NumGet(EncoderParameters, "uint")
+            elem := (24+A_PtrSize)*(A_Index-1) + A_PtrSize
+         until (NumGet(EncoderParameters, elem+16, "uint") = 1) && (NumGet(EncoderParameters, elem+20, "uint") = 6)
+
+         ; struct EncoderParameter - http://www.jose.it-berater.org/gdiplus/reference/structures/encoderparameter.htm
+         ep := &EncoderParameters + elem - A_PtrSize                     ; sizeof(EncoderParameter) = 28, 32
+            , NumPut(      1, ep+0,            0,   "uptr")              ; Must be 1.
+            , NumPut(      4, ep+0, 20+A_PtrSize,   "uint")              ; Type
+            , NumPut(quality, NumGet(ep+24+A_PtrSize, "uptr"), "uint")   ; Value (pointer)
+      }
+
+      ; Create a Stream.
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", true, "ptr*", pStream:=0)
+      DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", pStream, "ptr", pCodec, "uint", ep ? ep : 0)
+
+      return pStream
+   }
+
+   put_randomAccessStream(ByRef pBitmap, extension := "", quality := "") {
+      ; Thanks teadrinker - https://www.autohotkey.com/boards/viewtopic.php?f=6&t=72674
+
+      ; Which is faster, bmp or png?
+      pStream := this.put_stream(pBitmap, extension, quality)
+
+      ; Get the Class ID from a GUID string.
+      VarSetCapacity(CLSID, 16, 0)
+      if res := DllCall("ole32\CLSIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", &CLSID, "uint")
+         throw Exception("CLSIDFromString failed. Error: " . Format("{:#x}", res))
+
+      ; Create a RandomAccessStream
+      DllCall("ShCore\CreateRandomAccessStreamOverStream", "ptr", pStream, "uint", 1, "ptr", &CLSID, "ptr*", pRandomAccessStream:=0, "uint")
+
+      ; The handle to the stream object is automatically freed when the stream object is released.
+      ObjRelease(pStream)
+
+      return pRandomAccessStream
    }
 
    put_hBitmap(ByRef pBitmap, alpha := "") {
@@ -1182,47 +1282,8 @@ class ImagePut {
    put_base64(ByRef pBitmap, extension := "", quality := "") {
       ; Thanks noname - https://www.autohotkey.com/boards/viewtopic.php?style=7&p=144247#p144247
 
-      ; Default extension is PNG.
-      if !(extension ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$")
-         extension := "png"
+      pStream := this.put_stream(pBitmap, extension, quality)
 
-      ; Fill a buffer with the available encoders.
-      DllCall("gdiplus\GdipGetImageEncodersSize", "uint*", count:=0, "uint*", size:=0)
-      VarSetCapacity(ci, size)
-      DllCall("gdiplus\GdipGetImageEncoders", "uint", count, "uint", size, "ptr", &ci)
-      if !(count && size)
-         throw Exception("Could not get a list of image codec encoders on this system.")
-
-      ; Search for an encoder with a matching extension.
-      Loop % count
-         EncoderExtensions := StrGet(NumGet(ci, (idx:=(48+7*A_PtrSize)*(A_Index-1))+32+3*A_PtrSize, "uptr"), "UTF-16")
-      until InStr(EncoderExtensions, "*." extension)
-
-      ; Get the pointer to the index/offset of the matching encoder.
-      if !(pCodec := &ci + idx)
-         throw Exception("Could not find a matching encoder for the specified file format.")
-
-      ; JPEG is a lossy image format that requires a quality value from 0-100. Default quality is 75.
-      if (extension ~= "^(?i:jpg|jpeg|jpe|jfif)$"
-      && 0 <= quality && quality <= 100 && quality != 75) {
-         DllCall("gdiplus\GdipGetEncoderParameterListSize", "ptr", pBitmap, "ptr", pCodec, "uint*", size:=0)
-         VarSetCapacity(EncoderParameters, size, 0)
-         DllCall("gdiplus\GdipGetEncoderParameterList", "ptr", pBitmap, "ptr", pCodec, "uint", size, "ptr", &EncoderParameters)
-
-         ; Search for an encoder parameter with 1 value of type 6.
-         Loop % NumGet(EncoderParameters, "uint")
-            elem := (24+A_PtrSize)*(A_Index-1) + A_PtrSize
-         until (NumGet(EncoderParameters, elem+16, "uint") = 1) && (NumGet(EncoderParameters, elem+20, "uint") = 6)
-
-         ; struct EncoderParameter - http://www.jose.it-berater.org/gdiplus/reference/structures/encoderparameter.htm
-         ep := &EncoderParameters + elem - A_PtrSize                     ; sizeof(EncoderParameter) = 28, 32
-            , NumPut(      1, ep+0,            0,   "uptr")              ; Must be 1.
-            , NumPut(      4, ep+0, 20+A_PtrSize,   "uint")              ; Type
-            , NumPut(quality, NumGet(ep+24+A_PtrSize, "uptr"), "uint")   ; Value (pointer)
-      }
-
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", true, "ptr*", pStream:=0)
-      DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", pStream, "ptr", pCodec, "uint", p ? p : 0)
       DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "uint*", hData:=0)
       pData := DllCall("GlobalLock", "ptr", hData, "ptr")
       nSize := DllCall("GlobalSize", "uint", pData)
@@ -1281,6 +1342,7 @@ class ImagePut {
          if (cotype = "bitmap")
             throw Exception("Out of scope error. `n`nIf you wish to handle raw pointers to GDI+ bitmaps, add the line"
                . "`n`n`t`t" this.__class ".gdiplusStartup()`n`nor 'pToken := Gdip_Startup()' to the top of your script."
+               . "`nAlternatively, use 'obj := ImagePutBuffer()' with 'obj.pBitmap'."
                . "`nYou can copy this message by pressing Ctrl + C.")
       }
    }
