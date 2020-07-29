@@ -2,7 +2,7 @@
 ; Author:    iseahound
 ; License:   MIT License
 ; Version:   2020-05-22
-; Release:   2020-07-25
+; Release:   2020-07-29
 
 ; ImagePut - Puts an image from anywhere to anywhere.
 ; This is a simple functor designed to be intuitive.
@@ -974,10 +974,10 @@ class ImagePut {
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
 
-      x := (screenshot[1] != "") ? screenshot[1] : Round((A_ScreenWidth - width) / 2)
-      y := (screenshot[2] != "") ? screenshot[2] : Round((A_ScreenHeight - height) / 2)
-      w := (screenshot[3] != "") ? screenshot[3] : width
-      h := (screenshot[4] != "") ? screenshot[4] : height
+      x := (IsObject(screenshot) && screenshot[1] != "") ? screenshot[1] : Round((A_ScreenWidth - width) / 2)
+      y := (IsObject(screenshot) && screenshot[2] != "") ? screenshot[2] : Round((A_ScreenHeight - height) / 2)
+      w := (IsObject(screenshot) && screenshot[3] != "") ? screenshot[3] : width
+      h := (IsObject(screenshot) && screenshot[4] != "") ? screenshot[4] : height
 
       ; Convert the Bitmap to a hBitmap and associate a device context for blitting.
       hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
@@ -1304,32 +1304,37 @@ class ImagePut {
       return StrGet(&base64, base64Length, "CP0")
    }
 
-   static gdiplus := 0
+   ; All references to gdiplus and pToken must be absolute!
+   static gdiplus := 0, pToken := 0
 
    gdiplusStartup() {
-      this.gdiplus := (this.gdiplus == "") ? 1 : this.gdiplus + 1
+      ImagePut.gdiplus++
 
-      ; Startup gdiplus when counter goes from 0 -> 1 or "" -> 1.
-      if (this.gdiplus == 1) {
+      ; Startup gdiplus when counter goes from 0 -> 1.
+      if (ImagePut.gdiplus == 1) {
          DllCall("LoadLibrary", "str", "gdiplus")
          VarSetCapacity(si, A_PtrSize = 8 ? 24 : 16, 0) ; sizeof(GdiplusStartupInput) = 16, 24
             , NumPut(0x1, si, "uint")
          DllCall("gdiplus\GdiplusStartup", "ptr*", pToken:=0, "ptr", &si, "ptr", 0)
-         this.pToken := pToken
+         ImagePut.pToken := pToken
       }
    }
 
    gdiplusShutdown(cotype := "", ByRef pBitmap := "") {
-      this.gdiplus := this.gdiplus - 1
+      ImagePut.gdiplus--
 
       ; When a buffer object is deleted a bitmap is sent here for disposal.
       if (cotype == "smart_pointer")
          if DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
             throw Exception("The bitmap of this buffer object has already been deleted.")
 
-      ; Shutdown gdiplus if pToken is owned and when counter goes from 1 -> 0.
-      if (this.gdiplus == 0) {
-         DllCall("gdiplus\GdiplusShutdown", "ptr", this.pToken)
+      ; Check for unpaired calls of gdiplusShutdown. 
+      if (ImagePut.gdiplus < 0)
+         throw Exception("Missing ImagePut.gdiplusStartup().")
+
+      ; Shutdown gdiplus when counter goes from 1 -> 0.
+      if (ImagePut.gdiplus == 0) {
+         DllCall("gdiplus\GdiplusShutdown", "ptr", ImagePut.pToken)
          DllCall("FreeLibrary", "ptr", DllCall("GetModuleHandle", "str", "gdiplus", "ptr"))
 
          ; Exit if GDI+ is still loaded. GdiplusNotInitialized = 18
