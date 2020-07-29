@@ -66,7 +66,7 @@ class ImageEqual extends ImagePut {
       if (Width1 != Width2 || Height1 != Height2)
          return false
 
-      ; Create a RECT with the width and height and two empty BitmapData.
+      ; struct RECT - https://docs.microsoft.com/en-us/windows/win32/api/windef/ns-windef-rect
       VarSetCapacity(Rect, 16, 0)                    ; sizeof(Rect) = 16
          , NumPut(  Width1, Rect,  8,   "uint")      ; Width
          , NumPut( Height1, Rect, 12,   "uint")      ; Height
@@ -96,7 +96,7 @@ class ImageEqual extends ImagePut {
             i-- ; "Let's go around again! Ha!" https://bit.ly/2AWWcM3
          }
 
-         ; Get Scan0 (top-left first pixel).
+         ; Get Scan0 (top-left pixel at 0,0).
          Scan0%i%  := NumGet(BitmapData%i%, 16, "ptr")
       }
 
