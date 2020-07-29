@@ -266,15 +266,14 @@ class ImagePut {
    }
 
    ImageType(ByRef image) {
-         ; Must be first as ClipboardAll is just an empty string when passed through functions.
-         if this.is_clipboard(image)
-            return "clipboard"
-
-         ; Throw if the image is an empty string.
-         if (image == "")
-            throw Exception("Image data is an empty string."
-            . "`nIf you passed ClipboardAll it does not contain compatible image data.")
-
+      if (image == "") {
+         DllCall("OpenClipboard", "ptr", 0)
+         result := !DllCall("IsClipboardFormatAvailable", "uint", DllCall("RegisterClipboardFormat", "str", "png", "uint")) && !DllCall("IsClipboardFormatAvailable", "uint", 2)
+         DllCall("CloseClipboard")
+         if !(result)
+            return "clipboard"   
+         throw Exception("Image data is an empty string.")
+      }
       if IsObject(image) {
          ; An "object" is an object that implements a Bitmap() method returning a pointer to a GDI+ bitmap.
          if IsFunc(image.Bitmap)
@@ -471,10 +470,10 @@ class ImagePut {
    }
 
    BitmapCrop(ByRef pBitmap, crop) {
-      ; Get Bitmap width and height and format.
+      ; Get Bitmap width, height, and format.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
-      DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", pBitmap, "ptr*", format:=0)
+      DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", pBitmap, "uint*", format:=0)
 
       ; Are the numbers percentages?
       crop[3] := (crop[3] ~= "%$") ? SubStr(crop[3], 1, -1) * 0.01 *  width : crop[3]
@@ -517,10 +516,10 @@ class ImagePut {
    }
 
    BitmapScale(ByRef pBitmap, scale) {
-      ; Get Bitmap width and height and format.
+      ; Get Bitmap width, height, and format.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
-      DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", pBitmap, "ptr*", format:=0)
+      DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", pBitmap, "uint*", format:=0)
 
       safe_w := Ceil(width * scale)
       safe_h := Ceil(height * scale)
@@ -535,7 +534,7 @@ class ImagePut {
       DllCall("gdiplus\GdipSetCompositingMode",    "ptr", pGraphics, "int", 1) ; Overwrite/SourceCopy.
       DllCall("gdiplus\GdipSetInterpolationMode",  "ptr", pGraphics, "int", 7) ; HighQualityBicubic
 
-      ; Draw Image. Not sure why the integer variant fails below.
+      ; Draw Image.
       DllCall("gdiplus\GdipCreateImageAttributes", "ptr*", ImageAttr:=0)
       DllCall("gdiplus\GdipSetImageAttributesWrapMode", "ptr", ImageAttr, "int", 3) ; WrapModeTileFlipXY
       DllCall("gdiplus\GdipDrawImageRectRectI"
@@ -554,23 +553,6 @@ class ImagePut {
       return pBitmapScale
    }
 
-   is_clipboard(c) {
-      ; ClipboardAll is always an empty string when passed into a function.
-      if (c != "") ; Must be an empty string.
-         return false
-
-      ; Look through the clipboard for a memory object containing a BITMAPINFO structure followed by the bitmap bits.
-      if DllCall("OpenClipboard", "ptr", 0) {
-         _answer := DllCall("IsClipboardFormatAvailable", "uint", 8) ; CF_DIB
-         DllCall("CloseClipboard")
-         if (_answer)
-            return true
-      }
-
-      ; Error messages are inaccurate and it can't be helped.
-      return false
-   }
-
    is_url(url) {
       ; Thanks splattermania - https://www.php.net/manual/en/function.preg-match.php#93824
 
@@ -586,14 +568,31 @@ class ImagePut {
    }
 
    from_clipboard() {
-      ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
+      ; Open the clipboard.
+      Loop 6 ; Try this 6 times.
+         if (A_Index > 1)
+            Sleep 30
+      until (result := DllCall("OpenClipboard", "ptr", 0))
+      if !(result)
+         throw Exception("Clipboard could not be opened.")
 
-      if DllCall("OpenClipboard", "ptr", 0) {
+      ; Prefer the PNG stream if available considering it supports transparency.
+      png := DllCall("RegisterClipboardFormat", "str", "png", "uint")
+      if DllCall("IsClipboardFormatAvailable", "uint", png, "int") {
+         hData := DllCall("GetClipboardData", "uint", png, "ptr")
+         DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", true, "ptr*", pStream:=0)
+         DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", pBitmap:=0)
+         ObjRelease(pStream)
+      }
+
+      ; Fallback to CF_BITMAP.
+      else if DllCall("IsClipboardFormatAvailable", "uint", 2, "int") {
          hBitmap := DllCall("GetClipboardData", "uint", 2, "ptr")
-         DllCall("CloseClipboard")
          DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", hBitmap, "ptr", 0, "ptr*", pBitmap:=0)
          DllCall("DeleteObject", "ptr", hBitmap)
       }
+
+      DllCall("CloseClipboard")
       return pBitmap
    }
 
@@ -947,25 +946,83 @@ class ImagePut {
    }
 
    put_clipboard(ByRef pBitmap) {
-      ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
+      ; Standard Clipboard Formats - https://docs.microsoft.com/en-us/windows/win32/dataxchg/standard-clipboard-formats
+      ; Synthesized Clipboard Formats - https://docs.microsoft.com/en-us/windows/win32/dataxchg/clipboard-formats
 
-      off1 := A_PtrSize = 8 ? 52 : 44, off2 := A_PtrSize = 8 ? 32 : 24
-      DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "ptr", pBitmap, "ptr*", hBitmap:=0, "uint", 0xFFFFFFFF)
-      VarSetCapacity(oi, size := A_PtrSize = 8 ? 104 : 84, 0)
-      DllCall("GetObject", "ptr", hBitmap, "int", size, "ptr", &oi)
-      hdib := DllCall("GlobalAlloc", "uint", 2, "ptr", 40+NumGet(oi, off1, "uint"), "ptr")
-      pdib := DllCall("GlobalLock", "ptr", hdib, "ptr")
-      DllCall("RtlMoveMemory", "ptr", pdib, "ptr", &oi+off2, "uptr", 40)
-      DllCall("RtlMoveMemory", "ptr", pdib+40, "ptr", NumGet(oi, off2 - (A_PtrSize ? A_PtrSize : 4), "ptr"), "uptr", NumGet(oi, off1, "uint"))
-      DllCall("GlobalUnlock", "ptr", hdib)
-      DllCall("DeleteObject", "ptr", hBitmap)
+      ; Open the clipboard.
+      Loop 6 ; Try this 6 times.
+         if (A_Index > 1)
+            Sleep 30
+      until (result := DllCall("OpenClipboard", "ptr", 0))
+      if !(result)
+         throw Exception("Clipboard could not be opened.")
 
-      DllCall("OpenClipboard", "ptr", 0)
+      ; Clear the clipboard.
       DllCall("EmptyClipboard")
+
+      ; #1 - Place the image onto the clipboard as a PNG stream.
+      ; Thanks Jochen Arndt - https://www.codeproject.com/Answers/1207927/Saving-an-image-to-the-clipboard#answer3
+      pStream := this.put_stream(pBitmap, "png")
+      DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "uint*", hData:=0)
+      DllCall("SetClipboardData", "uint", DllCall("RegisterClipboardFormat", "str", "png", "uint"), "ptr", hData)
+      ObjRelease(pStream)
+
+      ; #2 - Place the image onto the clipboard in the CF_DIB format in ARGB using 3 color masks. (Extra 12 byte offset.)
+      ; Thanks Nyerguds - https://stackoverflow.com/a/46424800
+
+      ; Get Bitmap width, height, and format.
+      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
+      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
+      DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", pBitmap, "uint*", format:=0)
+
+      ; Get Bitmap bits per pixel, stride, and size.
+      bpp := (format & 0x00FF00) >> 8
+      stride := (bpp >> 3) * width
+      size := stride * height
+
+      ; struct DIBSECTION - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-dibsection
+      ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
+      hdib := DllCall("GlobalAlloc", "uint", 0x42, "uptr", 40 + 12 + size, "ptr")
+      pdib := DllCall("GlobalLock", "ptr", hdib, "ptr")
+         , NumPut(        40, pdib+0,  0,   "uint") ; Size
+         , NumPut(     width, pdib+0,  4,    "int") ; Width
+         , NumPut(   -height, pdib+0,  8,    "int") ; Height - Negative so (0, 0) is top-left.
+         , NumPut(         1, pdib+0, 12, "ushort") ; Planes
+         , NumPut(       bpp, pdib+0, 14, "ushort") ; BitCount / BitsPerPixel
+         , NumPut(       0x3, pdib+0, 16,   "uint") ; Compression
+         , NumPut(      size, pdib+0, 20,   "uint") ; SizeImage (bytes)
+         ; The following bitfields when masked extract the respective color channels.
+         , NumPut(0x00FF0000, pdib+0, 40,   "uint") ; Red
+         , NumPut(0x0000FF00, pdib+0, 44,   "uint") ; Green
+         , NumPut(0x000000FF, pdib+0, 48,   "uint") ; Blue
+
+      ; Transfer data from source pBitmap to the global memory manually.
+      VarSetCapacity(Rect, 16, 0)              ; sizeof(Rect) = 16
+         , NumPut(  width, Rect,  8,   "uint") ; Width
+         , NumPut( height, Rect, 12,   "uint") ; Height
+      VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)     ; sizeof(BitmapData) = 24, 32
+         , NumPut(     width, BitmapData,  0,   "uint") ; Width
+         , NumPut(    height, BitmapData,  4,   "uint") ; Height
+         , NumPut(    stride, BitmapData,  8,    "int") ; Stride
+         , NumPut(    format, BitmapData, 12,    "int") ; PixelFormat
+         , NumPut( pdib + 52, BitmapData, 16,    "ptr") ; Scan0
+      DllCall("gdiplus\GdipBitmapLockBits"
+               ,    "ptr", pBitmap
+               ,    "ptr", &Rect
+               ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
+               ,    "int", 0x26200A     ; Format32bppArgb
+               ,    "ptr", &BitmapData) ; Contains the pointer (pdib) to the hData.
+      DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
+
+      ; Unlock the memory as it is complete.
+      DllCall("GlobalUnlock", "ptr", hdib)
+
+      ; Add CF_DIB as a format to the clipboard.
       DllCall("SetClipboardData", "uint", 8, "ptr", hdib)
+
+      ; Close the clipboard.
       DllCall("CloseClipboard")
 
-      ; Returns an empty string as ClipboardAll would also be an empty string.
       return ""
    }
 
@@ -984,7 +1041,7 @@ class ImagePut {
       hbm := this.put_hBitmap(pBitmap, alpha)
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
-      ; Get device context of spawned window.
+      ; Retrieve the device context for the screen.
       ddc := DllCall("GetDC", "ptr", 0, "ptr")
 
       ; Copies a portion of the screen to a new device context.
@@ -993,7 +1050,7 @@ class ImagePut {
                , "ptr", hdc, "int", 0, "int", 0, "int", width, "int", height
                , "uint", 0x00CC0020) ; SRCCOPY
 
-      ; Release device context of spawned window.
+      ; Release the device context to the screen.
       DllCall("ReleaseDC", "ptr", 0, "ptr", ddc)
 
       ; Cleanup the hBitmap and device contexts.
