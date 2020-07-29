@@ -144,8 +144,8 @@ class ImagePut {
 
    ; Types              | Data type       | Example         | Explicit    | Inferred  | Input    | Output   | Notes
    ;                    |                 |                 | Don'tVerify | ImageType | toBitmap | toCotype |
-   ; clipboard          | null string?    | ClipboardAll    |     yes     |    yes    |    yes   |    yes   | - no transparency
-   ; object             | object          | object.Bitmap() |     yes     |    yes    |    yes   |          |
+   ; clipboard          | null string?    | ClipboardAll    |     yes     |    yes    |    yes   |    yes   |
+   ; object             | object          | object.Bitmap() |     yes     |    yes    |    yes   |    no    |
    ; buffer             | object          | bitmap.pBitmap  |     yes     |    yes    |    yes   |    yes   |
    ; screenshot         | object          | [x,y,w,h]       |     yes     |    yes    |    yes   |    yes   |
    ; desktop            | string (abc)    | "desktop"       |     yes     |    yes    |    no    |    yes   |
@@ -318,7 +318,7 @@ class ImagePut {
             return "hBitmap"
 
          ; A non-zero "monitor" number identifies each display uniquely; and 0 refers to the entire virtual screen.
-         if (image = 0) ;if (image ~= "^\d+$" && image <= GetMonitorCount())
+         if (image = 0)
             return "monitor"
 
          ; A "hwnd" is a handle to a window and more commonly known as ahk_id.
@@ -755,8 +755,9 @@ class ImagePut {
    }
 
    from_hBitmap(ByRef image) {
+      ; struct DIBSECTION - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-dibsection
       ; struct BITMAP - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmap
-      VarSetCapacity(dib, size := 68+4*A_PtrSize) ; sizeof(DIBSECTION) = 84, 100
+      VarSetCapacity(dib, size := 64+5*A_PtrSize) ; sizeof(DIBSECTION) = 84, 104
       DllCall("GetObject", "ptr", image, "int", size, "ptr", &dib)
          , width  := NumGet(dib, 4, "uint")
          , height := NumGet(dib, 8, "uint")
@@ -769,22 +770,22 @@ class ImagePut {
       }
 
       ; Create a handle to a device context and associate the image.
-      hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")           ; Creates a memory DC compatible with the current screen.
-      obm := DllCall("SelectObject", "ptr", hdc, "ptr", image, "ptr") ; Put the (hBitmap) image onto the device context.
+      sdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")           ; Creates a memory DC compatible with the current screen.
+      sbm := DllCall("SelectObject", "ptr", sdc, "ptr", image, "ptr") ; Put the (hBitmap) image onto the device context.
 
       ; Create a device independent bitmap with negative height. All DIBs use the screen pixel format (pARGB).
       ; Use hbm to buffer the image such that top-down and bottom-up images are mapped to this top-down buffer.
       ; pBits is the pointer to (top-down) pixel values. The Scan0 will point to the pBits.
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
-      cdc := DllCall("CreateCompatibleDC", "ptr", hdc, "ptr")
+      hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
       VarSetCapacity(bi, 40, 0)                ; sizeof(bi) = 40
          , NumPut(       40, bi,  0,   "uint") ; Size
          , NumPut(    width, bi,  4,   "uint") ; Width
          , NumPut(  -height, bi,  8,    "int") ; Height - Negative so (0, 0) is top-left.
          , NumPut(        1, bi, 12, "ushort") ; Planes
          , NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
-      hbm := DllCall("CreateDIBSection", "ptr", cdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
-      ob2 := DllCall("SelectObject", "ptr", cdc, "ptr", hbm, "ptr")
+      hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
+      obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
       ; This is the 32-bit ARGB pBitmap (different from an hBitmap) that will receive the final converted pixels.
       DllCall("gdiplus\GdipCreateBitmapFromScan0"
@@ -811,18 +812,18 @@ class ImagePut {
 
       ; Copies the image (hBitmap) to a top-down bitmap. Removes bottom-up-ness if present.
       DllCall("gdi32\BitBlt"
-               , "ptr", cdc, "int", 0, "int", 0, "int", width, "int", height
-               , "ptr", hdc, "int", 0, "int", 0, "uint", 0x00CC0020) ; SRCCOPY
+               , "ptr", hdc, "int", 0, "int", 0, "int", width, "int", height
+               , "ptr", sdc, "int", 0, "int", 0, "uint", 0x00CC0020) ; SRCCOPY
 
       ; Convert the pARGB pixels copied into the device independent bitmap (hbm) to ARGB.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
 
       ; Cleanup the buffer and device contexts.
-      DllCall("SelectObject", "ptr", cdc, "ptr", ob2)
-      DllCall("DeleteObject", "ptr", hbm)
-      DllCall("DeleteDC",     "ptr", cdc)
       DllCall("SelectObject", "ptr", hdc, "ptr", obm)
+      DllCall("DeleteObject", "ptr", hbm)
       DllCall("DeleteDC",     "ptr", hdc)
+      DllCall("SelectObject", "ptr", sdc, "ptr", sbm)
+      DllCall("DeleteDC",     "ptr", sdc)
 
       return pBitmap
    }
@@ -1082,10 +1083,9 @@ class ImagePut {
       Loop % windows
          hwnd := windows%A_Index%
       until DllCall("FindWindowEx", "ptr", hwnd, "ptr", 0, "str", "SHELLDLL_DefView", "ptr", 0)
-      WorkerW := DllCall("FindWindowEx", "ptr", 0, "ptr", hwnd, "str", "WorkerW", "ptr", 0, "ptr")
 
       ; Maybe this hack gets patched. Tough luck!
-      if (!WorkerW)
+      if !(WorkerW := DllCall("FindWindowEx", "ptr", 0, "ptr", hwnd, "str", "WorkerW", "ptr", 0, "ptr"))
          throw Exception("Could not draw on the desktop.")
 
       ; Position the image in the center. This line can be removed.
@@ -1114,13 +1114,13 @@ class ImagePut {
    }
 
    put_wallpaper(ByRef pBitmap) {
-      path := this.put_file(pBitmap, "temp.png")
-      cc := DllCall("GetFullPathName", "str", path, "uint", 0, "ptr", 0, "ptr", 0, "uint")
-      VarSetCapacity(buf, cc*(A_IsUnicode?2:1))
-      DllCall("GetFullPathName", "str", path, "uint", cc, "str", buf, "ptr", 0, "uint")
+      filepath := this.put_file(pBitmap)
+      size := DllCall("GetFullPathName", "str", filepath, "uint", 0, "ptr", 0, "ptr", 0, "uint")
+      VarSetCapacity(buf, size*(A_IsUnicode?2:1))
+      DllCall("GetFullPathName", "str", filepath, "uint", size, "str", buf, "ptr", 0, "uint")
       DllCall("SystemParametersInfo", "uint", 20, "uint", 0, "str", buf, "uint", 2)
       Sleep 1 ; Needed as there is some lag.
-      FileDelete % path
+      FileDelete % filepath
       return "wallpaper"
    }
 
@@ -1161,7 +1161,7 @@ class ImagePut {
       return "A_Cursor"
    }
 
-   put_file(ByRef pBitmap, filepath, quality := "") {
+   put_file(ByRef pBitmap, filepath := "", quality := "") {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
 
       ; Seperate the filepath and default the extension to PNG.
@@ -1206,7 +1206,11 @@ class ImagePut {
       }
 
       ; Write the file to disk using the specified encoder and encoding parameters.
-      if DllCall("gdiplus\GdipSaveImageToFile", "ptr", pBitmap, "wstr", filepath, "ptr", pCodec, "uint", (ep) ? ep : 0)
+      Loop 6 ; Try this 6 times.
+         if (A_Index > 1)
+            Sleep 30
+      until (result := !DllCall("gdiplus\GdipSaveImageToFile", "ptr", pBitmap, "wstr", filepath, "ptr", pCodec, "uint", (ep) ? ep : 0))
+      if !(result)
          throw Exception("Could not save file to disk.")
 
       ; If the filename was omitted, replace it with the current time (accurate to the second).
@@ -1222,9 +1226,9 @@ class ImagePut {
    }
 
    put_stream(ByRef pBitmap, extension := "", quality := "") {
-      ; Default extension is PNG.
+      ; Default extension is BMP for fast speeds!
       if !(extension ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$")
-         extension := "png"
+         extension := "bmp"
 
       ; Fill a buffer with the available encoders.
       DllCall("gdiplus\GdipGetImageEncodersSize", "uint*", count:=0, "uint*", size:=0)
@@ -1338,6 +1342,10 @@ class ImagePut {
 
    put_base64(ByRef pBitmap, extension := "", quality := "") {
       ; Thanks noname - https://www.autohotkey.com/boards/viewtopic.php?style=7&p=144247#p144247
+
+      ; Default extension is PNG for small sizes!
+      if !(extension ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$")
+         extension := "png"
 
       pStream := this.put_stream(pBitmap, extension, quality)
 
