@@ -395,7 +395,7 @@ class ImagePut {
       throw Exception("Conversion from type " type " is not supported.")
    }
 
-   toCotype(cotype, ByRef pBitmap, terms*) {
+   toCotype(cotype, ByRef pBitmap, term1 := "", term2 := "", _*) {
       ; toCotype("clipboard", pBitmap)
       if (cotype = "clipboard")
          return this.put_clipboard(pBitmap)
@@ -411,7 +411,7 @@ class ImagePut {
 
       ; toCotype("screenshot", pBitmap, screenshot, alpha)
       if (cotype = "screenshot")
-         return this.put_screenshot(pBitmap, terms[1], terms[2])
+         return this.put_screenshot(pBitmap, term1, term2)
 
       ; toCotype("desktop", pBitmap)
       if (cotype = "desktop")
@@ -423,7 +423,7 @@ class ImagePut {
 
       ; toCotype("cursor", pBitmap, xHotspot, yHotspot)
       if (cotype = "cursor")
-         return this.put_cursor(pBitmap, terms[1], terms[2])
+         return this.put_cursor(pBitmap, term1, term2)
 
       ; toCotype("url", ????????????????????????
       if (cotype = "url") {
@@ -432,15 +432,15 @@ class ImagePut {
 
       ; toCotype("file", pBitmap, filename, quality)
       if (cotype = "file")
-         return this.put_file(pBitmap, terms[1], terms[2])
+         return this.put_file(pBitmap, term1, term2)
 
       ; toCotype("stream", pBitmap, extension, quality)
       if (cotype = "stream")
-         return this.put_stream(pBitmap, terms[1], terms[2])
+         return this.put_stream(pBitmap, term1, term2)
 
       ; toCotype("randomAccessStream", pBitmap, extension, quality)
       if (cotype = "randomAccessStream")
-         return this.put_randomAccessStream(pBitmap, terms[1], terms[2])
+         return this.put_randomAccessStream(pBitmap, term1, term2)
 
       ; toCotype("bitmap", pBitmap)
       if (cotype = "bitmap")
@@ -448,7 +448,7 @@ class ImagePut {
 
       ; toCotype("hBitmap", pBitmap, alpha)
       if (cotype = "hBitmap")
-         return this.put_hBitmap(pBitmap, terms[1])
+         return this.put_hBitmap(pBitmap, term1)
 
       ; toCotype("hwnd", pBitmap)
       if (cotype = "hwnd")
@@ -460,7 +460,7 @@ class ImagePut {
 
       ; toCotype("base64", pBitmap, extension, quality)
       if (cotype = "base64")
-         return this.put_base64(pBitmap, terms[1], terms[2])
+         return this.put_base64(pBitmap, term1, term2)
 
       throw Exception("Conversion to type " cotype " is not supported.")
    }
