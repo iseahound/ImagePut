@@ -26,12 +26,12 @@ ImagePutBuffer(ByRef image)
    => ImagePut("buffer", image)
 
 
-; Puts the image onto the clipboard and returns an empty string.
+; Puts the image onto the clipboard and returns ClipboardAll().
 ImagePutClipboard(ByRef image)
    => ImagePut("clipboard", image)
 
 
-; Puts the image as the cursor and returns the string "A_Cursor".
+; Puts the image as the cursor and returns the variable A_Cursor.
 ;   xHotspot   -  X Click Point           |  pixel    ->   0 - width
 ;   yHotspot   -  Y Click Point           |  pixel    ->   0 - height
 ImagePutCursor(ByRef image, xHotspot := "", yHotspot := "")
@@ -44,25 +44,25 @@ ImagePutDesktop(ByRef image, scale := 1)
    => ImagePut("desktop", image,, scale)
 
 
-; Puts the image into a file and returns the filepath.
+; Puts the image into a file and returns a relative filepath.
 ;   filepath   -  Filepath + Extension    |  string   ->   *.bmp, *.gif, *.jpg, *.png, *.tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
 ImagePutFile(ByRef image, filepath := "", quality := "")
    => ImagePut("file", image,,, filepath, quality)
 
 
-; Puts the image into a device independent bitmap and returns a handle.
+; Puts the image into a device independent bitmap and returns the handle.
 ;   alpha      -  Alpha Replacement Color |  RGB      ->   0xFFFFFF
 ImagePutHBitmap(ByRef image, alpha := "")
    => ImagePut("hBitmap", image,,, alpha)
 
 
-; Puts the image into a device independent bitmap and returns a handle.
+; Puts the image into an icon and returns the handle.
 ImagePutHIcon(ByRef image)
    => ImagePut("hBitmap", image)
 
 
-; Puts the image into a file format and returns a RandomAccessStream.
+; Puts the image into a file format and returns a pointer to a RandomAccessStream.
 ;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
 ImagePutRandomAccessStream(ByRef image, extension := "", quality := "")
@@ -76,7 +76,7 @@ ImagePutScreenshot(ByRef image, screenshot := "", alpha := "")
    => ImagePut("screenshot", image,,, screenshot, alpha)
 
 
-; Puts the image into a file format and returns a memory stream.
+; Puts the image into a file format and returns a pointer to a stream.
 ;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
 ImagePutStream(ByRef image, extension := "", quality := "")
@@ -312,18 +312,25 @@ class ImagePut {
             return "bitmap"
 
          ; A "stream" is a pointer to the IStream interface.
-         try if ComObjQuery(image, "{0000000C-0000-0000-C000-000000000046}")
+         try if ComObjQuery(image, "{0000000C-0000-0000-C000-000000000046}") {
+            ObjRelease(image)
             return "stream"
+         }
 
          ; A "RandomAccessStream" is a pointer to the IRandomAccessStream interface.
-         try if ComObjQuery(image, "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}")
+         try if ComObjQuery(image, "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}") {
+            ObjRelease(image)
             return "RandomAccessStream"
+         }
       }
-
          ; A "base64" string is binary image data encoded into text using only 64 characters.
          if (image ~= "^\s*(?:data:image\/[a-z]+;base64,)?"
          . "(?:[A-Za-z0-9+\/]{4})*+(?:[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{2}==)?\s*$")
             return "base64"
+
+      for extension in ["bmp","dib","rle","jpg","jpeg","jpe","jfif","gif","tif","tiff","png","ico","exe","dll"]
+         if FileExist(image "." extension)
+            throw Exception("A ." extension " file extension is required!")
 
       throw Exception("Image type could not be identified.")
    }
