@@ -270,7 +270,7 @@ class ImagePut {
             return "screenshot"
       }
          ; A "window" is anything considered a Window Title including ahk_class and "A".
-         if WinExist(image) ;|| DllCall("IsWindow", "ptr", image)
+         if WinExist(image)
             return "window"
 
          ; A "desktop" is a hidden window behind the desktop icons created by ImagePutDesktop.
@@ -423,10 +423,9 @@ class ImagePut {
       if (cotype = "cursor")
          return this.put_cursor(pBitmap, term1, term2)
 
-      ; toCotype("url", ????????????????????????
-      if (cotype = "url") {
-         ; put a url
-      }
+      ; toCotype("url", pBitmap)
+      if (cotype = "url")
+         return this.put_url(pBitmap)
 
       ; toCotype("file", pBitmap, filename, quality)
       if (cotype = "file")
@@ -671,6 +670,9 @@ class ImagePut {
    static from_desktop() {
       ; Find the child window.
       windows := WinGetList("ahk_class WorkerW")
+      if (windows.length == 0)
+         throw Exception("The hidden desktop window has not been initalized. Call ImagePutDesktop() first.")
+
       Loop windows.length
          hwnd := windows[A_Index]
       until DllCall("FindWindowEx", "ptr", hwnd, "ptr", 0, "str", "SHELLDLL_DefView", "ptr", 0)
