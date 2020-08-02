@@ -1233,13 +1233,9 @@ class ImagePut {
       ; Set the temporary image file as the new desktop wallpaper.
       DllCall("SystemParametersInfo", "uint", 20, "uint", 0, "str", buf, "uint", 2)
 
-      ; This is a necessary wait. Do not delete the file immediately!
-      Loop 6 { ; Try this 6 times.
-         Sleep (2**(A_Index-2) * 30)
-         try FileDelete(filepath)
-      } until !FileExist(filepath)
-      if FileExist(filepath)
-         throw Exception("Temporary image file was not deleted.")
+      ; This is a delayed delete call. #Persistent may be required on v1.
+      DeleteFile := Func("DllCall").Bind("DeleteFile", "str", filepath)
+      SetTimer DeleteFile, -2000
 
       return "wallpaper"
    }
