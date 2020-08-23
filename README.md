@@ -1,24 +1,19 @@
 # ImagePut
 Puts an image from anywhere to anywhere
 
-## Automatic Type Detection
+### Auto Detect Input Type
+`ImagePutFile("https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png")`
 
-Don't worry about converting an image to a common format. 
-* `str := ImagePutBase64("https://i.imgur.com/F4k7o1e.png", "png")` - Encodes a URL as a base64 png. 
+### Declare Input Type 
+`ImagePutFile({url:"https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png"})`
+
+## Examples
+* `str := ImagePutBase64("https://www.autohotkey.com/static/ahk_logo.svg", "png")` - Encodes a URL as a base64 png. 
 * `ImagePutCursor(str)` - Sets a base64 string as the mouse cursor.
-* `ImagePutFile(A_Cursor, "swift.png")` - Saves the current cursor as a file. 
+* `ImagePutFile(A_Cursor, "ahk.png")` - Saves the current cursor as a file. 
 
-## Image verification based on pixels, not hashes. 
-Different files can have the same images. Different hashes can be the same picture.
-* `MsgBox % ImageEqual("https://i.imgur.com/F4k7o1e.png", "swift.png")`
-
-## Explicit typing for faster execution. 
-Skip typing with ease. 
-* `MsgBox % ImageEqual({url:"https://i.imgur.com/F4k7o1e.png"}, {file:"swift.png"})`
-
-## Supports over 12 input types and 6 output types. The list is still growing!
-* Input: base64, bitmap, buffer, clipboard, cursor, desktop, file, hBitmap, hwnd, object, screenshot, sprite, url, window
-* Output: base64, bitmap, buffer, clipboard, cursor, desktop, file, hBitmap
+## Compare images based on pixel values, not hashes. 
+* `MsgBox % ImageEqual("https://www.autohotkey.com/static/ahk_logo.svg", "ahk.png")`
 
 ## Input Types
 
@@ -38,11 +33,15 @@ Skip typing with ease.
 
 **hBitmap** - A valid handle to a GDI bitmap. If using a transparent hBitmap, know that this format will create visually similar but not pixel identical images due to imprecise division when converting from pARGB to ARGB pixel formats. 
 
-**hwnd** - A handle to a window. Will grab the client area. 
+**hIcon** - A valid handle to a GDI icon.
 
 **object** - A custom object (made by you) that implements a `.Bitmap()` method returning a pointer to a GDI+ bitmap. 
 
+**RandomAccessStream** - A pointer to an IRandomAccessStream interface.
+
 **screenshot** - `[x,y,w,h]` array. 
+
+**stream** - A pointer to an IStream interface.
 
 **sprite** - Must be explicitly declared as: `{sprite:"character.bmp"}`. Can be a file or a url. This will sample the top-left pixel and set all pixels of that color as transparent. 
 
@@ -71,7 +70,15 @@ Use an object such as `{file:"pic.bmp"}`. This will skip automatic type detectio
 
 **ImagePutHBitmap** - Returns an hBitmap handle. The pixel format of an hBitmap is in pARGB, so any conversion between pre-multiplied ARGB and ARGB will introduce rounding errors. The result is that any image with transparency will look visually identical to the source, but not be pixel perfect causing `ImageEqual` to fail. RGB images without an alpha channel are unaffected. An alpha color can be specified as the replacement color of transparent pixels. 
 
+**ImagePutHex** - Puts the image into a file format and returns a hexadecimal encoded string.
+
+**ImagePutHIcon** - Puts the image into an icon and returns the handle.
+
+**ImagePutRandomAccessStream** - Puts the image into a file format and returns a pointer to a RandomAccessStream.
+
 **ImagePutScreenshot** - Returns an `[x,y,w,h]` array. Puts the image directly on the screen's device context. Therefore the image will be drawn over by other applications. Takes an `[x,y,w,h]` array. Parameters can be omitted like `[0,0]`. An alpha color can be specified as the replacement color of transparent pixels. 
+
+**ImagePutStream** - Puts the image into a file format and returns a pointer to a stream.
 
 **ImagePutWallpaper** - Returns `"wallpaper"`. Puts the image as the wallpaper. Whether the image will be streched, filled, tiled, etc. depends on your desktop personalization settings. 
 
