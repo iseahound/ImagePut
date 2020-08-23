@@ -4,9 +4,11 @@
 ; Version:   2020-05-22
 ; Release:   2020-08-23
 
-; ImagePut - Puts an image from anywhere to anywhere.
-; This is a simple functor designed to be intuitive.
-; I hope people find this reference library useful.
+; ImagePut - Windows Image Transformation Library
+; Copy and paste functions from this reference libary as you wish.
+; -> All put_XXX functions map from a pBitmap to XXX.
+; -> All from_XXX functions map from XXX to a pBitmap.
+; Or use ImagePut functions as part of your standard libary.
 
 
 ; Puts the image into a file format and returns a base64 encoded string.
