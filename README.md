@@ -8,12 +8,12 @@ Puts an image from anywhere to anywhere
 `ImagePutFile({url:"https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png"})`
 
 ## Examples
-* `str := ImagePutBase64("https://www.autohotkey.com/static/ahk_logo.svg", "png")` - Encodes a URL as a base64 png. 
+* `str := ImagePutBase64("https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png", "png")` - Encodes a URL as a base64 png. 
 * `ImagePutCursor(str)` - Sets a base64 string as the mouse cursor.
 * `ImagePutFile(A_Cursor, "ahk.png")` - Saves the current cursor as a file. 
 
 ## Compare images based on pixel values, not hashes. 
-* `MsgBox % ImageEqual("https://www.autohotkey.com/static/ahk_logo.svg", "ahk.png")`
+* `MsgBox % ImageEqual("https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png", "ahk.png")`
 
 ## Input Types
 
