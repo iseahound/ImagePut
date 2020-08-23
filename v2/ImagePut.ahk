@@ -2,7 +2,7 @@
 ; Author:    iseahound
 ; License:   MIT License
 ; Version:   2020-05-22
-; Release:   2020-08-01
+; Release:   2020-08-23
 
 ; ImagePut - Puts an image from anywhere to anywhere.
 ; This is a simple functor designed to be intuitive.
@@ -55,6 +55,13 @@ ImagePutFile(ByRef image, filepath := "", quality := "")
 ;   alpha      -  Alpha Replacement Color |  RGB      ->   0xFFFFFF
 ImagePutHBitmap(ByRef image, alpha := "")
    => ImagePut("hBitmap", image,,, alpha)
+
+
+; Puts the image into a file format and returns a hexadecimal encoded string.
+;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
+;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
+ImagePutHex(ByRef image, extension := "", quality := "")
+   => ImagePut("hex", image,,, extension, quality)
 
 
 ; Puts the image into an icon and returns the handle.
@@ -454,6 +461,10 @@ class ImagePut {
       ; toCotype("base64", pBitmap, extension, quality)
       if (cotype = "base64")
          return this.put_base64(pBitmap, term1, term2)
+
+      ; toCotype("hex", pBitmap, extension, quality)
+      if (cotype = "hex")
+         return this.put_hex(pBitmap, term1, term2)
 
       throw Exception("Conversion to type " cotype " is not supported.")
    }
@@ -1218,9 +1229,9 @@ class ImagePut {
       filepath := this.put_file(pBitmap)
 
       ; Get the absolute path of the file.
-      size := DllCall("GetFullPathName", "str", filepath, "uint", 0, "ptr", 0, "ptr", 0, "uint")
-      VarSetStrCapacity(buf, size)
-      DllCall("GetFullPathName", "str", filepath, "uint", size, "str", buf, "ptr", 0, "uint")
+      length := DllCall("GetFullPathName", "str", filepath, "uint", 0, "ptr", 0, "ptr", 0, "uint")
+      VarSetStrCapacity(buf, length)
+      DllCall("GetFullPathName", "str", filepath, "uint", length, "str", buf, "ptr", 0, "uint")
 
       ; Keep waiting until the file has been created. (It should be instant!)
       Loop 6 ; Try this 6 times.
@@ -1482,13 +1493,36 @@ class ImagePut {
       DllCall("GlobalFree", "ptr", hData)
 
       ; Using CryptBinaryToStringA saves about 2MB in memory.
-      base64Length := 0
-      DllCall("Crypt32.dll\CryptBinaryToStringA", "ptr", bin, "uint", nSize, "uint", 0x40000001, "ptr", 0, "uint*", base64Length)
-      base64 := BufferAlloc(base64Length, 0)
-      DllCall("Crypt32.dll\CryptBinaryToStringA", "ptr", bin, "uint", nSize, "uint", 0x40000001, "ptr", base64, "uint*", base64Length)
-      VarSetStrCapacity(bin, 0)
+      DllCall("Crypt32.dll\CryptBinaryToStringA", "ptr", bin, "uint", nSize, "uint", 0x40000001, "ptr", 0, "uint*", length:=0)
+      base64 := BufferAlloc(length, 0)
+      DllCall("Crypt32.dll\CryptBinaryToStringA", "ptr", bin, "uint", nSize, "uint", 0x40000001, "ptr", base64, "uint*", length)
 
-      return StrGet(base64, base64Length, "CP0")
+      return StrGet(base64, length, "CP0")
+   }
+
+   static put_hex(ByRef pBitmap, extension := "", quality := "") {
+      ; Default extension is PNG for small sizes!
+      if !(extension ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$")
+         extension := "png"
+
+      pStream := this.put_stream(pBitmap, extension, quality)
+
+      DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "uint*", hData:=0)
+      pData := DllCall("GlobalLock", "ptr", hData, "ptr")
+      nSize := DllCall("GlobalSize", "uint", pData)
+
+      bin := BufferAlloc(nSize, 0)
+      DllCall("RtlMoveMemory", "ptr", bin, "ptr", pData, "uptr", nSize)
+      DllCall("GlobalUnlock", "ptr", hData)
+      ObjRelease(pStream)
+      DllCall("GlobalFree", "ptr", hData)
+
+      ; Using CryptBinaryToStringA saves about 2MB in memory.
+      DllCall("Crypt32.dll\CryptBinaryToStringA", "ptr", bin, "uint", nSize, "uint", 0x4000000c, "ptr", 0, "uint*", length:=0)
+      hex := BufferAlloc(length, 0)
+      DllCall("Crypt32.dll\CryptBinaryToStringA", "ptr", bin, "uint", nSize, "uint", 0x4000000c, "ptr", hex, "uint*", length)
+
+      return StrGet(hex, length, "CP0")
    }
 
    ; All references to gdiplus and pToken must be absolute!
