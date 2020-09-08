@@ -303,9 +303,9 @@ class ImagePut {
          if FileExist(image)
             return "file"
 
-      if (image is integer) {
-         ; A non-zero "monitor" number identifies each display uniquely; and 0 refers to the entire virtual screen.
-         if (image = 0)
+      if (image ~= "^\d+$") {
+         SysGet MonitorGetCount, MonitorCount ; A non-zero "monitor" number identifies each display uniquely; and 0 refers to the entire virtual screen.
+         if (image >= 0 && image <= MonitorGetCount)
             return "monitor"
 
          ; An "hBitmap" is a handle to a GDI Bitmap.
@@ -801,11 +801,11 @@ class ImagePut {
 
    from_monitor(ByRef image) {
       if (image > 0) {
-         ; MonitorGet(image, Left, Top, Right, Bottom)
-         x := Left
-         y := Top
-         w := Right - Left
-         h := Bottom - Top
+         SysGet _, Monitor, image
+         x := _Left
+         y := _Top
+         w := _Right - _Left
+         h := _Bottom - _Top
       } else {
          x := DllCall("GetSystemMetrics", "int", 76)
          y := DllCall("GetSystemMetrics", "int", 77)
