@@ -1,4 +1,4 @@
-#include ImagePut.ahk
+﻿#include ImagePut.ahk
 
 ImageEqual(images*) {
    return ImageEqual.call(images*)
