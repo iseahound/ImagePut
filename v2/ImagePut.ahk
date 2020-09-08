@@ -243,6 +243,11 @@ class ImagePut {
          return "RandomAccessStream"
       }
 
+      if ObjHasOwnProp(image, "hex") {
+         image := image.hex
+         return "hex"
+      }
+
       if ObjHasOwnProp(image, "base64") {
          image := image.base64
          return "base64"
@@ -332,11 +337,17 @@ class ImagePut {
             return "RandomAccessStream"
          }
       }
+         ; A "hex" string is binary image data encoded into text using hexadecimal.
+         if (StrLen(image) >= 116) && (image ~= "(?i)^\s*(0x)?[0-9a-f]+\s*$")
+            return "hex"
+
          ; A "base64" string is binary image data encoded into text using only 64 characters.
-         if (image ~= "^\s*(?:data:image\/[a-z]+;base64,)?"
+         if (StrLen(image) >= 80) && (image ~= "^\s*(?:data:image\/[a-z]+;base64,)?"
          . "(?:[A-Za-z0-9+\/]{4})*+(?:[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{2}==)?\s*$")
             return "base64"
 
+
+      ; For more helpful error messages: Catch file names without extensions!
       for extension in ["bmp","dib","rle","jpg","jpeg","jpe","jfif","gif","tif","tiff","png","ico","exe","dll"]
          if FileExist(image "." extension)
             throw Exception("A ." extension " file extension is required!")
@@ -393,6 +404,9 @@ class ImagePut {
 
       if (type = "RandomAccessStream")
          return this.from_RandomAccessStream(image)
+
+      if (type = "hex")
+         return this.from_hex(image)
 
       if (type = "base64")
          return this.from_base64(image)
@@ -460,13 +474,13 @@ class ImagePut {
       if (cotype = "RandomAccessStream")
          return this.put_RandomAccessStream(pBitmap, term1, term2)
 
-      ; toCotype("base64", pBitmap, extension, quality)
-      if (cotype = "base64")
-         return this.put_base64(pBitmap, term1, term2)
-
       ; toCotype("hex", pBitmap, extension, quality)
       if (cotype = "hex")
          return this.put_hex(pBitmap, term1, term2)
+
+      ; toCotype("base64", pBitmap, extension, quality)
+      if (cotype = "base64")
+         return this.put_base64(pBitmap, term1, term2)
 
       throw Exception("Conversion to type " cotype " is not supported.")
    }
@@ -987,6 +1001,26 @@ class ImagePut {
       return pBitmap
    }
 
+   static from_hex(ByRef image) {
+      ; Trim whitespace and remove header.
+      image := Trim(image)
+      image := RegExReplace(image, "^(0[xX])")
+
+      ; Converts the image to binary data by first asking for the size.
+      DllCall("crypt32\CryptStringToBinary"
+               , "ptr", StrPtr(image), "uint", 0, "uint", 0x0000000C, "ptr",   0, "uint*", size:=0, "ptr", 0, "ptr", 0)
+      bin := BufferAlloc(size, 0)
+      DllCall("crypt32\CryptStringToBinary"
+               , "ptr", StrPtr(image), "uint", 0, "uint", 0x0000000C, "ptr", bin, "uint*", size   , "ptr", 0, "ptr", 0)
+
+      ; Makes a stream for conversion into a pBitmap.
+      pStream := DllCall("shlwapi\SHCreateMemStream", "ptr", bin, "uint", size, "ptr")
+      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", pBitmap:=0)
+      ObjRelease(pStream)
+
+      return pBitmap
+   }
+
    static from_base64(ByRef image) {
       ; Trim whitespace and remove header.
       image := Trim(image)
@@ -994,10 +1028,10 @@ class ImagePut {
 
       ; Converts the image to binary data by first asking for the size.
       DllCall("crypt32\CryptStringToBinary"
-               , "ptr", StrPtr(image), "uint", 0, "uint", 0x1, "ptr",   0, "uint*", size:=0, "ptr", 0, "ptr", 0)
+               , "ptr", StrPtr(image), "uint", 0, "uint", 0x00000001, "ptr",   0, "uint*", size:=0, "ptr", 0, "ptr", 0)
       bin := BufferAlloc(size, 0)
       DllCall("crypt32\CryptStringToBinary"
-               , "ptr", StrPtr(image), "uint", 0, "uint", 0x1, "ptr", bin, "uint*", size   , "ptr", 0, "ptr", 0)
+               , "ptr", StrPtr(image), "uint", 0, "uint", 0x00000001, "ptr", bin, "uint*", size   , "ptr", 0, "ptr", 0)
 
       ; Makes a stream for conversion into a pBitmap.
       pStream := DllCall("shlwapi\SHCreateMemStream", "ptr", bin, "uint", size, "ptr")
@@ -1467,6 +1501,31 @@ class ImagePut {
       return pRandomAccessStream
    }
 
+   static put_hex(ByRef pBitmap, extension := "", quality := "") {
+      ; Default extension is PNG for small sizes!
+      if !(extension ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$")
+         extension := "png"
+
+      pStream := this.put_stream(pBitmap, extension, quality)
+
+      DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "uint*", hData:=0)
+      pData := DllCall("GlobalLock", "ptr", hData, "ptr")
+      nSize := DllCall("GlobalSize", "uint", pData)
+
+      bin := BufferAlloc(nSize, 0)
+      DllCall("RtlMoveMemory", "ptr", bin, "ptr", pData, "uptr", nSize)
+      DllCall("GlobalUnlock", "ptr", hData)
+      ObjRelease(pStream)
+      DllCall("GlobalFree", "ptr", hData)
+
+      ; Using CryptBinaryToStringA saves about 2MB in memory.
+      DllCall("Crypt32.dll\CryptBinaryToStringA", "ptr", bin, "uint", nSize, "uint", 0x4000000C, "ptr", 0, "uint*", length:=0)
+      hex := BufferAlloc(length, 0)
+      DllCall("Crypt32.dll\CryptBinaryToStringA", "ptr", bin, "uint", nSize, "uint", 0x4000000C, "ptr", hex, "uint*", length)
+
+      return StrGet(hex, length, "CP0")
+   }
+
    static put_base64(ByRef pBitmap, extension := "", quality := "") {
       ; Thanks noname - https://www.autohotkey.com/boards/viewtopic.php?style=7&p=144247#p144247
 
@@ -1492,31 +1551,6 @@ class ImagePut {
       DllCall("Crypt32.dll\CryptBinaryToStringA", "ptr", bin, "uint", nSize, "uint", 0x40000001, "ptr", base64, "uint*", length)
 
       return StrGet(base64, length, "CP0")
-   }
-
-   static put_hex(ByRef pBitmap, extension := "", quality := "") {
-      ; Default extension is PNG for small sizes!
-      if !(extension ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$")
-         extension := "png"
-
-      pStream := this.put_stream(pBitmap, extension, quality)
-
-      DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "uint*", hData:=0)
-      pData := DllCall("GlobalLock", "ptr", hData, "ptr")
-      nSize := DllCall("GlobalSize", "uint", pData)
-
-      bin := BufferAlloc(nSize, 0)
-      DllCall("RtlMoveMemory", "ptr", bin, "ptr", pData, "uptr", nSize)
-      DllCall("GlobalUnlock", "ptr", hData)
-      ObjRelease(pStream)
-      DllCall("GlobalFree", "ptr", hData)
-
-      ; Using CryptBinaryToStringA saves about 2MB in memory.
-      DllCall("Crypt32.dll\CryptBinaryToStringA", "ptr", bin, "uint", nSize, "uint", 0x4000000c, "ptr", 0, "uint*", length:=0)
-      hex := BufferAlloc(length, 0)
-      DllCall("Crypt32.dll\CryptBinaryToStringA", "ptr", bin, "uint", nSize, "uint", 0x4000000c, "ptr", hex, "uint*", length)
-
-      return StrGet(hex, length, "CP0")
    }
 
    ; All references to gdiplus and pToken must be absolute!
