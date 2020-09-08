@@ -2,7 +2,7 @@
 ; Author:    iseahound
 ; License:   MIT License
 ; Version:   2020-05-22
-; Release:   2020-08-23
+; Release:   2020-09-07
 
 ; ImagePut - Windows Image Transformation Library
 ; Copy and paste functions from this reference libary as you wish.
