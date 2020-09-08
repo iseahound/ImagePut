@@ -2,7 +2,7 @@
 ; Author:    iseahound
 ; License:   MIT License
 ; Version:   2020-05-22
-; Release:   2020-08-23
+; Release:   2020-09-07
 
 ; ImagePut - Windows Image Transformation Library
 ; Copy and paste functions from this reference libary as you wish.
@@ -778,8 +778,8 @@ class ImagePut {
       ; Cursors are the same as icons!
       pBitmap := this.from_hIcon(hCursor)
 
-      ; Cleanup the handle to the cursor.
-      DllCall("DestroyIcon",  "ptr", hCursor)
+      ; Cleanup the handle to the cursor. Same as DestroyIcon.
+      DllCall("DestroyCursor",  "ptr", hCursor)
 
       return pBitmap
    }
@@ -1283,10 +1283,10 @@ class ImagePut {
          DllCall("SetSystemCursor", "ptr", hCursor, "int", A_LoopField) ; calls DestroyCursor
       }
 
-      ; Destroy the original hIcon. DestroyCursor and DestroyIcon are the same function in C.
-      DllCall("DestroyCursor", "ptr", hIcon)
+      ; Destroy the original hIcon. Same as DestroyCursor.
+      DllCall("DestroyIcon", "ptr", hIcon)
 
-      ; Returns the word A_Cursor so that it doesn't evaluate immediately.
+      ; Returns the string A_Cursor to avoid evaluation.
       return "A_Cursor"
    }
 
@@ -1535,10 +1535,13 @@ class ImagePut {
 
       ; Startup gdiplus when counter goes from 0 -> 1.
       if (ImagePut.gdiplus == 1) {
+
+         ; Startup gdiplus.
          DllCall("LoadLibrary", "str", "gdiplus")
          VarSetCapacity(si, A_PtrSize = 8 ? 24 : 16, 0) ; sizeof(GdiplusStartupInput) = 16, 24
             , NumPut(0x1, si, "uint")
          DllCall("gdiplus\GdiplusStartup", "ptr*", pToken:=0, "ptr", &si, "ptr", 0)
+
          ImagePut.pToken := pToken
       }
    }
@@ -1557,7 +1560,10 @@ class ImagePut {
 
       ; Shutdown gdiplus when counter goes from 1 -> 0.
       if (ImagePut.gdiplus == 0) {
-         DllCall("gdiplus\GdiplusShutdown", "ptr", ImagePut.pToken)
+         pToken := ImagePut.pToken
+
+         ; Shutdown gdiplus.
+         DllCall("gdiplus\GdiplusShutdown", "ptr", pToken)
          DllCall("FreeLibrary", "ptr", DllCall("GetModuleHandle", "str", "gdiplus", "ptr"))
 
          ; Exit if GDI+ is still loaded. GdiplusNotInitialized = 18
