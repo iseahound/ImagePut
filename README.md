@@ -1,16 +1,8 @@
 # ImagePut
 Puts an image from anywhere to anywhere
 
-### Auto Detect Input Type
-    ImagePutFile("https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png")
-
-### Declare Input Type 
-    ImagePutFile({url:"https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png"})
-
-## Samples
-
 #### URL to Base64 PNG
-    str := ImagePutBase64("https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png", "png")
+    MsgBox % str := ImagePutBase64("https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png", "png")
 
 #### Base64 to Windows Mouse Cursor
     ImagePutCursor(str)
@@ -19,8 +11,16 @@ Puts an image from anywhere to anywhere
     ImagePutFile(A_Cursor, "ahk.png")
     DllCall("SystemParametersInfo", "uint", 0x57, "uint", 0, "ptr", 0, "uint", 0) ; Restore cursor.
 
-## Compare images using pixel values. Not file hashes.
+#### Compare images using pixel values. Not file hashes.
     MsgBox % ImageEqual("https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png", "ahk.png")
+
+#### Declare Input Types
+    ; Declare Input Type
+    ImagePutFile({url:"https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png"})
+    ; Auto Detect Input Type.
+    ImagePutFile("https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png")
+
+Declaring an input type will skip the detection step, making your code faster and more reliable.
 
 ## Input Types
 
