@@ -14,13 +14,11 @@ Puts an image from anywhere to anywhere
 #### Compare images using pixel values. Not file hashes.
     MsgBox % ImageEqual("https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png", "ahk.png")
 
-#### Declare Input Types
+#### Declaring an input type will skip the detection step, making your code faster and more reliable.
     ; Declare Input Type
     ImagePutFile({url:"https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png"})
     ; Auto Detect Input Type.
     ImagePutFile("https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png")
-
-Declaring an input type will skip the detection step, making your code faster and more reliable.
 
 ## Input Types
 
