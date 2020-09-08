@@ -622,7 +622,7 @@ class ImagePut {
       ; Copies a portion of the screen to a new device context.
       DllCall("gdi32\BitBlt"
                , "ptr", hdc, "int", 0, "int", 0, "int", image[3], "int", image[4]
-               , "ptr", sdc, "int", image[1], "int", image[2], "uint", 0x00CC0020) ; SRCCOPY
+               , "ptr", sdc, "int", image[1], "int", image[2], "uint", 0x00CC0020 | 0x40000000) ; SRCCOPY | CAPTUREBLT
 
       ; Release the device context to the screen.
       DllCall("ReleaseDC", "ptr", 0, "ptr", sdc)
@@ -1347,7 +1347,7 @@ class ImagePut {
       ; The replacement colon is called a Modifier Letter Colon found at <U+A789>.
       if (filename == "___date___") {
          FileGetTime filename, % filepath
-         FormatTime filename, % filename, % "yyyy-MM-dd HH꞉mm꞉ss"
+         FormatTime filename, % filename, % "yyyy-MM-dd HH?mm?ss"
          FileMove % filepath, % directory . filename "." extension, true
          filepath := directory . filename "." extension
       }

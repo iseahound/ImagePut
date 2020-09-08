@@ -622,7 +622,7 @@ class ImagePut {
       ; Copies a portion of the screen to a new device context.
       DllCall("gdi32\BitBlt"
                , "ptr", hdc, "int", 0, "int", 0, "int", image[3], "int", image[4]
-               , "ptr", sdc, "int", image[1], "int", image[2], "uint", 0x00CC0020) ; SRCCOPY
+               , "ptr", sdc, "int", image[1], "int", image[2], "uint", 0x00CC0020 | 0x40000000) ; SRCCOPY | CAPTUREBLT
 
       ; Release the device context to the screen.
       DllCall("ReleaseDC", "ptr", 0, "ptr", sdc)
@@ -1297,7 +1297,7 @@ class ImagePut {
       SplitPath filepath,, directory, extension, filename
       filename := (filename != "") ? filename : "___date___"
       extension := (extension ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$") ? extension : "png"
-      filepath := directory . filename "." extension
+      filepath := directory . "\" . filename "." extension
 
       ; Fill a buffer with the available encoders.
       DllCall("gdiplus\GdipGetImageEncodersSize", "uint*", count:=0, "uint*", size:=0)
@@ -1347,9 +1347,9 @@ class ImagePut {
       ; The replacement colon is called a Modifier Letter Colon found at <U+A789>.
       if (filename == "___date___") {
          filename := FileGetTime(filepath)
-         filename := FormatTime(filename, "yyyy-MM-dd HH꞉mm꞉ss")
-         FileMove(filepath, directory . filename "." extension, true)
-         filepath := directory . filename "." extension
+         filename := FormatTime(filename, "yyyy-MM-dd HH?mm?ss")
+         FileMove(filepath, directory . "\" . filename "." extension, true)
+         filepath := directory . "\" . filename "." extension
       }
 
       return filepath
