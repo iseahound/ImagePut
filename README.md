@@ -2,7 +2,7 @@
 Puts an image from anywhere to anywhere
 
 #### URL to Base64 PNG
-    MsgBox % str := ImagePutBase64("https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png", "png")
+    str := ImagePutBase64("https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png", "png")
 
 #### Base64 to Windows Mouse Cursor
     ImagePutCursor(str)
@@ -19,43 +19,6 @@ Puts an image from anywhere to anywhere
     ImagePutFile({url:"https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png"})
     ; Auto Detect Input Type.
     ImagePutFile("https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png")
-
-## Input Types
-
-**base64** - A base64 string, with or without tags i.e. `data:image/png;base64,`
-
-**bitmap** - A valid pointer to a GDI+ bitmap. 
-
-**buffer** - An object with the `.pBitmap` property. This is a smart pointer to a GDI+ bitmap that is created by `ImagePutBuffer`. 
-
-**clipboard** - The special variable `ClipboardAll` or an empty string `""`. 
-
-**cursor** - The special variable `A_Cursor`. 
-
-**desktop** - The string `"desktop"`. (Case insensitive.)
-
-**file** - A path to an image file. Supported file formats: bmp, gif, jpg, png, tiff. 
-
-**hBitmap** - A valid handle to a GDI bitmap. If using a transparent hBitmap, know that this format will create visually similar but not pixel identical images due to imprecise division when converting from pARGB to ARGB pixel formats. 
-
-**hIcon** - A valid handle to a GDI icon.
-
-**object** - A custom object (made by you) that implements a `.Bitmap()` method returning a pointer to a GDI+ bitmap. 
-
-**RandomAccessStream** - A pointer to an IRandomAccessStream interface.
-
-**screenshot** - `[x,y,w,h]` array. 
-
-**stream** - A pointer to an IStream interface.
-
-**sprite** - Must be explicitly declared as: `{sprite:"character.bmp"}`. Can be a file or a url. This will sample the top-left pixel and set all pixels of that color as transparent. 
-
-**url** - A url that begins with `https://` or `ftp://`. To override this behavior, declare your url explicitly like `{url:"www.example.com"}`. 
-
-**window** - Any string that matches the window title. Is affected by `SetTitleMatchMode`. Use the special variable `"A"` to match the current active window. Supports `ahk_id`, `ahk_class`, `ahk_pid`, etc. See the AutoHotkey manual for details. 
-
-### Overriding Input Types
-Use an object such as `{file:"pic.bmp"}`. This will skip automatic type detection and speed up your script. 
 
 ## Output Functions
 
@@ -97,8 +60,49 @@ Use an object such as `{file:"pic.bmp"}`. This will skip automatic type detectio
 
 **scale** - A real number. Factor to scale by. A scale of `1` does nothing. 
 
-## Comments
+## Input Types
 
-Please visit https://www.autohotkey.com/boards/viewtopic.php?f=6&t=76301
+### Overriding Input Types
+Use an object such as `{file:"pic.bmp"}`. This will skip automatic type detection and speed up your script. 
+
+**base64** - A base64 string, with or without tags i.e. `data:image/png;base64,`
+
+**bitmap** - A valid pointer to a GDI+ bitmap. 
+
+**buffer** - An object with the `.pBitmap` property. This is a smart pointer to a GDI+ bitmap that is created by `ImagePutBuffer`. 
+
+**clipboard** - The special variable `ClipboardAll` or an empty string `""`. 
+
+**cursor** - The special variable `A_Cursor`. 
+
+**desktop** - The string `"desktop"`. (Case insensitive.)
+
+**file** - A path to an image file. Supported file formats: bmp, gif, jpg, png, tiff. 
+
+**hBitmap** - A valid handle to a GDI bitmap. If using a transparent hBitmap, know that this format will create visually similar but not pixel identical images due to imprecise division when converting from pARGB to ARGB pixel formats. 
+
+**hIcon** - A valid handle to a GDI icon.
+
+**object** - A custom object (made by you) that implements a `.Bitmap()` method returning a pointer to a GDI+ bitmap. 
+
+**RandomAccessStream** - A pointer to an IRandomAccessStream interface.
+
+**screenshot** - `[x,y,w,h]` array. 
+
+**stream** - A pointer to an IStream interface.
+
+**sprite** - Must be explicitly declared as: `{sprite:"character.bmp"}`. Can be a file or a url. This will sample the top-left pixel and set all pixels of that color as transparent. 
+
+**url** - A url that begins with `https://` or `ftp://`. To override this behavior, declare your url explicitly like `{url:"www.example.com"}`. 
+
+**window** - Any string that matches the window title. Is affected by `SetTitleMatchMode`. Use the special variable `"A"` to match the current active window. Supports `ahk_id`, `ahk_class`, `ahk_pid`, etc. See the AutoHotkey manual for details. 
+
+## Comments, Help, and Suggestions
+
+For the AutoHotkey v1 forum: https://www.autohotkey.com/boards/viewtopic.php?f=6&t=76301
+
+For the AutoHotkey v2 forum: https://www.autohotkey.com/boards/viewtopic.php?f=83&t=76633
+
+## Contributing
 
 Pull requests are welcome!
