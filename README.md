@@ -2,18 +2,25 @@
 Puts an image from anywhere to anywhere
 
 ### Auto Detect Input Type
-`ImagePutFile("https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png")`
+    ImagePutFile("https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png")
 
 ### Declare Input Type 
-`ImagePutFile({url:"https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png"})`
+    ImagePutFile({url:"https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png"})
 
-## Examples
-* `str := ImagePutBase64("https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png", "png")` - Encodes a URL as a base64 png. 
-* `ImagePutCursor(str)` - Sets a base64 string as the mouse cursor.
-* `ImagePutFile(A_Cursor, "ahk.png")` - Saves the current cursor as a file. 
+## Samples
 
-## Compare images based on pixel values, not hashes. 
-* `MsgBox % ImageEqual("https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png", "ahk.png")`
+#### URL to Base64 PNG
+    str := ImagePutBase64("https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png", "png")
+
+#### Base64 to Windows Mouse Cursor
+    ImagePutCursor(str)
+
+#### Windows Mouse Cursor to PNG File
+    ImagePutFile(A_Cursor, "ahk.png")
+    DllCall("SystemParametersInfo", "uint", 0x57, "uint", 0, "ptr", 0, "uint", 0) ; Restore cursor.
+
+## Compare images using pixel values. Not file hashes.
+    MsgBox % ImageEqual("https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png", "ahk.png")
 
 ## Input Types
 
