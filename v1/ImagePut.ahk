@@ -623,6 +623,7 @@ class ImagePut {
       DllCall("gdi32\BitBlt"
                , "ptr", hdc, "int", 0, "int", 0, "int", image[3], "int", image[4]
                , "ptr", sdc, "int", image[1], "int", image[2], "uint", 0x00CC0020) ; SRCCOPY
+               ; , "ptr", sdc, "int", image[1], "int", image[2], "uint", 0x00CC0020 | 0x40000000) ; SRCCOPY | CAPTUREBLT
 
       ; Release the device context to the screen.
       DllCall("ReleaseDC", "ptr", 0, "ptr", sdc)
@@ -1293,11 +1294,13 @@ class ImagePut {
    put_file(ByRef pBitmap, filepath := "", quality := "") {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
 
-      ; Seperate the filepath and default the extension to PNG.
-      SplitPath filepath,, directory, extension, filename
-      filename := (filename != "") ? filename : "___date___"
-      extension := (extension ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$") ? extension : "png"
-      filepath := directory . "\" . filename "." extension
+      ; Check filepath
+      filepath := (filepath ~= "^\s*$") ? "." : filepath
+      if !RegExMatch(filepath, "i)\.\K(bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$", extension) {
+         extension := "png"
+         FormatTime, filename,, % "yyyy-MM-dd HH꞉mm꞉ss"
+         filepath .= "\" filename "." extension
+      }
 
       ; Fill a buffer with the available encoders.
       DllCall("gdiplus\GdipGetImageEncodersSize", "uint*", count:=0, "uint*", size:=0)
@@ -1341,16 +1344,6 @@ class ImagePut {
       until (result := !DllCall("gdiplus\GdipSaveImageToFile", "ptr", pBitmap, "wstr", filepath, "ptr", pCodec, "uint", (ep) ? ep : 0))
       if !(result)
          throw Exception("Could not save file to disk.")
-
-      ; If the filename was omitted, replace it with the current time (accurate to the second).
-      ; Multiple files that are created within 1 second will be overwritten with the last file.
-      ; The replacement colon is called a Modifier Letter Colon found at <U+A789>.
-      if (filename == "___date___") {
-         FileGetTime filename, % filepath
-         FormatTime filename, % filename, % "yyyy-MM-dd HH꞉mm꞉ss"
-         FileMove % filepath, % directory . "\" . filename "." extension, true
-         filepath := directory . "\" . filename "." extension
-      }
 
       return filepath
    }
