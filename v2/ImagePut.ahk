@@ -1297,7 +1297,7 @@ class ImagePut {
       SplitPath filepath,, directory, extension, filename
       filename := (filename != "") ? filename : "___date___"
       extension := (extension ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$") ? extension : "png"
-      filepath := directory . filename "." extension
+      filepath := directory . "\" . filename "." extension
 
       ; Fill a buffer with the available encoders.
       DllCall("gdiplus\GdipGetImageEncodersSize", "uint*", count:=0, "uint*", size:=0)
@@ -1347,9 +1347,9 @@ class ImagePut {
       ; The replacement colon is called a Modifier Letter Colon found at <U+A789>.
       if (filename == "___date___") {
          filename := FileGetTime(filepath)
-         filename := FormatTime(filename, "yyyy-MM-dd HH꞉mm꞉ss")
-         FileMove(filepath, directory . filename "." extension, true)
-         filepath := directory . filename "." extension
+         filename := FormatTime(filename, "yyyy-MM-dd HH?mm?ss")
+         FileMove(filepath, directory . "\" . filename "." extension, true)
+         filepath := directory . "\" . filename "." extension
       }
 
       return filepath
