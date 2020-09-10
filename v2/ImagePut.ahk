@@ -1,8 +1,8 @@
-﻿; Script:    ImagePut.ahk
+; Script:    ImagePut.ahk
 ; Author:    iseahound
 ; License:   MIT License
 ; Version:   2020-05-22
-; Release:   2020-09-07
+; Release:   2020-09-10
 
 ; ImagePut - Windows Image Transformation Library
 ; Copy and paste functions from this reference libary as you wish.
@@ -680,7 +680,7 @@ class ImagePut {
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
       ; Print the window onto the hBitmap using an undocumented flag. https://stackoverflow.com/a/40042587
-      DllCall("PrintWindow", "ptr", image, "ptr", hdc, "uint", 0x3) ; PW_CLIENTONLY | PW_RENDERFULLCONTENT
+      DllCall("PrintWindow", "ptr", image, "ptr", hdc, "uint", 0x3) ; PW_RENDERFULLCONTENT | PW_CLIENTONLY
       ; Additional info on how this is implemented: https://www.reddit.com/r/windows/comments/8ffr56/altprintscreen/
 
       ; Convert the hBitmap to a Bitmap using a built in function as there is no transparency.
@@ -958,7 +958,7 @@ class ImagePut {
 
       ; Don't use DI_DEFAULTSIZE to draw the icon like DrawIcon does as it will resize to 32 x 32.
       DllCall("DrawIconEx"
-               , "ptr", hdc,     "int", 0, "int", 0
+               , "ptr", hdc,   "int", 0, "int", 0
                , "ptr", image, "int", 0, "int", 0
                , "uint", 0, "ptr", 0, "uint", 0x1 | 0x2 | 0x4) ; DI_MASK | DI_IMAGE | DI_COMPAT
 
