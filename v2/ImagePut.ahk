@@ -2,7 +2,7 @@
 ; Author:    iseahound
 ; License:   MIT License
 ; Version:   2020-05-22
-; Release:   2020-09-10
+; Release:   2020-09-14
 
 ; ImagePut - Windows Image Transformation Library
 ; Copy and paste functions from this reference libary as you wish.
@@ -325,17 +325,17 @@ class ImagePut {
          try if !DllCall("gdiplus\GdipGetImageType", "ptr", image, "ptr*", type:=0) && (type == 1)
             return "bitmap"
 
+         ; Note 1: All GDI+ functions add 1 to the reference count of COM objects.
+         ; Note 2: GDI+ pBitmaps that are queried cease to stay pBitmaps.
+         ObjRelease(image)
+
          ; A "stream" is a pointer to the IStream interface.
-         try if ComObjQuery(image, "{0000000C-0000-0000-C000-000000000046}") {
-            ObjRelease(image)
+         try if ComObjQuery(image, "{0000000C-0000-0000-C000-000000000046}")
             return "stream"
-         }
 
          ; A "RandomAccessStream" is a pointer to the IRandomAccessStream interface.
-         try if ComObjQuery(image, "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}") {
-            ObjRelease(image)
+         try if ComObjQuery(image, "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}")
             return "RandomAccessStream"
-         }
       }
          ; A "hex" string is binary image data encoded into text using hexadecimal.
          if (StrLen(image) >= 116) && (image ~= "(?i)^\s*(0x)?[0-9a-f]+\s*$")
@@ -802,9 +802,9 @@ class ImagePut {
       req := ComObjCreate("WinHttp.WinHttpRequest.5.1")
       req.Open("GET", image)
       req.Send()
-      pStream := ComObjQuery(req.ResponseStream, "{0000000C-0000-0000-C000-000000000046}")
-      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", pBitmap:=0)
-      ObjRelease(pStream)
+      IStream := ComObjQuery(req.ResponseStream, "{0000000C-0000-0000-C000-000000000046}")
+      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", IStream, "ptr*", pBitmap:=0)
+      ObjRelease(IStream.ptr)
       return pBitmap
    }
 
@@ -883,7 +883,7 @@ class ImagePut {
                ,    "ptr", Rect
                ,   "uint", 6            ; ImageLockMode.UserInputBuffer | ImageLockMode.WriteOnly
                ,    "int", 0xE200B      ; Format32bppPArgb
-               ,    "ptr", BitmapData) ; Contains the pointer (pBits) to the hbm.
+               ,    "ptr", BitmapData)  ; Contains the pointer (pBits) to the hbm.
 
       ; Copies the image (hBitmap) to a top-down bitmap. Removes bottom-up-ness if present.
       DllCall("gdi32\BitBlt"
@@ -1331,7 +1331,7 @@ class ImagePut {
       filepath := (filepath ~= "^\s*$") ? "." : filepath
       if !RegExMatch(filepath, "i)\.\K(bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$", extension) {
          extension := "png"
-         filename  := FormatTime(, "yyyy-MM-dd HH꞉mm꞉ss")
+         filename  := FormatTime(, "yyyy-MM-dd HH?mm?ss")
          filepath .= "\" filename "." extension
       }
 
