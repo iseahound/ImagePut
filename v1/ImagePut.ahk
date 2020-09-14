@@ -2,7 +2,7 @@
 ; Author:    iseahound
 ; License:   MIT License
 ; Version:   2020-05-22
-; Release:   2020-09-10
+; Release:   2020-09-14
 
 ; ImagePut - Windows Image Transformation Library
 ; Copy and paste functions from this reference libary as you wish.
@@ -325,17 +325,17 @@ class ImagePut {
          try if !DllCall("gdiplus\GdipGetImageType", "ptr", image, "ptr*", type:=0) && (type == 1)
             return "bitmap"
 
+         ; Note 1: All GDI+ functions add 1 to the reference count of COM objects.
+         ; Note 2: GDI+ pBitmaps that are queried cease to stay pBitmaps.
+         ObjRelease(image)
+
          ; A "stream" is a pointer to the IStream interface.
-         try if ComObjQuery(image, "{0000000C-0000-0000-C000-000000000046}") {
-            ObjRelease(image)
-            return "stream"
-         }
+         try if ComObjQuery(image, "{0000000C-0000-0000-C000-000000000046}")
+            return "stream", ObjRelease(image)
 
          ; A "RandomAccessStream" is a pointer to the IRandomAccessStream interface.
-         try if ComObjQuery(image, "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}") {
-            ObjRelease(image)
-            return "RandomAccessStream"
-         }
+         try if ComObjQuery(image, "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}")
+            return "RandomAccessStream", ObjRelease(image)
       }
 
          ; A "hex" string is binary image data encoded into text using hexadecimal.
@@ -680,7 +680,7 @@ class ImagePut {
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
       ; Print the window onto the hBitmap using an undocumented flag. https://stackoverflow.com/a/40042587
-      DllCall("PrintWindow", "ptr", image, "ptr", hdc, "uint", 0x3) ; PW_CLIENTONLY | PW_RENDERFULLCONTENT
+      DllCall("PrintWindow", "ptr", image, "ptr", hdc, "uint", 0x3) ; PW_RENDERFULLCONTENT | PW_CLIENTONLY
       ; Additional info on how this is implemented: https://www.reddit.com/r/windows/comments/8ffr56/altprintscreen/
 
       ; Convert the hBitmap to a Bitmap using a built in function as there is no transparency.
@@ -958,7 +958,7 @@ class ImagePut {
 
       ; Don't use DI_DEFAULTSIZE to draw the icon like DrawIcon does as it will resize to 32 x 32.
       DllCall("DrawIconEx"
-               , "ptr", hdc,     "int", 0, "int", 0
+               , "ptr", hdc,   "int", 0, "int", 0
                , "ptr", image, "int", 0, "int", 0
                , "uint", 0, "ptr", 0, "uint", 0x1 | 0x2 | 0x4) ; DI_MASK | DI_IMAGE | DI_COMPAT
 
