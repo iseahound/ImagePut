@@ -1334,13 +1334,17 @@ class ImagePut {
          directory .= "\" filename, filename := ""
       if (directory != "" && !DirExist(directory))
          DirCreate(directory)
+      directory := (directory != "") ? directory : "."
 
       ; Validate filepath, defaulting to PNG. https://stackoverflow.com/a/6804755
-      directory := (directory != "") ? directory : "."
+      if !(extension ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$") {
+         if (extension != "")
+            filename .= "." extension
+         extension := "png"
+      }
       filename := RegExReplace(filename, "S)(?i:^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$|[<>:|?*\x00-\x1F\x22\/\\])")
       if (filename == "")
          filename := FormatTime(, "yyyy-MM-dd HH?mm?ss")
-      extension := (extension ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$") ? extension : "png"
       filepath := directory "\" filename "." extension
 
       ; Fill a buffer with the available encoders.
