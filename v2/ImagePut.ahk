@@ -97,6 +97,12 @@ ImagePutWallpaper(ByRef image)
    => ImagePut("wallpaper", image)
 
 
+; Puts the image in a window and returns a handle to a window.
+;   title      -  Window Caption Title    |  string   ->   MyTitle
+ImagePutWindow(ByRef image, title := "")
+   => ImagePut("window", image,,, title)
+
+
 
 ; ImagePut() - Puts an image from anywhere to anywhere.
 ;   cotype     -  Output Type             |  string   ->   Case Insensitive. Read documentation.
@@ -430,9 +436,9 @@ class ImagePut {
       if (cotype = "screenshot")
          return this.put_screenshot(pBitmap, term1, term2)
 
-      ; toCotype("window", pBitmap)
+      ; toCotype("window", pBitmap, title)
       if (cotype = "window")
-         return "ahk_id " . this.Render({bitmap:pBitmap}).AlwaysOnTop().ToolWindow().Caption().hwnd
+         return this.put_window(pBitmap, term1)
 
       ; toCotype("desktop", pBitmap)
       if (cotype = "desktop")
@@ -1207,6 +1213,159 @@ class ImagePut {
       DllCall("DeleteDC",     "ptr", hdc)
 
       return [x,y,w,h]
+   }
+
+   static put_window(ByRef pBitmap, title := "") {
+
+      WindowProc(hwnd, uMsg, wParam, lParam) {
+
+         ; WM_DESTROY
+         if (uMsg = 0x2) {
+         ;  MsgBox "NICE TRY! LOL!"
+         ;   return
+         }
+
+         ; WM_LBUTTONDOWN
+         if (uMsg = 0x201) {
+            parent := DllCall("GetParent", "ptr", hwnd)
+            hwnd := (parent != A_ScriptHwnd && parent != 0) ? parent : hwnd
+            PostMessage 0xA1, 2,,, hwnd
+         }
+
+         return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
+      }
+
+      ; Make it permanent. 
+      void := ObjBindMethod({}, {})
+      Hotkey "^+F12", void, "On"
+
+      ; Get Bitmap width and height.
+      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
+      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
+
+      class_name := "ImagePut"
+      pWndProc := CallbackCreate("WindowProc", "Fast")
+
+      hCursor := DllCall("LoadCursor", "ptr", 0, "ptr", 32512, "ptr") ; IDC_ARROW
+      ;hBrush := DllCall("CreateSolidBrush", "uint", 0x00F0F0F0)
+      hBrush := DllCall("GetStockObject", "int", 5) ; Hollow_brush
+
+      ; struct tagWNDCLASSEXA - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexa
+      ; struct tagWNDCLASSEXW - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexw
+      WNDCLASSEX := BufferAlloc(A_PtrSize=8 ? 80:48, 0)                                ; sizeof(WNDCLASSEX) = 48, 80
+         , NumPut(  "uint", WNDCLASSEX.size, WNDCLASSEX,                   0) ; cbSize
+         , NumPut(  "uint",          0, WNDCLASSEX,                   4) ; style
+         , NumPut(   "ptr",   pWndProc, WNDCLASSEX,                   8) ; lpfnWndProc
+         , NumPut(   "int",          0, WNDCLASSEX, A_PtrSize=8 ? 16:12) ; cbClsExtra
+         , NumPut(   "int",          0, WNDCLASSEX, A_PtrSize=8 ? 20:16) ; cbWndExtra
+         , NumPut(   "ptr",          0, WNDCLASSEX, A_PtrSize=8 ? 24:20) ; hInstance
+         , NumPut(   "ptr",          0, WNDCLASSEX, A_PtrSize=8 ? 32:24) ; hIcon
+         , NumPut(   "ptr",    hCursor, WNDCLASSEX, A_PtrSize=8 ? 40:28) ; hCursor
+         , NumPut(   "ptr",     hBrush, WNDCLASSEX, A_PtrSize=8 ? 48:32) ; hbrBackground
+         , NumPut(   "ptr",          0, WNDCLASSEX, A_PtrSize=8 ? 56:36) ; lpszMenuName
+         , NumPut(   "ptr", StrPtr(class_name), WNDCLASSEX, A_PtrSize=8 ? 64:40) ; lpszClassName
+         , NumPut(   "ptr",          0, WNDCLASSEX, A_PtrSize=8 ? 72:44) ; hIconSm
+
+      ; Registers a window class for subsequent use in calls to the CreateWindow or CreateWindowEx function.
+      DllCall("RegisterClassEx", "ptr", WNDCLASSEX, "ushort")
+
+         WS_VISIBLE                := 0x10000000
+         WS_SYSMENU                :=    0x80000
+         WS_CHILD                  := 0x40000000
+         WS_EX_TOPMOST             :=        0x8
+         WS_EX_LAYERED             :=    0x80000
+         WS_TILEDWINDOW            :=   0xCF0000
+         WS_CAPTION                :=   0xC00000
+         WS_EX_STATICEDGE          :=    0x20000
+         WS_EX_WINDOWEDGE          :=      0x100
+         WS_SIZEBOX                :=    0x40000
+         WS_CLIPCHILDREN           :=  0x2000000
+         WS_POPUP                  := 0x80000000
+         WS_BORDER                 :=   0x800000
+         WS_EX_TOOLWINDOW          :=       0x80
+         WS_CLIPSIBLINGS           :=  0x4000000
+         WS_EX_TRANSPARENT         :=       0x20
+         WS_EX_DLGMODALFRAME       :=        0x1
+
+         rect := BufferAlloc(16, 0)
+            , NumPut("int", Floor((A_ScreenWidth - width) / 2), rect,  0)
+            , NumPut("int", Floor((A_ScreenHeight - height) / 2), rect,  4)
+            , NumPut("int", Floor((A_ScreenWidth + width) / 2), rect,  8)
+            , NumPut("int", Floor((A_ScreenHeight + height) / 2), rect, 12)
+
+         style := WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_CLIPCHILDREN | WS_POPUP | WS_CLIPSIBLINGS ;| WS_SIZEBOX
+         styleEx := WS_EX_TOPMOST | WS_EX_WINDOWEDGE | WS_EX_DLGMODALFRAME ;| WS_EX_LAYERED ;| WS_EX_STATICEDGE
+
+         DllCall("AdjustWindowRectEx", "ptr", rect, "uint", style, "uint", 0, "uint", styleEx)
+
+         x := NumGet(rect,  0, "int")
+         y := NumGet(rect,  4, "int")
+         w := NumGet(rect,  8, "int") - NumGet(rect,  0, "int")
+         h := NumGet(rect, 12, "int") - NumGet(rect,  4, "int")
+
+         hwnd0 := DllCall("CreateWindowEx"
+            ,   "uint", styleEx
+            ,    "str", "ImagePut"  ; lpClassName
+            ,    "str", title ;"Pichu"            ; lpWindowName
+            ,   "uint", style
+            ,    "int", x      ; X
+            ,    "int", y        ; Y
+            ,    "int", w      ; nWidth
+            ,    "int", h     ; nHeight
+            ,    "ptr", A_ScriptHwnd                     ; hWndParent
+            ,    "ptr", 0                     ; hMenu
+            ,    "ptr", 0                     ; hInstance
+            ,    "ptr", 0                     ; lpParam
+            ,    "ptr")
+
+         ;if transparent
+            WinSetTransColor "F0F0F0", hwnd0
+
+         vWinStyle := WS_VISIBLE | WS_CHILD
+         vWinExStyle := WS_EX_LAYERED ;| WS_EX_TOPMOST
+
+         hwnd := DllCall("CreateWindowEx"
+            ,   "uint", vWinExStyle           ; dwExStyle
+            ,    "str", "ImagePut"  ; lpClassName
+            ,    "str", "Pikachu"            ; lpWindowName
+            ,   "uint", vWinStyle             ; dwStyle
+            ,    "int", 0       ; X
+            ,    "int", 0        ; Y
+            ,    "int", width      ; nWidth
+            ,    "int", height     ; nHeight
+            ,    "ptr", hwnd0                     ; hWndParent
+            ,    "ptr", 0                     ; hMenu
+            ,    "ptr", 0                     ; hInstance
+            ,    "ptr", 0                     ; lpParam
+            ,    "ptr")
+
+         ;DllCall("ShowWindow", "ptr", hwnd, "int", 1)
+
+         hdc := DllCall("CreateCompatibleDC", "ptr", 0)
+         hbm := this.put_hBitmap(pBitmap)
+         obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm)
+         ;DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc , "ptr*", gfx:=0)
+
+         DllCall("UpdateLayeredWindow"
+                  ,    "ptr", hwnd                   ; hWnd
+                  ,    "ptr", 0                           ; hdcDst
+                  ,"uint64*", 0 | 0 << 32                      ; *pptDst
+                  ,"uint64*", width | height << 32                     ; *psize
+                  ,    "ptr", hdc                    ; hdcSrc
+                  , "int64*", 0                           ; *pptSrc
+                  ,   "uint", 0                           ; crKey
+                  ,  "uint*", 0xFF << 16 | 0x01 << 24         ; *pblend
+                  ,   "uint", 2)                          ; dwFlags
+
+
+
+         ;MsgBox Format("{:X}", Style) " | " Format("{:X}", WinGetStyle(hwnd0))
+         ;MsgBox Format("{:X}", StyleEx) " | " Format("{:X}", WinGetExStyle(hwnd0))
+
+         ;MsgBox Format("{:X}", vWinStyle) " | " Format("{:X}", WinGetStyle(hwnd))
+         ;MsgBox Format("{:X}", vWinExStyle) " | " Format("{:X}", WinGetExStyle(hwnd))
+
+      return hwnd0
    }
 
    static put_desktop(ByRef pBitmap) {
