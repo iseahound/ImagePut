@@ -50,6 +50,8 @@ Puts an image from anywhere to anywhere
 
 **ImagePutWallpaper** - Returns `"wallpaper"`. Puts the image as the wallpaper. Whether the image will be streched, filled, tiled, etc. depends on your desktop personalization settings. 
 
+**ImagePutWindow** - Returns a window handle. Displays the image in a window.
+
 ### Cropping and Scaling Images
 
 **ImagePut(cotype, image, crop := "", scale := "", terms\*)**
