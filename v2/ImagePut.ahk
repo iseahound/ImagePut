@@ -1682,12 +1682,12 @@ class ImagePut {
       DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "uint*", hData:=0)
       pData := DllCall("GlobalLock", "ptr", hData, "ptr")
       nSize := DllCall("GlobalSize", "uint", pData)
-
       bin := BufferAlloc(nSize, 0)
       DllCall("RtlMoveMemory", "ptr", bin, "ptr", pData, "uptr", nSize)
       DllCall("GlobalUnlock", "ptr", hData)
-      ObjRelease(pStream)
       DllCall("GlobalFree", "ptr", hData)
+
+      ObjRelease(pStream)
 
       ; Using CryptBinaryToStringA saves about 2MB in memory.
       DllCall("Crypt32.dll\CryptBinaryToStringA", "ptr", bin, "uint", nSize, "uint", 0x4000000C, "ptr", 0, "uint*", length:=0)
@@ -1709,12 +1709,12 @@ class ImagePut {
       DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "uint*", hData:=0)
       pData := DllCall("GlobalLock", "ptr", hData, "ptr")
       nSize := DllCall("GlobalSize", "uint", pData)
-
       bin := BufferAlloc(nSize, 0)
       DllCall("RtlMoveMemory", "ptr", bin, "ptr", pData, "uptr", nSize)
       DllCall("GlobalUnlock", "ptr", hData)
-      ObjRelease(pStream)
       DllCall("GlobalFree", "ptr", hData)
+
+      ObjRelease(pStream)
 
       ; Using CryptBinaryToStringA saves about 2MB in memory.
       DllCall("Crypt32.dll\CryptBinaryToStringA", "ptr", bin, "uint", nSize, "uint", 0x40000001, "ptr", 0, "uint*", length:=0)
