@@ -8,7 +8,7 @@ Puts an image from anywhere to anywhere
 #### Base64 to File (PNG)
     ImagePutFile(str, "hearts.png")
 
-#### Windows Mouse Cursor to PNG File
+#### Put File on Window
     ImagePutWindow("hearts.png", "hearts.png")
 
 #### Compare images using pixel values. Not file hashes.
