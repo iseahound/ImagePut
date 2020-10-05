@@ -1,15 +1,15 @@
+![transparent hearts](https://i.imgur.com/XSJKgbb.png)
 # ImagePut
 Puts an image from anywhere to anywhere
 
-#### URL to Base64 PNG
-    str := ImagePutBase64("https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png", "png")
+#### URL to Base64 (PNG)
+    str := ImagePutBase64("https://i.imgur.com/YZk4Rfg.png", "png")
 
-#### Base64 to Windows Mouse Cursor
-    ImagePutCursor(str)
+#### Base64 to File (PNG)
+    ImagePutFile(str, "hearts.png")
 
 #### Windows Mouse Cursor to PNG File
-    ImagePutFile(A_Cursor, "ahk.png")
-    DllCall("SystemParametersInfo", "uint", 0x57, "uint", 0, "ptr", 0, "uint", 0) ; Restore cursor.
+    ImagePutWindow("hearts.png", "hearts.png")
 
 #### Compare images using pixel values. Not file hashes.
     MsgBox % ImageEqual("https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png", "ahk.png")
