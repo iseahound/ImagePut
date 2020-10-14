@@ -1359,8 +1359,6 @@ class ImagePut {
 
 
 
-
-
          ;MsgBox Format("{:X}", Style) " | " Format("{:X}", WinGetStyle(hwnd0))
          ;MsgBox Format("{:X}", StyleEx) " | " Format("{:X}", WinGetExStyle(hwnd0))
 
