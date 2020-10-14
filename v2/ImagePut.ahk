@@ -755,8 +755,8 @@ class ImagePut {
 
    static from_wallpaper() {
       ; Get the width and height of all monitors.
-      width  := DllCall("GetSystemMetrics", "int", 78)
-      height := DllCall("GetSystemMetrics", "int", 79)
+      width  := DllCall("GetSystemMetrics", "int", 78, "int")
+      height := DllCall("GetSystemMetrics", "int", 79, "int")
 
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
       hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
@@ -827,10 +827,10 @@ class ImagePut {
          w := Right - Left
          h := Bottom - Top
       } else {
-         x := DllCall("GetSystemMetrics", "int", 76)
-         y := DllCall("GetSystemMetrics", "int", 77)
-         w := DllCall("GetSystemMetrics", "int", 78)
-         h := DllCall("GetSystemMetrics", "int", 79)
+         x := DllCall("GetSystemMetrics", "int", 76, "int")
+         y := DllCall("GetSystemMetrics", "int", 77, "int")
+         w := DllCall("GetSystemMetrics", "int", 78, "int")
+         h := DllCall("GetSystemMetrics", "int", 79, "int")
       }
       return this.from_screenshot([x,y,w,h])
    }
@@ -1227,7 +1227,7 @@ class ImagePut {
 
          ; WM_LBUTTONDOWN
          if (uMsg = 0x201) {
-            parent := DllCall("GetParent", "ptr", hwnd)
+            parent := DllCall("GetParent", "ptr", hwnd, "ptr")
             hwnd := (parent != A_ScriptHwnd && parent != 0) ? parent : hwnd
             PostMessage 0xA1, 2,,, hwnd
          }
@@ -1247,8 +1247,8 @@ class ImagePut {
       pWndProc := CallbackCreate("WindowProc", "Fast")
 
       hCursor := DllCall("LoadCursor", "ptr", 0, "ptr", 32512, "ptr") ; IDC_ARROW
-      ;hBrush := DllCall("CreateSolidBrush", "uint", 0x00F0F0F0)
-      hBrush := DllCall("GetStockObject", "int", 5) ; Hollow_brush
+      ;hBrush := DllCall("CreateSolidBrush", "uint", 0x00F0F0F0, "ptr")
+      hBrush := DllCall("GetStockObject", "int", 5, "ptr") ; Hollow_brush
 
       ; struct tagWNDCLASSEXA - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexa
       ; struct tagWNDCLASSEXW - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexw
@@ -1341,9 +1341,9 @@ class ImagePut {
 
          ;DllCall("ShowWindow", "ptr", hwnd, "int", 1)
 
-         hdc := DllCall("CreateCompatibleDC", "ptr", 0)
+         hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
          hbm := this.put_hBitmap(pBitmap)
-         obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm)
+         obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
          ;DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc , "ptr*", gfx:=0)
 
          DllCall("UpdateLayeredWindow"
@@ -1680,7 +1680,7 @@ class ImagePut {
       pStream := this.put_stream(pBitmap, extension, quality)
       DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "uint*", hData:=0)
       pData := DllCall("GlobalLock", "ptr", hData, "ptr")
-      nSize := DllCall("GlobalSize", "uint", pData)
+      nSize := DllCall("GlobalSize", "uint", pData, "uptr")
 
       ; Using CryptBinaryToStringA saves about 2MB in memory.
       DllCall("Crypt32.dll\CryptBinaryToStringA", "ptr", pData, "uint", nSize, "uint", 0x4000000C, "ptr", 0, "uint*", length:=0)
@@ -1704,7 +1704,7 @@ class ImagePut {
       pStream := this.put_stream(pBitmap, extension, quality)
       DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "uint*", hData:=0)
       pData := DllCall("GlobalLock", "ptr", hData, "ptr")
-      nSize := DllCall("GlobalSize", "uint", pData)
+      nSize := DllCall("GlobalSize", "uint", pData, "uptr")
 
       ; Using CryptBinaryToStringA saves about 2MB in memory.
       DllCall("Crypt32.dll\CryptBinaryToStringA", "ptr", pData, "uint", nSize, "uint", 0x40000001, "ptr", 0, "uint*", length:=0)
