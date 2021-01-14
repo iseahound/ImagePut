@@ -4,31 +4,64 @@ Puts an image from anywhere to anywhere
 
 ## Instructions
 
-For AutoHotkey v1 please use the [library in the v1 folder.](https://github.com/iseahound/ImagePut/blob/master/v1/ImagePut.ahk) 
-For AutoHotkey v2 please use the [library in the v2 folder.](https://github.com/iseahound/ImagePut/blob/master/v2/ImagePut.ahk)
-If you do not know which version of AutoHotkey you have, try the v1 library first. 
+Download the latest release [here.](https://github.com/iseahound/ImagePut/releases/download/r2021.01.14/ImagePut.v1.zip)
+Unzip and run demo.ahk. 
 
-## Examples
+Advanced Users: For AutoHotkey v2, please use the [libraries in the v2 folder.](https://github.com/iseahound/ImagePut/blob/master/v2/ImagePut.ahk)
 
-#### URL to Base64 (PNG)
+## Windows Image Data Types
+
+Windows stores images in various formats. By formats, I do not mean PNG, JPG, GIF... but rather as a memory bitmap, gdi handle, base 64 data, cursors, image streams, etc. For simplicity those places where images are stored will be reffered to as image data types. 
+
+The purpose of this library is to convert between these data types in a fast and simple manner. For example, if given a pointer to a bitmap, it would be useful to see the image. I can do this by using the function ```ImagePutWindow(pBitmap)``` to quickly display the image. 
+
+## Features
+
+* Supports reading and writing of multiple data types listed below. 
+* Fast conversion between all windows image data types. 
+* Automatic inference of the input data type. 
+    ```
+    ; For example the same function can take a file or url as an argument. 
+    ImagePutWindow("https://i.imgur.com/YZk4Rfg.png")
+    ImagePutWindow("cat.png")
+    ```
+* Pixel by pixel comparison and verification of image data. 
+* Simple one line functions that do all the heavy lifting for you. 
+
+## Contributing
+
+Pull requests are welcome!
+
+## Comments, Help, or Feature Requests? Ask questions here. 
+
+For the AutoHotkey v1 forum: https://www.autohotkey.com/boards/viewtopic.php?f=6&t=76301
+
+For the AutoHotkey v2 forum: https://www.autohotkey.com/boards/viewtopic.php?f=83&t=76633
+
+# Documentation
+
+### Example Script
+
+    #include ImageEqual.ahk
+
+    ; URL to Base64 (PNG)
     str := ImagePutBase64("https://i.imgur.com/YZk4Rfg.png", "png")
 
-#### Base64 to File (PNG)
+    ; Base64 to File (PNG)
     ImagePutFile(str, "hearts.png")
 
-#### Put File on Window
+    ; Put File on Window
     ImagePutWindow("hearts.png", "hearts.png")
 
-#### Compare images using pixel values. Not file hashes.
+    ; Compare images using pixel values. Not file hashes.
     MsgBox % ImageEqual("https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png", "ahk.png")
 
-#### Declaring an input type will skip the detection step, making your code faster and more reliable.
-    ; Declare Input Type
+    ; Declaring an input type will skip the detection step, making your code faster and more reliable.
     ImagePutFile({url:"https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png"})
     ; Auto Detect Input Type.
     ImagePutFile("https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png")
 
-## Output Functions
+### Output Functions
 
 **ImagePutBase64** - Returns a base64 string. The image can be encoded using a specifed file format. For JPG images, a quality level can be set as well. Supported file formats: bmp, gif, jpg, png, tiff. Quality: 0 - 100. 
 
@@ -60,7 +93,7 @@ If you do not know which version of AutoHotkey you have, try the v1 library firs
 
 **ImagePutWindow** - Returns a window handle. Displays the image in a window.
 
-### Cropping and Scaling Images
+#### Cropping and Scaling Images
 
 **ImagePut(cotype, image, crop := "", scale := "", terms\*)**
 
@@ -70,9 +103,9 @@ If you do not know which version of AutoHotkey you have, try the v1 library firs
 
 **scale** - A real number. Factor to scale by. A scale of `1` does nothing. 
 
-## Input Types
+### Input Types
 
-### Overriding Input Types
+#### Overriding Input Types
 Use an object such as `{file:"pic.bmp"}`. This will skip automatic type detection and speed up your script. 
 
 **base64** - A base64 string, with or without tags i.e. `data:image/png;base64,`
@@ -105,14 +138,6 @@ Use an object such as `{file:"pic.bmp"}`. This will skip automatic type detectio
 
 **url** - A url that begins with `https://` or `ftp://`. To override this behavior, declare your url explicitly like `{url:"www.example.com"}`. 
 
+**wallpaper** - The current wallpaper. 
+
 **window** - Any string that matches the window title. Is affected by `SetTitleMatchMode`. Use the special variable `"A"` to match the current active window. Supports `ahk_id`, `ahk_class`, `ahk_pid`, etc. See the AutoHotkey manual for details. 
-
-## Comments, Help, and Suggestions
-
-For the AutoHotkey v1 forum: https://www.autohotkey.com/boards/viewtopic.php?f=6&t=76301
-
-For the AutoHotkey v2 forum: https://www.autohotkey.com/boards/viewtopic.php?f=83&t=76633
-
-## Contributing
-
-Pull requests are welcome!
