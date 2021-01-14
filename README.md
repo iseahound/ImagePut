@@ -26,6 +26,7 @@ The purpose of this library is to convert between these data types in a fast and
     ImagePutWindow("cat.png")
     ```
 * Pixel by pixel comparison and verification of image data. 
+* Independent of Gdip_All. This library utilizes gdiplus.dll directly. 
 * Simple one line functions that do all the heavy lifting for you. 
 
 ## Contributing
