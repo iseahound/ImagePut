@@ -55,12 +55,14 @@ For the AutoHotkey v2 forum: https://www.autohotkey.com/boards/viewtopic.php?f=8
     ImagePutWindow("hearts.png", "hearts.png")
 
     ; Compare images using pixel values. Not file hashes.
-    MsgBox % ImageEqual("https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png", "ahk.png")
+    ImagePutFile("https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png", "ahk.png")
+    MsgBox % ImageEqual("https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png", "ahk.png") ? "Images are equal." : "Images are not equal."
 
     ; Declaring an input type will skip the detection step, making your code faster and more reliable.
-    ImagePutFile({url:"https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png"})
+    file1 := ImagePutFile({url:"https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png"})
     ; Auto Detect Input Type.
-    ImagePutFile("https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png")
+    file2 := ImagePutFile("https://www.autohotkey.com/boards/styles/simplicity/theme/images/logo.png")
+    MsgBox % ImageEqual(file1, file2) ? "Images are equal." : "Images are not equal."
 
 ### Output Functions
 
