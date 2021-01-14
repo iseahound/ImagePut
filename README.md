@@ -11,13 +11,13 @@ Advanced Users: For AutoHotkey v2, please use the [libraries in the v2 folder.](
 
 ## Windows Image Data Types
 
-Windows stores images in various formats. By formats, I do not mean PNG, JPG, GIF... but rather as a memory bitmap, gdi handle, base 64 data, cursors, image streams, etc. For simplicity those places where images are stored will be reffered to as image data types. 
+Windows stores images in various formats. By formats, I do not mean PNG, JPG, GIF... but rather as a memory bitmap, gdi handle, base 64 data, cursors, image streams, etc. For simplicity those places where images are stored will be referred to as image data types. 
 
 The purpose of this library is to convert between these data types in a fast and simple manner. For example, if given a pointer to a bitmap, it would be useful to see the image. I can do this by using the function ```ImagePutWindow(pBitmap)``` to quickly display the image. 
 
 ## Features
 
-* Supports reading and writing of multiple data types listed below. 
+* Supports reading and writing of multiple data types documented below. 
 * Fast conversion between all windows image data types. 
 * Automatic inference of the input data type. 
     ```
@@ -93,7 +93,7 @@ For the AutoHotkey v2 forum: https://www.autohotkey.com/boards/viewtopic.php?f=8
 
 **ImagePutWindow** - Returns a window handle. Displays the image in a window.
 
-#### Cropping and Scaling Images
+### Cropping and Scaling Images
 
 **ImagePut(cotype, image, crop := "", scale := "", terms\*)**
 
@@ -105,7 +105,7 @@ For the AutoHotkey v2 forum: https://www.autohotkey.com/boards/viewtopic.php?f=8
 
 ### Input Types
 
-#### Overriding Input Types
+### Overriding Input Types
 Use an object such as `{file:"pic.bmp"}`. This will skip automatic type detection and speed up your script. 
 
 **base64** - A base64 string, with or without tags i.e. `data:image/png;base64,`
