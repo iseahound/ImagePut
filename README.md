@@ -108,9 +108,6 @@ For the AutoHotkey v2 forum: https://www.autohotkey.com/boards/viewtopic.php?f=8
 
 ### Input Types
 
-### Overriding Input Types
-Use an object such as `{file:"pic.bmp"}`. This will skip automatic type detection and speed up your script. 
-
 **base64** - A base64 string, with or without tags i.e. `data:image/png;base64,`
 
 **bitmap** - A valid pointer to a GDI+ bitmap. 
@@ -144,3 +141,6 @@ Use an object such as `{file:"pic.bmp"}`. This will skip automatic type detectio
 **wallpaper** - The current wallpaper. 
 
 **window** - Any string that matches the window title. Is affected by `SetTitleMatchMode`. Use the special variable `"A"` to match the current active window. Supports `ahk_id`, `ahk_class`, `ahk_pid`, etc. See the AutoHotkey manual for details. 
+
+### Overriding Input Types
+Use an object such as `{file:"pic.bmp"}`. This will skip automatic type detection and speed up your script. 
