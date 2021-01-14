@@ -2,6 +2,14 @@
 # ImagePut
 Puts an image from anywhere to anywhere
 
+## Instructions
+
+For AutoHotkey v1 please use the [library in the v1 folder.](https://github.com/iseahound/ImagePut/blob/master/v1/ImagePut.ahk) 
+For AutoHotkey v2 please use the [library in the v2 folder.](https://github.com/iseahound/ImagePut/blob/master/v2/ImagePut.ahk)
+If you do not know which version of AutoHotkey you have, try the v1 library first. 
+
+## Examples
+
 #### URL to Base64 (PNG)
     str := ImagePutBase64("https://i.imgur.com/YZk4Rfg.png", "png")
 
