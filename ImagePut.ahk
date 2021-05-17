@@ -14,92 +14,92 @@
 ; Puts the image into a file format and returns a base64 encoded string.
 ;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
-ImagePutBase64(ByRef image, extension := "", quality := "")
+ImagePutBase64(image, extension := "", quality := "")
    => ImagePut("base64", image,,, extension, quality)
 
 
 ; Puts the image into a GDI+ Bitmap and returns a pointer.
-ImagePutBitmap(ByRef image)
+ImagePutBitmap(image)
    => ImagePut("bitmap", image)
 
 
 ; Puts the image into a GDI+ Bitmap and returns a buffer object with GDI+ scope.
-ImagePutBuffer(ByRef image)
+ImagePutBuffer(image)
    => ImagePut("buffer", image)
 
 
 ; Puts the image onto the clipboard and returns ClipboardAll().
-ImagePutClipboard(ByRef image)
+ImagePutClipboard(image)
    => ImagePut("clipboard", image)
 
 
 ; Puts the image as the cursor and returns the variable A_Cursor.
 ;   xHotspot   -  X Click Point           |  pixel    ->   0 - width
 ;   yHotspot   -  Y Click Point           |  pixel    ->   0 - height
-ImagePutCursor(ByRef image, xHotspot := "", yHotspot := "")
+ImagePutCursor(image, xHotspot := "", yHotspot := "")
    => ImagePut("cursor", image,,, xHotspot, yHotspot)
 
 
 ; Puts the image behind the desktop icons and returns the string "desktop".
 ;   scale      -  Scale Factor            |  real     ->   A_ScreenHeight / height.
-ImagePutDesktop(ByRef image, scale := 1)
+ImagePutDesktop(image, scale := 1)
    => ImagePut("desktop", image,, scale)
 
 
 ; Puts the image into a file and returns a relative filepath.
 ;   filepath   -  Filepath + Extension    |  string   ->   *.bmp, *.gif, *.jpg, *.png, *.tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
-ImagePutFile(ByRef image, filepath := "", quality := "")
+ImagePutFile(image, filepath := "", quality := "")
    => ImagePut("file", image,,, filepath, quality)
 
 
 ; Puts the image into a device independent bitmap and returns the handle.
 ;   alpha      -  Alpha Replacement Color |  RGB      ->   0xFFFFFF
-ImagePutHBitmap(ByRef image, alpha := "")
+ImagePutHBitmap(image, alpha := "")
    => ImagePut("hBitmap", image,,, alpha)
 
 
 ; Puts the image into a file format and returns a hexadecimal encoded string.
 ;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
-ImagePutHex(ByRef image, extension := "", quality := "")
+ImagePutHex(image, extension := "", quality := "")
    => ImagePut("hex", image,,, extension, quality)
 
 
 ; Puts the image into an icon and returns the handle.
-ImagePutHIcon(ByRef image)
+ImagePutHIcon(image)
    => ImagePut("hBitmap", image)
 
 
 ; Puts the image into a file format and returns a pointer to a RandomAccessStream.
 ;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
-ImagePutRandomAccessStream(ByRef image, extension := "", quality := "")
+ImagePutRandomAccessStream(image, extension := "", quality := "")
    => ImagePut("RandomAccessStream", image,,, extension, quality)
 
 
 ; Puts the image on the shared screen device context and returns an array of coordinates.
 ;   screenshot -  Screen Coordinates      |  array    ->   [x,y,w,h] or [0,0]
 ;   alpha      -  Alpha Replacement Color |  RGB      ->   0xFFFFFF
-ImagePutScreenshot(ByRef image, screenshot := "", alpha := "")
+ImagePutScreenshot(image, screenshot := "", alpha := "")
    => ImagePut("screenshot", image,,, screenshot, alpha)
 
 
 ; Puts the image into a file format and returns a pointer to a stream.
 ;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
-ImagePutStream(ByRef image, extension := "", quality := "")
+ImagePutStream(image, extension := "", quality := "")
    => ImagePut("stream", image,,, extension, quality)
 
 
 ; Puts the image as the desktop wallpaper and returns the string "wallpaper".
-ImagePutWallpaper(ByRef image)
+ImagePutWallpaper(image)
    => ImagePut("wallpaper", image)
 
 
 ; Puts the image in a window and returns a handle to a window.
 ;   title      -  Window Caption Title    |  string   ->   MyTitle
-ImagePutWindow(ByRef image, title := "")
+ImagePutWindow(image, title := "")
    => ImagePut("window", image,,, title)
 
 
@@ -116,7 +116,7 @@ class ImagePut {
    ;   crop       -  Crop Coordinates        |  array    ->   [x,y,w,h] could be negative or percent.
    ;   scale      -  Scale Factor            |  real     ->   2.0
    ;   terms*     -  Additional Parameters   |  variadic ->   Extra parameters found in toCotype().
-   static call(cotype, ByRef image, crop := "", scale := "", terms*) {
+   static call(cotype, image, crop := "", scale := "", terms*) {
 
       this.gdiplusStartup()
 
@@ -160,10 +160,10 @@ class ImagePut {
       return coimage
    }
 
-   static DontVerifyImageType(ByRef image) {
+   static DontVerifyImageType(image) {
 
       if !IsObject(image)
-         throw Exception("Must be an object.")
+         throw Error("Must be an object.")
 
       ; Check for image type declarations.
       ; Assumes that the user is telling the truth.
@@ -263,13 +263,13 @@ class ImagePut {
          return "sprite"
       }
 
-      throw Exception("Invalid type.")
+      throw Error("Invalid type.")
    }
 
-   static ImageType(ByRef image) {
+   static ImageType(image) {
       ; Throw if the image is an empty string.
       if (image == "")
-         throw Exception("Image data is an empty string.")
+         throw Error("Image data is an empty string.")
 
       if IsObject(image) {
          ; A "clipboard" is a buffer object containing binary data returned by ClipboardAll()
@@ -355,12 +355,12 @@ class ImagePut {
       ; For more helpful error messages: Catch file names without extensions!
       for extension in ["bmp","dib","rle","jpg","jpeg","jpe","jfif","gif","tif","tiff","png","ico","exe","dll"]
          if FileExist(image "." extension)
-            throw Exception("A ." extension " file extension is required!")
+            throw Error("A ." extension " file extension is required!")
 
-      throw Exception("Image type could not be identified.")
+      throw Error("Image type could not be identified.")
    }
 
-   static toBitmap(type, ByRef image) {
+   static toBitmap(type, image) {
 
       if (type = "clipboard")
          return this.from_clipboard()
@@ -419,10 +419,10 @@ class ImagePut {
       if (type = "sprite")
          return this.from_sprite(image)
 
-      throw Exception("Conversion from type " type " is not supported.")
+      throw Error("Conversion from type " type " is not supported.")
    }
 
-   static toCotype(cotype, ByRef pBitmap, term1 := "", term2 := "", *) {
+   static toCotype(cotype, pBitmap, term1 := "", term2 := "", *) {
       ; toCotype("clipboard", pBitmap)
       if (cotype = "clipboard")
          return this.put_clipboard(pBitmap)
@@ -487,14 +487,14 @@ class ImagePut {
       if (cotype = "base64")
          return this.put_base64(pBitmap, term1, term2)
 
-      throw Exception("Conversion to type " cotype " is not supported.")
+      throw Error("Conversion to type " cotype " is not supported.")
    }
 
-   static DisposeImage(ByRef pBitmap) {
+   static DisposeImage(pBitmap) {
       return DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
    }
 
-   static BitmapCrop(ByRef pBitmap, crop) {
+   static BitmapCrop(pBitmap, crop) {
       ; Get Bitmap width, height, and format.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
@@ -540,7 +540,7 @@ class ImagePut {
       return pBitmapCrop
    }
 
-   static BitmapScale(ByRef pBitmap, scale) {
+   static BitmapScale(pBitmap, scale) {
       ; Get Bitmap width, height, and format.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
@@ -599,7 +599,7 @@ class ImagePut {
             Sleep (2**(A_Index-2) * 30)
       until (result := DllCall("OpenClipboard", "ptr", 0))
       if !(result)
-         throw Exception("Clipboard could not be opened.")
+         throw Error("Clipboard could not be opened.")
 
       ; Prefer the PNG stream if available considering it supports transparency.
       png := DllCall("RegisterClipboardFormat", "str", "png", "uint")
@@ -621,7 +621,7 @@ class ImagePut {
       return pBitmap
    }
 
-   static from_screenshot(ByRef image) {
+   static from_screenshot(image) {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
 
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
@@ -657,7 +657,7 @@ class ImagePut {
       return pBitmap
    }
 
-   static from_window(ByRef image) {
+   static from_window(image) {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
 
       ; Get the handle to the window.
@@ -703,7 +703,7 @@ class ImagePut {
       ; Find the child window.
       windows := WinGetList("ahk_class WorkerW")
       if (windows.length == 0)
-         throw Exception("The hidden desktop window has not been initalized. Call ImagePutDesktop() first.")
+         throw Error("The hidden desktop window has not been initalized. Call ImagePutDesktop() first.")
 
       Loop windows.length
          hwnd := windows[A_Index]
@@ -711,7 +711,7 @@ class ImagePut {
 
       ; Maybe this hack gets patched. Tough luck!
       if !(WorkerW := DllCall("FindWindowEx", "ptr", 0, "ptr", hwnd, "str", "WorkerW", "ptr", 0, "ptr"))
-         throw Exception("Could not locate hidden window behind desktop.")
+         throw Error("Could not locate hidden window behind desktop.")
 
       ; Get the width and height of the client window.
       Rect := BufferAlloc(16) ; sizeof(RECT) = 16
@@ -803,7 +803,7 @@ class ImagePut {
       return pBitmap
    }
 
-   static from_url(ByRef image) {
+   static from_url(image) {
       req := ComObjCreate("WinHttp.WinHttpRequest.5.1")
       req.Open("GET", image)
       req.Send()
@@ -813,12 +813,12 @@ class ImagePut {
       return pBitmap
    }
 
-   static from_file(ByRef image) {
+   static from_file(image) {
       DllCall("gdiplus\GdipCreateBitmapFromFile", "wstr", image, "ptr*", pBitmap:=0)
       return pBitmap
    }
 
-   static from_monitor(ByRef image) {
+   static from_monitor(image) {
       if (image > 0) {
          MonitorGet(image, Left, Top, Right, Bottom)
          x := Left
@@ -834,7 +834,7 @@ class ImagePut {
       return this.from_screenshot([x,y,w,h])
    }
 
-   static from_hBitmap(ByRef image) {
+   static from_hBitmap(image) {
       ; struct DIBSECTION - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-dibsection
       ; struct BITMAP - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmap
       dib := BufferAlloc(64+5*A_PtrSize) ; sizeof(DIBSECTION) = 84, 104
@@ -908,7 +908,7 @@ class ImagePut {
       return pBitmap
    }
 
-   static from_hIcon(ByRef image) {
+   static from_hIcon(image) {
       ; struct ICONINFO - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-iconinfo
       ii := BufferAlloc(8+3*A_PtrSize, 0)                ; sizeof(ICONINFO) = 20, 32
       DllCall("GetIconInfo", "ptr", image, "ptr", ii)
@@ -978,21 +978,21 @@ class ImagePut {
       return pBitmap
    }
 
-   static from_bitmap(ByRef image) {
+   static from_bitmap(image) {
       DllCall("gdiplus\GdipCloneImage", "ptr", image, "ptr*", pBitmap:=0)
       return pBitmap
    }
 
-   static from_stream(ByRef image) {
+   static from_stream(image) {
       DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", image, "ptr*", pBitmap:=0)
       return pBitmap
    }
 
-   static from_RandomAccessStream(ByRef image) {
+   static from_RandomAccessStream(image) {
       ; Get the Class ID from a GUID string.
       CLSID := BufferAlloc(16, 0)
       if result := DllCall("ole32\CLSIDFromString", "wstr", "{0000000C-0000-0000-C000-000000000046}", "ptr", CLSID, "uint")
-         throw Exception("CLSIDFromString failed. Error: " . Format("{:#x}", result))
+         throw Error("CLSIDFromString failed. Error: " . Format("{:#x}", result))
 
       ; Convert RandomAccessStream to stream.
       DllCall("ShCore\CreateStreamOverRandomAccessStream", "ptr", image, "ptr", CLSID, "ptr*", pStream:=0, "uint")
@@ -1006,7 +1006,7 @@ class ImagePut {
       return pBitmap
    }
 
-   static from_hex(ByRef image) {
+   static from_hex(image) {
       ; Trim whitespace and remove header.
       image := Trim(image)
       image := RegExReplace(image, "^(0[xX])")
@@ -1026,7 +1026,7 @@ class ImagePut {
       return pBitmap
    }
 
-   static from_base64(ByRef image) {
+   static from_base64(image) {
       ; Trim whitespace and remove header.
       image := Trim(image)
       image := RegExReplace(image, "^data:image\/[a-z]+;base64,")
@@ -1046,11 +1046,11 @@ class ImagePut {
       return pBitmap
    }
 
-   static from_sprite(ByRef image) {
+   static from_sprite(image) {
       ; Create a source pBitmap and extract the width and height.
       if DllCall("gdiplus\GdipCreateBitmapFromFile", "wstr", image, "ptr*", sBitmap:=0)
          if !(sBitmap := this.from_url(image))
-            throw Exception("Could not be loaded from a valid file path or URL.")
+            throw Error("Could not be loaded from a valid file path or URL.")
 
       ; Get Bitmap width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", sBitmap, "uint*", width:=0)
@@ -1090,7 +1090,7 @@ class ImagePut {
       return dBitmap
    }
 
-   static put_clipboard(ByRef pBitmap) {
+   static put_clipboard(pBitmap) {
       ; Standard Clipboard Formats - https://docs.microsoft.com/en-us/windows/win32/dataxchg/standard-clipboard-formats
       ; Synthesized Clipboard Formats - https://docs.microsoft.com/en-us/windows/win32/dataxchg/clipboard-formats
 
@@ -1100,7 +1100,7 @@ class ImagePut {
             Sleep (2**(A_Index-2) * 30)
       until (result := DllCall("OpenClipboard", "ptr", 0))
       if !(result)
-         throw Exception("Clipboard could not be opened.")
+         throw Error("Clipboard could not be opened.")
 
       ; Clear the clipboard.
       DllCall("EmptyClipboard")
@@ -1171,7 +1171,7 @@ class ImagePut {
       return ClipboardAll()
    }
 
-   static put_buffer(ByRef pBitmap) {
+   static put_buffer(pBitmap) {
       buffer := {pBitmap: pBitmap}
          .DefineMethod("__New" , (self) => (this.gdiplusStartup(), self)) ; Increment GDI+ reference count
          .DefineMethod("__Delete", (self) => (this.gdiplusShutdown("smart_pointer", self.pBitmap)))
@@ -1179,7 +1179,7 @@ class ImagePut {
       return buffer
    }
 
-   static put_screenshot(ByRef pBitmap, screenshot := "", alpha := "") {
+   static put_screenshot(pBitmap, screenshot := "", alpha := "") {
       ; Get Bitmap width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
@@ -1214,7 +1214,7 @@ class ImagePut {
       return [x,y,w,h]
    }
 
-   static put_window(ByRef pBitmap, title := "") {
+   static put_window(pBitmap, title := "") {
 
       WindowProc(hwnd, uMsg, wParam, lParam) {
 
@@ -1367,7 +1367,7 @@ class ImagePut {
       return hwnd0
    }
 
-   static put_desktop(ByRef pBitmap) {
+   static put_desktop(pBitmap) {
       ; Thanks Gerald Degeneve - https://www.codeproject.com/Articles/856020/Draw-Behind-Desktop-Icons-in-Windows-plus
 
       ; Get Bitmap width and height.
@@ -1391,7 +1391,7 @@ class ImagePut {
 
       ; Maybe this hack gets patched. Tough luck!
       if !(WorkerW := DllCall("FindWindowEx", "ptr", 0, "ptr", hwnd, "str", "WorkerW", "ptr", 0, "ptr"))
-         throw Exception("Could not locate hidden window behind desktop.")
+         throw Error("Could not locate hidden window behind desktop.")
 
       ; Position the image in the center. This line can be removed.
       DllCall("SetWindowPos", "ptr", WorkerW, "ptr", 1
@@ -1418,7 +1418,7 @@ class ImagePut {
       return "desktop"
    }
 
-   static put_wallpaper(ByRef pBitmap) {
+   static put_wallpaper(pBitmap) {
       ; Create a temporary image file.
       filepath := this.put_file(pBitmap)
 
@@ -1433,7 +1433,7 @@ class ImagePut {
             Sleep (2**(A_Index-2) * 30)
       until FileExist(filepath)
       if !FileExist(filepath)
-         throw Exception("Unable to create temporary image file.")
+         throw Error("Unable to create temporary image file.")
 
       ; Set the temporary image file as the new desktop wallpaper.
       DllCall("SystemParametersInfo", "uint", 20, "uint", 0, "str", buf, "uint", 2)
@@ -1445,7 +1445,7 @@ class ImagePut {
       return "wallpaper"
    }
 
-   static put_cursor(ByRef pBitmap, xHotspot := "", yHotspot := "") {
+   static put_cursor(pBitmap, xHotspot := "", yHotspot := "") {
       ; Thanks Nick - https://stackoverflow.com/a/550965
 
       ; Creates an icon that can be used as a cursor.
@@ -1482,7 +1482,7 @@ class ImagePut {
       return "A_Cursor"
    }
 
-   static put_file(ByRef pBitmap, filepath := "", quality := "") {
+   static put_file(pBitmap, filepath := "", quality := "") {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
 
       ; Remove whitespace. Seperate the filepath. Adjust for directories.
@@ -1510,7 +1510,7 @@ class ImagePut {
       ci := BufferAlloc(size)
       DllCall("gdiplus\GdipGetImageEncoders", "uint", count, "uint", size, "ptr", ci)
       if !(count && size)
-         throw Exception("Could not get a list of image codec encoders on this system.")
+         throw Error("Could not get a list of image codec encoders on this system.")
 
       ; Search for an encoder with a matching extension.
       Loop count
@@ -1519,7 +1519,7 @@ class ImagePut {
 
       ; Get the pointer to the index/offset of the matching encoder.
       if !(pCodec := ci.ptr + idx)
-         throw Exception("Could not find a matching encoder for the specified file format.")
+         throw Error("Could not find a matching encoder for the specified file format.")
 
       ; JPEG is a lossy image format that requires a quality value from 0-100. Default quality is 75.
       if (extension ~= "^(?i:jpg|jpeg|jpe|jfif)$"
@@ -1546,12 +1546,12 @@ class ImagePut {
             Sleep (2**(A_Index-2) * 30)
       until (result := !DllCall("gdiplus\GdipSaveImageToFile", "ptr", pBitmap, "wstr", filepath, "ptr", pCodec, "uint", IsSet(ep) ? ep : 0))
       if !(result)
-         throw Exception("Could not save file to disk.")
+         throw Error("Could not save file to disk.")
 
       return filepath
    }
 
-   static put_hBitmap(ByRef pBitmap, alpha := "") {
+   static put_hBitmap(pBitmap, alpha := "") {
       ; Revert to built in functionality if a replacement color is declared.
       if (alpha != "") { ; This built-in version is about 25% slower.
          DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "ptr", pBitmap, "ptr*", hBitmap:=0, "uint", alpha)
@@ -1599,12 +1599,12 @@ class ImagePut {
       return hbm
    }
 
-   static put_hIcon(ByRef pBitmap) {
+   static put_hIcon(pBitmap) {
       DllCall("gdiplus\GdipCreateHICONFromBitmap", "ptr", pBitmap, "ptr*", hIcon:=0)
       return hIcon
    }
 
-   static put_stream(ByRef pBitmap, extension := "", quality := "") {
+   static put_stream(pBitmap, extension := "", quality := "") {
       ; Default extension is TIF for fast speeds!
       if !(extension ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$")
          extension := "tif"
@@ -1614,7 +1614,7 @@ class ImagePut {
       ci := BufferAlloc(size)
       DllCall("gdiplus\GdipGetImageEncoders", "uint", count, "uint", size, "ptr", ci)
       if !(count && size)
-         throw Exception("Could not get a list of image codec encoders on this system.")
+         throw Error("Could not get a list of image codec encoders on this system.")
 
       ; Search for an encoder with a matching extension.
       Loop count
@@ -1623,7 +1623,7 @@ class ImagePut {
 
       ; Get the pointer to the index/offset of the matching encoder.
       if !(pCodec := ci.ptr + idx)
-         throw Exception("Could not find a matching encoder for the specified file format.")
+         throw Error("Could not find a matching encoder for the specified file format.")
 
       ; JPEG is a lossy image format that requires a quality value from 0-100. Default quality is 75.
       if (extension ~= "^(?i:jpg|jpeg|jpe|jfif)$"
@@ -1651,7 +1651,7 @@ class ImagePut {
       return pStream
    }
 
-   static put_RandomAccessStream(ByRef pBitmap, extension := "", quality := "") {
+   static put_RandomAccessStream(pBitmap, extension := "", quality := "") {
       ; Thanks teadrinker - https://www.autohotkey.com/boards/viewtopic.php?f=6&t=72674
 
       ; Which is faster, bmp or png?
@@ -1660,7 +1660,7 @@ class ImagePut {
       ; Get the Class ID from a GUID string.
       CLSID := BufferAlloc(16, 0)
       if result := DllCall("ole32\CLSIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", CLSID, "uint")
-         throw Exception("CLSIDFromString failed. Error: " . Format("{:#x}", result))
+         throw Error("CLSIDFromString failed. Error: " . Format("{:#x}", result))
 
       ; Create a RandomAccessStream
       DllCall("ShCore\CreateRandomAccessStreamOverStream", "ptr", pStream, "uint", 1, "ptr", CLSID, "ptr*", pRandomAccessStream:=0, "uint")
@@ -1671,7 +1671,7 @@ class ImagePut {
       return pRandomAccessStream
    }
 
-   static put_hex(ByRef pBitmap, extension := "", quality := "") {
+   static put_hex(pBitmap, extension := "", quality := "") {
       ; Default extension is PNG for small sizes!
       if !(extension ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$")
          extension := "png"
@@ -1693,7 +1693,7 @@ class ImagePut {
       return StrGet(hex, length, "CP0")
    }
 
-   static put_base64(ByRef pBitmap, extension := "", quality := "") {
+   static put_base64(pBitmap, extension := "", quality := "") {
       ; Thanks noname - https://www.autohotkey.com/boards/viewtopic.php?style=7&p=144247#p144247
 
       ; Default extension is PNG for small sizes!
@@ -1736,17 +1736,17 @@ class ImagePut {
       }
    }
 
-   static gdiplusShutdown(cotype := "", ByRef pBitmap := "") {
+   static gdiplusShutdown(cotype := "", pBitmap := "") {
       ImagePut.gdiplus--
 
       ; When a buffer object is deleted a bitmap is sent here for disposal.
       if (cotype == "smart_pointer")
          if DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
-            throw Exception("The bitmap of this buffer object has already been deleted.")
+            throw Error("The bitmap of this buffer object has already been deleted.")
 
       ; Check for unpaired calls of gdiplusShutdown. 
       if (ImagePut.gdiplus < 0)
-         throw Exception("Missing ImagePut.gdiplusStartup().")
+         throw Error("Missing ImagePut.gdiplusStartup().")
 
       ; Shutdown gdiplus when counter goes from 1 -> 0.
       if (ImagePut.gdiplus == 0) {
@@ -1764,7 +1764,7 @@ class ImagePut {
 
          ; Otherwise GDI+ has been truly unloaded from the script and objects are out of scope.
          if (cotype = "bitmap")
-            throw Exception("Out of scope error. `n`nIf you wish to handle raw pointers to GDI+ bitmaps, add the line"
+            throw Error("Out of scope error. `n`nIf you wish to handle raw pointers to GDI+ bitmaps, add the line"
                . "`n`n`t`t" this.prototype.__class ".gdiplusStartup()`n`nor 'pToken := Gdip_Startup()' to the top of your script."
                . "`nAlternatively, use 'obj := ImagePutBuffer()' with 'obj.pBitmap'."
                . "`nYou can copy this message by pressing Ctrl + C.")
@@ -1820,7 +1820,7 @@ class ImageEqual extends ImagePut {
       return result
    }
 
-   static isBitmapEqual(ByRef pBitmap1, ByRef pBitmap2, Format := 0x26200A) {
+   static isBitmapEqual(pBitmap1, pBitmap2, Format := 0x26200A) {
       ; Make sure both bitmaps are valid pointers.
       if !(pBitmap1 && pBitmap2)
          return false
