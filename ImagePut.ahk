@@ -804,7 +804,7 @@ class ImagePut {
    }
 
    static from_url(image) {
-      req := ComObjCreate("WinHttp.WinHttpRequest.5.1")
+      req := ComObject("WinHttp.WinHttpRequest.5.1")
       req.Open("GET", image)
       req.Send()
       IStream := ComObjQuery(req.ResponseStream, "{0000000C-0000-0000-C000-000000000046}")
