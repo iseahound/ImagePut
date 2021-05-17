@@ -1779,8 +1779,8 @@ class ImagePut {
 } ; End of ImagePut class.
 
 
-ImageEqual(images*)
-   => ImageEqual.call(images*)
+
+
 
 
 class ImageEqual extends ImagePut {
