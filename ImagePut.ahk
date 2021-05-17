@@ -104,19 +104,18 @@ ImagePutWindow(ByRef image, title := "")
 
 
 
-; ImagePut() - Puts an image from anywhere to anywhere.
-;   cotype     -  Output Type             |  string   ->   Case Insensitive. Read documentation.
-;   image      -  Input Image             |  image    ->   Anything. Refer to ImageType().
-;   crop       -  Crop Coordinates        |  array    ->   [x,y,w,h] could be negative or percent.
-;   scale      -  Scale Factor            |  real     ->   2.0
-;   terms*     -  Additional Parameters   |  variadic ->   Extra parameters found in toCotype().
-ImagePut(cotype, ByRef image, crop := "", scale := "", terms*)
-   => ImagePut.call(cotype, image, crop, scale, terms*)
+
 
 
 
 class ImagePut {
 
+   ; ImagePut() - Puts an image from anywhere to anywhere.
+   ;   cotype     -  Output Type             |  string   ->   Case Insensitive. Read documentation.
+   ;   image      -  Input Image             |  image    ->   Anything. Refer to ImageType().
+   ;   crop       -  Crop Coordinates        |  array    ->   [x,y,w,h] could be negative or percent.
+   ;   scale      -  Scale Factor            |  real     ->   2.0
+   ;   terms*     -  Additional Parameters   |  variadic ->   Extra parameters found in toCotype().
    static call(cotype, ByRef image, crop := "", scale := "", terms*) {
 
       this.gdiplusStartup()
