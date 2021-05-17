@@ -1249,6 +1249,12 @@ class ImagePut {
       ;hBrush := DllCall("CreateSolidBrush", "uint", 0x00F0F0F0, "ptr")
       hBrush := DllCall("GetStockObject", "int", 5, "ptr") ; Hollow_brush
 
+      ; explanation or guess: There's 2 layers. The bottom layer is F0F0F0 and it is set to transparent.
+      ; However, transparency is click through. But if the hollow brush is used instead, it paints with
+      ; no color. But the system interprets that as the default color, F0F0F0. So later when F0F0F0 is made
+      ; transparent, it can't set the bounds as click though, because the system used the default color to
+      ; represent the empty color, and all we did was remove the system shading. (Just a guess.)
+
       ; struct tagWNDCLASSEXA - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexa
       ; struct tagWNDCLASSEXW - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexw
       VarSetCapacity(WNDCLASSEX, size := A_PtrSize=8 ? 80:48, 0)                                ; sizeof(WNDCLASSEX) = 48 or 80
