@@ -626,7 +626,7 @@ class ImagePut {
 
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
       hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
-      bi := BufferAlloc(40, 0)                 ; sizeof(bi) = 40
+      bi := Buffer(40, 0)                      ; sizeof(bi) = 40
          , NumPut(  "uint",        40, bi,  0) ; Size
          , NumPut(   "int",  image[3], bi,  4) ; Width
          , NumPut(   "int", -image[4], bi,  8) ; Height - Negative so (0, 0) is top-left.
@@ -668,14 +668,14 @@ class ImagePut {
          DllCall("ShowWindow", "ptr", image, "int", 4)
 
       ; Get the width and height of the client window.
-      Rect := BufferAlloc(16) ; sizeof(RECT) = 16
+      Rect := Buffer(16) ; sizeof(RECT) = 16
       DllCall("GetClientRect", "ptr", image, "ptr", Rect)
          , width  := NumGet(Rect, 8, "int")
          , height := NumGet(Rect, 12, "int")
 
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
       hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
-      bi := BufferAlloc(40, 0)                 ; sizeof(bi) = 40
+      bi := Buffer(40, 0)                      ; sizeof(bi) = 40
          , NumPut(  "uint",        40, bi,  0) ; Size
          , NumPut(   "int",     width, bi,  4) ; Width
          , NumPut(   "int",   -height, bi,  8) ; Height - Negative so (0, 0) is top-left.
@@ -714,7 +714,7 @@ class ImagePut {
          throw Error("Could not locate hidden window behind desktop.")
 
       ; Get the width and height of the client window.
-      Rect := BufferAlloc(16) ; sizeof(RECT) = 16
+      Rect := Buffer(16) ; sizeof(RECT) = 16
       DllCall("GetClientRect", "ptr", WorkerW, "ptr", Rect)
          , width  := NumGet(Rect, 8, "int")
          , height := NumGet(Rect, 12, "int")
@@ -724,7 +724,7 @@ class ImagePut {
 
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
       hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
-      bi := BufferAlloc(40, 0)                 ; sizeof(bi) = 40
+      bi := Buffer(40, 0)                      ; sizeof(bi) = 40
          , NumPut(  "uint",        40, bi,  0) ; Size
          , NumPut(   "int",     width, bi,  4) ; Width
          , NumPut(   "int",   -height, bi,  8) ; Height - Negative so (0, 0) is top-left.
@@ -759,7 +759,7 @@ class ImagePut {
 
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
       hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
-      bi := BufferAlloc(40, 0)                 ; sizeof(bi) = 40
+      bi := Buffer(40, 0)                      ; sizeof(bi) = 40
          , NumPut(  "uint",        40, bi,  0) ; Size
          , NumPut(   "int",     width, bi,  4) ; Width
          , NumPut(   "int",   -height, bi,  8) ; Height - Negative so (0, 0) is top-left.
@@ -786,10 +786,10 @@ class ImagePut {
       ; Thanks 23W - https://stackoverflow.com/a/13295280
 
       ; struct CURSORINFO - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-cursorinfo
-      ci := BufferAlloc(16+A_PtrSize, 0)                 ; sizeof(CURSORINFO) = 20, 24
+      ci := Buffer(16+A_PtrSize, 0) ; sizeof(CURSORINFO) = 20, 24
          , NumPut("int", ci.size, ci)
       DllCall("GetCursorInfo", "ptr", ci)
-         ; cShow   := NumGet(ci,  4, "int")              ; 0x1 = CURSOR_SHOWING, 0x2 = CURSOR_SUPPRESSED
+         ; cShow   := NumGet(ci,  4, "int") ; 0x1 = CURSOR_SHOWING, 0x2 = CURSOR_SUPPRESSED
          , hCursor := NumGet(ci,  8, "ptr")
          ; xCursor := NumGet(ci,  8+A_PtrSize, "int")
          ; yCursor := NumGet(ci, 12+A_PtrSize, "int")
@@ -837,7 +837,7 @@ class ImagePut {
    static from_hBitmap(image) {
       ; struct DIBSECTION - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-dibsection
       ; struct BITMAP - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmap
-      dib := BufferAlloc(64+5*A_PtrSize) ; sizeof(DIBSECTION) = 84, 104
+      dib := Buffer(64+5*A_PtrSize) ; sizeof(DIBSECTION) = 84, 104
       DllCall("GetObject", "ptr", image, "int", dib.size, "ptr", dib)
          , width  := NumGet(dib, 4, "uint")
          , height := NumGet(dib, 8, "uint")
@@ -858,7 +858,7 @@ class ImagePut {
       ; pBits is the pointer to (top-down) pixel values. The Scan0 will point to the pBits.
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
       hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
-      bi := BufferAlloc(40, 0)                 ; sizeof(bi) = 40
+      bi := Buffer(40, 0)                      ; sizeof(bi) = 40
          , NumPut(  "uint",        40, bi,  0) ; Size
          , NumPut(   "int",     width, bi,  4) ; Width
          , NumPut(   "int",   -height, bi,  8) ; Height - Negative so (0, 0) is top-left.
@@ -872,10 +872,10 @@ class ImagePut {
                , "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", &pBitmap:=0)
 
       ; Create a Scan0 buffer pointing to pBits. The buffer has pixel format pARGB.
-      Rect := BufferAlloc(16, 0)               ; sizeof(Rect) = 16
+      Rect := Buffer(16, 0)                    ; sizeof(Rect) = 16
          , NumPut(  "uint",   width, Rect,  8) ; Width
          , NumPut(  "uint",  height, Rect, 12) ; Height
-      BitmapData := BufferAlloc(16+2*A_PtrSize, 0)      ; sizeof(BitmapData) = 24, 32
+      BitmapData := Buffer(16+2*A_PtrSize, 0)           ; sizeof(BitmapData) = 24, 32
          , NumPut(  "uint",      width, BitmapData,  0) ; Width
          , NumPut(  "uint",     height, BitmapData,  4) ; Height
          , NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
@@ -910,15 +910,15 @@ class ImagePut {
 
    static from_hIcon(image) {
       ; struct ICONINFO - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-iconinfo
-      ii := BufferAlloc(8+3*A_PtrSize, 0)                ; sizeof(ICONINFO) = 20, 32
+      ii := Buffer(8+3*A_PtrSize, 0)                    ; sizeof(ICONINFO) = 20, 32
       DllCall("GetIconInfo", "ptr", image, "ptr", ii)
          ; xHotspot := NumGet(ii, 4, "uint")
          ; yHotspot := NumGet(ii, 8, "uint")
-         , hbmMask  := NumGet(ii, 8+A_PtrSize, "ptr")    ; x86:12, x64:16
-         , hbmColor := NumGet(ii, 8+2*A_PtrSize, "ptr")  ; x86:16, x64:24
+         , hbmMask  := NumGet(ii, 8+A_PtrSize, "ptr")   ; 12, 16
+         , hbmColor := NumGet(ii, 8+2*A_PtrSize, "ptr") ; 16, 24
 
       ; struct BITMAP - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmap
-      bm := BufferAlloc(16+2*A_PtrSize) ; sizeof(BITMAP) = 24, 32
+      bm := Buffer(16+2*A_PtrSize) ; sizeof(BITMAP) = 24, 32
       DllCall("GetObject", "ptr", hbmMask, "int", bm.size, "ptr", bm)
          , width  := NumGet(bm, 4, "uint")
          , height := NumGet(bm, 8, "uint") / (hbmColor ? 1 : 2) ; Black and White cursors have doubled height.
@@ -929,7 +929,7 @@ class ImagePut {
 
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
       hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
-      bi := BufferAlloc(40, 0)                 ; sizeof(bi) = 40
+      bi := Buffer(40, 0)                      ; sizeof(bi) = 40
          , NumPut(  "uint",        40, bi,  0) ; Size
          , NumPut(   "int",     width, bi,  4) ; Width
          , NumPut(   "int",   -height, bi,  8) ; Height - Negative so (0, 0) is top-left.
@@ -943,10 +943,10 @@ class ImagePut {
                , "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", &pBitmap:=0)
 
       ; Create a Scan0 buffer pointing to pBits. The buffer has pixel format pARGB.
-      Rect := BufferAlloc(16, 0)               ; sizeof(Rect) = 16
+      Rect := Buffer(16, 0)                    ; sizeof(Rect) = 16
          , NumPut(  "uint",   width, Rect,  8) ; Width
          , NumPut(  "uint",  height, Rect, 12) ; Height
-      BitmapData := BufferAlloc(16+2*A_PtrSize, 0)      ; sizeof(BitmapData) = 24, 32
+      BitmapData := Buffer(16+2*A_PtrSize, 0)           ; sizeof(BitmapData) = 24, 32
          , NumPut(  "uint",      width, BitmapData,  0) ; Width
          , NumPut(  "uint",     height, BitmapData,  4) ; Height
          , NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
@@ -990,7 +990,7 @@ class ImagePut {
 
    static from_RandomAccessStream(image) {
       ; Get the Class ID from a GUID string.
-      CLSID := BufferAlloc(16, 0)
+      CLSID := Buffer(16, 0)
       if result := DllCall("ole32\CLSIDFromString", "wstr", "{0000000C-0000-0000-C000-000000000046}", "ptr", CLSID, "uint")
          throw Error("CLSIDFromString failed. Error: " . Format("{:#x}", result))
 
@@ -1014,7 +1014,7 @@ class ImagePut {
       ; Converts the image to binary data by first asking for the size.
       DllCall("crypt32\CryptStringToBinary"
                , "ptr", StrPtr(image), "uint", 0, "uint", 0x0000000C, "ptr",   0, "uint*", &size:=0, "ptr", 0, "ptr", 0)
-      bin := BufferAlloc(size, 0)
+      bin := Buffer(size, 0)
       DllCall("crypt32\CryptStringToBinary"
                , "ptr", StrPtr(image), "uint", 0, "uint", 0x0000000C, "ptr", bin, "uint*", size   , "ptr", 0, "ptr", 0)
 
@@ -1034,7 +1034,7 @@ class ImagePut {
       ; Converts the image to binary data by first asking for the size.
       DllCall("crypt32\CryptStringToBinary"
                , "ptr", StrPtr(image), "uint", 0, "uint", 0x00000001, "ptr",   0, "uint*", &size:=0, "ptr", 0, "ptr", 0)
-      bin := BufferAlloc(size, 0)
+      bin := Buffer(size, 0)
       DllCall("crypt32\CryptStringToBinary"
                , "ptr", StrPtr(image), "uint", 0, "uint", 0x00000001, "ptr", bin, "uint*", size   , "ptr", 0, "ptr", 0)
 
@@ -1142,10 +1142,10 @@ class ImagePut {
          , NumPut(  "uint", 0x000000FF, pdib, 48) ; Blue
 
       ; Transfer data from source pBitmap to the global memory manually.
-      Rect := BufferAlloc(16, 0)               ; sizeof(Rect) = 16
+      Rect := Buffer(16, 0)                    ; sizeof(Rect) = 16
          , NumPut(  "uint",   width, Rect,  8) ; Width
          , NumPut(  "uint",  height, Rect, 12) ; Height
-      BitmapData := BufferAlloc(16+2*A_PtrSize, 0)      ; sizeof(BitmapData) = 24, 32
+      BitmapData := Buffer(16+2*A_PtrSize, 0)           ; sizeof(BitmapData) = 24, 32
          , NumPut(  "uint",      width, BitmapData,  0) ; Width
          , NumPut(  "uint",     height, BitmapData,  4) ; Height
          , NumPut(   "int",     stride, BitmapData,  8) ; Stride
@@ -1257,7 +1257,7 @@ class ImagePut {
 
       ; struct tagWNDCLASSEXA - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexa
       ; struct tagWNDCLASSEXW - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexw
-      WNDCLASSEX := BufferAlloc(A_PtrSize=8 ? 80:48, 0)                                ; sizeof(WNDCLASSEX) = 48, 80
+      WNDCLASSEX := Buffer(A_PtrSize=8 ? 80:48, 0)                                ; sizeof(WNDCLASSEX) = 48, 80
          , NumPut(  "uint", WNDCLASSEX.size, WNDCLASSEX,                   0) ; cbSize
          , NumPut(  "uint",          0, WNDCLASSEX,                   4) ; style
          , NumPut(   "ptr",   pWndProc, WNDCLASSEX,                   8) ; lpfnWndProc
@@ -1292,7 +1292,7 @@ class ImagePut {
          WS_EX_TRANSPARENT         :=       0x20
          WS_EX_DLGMODALFRAME       :=        0x1
 
-         rect := BufferAlloc(16, 0)
+         rect := Buffer(16, 0)
             , NumPut("int", Floor((A_ScreenWidth - width) / 2), rect,  0)
             , NumPut("int", Floor((A_ScreenHeight - height) / 2), rect,  4)
             , NumPut("int", Floor((A_ScreenWidth + width) / 2), rect,  8)
@@ -1460,7 +1460,7 @@ class ImagePut {
       ; Sets the hotspot of the cursor by changing the icon into a cursor.
       if (xHotspot != "" || yHotspot != "") {
          ; struct ICONINFO - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-iconinfo
-         ii := BufferAlloc(8+3*A_PtrSize, 0)                          ; sizeof(ICONINFO) = 20, 32
+         ii := Buffer(8+3*A_PtrSize, 0)                               ; sizeof(ICONINFO) = 20, 32
          DllCall("GetIconInfo", "ptr", hIcon, "ptr", ii)              ; Fill the ICONINFO structure.
             , NumPut("uint", false, ii, 0)                            ; true/false are icon/cursor respectively.
             , (xHotspot != "") ? NumPut("uint", xHotspot, ii, 4) : "" ; Set the xHotspot value. (Default: center point)
@@ -1513,7 +1513,7 @@ class ImagePut {
 
       ; Fill a buffer with the available encoders.
       DllCall("gdiplus\GdipGetImageEncodersSize", "uint*", &count:=0, "uint*", &size:=0)
-      ci := BufferAlloc(size)
+      ci := Buffer(size)
       DllCall("gdiplus\GdipGetImageEncoders", "uint", count, "uint", size, "ptr", ci)
       if !(count && size)
          throw Error("Could not get a list of image codec encoders on this system.")
@@ -1531,7 +1531,7 @@ class ImagePut {
       if (extension ~= "^(?i:jpg|jpeg|jpe|jfif)$"
       && IsInteger(quality) && 0 <= quality && quality <= 100 && quality != 75) {
          DllCall("gdiplus\GdipGetEncoderParameterListSize", "ptr", pBitmap, "ptr", pCodec, "uint*", &size:=0)
-         EncoderParameters := BufferAlloc(size, 0)
+         EncoderParameters := Buffer(size, 0)
          DllCall("gdiplus\GdipGetEncoderParameterList", "ptr", pBitmap, "ptr", pCodec, "uint", size, "ptr", EncoderParameters)
 
          ; Search for an encoder parameter with 1 value of type 6.
@@ -1571,7 +1571,7 @@ class ImagePut {
       ; Convert the source pBitmap into a hBitmap manually.
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
       hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
-      bi := BufferAlloc(40, 0)                 ; sizeof(bi) = 40
+      bi := Buffer(40, 0)                      ; sizeof(bi) = 40
          , NumPut(  "uint",        40, bi,  0) ; Size
          , NumPut(   "int",     width, bi,  4) ; Width
          , NumPut(   "int",   -height, bi,  8) ; Height - Negative so (0, 0) is top-left.
@@ -1581,10 +1581,10 @@ class ImagePut {
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
       ; Transfer data from source pBitmap to an hBitmap manually.
-      Rect := BufferAlloc(16, 0)               ; sizeof(Rect) = 16
+      Rect := Buffer(16, 0)                    ; sizeof(Rect) = 16
          , NumPut(  "uint",   width, Rect,  8) ; Width
          , NumPut(  "uint",  height, Rect, 12) ; Height
-      BitmapData := BufferAlloc(16+2*A_PtrSize, 0)      ; sizeof(BitmapData) = 24, 32
+      BitmapData := Buffer(16+2*A_PtrSize, 0)           ; sizeof(BitmapData) = 24, 32
          , NumPut(  "uint",      width, BitmapData,  0) ; Width
          , NumPut(  "uint",     height, BitmapData,  4) ; Height
          , NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
@@ -1617,7 +1617,7 @@ class ImagePut {
 
       ; Fill a buffer with the available encoders.
       DllCall("gdiplus\GdipGetImageEncodersSize", "uint*", &count:=0, "uint*", &size:=0)
-      ci := BufferAlloc(size)
+      ci := Buffer(size)
       DllCall("gdiplus\GdipGetImageEncoders", "uint", count, "uint", size, "ptr", ci)
       if !(count && size)
          throw Error("Could not get a list of image codec encoders on this system.")
@@ -1635,7 +1635,7 @@ class ImagePut {
       if (extension ~= "^(?i:jpg|jpeg|jpe|jfif)$"
       && IsInteger(quality) && 0 <= quality && quality <= 100 && quality != 75) {
          DllCall("gdiplus\GdipGetEncoderParameterListSize", "ptr", pBitmap, "ptr", pCodec, "uint*", &size:=0)
-         EncoderParameters := BufferAlloc(size, 0)
+         EncoderParameters := Buffer(size, 0)
          DllCall("gdiplus\GdipGetEncoderParameterList", "ptr", pBitmap, "ptr", pCodec, "uint", size, "ptr", EncoderParameters)
 
          ; Search for an encoder parameter with 1 value of type 6.
@@ -1664,7 +1664,7 @@ class ImagePut {
       pStream := this.put_stream(pBitmap, extension, quality)
 
       ; Get the Class ID from a GUID string.
-      CLSID := BufferAlloc(16, 0)
+      CLSID := Buffer(16, 0)
       if result := DllCall("ole32\CLSIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", CLSID, "uint")
          throw Error("CLSIDFromString failed. Error: " . Format("{:#x}", result))
 
@@ -1689,7 +1689,7 @@ class ImagePut {
 
       ; Using CryptBinaryToStringA saves about 2MB in memory.
       DllCall("Crypt32.dll\CryptBinaryToStringA", "ptr", pData, "uint", nSize, "uint", 0x4000000C, "ptr", 0, "uint*", &length:=0)
-      hex := BufferAlloc(length, 0)
+      hex := Buffer(length, 0)
       DllCall("Crypt32.dll\CryptBinaryToStringA", "ptr", pData, "uint", nSize, "uint", 0x4000000C, "ptr", hex, "uint*", length)
 
       DllCall("GlobalUnlock", "ptr", hData)
@@ -1713,7 +1713,7 @@ class ImagePut {
 
       ; Using CryptBinaryToStringA saves about 2MB in memory.
       DllCall("Crypt32.dll\CryptBinaryToStringA", "ptr", pData, "uint", nSize, "uint", 0x40000001, "ptr", 0, "uint*", &length:=0)
-      base64 := BufferAlloc(length, 0)
+      base64 := Buffer(length, 0)
       DllCall("Crypt32.dll\CryptBinaryToStringA", "ptr", pData, "uint", nSize, "uint", 0x40000001, "ptr", base64, "uint*", length)
 
       DllCall("GlobalUnlock", "ptr", hData)
@@ -1734,7 +1734,7 @@ class ImagePut {
 
          ; Startup gdiplus.
          DllCall("LoadLibrary", "str", "gdiplus")
-         si := BufferAlloc(A_PtrSize = 8 ? 24 : 16, 0) ; sizeof(GdiplusStartupInput) = 16, 24
+         si := Buffer(A_PtrSize = 8 ? 24 : 16, 0) ; sizeof(GdiplusStartupInput) = 16, 24
             , NumPut("uint", 0x1, si)
          DllCall("gdiplus\GdiplusStartup", "ptr*", &pToken:=0, "ptr", si, "ptr", 0)
 
@@ -1846,7 +1846,7 @@ class ImageEqual extends ImagePut {
          return false
 
       ; struct RECT - https://docs.microsoft.com/en-us/windows/win32/api/windef/ns-windef-rect
-      Rect := BufferAlloc(16, 0)                     ; sizeof(Rect) = 16
+      Rect := Buffer(16, 0)                          ; sizeof(Rect) = 16
          , NumPut(  "uint",   Width1, Rect,  8)      ; Width
          , NumPut(  "uint",  Height1, Rect, 12)      ; Height
 
@@ -1854,7 +1854,7 @@ class ImageEqual extends ImagePut {
       while ((i:=IsSet(i)?i:0)++ < 2) { ; for(int i = 0; i < 2; i++)
 
          ; Create a BitmapData structure.
-         BitmapData%i% := BufferAlloc(16+2*A_PtrSize, 0)  ; sizeof(BitmapData) = 24, 32
+         BitmapData%i% := Buffer(16+2*A_PtrSize, 0)  ; sizeof(BitmapData) = 24, 32
 
          ; Transfer the pixels to a read-only buffer. Avoid using a different PixelFormat.
          DllCall("gdiplus\GdipBitmapLockBits"
