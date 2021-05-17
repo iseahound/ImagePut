@@ -327,7 +327,7 @@ class ImagePut {
             return "hIcon"
 
          ; A "bitmap" is a pointer to a GDI+ Bitmap.
-         try if !DllCall("gdiplus\GdipGetImageType", "ptr", image, "ptr*", type:=0) && (type == 1)
+         try if !DllCall("gdiplus\GdipGetImageType", "ptr", image, "ptr*", &type:=0) && (type == 1)
             return "bitmap"
 
          ; Note 1: All GDI+ functions add 1 to the reference count of COM objects.
@@ -496,9 +496,9 @@ class ImagePut {
 
    static BitmapCrop(pBitmap, crop) {
       ; Get Bitmap width, height, and format.
-      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
-      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
-      DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", pBitmap, "uint*", format:=0)
+      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
+      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
+      DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", pBitmap, "uint*", &format:=0)
 
       ; Are the numbers percentages?
       crop[3] := (crop[3] ~= "%$") ? SubStr(crop[3], 1, -1) * 0.01 *  width : crop[3]
@@ -535,24 +535,24 @@ class ImagePut {
                ,    "int", safe_h
                ,    "int", format
                ,    "ptr", pBitmap
-               ,   "ptr*", pBitmapCrop:=0)
+               ,   "ptr*", &pBitmapCrop:=0)
 
       return pBitmapCrop
    }
 
    static BitmapScale(pBitmap, scale) {
       ; Get Bitmap width, height, and format.
-      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
-      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
-      DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", pBitmap, "uint*", format:=0)
+      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
+      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
+      DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", pBitmap, "uint*", &format:=0)
 
       safe_w := Ceil(width * scale)
       safe_h := Ceil(height * scale)
 
       ; Create a new bitmap and get the graphics context.
       DllCall("gdiplus\GdipCreateBitmapFromScan0"
-               , "int", safe_w, "int", safe_h, "int", 0, "int", format, "ptr", 0, "ptr*", pBitmapScale:=0)
-      DllCall("gdiplus\GdipGetImageGraphicsContext", "ptr", pBitmapScale, "ptr*", pGraphics:=0)
+               , "int", safe_w, "int", safe_h, "int", 0, "int", format, "ptr", 0, "ptr*", &pBitmapScale:=0)
+      DllCall("gdiplus\GdipGetImageGraphicsContext", "ptr", pBitmapScale, "ptr*", &pGraphics:=0)
 
       ; Set settings in graphics context.
       DllCall("gdiplus\GdipSetPixelOffsetMode",    "ptr", pGraphics, "int", 2) ; Half pixel offset.
@@ -560,7 +560,7 @@ class ImagePut {
       DllCall("gdiplus\GdipSetInterpolationMode",  "ptr", pGraphics, "int", 7) ; HighQualityBicubic
 
       ; Draw Image.
-      DllCall("gdiplus\GdipCreateImageAttributes", "ptr*", ImageAttr:=0)
+      DllCall("gdiplus\GdipCreateImageAttributes", "ptr*", &ImageAttr:=0)
       DllCall("gdiplus\GdipSetImageAttributesWrapMode", "ptr", ImageAttr, "int", 3) ; WrapModeTileFlipXY
       DllCall("gdiplus\GdipDrawImageRectRectI"
                ,    "ptr", pGraphics
@@ -605,15 +605,15 @@ class ImagePut {
       png := DllCall("RegisterClipboardFormat", "str", "png", "uint")
       if DllCall("IsClipboardFormatAvailable", "uint", png, "int") {
          hData := DllCall("GetClipboardData", "uint", png, "ptr")
-         DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", true, "ptr*", pStream:=0)
-         DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", pBitmap:=0)
+         DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", true, "ptr*", &pStream:=0)
+         DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
          ObjRelease(pStream)
       }
 
       ; Fallback to CF_BITMAP.
       else if DllCall("IsClipboardFormatAvailable", "uint", 2, "int") {
          hBitmap := DllCall("GetClipboardData", "uint", 2, "ptr")
-         DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", hBitmap, "ptr", 0, "ptr*", pBitmap:=0)
+         DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", hBitmap, "ptr", 0, "ptr*", &pBitmap:=0)
          DllCall("DeleteObject", "ptr", hBitmap)
       }
 
@@ -632,7 +632,7 @@ class ImagePut {
          , NumPut(   "int", -image[4], bi,  8) ; Height - Negative so (0, 0) is top-left.
          , NumPut("ushort",         1, bi, 12) ; Planes
          , NumPut("ushort",        32, bi, 14) ; BitCount / BitsPerPixel
-      hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
+      hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", bi, "uint", 0, "ptr*", &pBits:=0, "ptr", 0, "uint", 0, "ptr")
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
       ; Retrieve the device context for the screen.
@@ -647,7 +647,7 @@ class ImagePut {
       DllCall("ReleaseDC", "ptr", 0, "ptr", sdc)
 
       ; Convert the hBitmap to a Bitmap using a built in function as there is no transparency.
-      DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", hbm, "ptr", 0, "ptr*", pBitmap:=0)
+      DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", hbm, "ptr", 0, "ptr*", &pBitmap:=0)
 
       ; Cleanup the hBitmap and device contexts.
       DllCall("SelectObject", "ptr", hdc, "ptr", obm)
@@ -681,7 +681,7 @@ class ImagePut {
          , NumPut(   "int",   -height, bi,  8) ; Height - Negative so (0, 0) is top-left.
          , NumPut("ushort",         1, bi, 12) ; Planes
          , NumPut("ushort",        32, bi, 14) ; BitCount / BitsPerPixel
-      hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
+      hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", bi, "uint", 0, "ptr*", &pBits:=0, "ptr", 0, "uint", 0, "ptr")
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
       ; Print the window onto the hBitmap using an undocumented flag. https://stackoverflow.com/a/40042587
@@ -689,7 +689,7 @@ class ImagePut {
       ; Additional info on how this is implemented: https://www.reddit.com/r/windows/comments/8ffr56/altprintscreen/
 
       ; Convert the hBitmap to a Bitmap using a built in function as there is no transparency.
-      DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", hbm, "ptr", 0, "ptr*", pBitmap:=0)
+      DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", hbm, "ptr", 0, "ptr*", &pBitmap:=0)
 
       ; Cleanup the hBitmap and device contexts.
       DllCall("SelectObject", "ptr", hdc, "ptr", obm)
@@ -730,7 +730,7 @@ class ImagePut {
          , NumPut(   "int",   -height, bi,  8) ; Height - Negative so (0, 0) is top-left.
          , NumPut("ushort",         1, bi, 12) ; Planes
          , NumPut("ushort",        32, bi, 14) ; BitCount / BitsPerPixel
-      hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
+      hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", bi, "uint", 0, "ptr*", &pBits:=0, "ptr", 0, "uint", 0, "ptr")
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
       ; Copies a portion of the hidden window to a new device context.
@@ -739,7 +739,7 @@ class ImagePut {
                , "ptr", sdc, "int", 0, "int", 0, "uint", 0x00CC0020) ; SRCCOPY
 
       ; Convert the hBitmap to a Bitmap using a built in function as there is no transparency.
-      DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", hbm, "ptr", 0, "ptr*", pBitmap:=0)
+      DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", hbm, "ptr", 0, "ptr*", &pBitmap:=0)
 
       ; Cleanup the hBitmap and device contexts.
       DllCall("SelectObject", "ptr", hdc, "ptr", obm)
@@ -765,14 +765,14 @@ class ImagePut {
          , NumPut(   "int",   -height, bi,  8) ; Height - Negative so (0, 0) is top-left.
          , NumPut("ushort",         1, bi, 12) ; Planes
          , NumPut("ushort",        32, bi, 14) ; BitCount / BitsPerPixel
-      hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
+      hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", bi, "uint", 0, "ptr*", &pBits:=0, "ptr", 0, "uint", 0, "ptr")
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
       ; Paints the desktop.
       DllCall("PaintDesktop", "ptr", hdc)
 
       ; Convert the hBitmap to a Bitmap using a built in function as there is no transparency.
-      DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", hbm, "ptr", 0, "ptr*", pBitmap:=0)
+      DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", hbm, "ptr", 0, "ptr*", &pBitmap:=0)
 
       ; Cleanup the hBitmap and device contexts.
       DllCall("SelectObject", "ptr", hdc, "ptr", obm)
@@ -808,19 +808,19 @@ class ImagePut {
       req.Open("GET", image)
       req.Send()
       IStream := ComObjQuery(req.ResponseStream, "{0000000C-0000-0000-C000-000000000046}")
-      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", IStream, "ptr*", pBitmap:=0)
+      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", IStream, "ptr*", &pBitmap:=0)
       ObjRelease(IStream.ptr)
       return pBitmap
    }
 
    static from_file(image) {
-      DllCall("gdiplus\GdipCreateBitmapFromFile", "wstr", image, "ptr*", pBitmap:=0)
+      DllCall("gdiplus\GdipCreateBitmapFromFile", "wstr", image, "ptr*", &pBitmap:=0)
       return pBitmap
    }
 
    static from_monitor(image) {
       if (image > 0) {
-         MonitorGet(image, Left, Top, Right, Bottom)
+         MonitorGet(image, &Left, &Top, &Right, &Bottom)
          x := Left
          y := Top
          w := Right - Left
@@ -845,7 +845,7 @@ class ImagePut {
 
       ; Fallback to built-in method if pixels are not 32-bit ARGB.
       if (bpp != 32) { ; This built-in version is 120% faster but ignores transparency.
-         DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", image, "ptr", 0, "ptr*", pBitmap:=0)
+         DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", image, "ptr", 0, "ptr*", &pBitmap:=0)
          return pBitmap
       }
 
@@ -864,12 +864,12 @@ class ImagePut {
          , NumPut(   "int",   -height, bi,  8) ; Height - Negative so (0, 0) is top-left.
          , NumPut("ushort",         1, bi, 12) ; Planes
          , NumPut("ushort",        32, bi, 14) ; BitCount / BitsPerPixel
-      hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
+      hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", bi, "uint", 0, "ptr*", &pBits:=0, "ptr", 0, "uint", 0, "ptr")
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
       ; This is the 32-bit ARGB pBitmap (different from an hBitmap) that will receive the final converted pixels.
       DllCall("gdiplus\GdipCreateBitmapFromScan0"
-               , "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
+               , "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", &pBitmap:=0)
 
       ; Create a Scan0 buffer pointing to pBits. The buffer has pixel format pARGB.
       Rect := BufferAlloc(16, 0)               ; sizeof(Rect) = 16
@@ -935,12 +935,12 @@ class ImagePut {
          , NumPut(   "int",   -height, bi,  8) ; Height - Negative so (0, 0) is top-left.
          , NumPut("ushort",         1, bi, 12) ; Planes
          , NumPut("ushort",        32, bi, 14) ; BitCount / BitsPerPixel
-      hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
+      hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", bi, "uint", 0, "ptr*", &pBits:=0, "ptr", 0, "uint", 0, "ptr")
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
       ; This is the 32-bit ARGB pBitmap (different from an hBitmap) that will receive the final converted pixels.
       DllCall("gdiplus\GdipCreateBitmapFromScan0"
-               , "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
+               , "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", &pBitmap:=0)
 
       ; Create a Scan0 buffer pointing to pBits. The buffer has pixel format pARGB.
       Rect := BufferAlloc(16, 0)               ; sizeof(Rect) = 16
@@ -979,12 +979,12 @@ class ImagePut {
    }
 
    static from_bitmap(image) {
-      DllCall("gdiplus\GdipCloneImage", "ptr", image, "ptr*", pBitmap:=0)
+      DllCall("gdiplus\GdipCloneImage", "ptr", image, "ptr*", &pBitmap:=0)
       return pBitmap
    }
 
    static from_stream(image) {
-      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", image, "ptr*", pBitmap:=0)
+      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", image, "ptr*", &pBitmap:=0)
       return pBitmap
    }
 
@@ -995,10 +995,10 @@ class ImagePut {
          throw Error("CLSIDFromString failed. Error: " . Format("{:#x}", result))
 
       ; Convert RandomAccessStream to stream.
-      DllCall("ShCore\CreateStreamOverRandomAccessStream", "ptr", image, "ptr", CLSID, "ptr*", pStream:=0, "uint")
+      DllCall("ShCore\CreateStreamOverRandomAccessStream", "ptr", image, "ptr", CLSID, "ptr*", &pStream:=0, "uint")
 
       ; Read stream to pBitmap.
-      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", pBitmap:=0)
+      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
 
       ; Manually free the pointer to an IStream.
       ObjRelease(pStream)
@@ -1013,14 +1013,14 @@ class ImagePut {
 
       ; Converts the image to binary data by first asking for the size.
       DllCall("crypt32\CryptStringToBinary"
-               , "ptr", StrPtr(image), "uint", 0, "uint", 0x0000000C, "ptr",   0, "uint*", size:=0, "ptr", 0, "ptr", 0)
+               , "ptr", StrPtr(image), "uint", 0, "uint", 0x0000000C, "ptr",   0, "uint*", &size:=0, "ptr", 0, "ptr", 0)
       bin := BufferAlloc(size, 0)
       DllCall("crypt32\CryptStringToBinary"
                , "ptr", StrPtr(image), "uint", 0, "uint", 0x0000000C, "ptr", bin, "uint*", size   , "ptr", 0, "ptr", 0)
 
       ; Makes a stream for conversion into a pBitmap.
       pStream := DllCall("shlwapi\SHCreateMemStream", "ptr", bin, "uint", size, "ptr")
-      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", pBitmap:=0)
+      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
       ObjRelease(pStream)
 
       return pBitmap
@@ -1033,14 +1033,14 @@ class ImagePut {
 
       ; Converts the image to binary data by first asking for the size.
       DllCall("crypt32\CryptStringToBinary"
-               , "ptr", StrPtr(image), "uint", 0, "uint", 0x00000001, "ptr",   0, "uint*", size:=0, "ptr", 0, "ptr", 0)
+               , "ptr", StrPtr(image), "uint", 0, "uint", 0x00000001, "ptr",   0, "uint*", &size:=0, "ptr", 0, "ptr", 0)
       bin := BufferAlloc(size, 0)
       DllCall("crypt32\CryptStringToBinary"
                , "ptr", StrPtr(image), "uint", 0, "uint", 0x00000001, "ptr", bin, "uint*", size   , "ptr", 0, "ptr", 0)
 
       ; Makes a stream for conversion into a pBitmap.
       pStream := DllCall("shlwapi\SHCreateMemStream", "ptr", bin, "uint", size, "ptr")
-      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", pBitmap:=0)
+      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
       ObjRelease(pStream)
 
       return pBitmap
@@ -1048,22 +1048,22 @@ class ImagePut {
 
    static from_sprite(image) {
       ; Create a source pBitmap and extract the width and height.
-      if DllCall("gdiplus\GdipCreateBitmapFromFile", "wstr", image, "ptr*", sBitmap:=0)
+      if DllCall("gdiplus\GdipCreateBitmapFromFile", "wstr", image, "ptr*", &sBitmap:=0)
          if !(sBitmap := this.from_url(image))
             throw Error("Could not be loaded from a valid file path or URL.")
 
       ; Get Bitmap width and height.
-      DllCall("gdiplus\GdipGetImageWidth", "ptr", sBitmap, "uint*", width:=0)
-      DllCall("gdiplus\GdipGetImageHeight", "ptr", sBitmap, "uint*", height:=0)
+      DllCall("gdiplus\GdipGetImageWidth", "ptr", sBitmap, "uint*", &width:=0)
+      DllCall("gdiplus\GdipGetImageHeight", "ptr", sBitmap, "uint*", &height:=0)
 
       ; Create a destination pBitmap in 32-bit ARGB and get its device context though GDI+.
       ; Note that a device context from a graphics context can only be drawn on, not read.
       ; Also note that using a graphics context and blitting does not create a pixel perfect image.
       ; Using a DIB and LockBits is about 5% faster.
       DllCall("gdiplus\GdipCreateBitmapFromScan0"
-               , "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", dBitmap:=0)
-      DllCall("gdiplus\GdipGetImageGraphicsContext", "ptr", dBitmap, "ptr*", dGraphics:=0)
-      DllCall("gdiplus\GdipGetDC", "ptr", dGraphics, "ptr*", ddc:=0)
+               , "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", &dBitmap:=0)
+      DllCall("gdiplus\GdipGetImageGraphicsContext", "ptr", dBitmap, "ptr*", &dGraphics:=0)
+      DllCall("gdiplus\GdipGetDC", "ptr", dGraphics, "ptr*", &ddc:=0)
 
       ; Keep any existing transparency for whatever reason.
       hBitmap := this.put_hBitmap(sBitmap) ; Could copy this code here for even more speed.
@@ -1108,7 +1108,7 @@ class ImagePut {
       ; #1 - Place the image onto the clipboard as a PNG stream.
       ; Thanks Jochen Arndt - https://www.codeproject.com/Answers/1207927/Saving-an-image-to-the-clipboard#answer3
       pStream := this.put_stream(pBitmap, "png")
-      DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "uint*", hData:=0)
+      DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "uint*", &hData:=0)
       DllCall("SetClipboardData", "uint", DllCall("RegisterClipboardFormat", "str", "png", "uint"), "ptr", hData)
       ObjRelease(pStream)
 
@@ -1116,9 +1116,9 @@ class ImagePut {
       ; Thanks Nyerguds - https://stackoverflow.com/a/46424800
 
       ; Get Bitmap width, height, and format.
-      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
-      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
-      DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", pBitmap, "uint*", format:=0)
+      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
+      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
+      DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", pBitmap, "uint*", &format:=0)
 
       ; Get Bitmap bits per pixel, stride, and size.
       bpp := (format & 0x00FF00) >> 8
@@ -1181,8 +1181,8 @@ class ImagePut {
 
    static put_screenshot(pBitmap, screenshot := "", alpha := "") {
       ; Get Bitmap width and height.
-      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
-      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
+      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
+      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
 
       x := (IsObject(screenshot) && screenshot[1] != "") ? screenshot[1] : Round((A_ScreenWidth - width) / 2)
       y := (IsObject(screenshot) && screenshot[2] != "") ? screenshot[2] : Round((A_ScreenHeight - height) / 2)
@@ -1234,13 +1234,13 @@ class ImagePut {
          return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
       }
 
-      ; Make it permanent. 
+      ; Make it permanent.
       void := ObjBindMethod({}, {})
       Hotkey "^+F12", void, "On"
 
       ; Get Bitmap width and height.
-      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
-      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
+      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
+      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
 
       class_name := "ImagePut"
       pWndProc := CallbackCreate("WindowProc", "Fast")
@@ -1343,7 +1343,7 @@ class ImagePut {
          hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
          hbm := this.put_hBitmap(pBitmap)
          obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
-         ;DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc , "ptr*", gfx:=0)
+         ;DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc , "ptr*", &gfx:=0)
 
          DllCall("UpdateLayeredWindow"
                   ,    "ptr", hwnd                   ; hWnd
@@ -1371,8 +1371,8 @@ class ImagePut {
       ; Thanks Gerald Degeneve - https://www.codeproject.com/Articles/856020/Draw-Behind-Desktop-Icons-in-Windows-plus
 
       ; Get Bitmap width and height.
-      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
-      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
+      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
+      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
 
       ; Convert the Bitmap to a hBitmap and associate a device context for blitting.
       hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
@@ -1424,7 +1424,7 @@ class ImagePut {
 
       ; Get the absolute path of the file.
       length := DllCall("GetFullPathName", "str", filepath, "uint", 0, "ptr", 0, "ptr", 0, "uint")
-      VarSetStrCapacity(buf, length)
+      VarSetStrCapacity(&buf, length)
       DllCall("GetFullPathName", "str", filepath, "uint", length, "str", buf, "ptr", 0, "uint")
 
       ; Keep waiting until the file has been created. (It should be instant!)
@@ -1449,7 +1449,7 @@ class ImagePut {
       ; Thanks Nick - https://stackoverflow.com/a/550965
 
       ; Creates an icon that can be used as a cursor.
-      DllCall("gdiplus\GdipCreateHICONFromBitmap", "ptr", pBitmap, "ptr*", hIcon:=0)
+      DllCall("gdiplus\GdipCreateHICONFromBitmap", "ptr", pBitmap, "ptr*", &hIcon:=0)
 
       ; Sets the hotspot of the cursor by changing the icon into a cursor.
       if (xHotspot != "" || yHotspot != "") {
@@ -1487,7 +1487,7 @@ class ImagePut {
 
       ; Remove whitespace. Seperate the filepath. Adjust for directories.
       filepath := Trim(filepath)
-      SplitPath filepath,, directory, extension, filename
+      SplitPath filepath,, &directory, &extension, &filename
       if DirExist(filepath)
          directory .= "\" filename, filename := ""
       if (directory != "" && !DirExist(directory))
@@ -1506,7 +1506,7 @@ class ImagePut {
       filepath := directory "\" filename "." extension
 
       ; Fill a buffer with the available encoders.
-      DllCall("gdiplus\GdipGetImageEncodersSize", "uint*", count:=0, "uint*", size:=0)
+      DllCall("gdiplus\GdipGetImageEncodersSize", "uint*", &count:=0, "uint*", &size:=0)
       ci := BufferAlloc(size)
       DllCall("gdiplus\GdipGetImageEncoders", "uint", count, "uint", size, "ptr", ci)
       if !(count && size)
@@ -1524,7 +1524,7 @@ class ImagePut {
       ; JPEG is a lossy image format that requires a quality value from 0-100. Default quality is 75.
       if (extension ~= "^(?i:jpg|jpeg|jpe|jfif)$"
       && IsInteger(quality) && 0 <= quality && quality <= 100 && quality != 75) {
-         DllCall("gdiplus\GdipGetEncoderParameterListSize", "ptr", pBitmap, "ptr", pCodec, "uint*", size:=0)
+         DllCall("gdiplus\GdipGetEncoderParameterListSize", "ptr", pBitmap, "ptr", pCodec, "uint*", &size:=0)
          EncoderParameters := BufferAlloc(size, 0)
          DllCall("gdiplus\GdipGetEncoderParameterList", "ptr", pBitmap, "ptr", pCodec, "uint", size, "ptr", EncoderParameters)
 
@@ -1554,13 +1554,13 @@ class ImagePut {
    static put_hBitmap(pBitmap, alpha := "") {
       ; Revert to built in functionality if a replacement color is declared.
       if (alpha != "") { ; This built-in version is about 25% slower.
-         DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "ptr", pBitmap, "ptr*", hBitmap:=0, "uint", alpha)
+         DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "ptr", pBitmap, "ptr*", &hBitmap:=0, "uint", alpha)
          return hBitmap
       }
 
       ; Get Bitmap width and height.
-      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
-      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
+      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
+      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
 
       ; Convert the source pBitmap into a hBitmap manually.
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
@@ -1571,7 +1571,7 @@ class ImagePut {
          , NumPut(   "int",   -height, bi,  8) ; Height - Negative so (0, 0) is top-left.
          , NumPut("ushort",         1, bi, 12) ; Planes
          , NumPut("ushort",        32, bi, 14) ; BitCount / BitsPerPixel
-      hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
+      hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", bi, "uint", 0, "ptr*", &pBits:=0, "ptr", 0, "uint", 0, "ptr")
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
       ; Transfer data from source pBitmap to an hBitmap manually.
@@ -1600,7 +1600,7 @@ class ImagePut {
    }
 
    static put_hIcon(pBitmap) {
-      DllCall("gdiplus\GdipCreateHICONFromBitmap", "ptr", pBitmap, "ptr*", hIcon:=0)
+      DllCall("gdiplus\GdipCreateHICONFromBitmap", "ptr", pBitmap, "ptr*", &hIcon:=0)
       return hIcon
    }
 
@@ -1610,7 +1610,7 @@ class ImagePut {
          extension := "tif"
 
       ; Fill a buffer with the available encoders.
-      DllCall("gdiplus\GdipGetImageEncodersSize", "uint*", count:=0, "uint*", size:=0)
+      DllCall("gdiplus\GdipGetImageEncodersSize", "uint*", &count:=0, "uint*", &size:=0)
       ci := BufferAlloc(size)
       DllCall("gdiplus\GdipGetImageEncoders", "uint", count, "uint", size, "ptr", ci)
       if !(count && size)
@@ -1628,7 +1628,7 @@ class ImagePut {
       ; JPEG is a lossy image format that requires a quality value from 0-100. Default quality is 75.
       if (extension ~= "^(?i:jpg|jpeg|jpe|jfif)$"
       && IsInteger(quality) && 0 <= quality && quality <= 100 && quality != 75) {
-         DllCall("gdiplus\GdipGetEncoderParameterListSize", "ptr", pBitmap, "ptr", pCodec, "uint*", size:=0)
+         DllCall("gdiplus\GdipGetEncoderParameterListSize", "ptr", pBitmap, "ptr", pCodec, "uint*", &size:=0)
          EncoderParameters := BufferAlloc(size, 0)
          DllCall("gdiplus\GdipGetEncoderParameterList", "ptr", pBitmap, "ptr", pCodec, "uint", size, "ptr", EncoderParameters)
 
@@ -1645,7 +1645,7 @@ class ImagePut {
       }
 
       ; Create a Stream.
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", true, "ptr*", pStream:=0)
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", true, "ptr*", &pStream:=0)
       DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", pStream, "ptr", pCodec, "uint", IsSet(ep) ? ep : 0)
 
       return pStream
@@ -1663,7 +1663,7 @@ class ImagePut {
          throw Error("CLSIDFromString failed. Error: " . Format("{:#x}", result))
 
       ; Create a RandomAccessStream
-      DllCall("ShCore\CreateRandomAccessStreamOverStream", "ptr", pStream, "uint", 1, "ptr", CLSID, "ptr*", pRandomAccessStream:=0, "uint")
+      DllCall("ShCore\CreateRandomAccessStreamOverStream", "ptr", pStream, "uint", 1, "ptr", CLSID, "ptr*", &pRandomAccessStream:=0, "uint")
 
       ; The handle to the stream object is automatically freed when the stream object is released.
       ObjRelease(pStream)
@@ -1677,12 +1677,12 @@ class ImagePut {
          extension := "png"
 
       pStream := this.put_stream(pBitmap, extension, quality)
-      DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "uint*", hData:=0)
+      DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "uint*", &hData:=0)
       pData := DllCall("GlobalLock", "ptr", hData, "ptr")
       nSize := DllCall("GlobalSize", "uint", pData, "uptr")
 
       ; Using CryptBinaryToStringA saves about 2MB in memory.
-      DllCall("Crypt32.dll\CryptBinaryToStringA", "ptr", pData, "uint", nSize, "uint", 0x4000000C, "ptr", 0, "uint*", length:=0)
+      DllCall("Crypt32.dll\CryptBinaryToStringA", "ptr", pData, "uint", nSize, "uint", 0x4000000C, "ptr", 0, "uint*", &length:=0)
       hex := BufferAlloc(length, 0)
       DllCall("Crypt32.dll\CryptBinaryToStringA", "ptr", pData, "uint", nSize, "uint", 0x4000000C, "ptr", hex, "uint*", length)
 
@@ -1701,12 +1701,12 @@ class ImagePut {
          extension := "png"
 
       pStream := this.put_stream(pBitmap, extension, quality)
-      DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "uint*", hData:=0)
+      DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "uint*", &hData:=0)
       pData := DllCall("GlobalLock", "ptr", hData, "ptr")
       nSize := DllCall("GlobalSize", "uint", pData, "uptr")
 
       ; Using CryptBinaryToStringA saves about 2MB in memory.
-      DllCall("Crypt32.dll\CryptBinaryToStringA", "ptr", pData, "uint", nSize, "uint", 0x40000001, "ptr", 0, "uint*", length:=0)
+      DllCall("Crypt32.dll\CryptBinaryToStringA", "ptr", pData, "uint", nSize, "uint", 0x40000001, "ptr", 0, "uint*", &length:=0)
       base64 := BufferAlloc(length, 0)
       DllCall("Crypt32.dll\CryptBinaryToStringA", "ptr", pData, "uint", nSize, "uint", 0x40000001, "ptr", base64, "uint*", length)
 
@@ -1730,7 +1730,7 @@ class ImagePut {
          DllCall("LoadLibrary", "str", "gdiplus")
          si := BufferAlloc(A_PtrSize = 8 ? 24 : 16, 0) ; sizeof(GdiplusStartupInput) = 16, 24
             , NumPut("uint", 0x1, si)
-         DllCall("gdiplus\GdiplusStartup", "ptr*", pToken:=0, "ptr", si, "ptr", 0)
+         DllCall("gdiplus\GdiplusStartup", "ptr*", &pToken:=0, "ptr", si, "ptr", 0)
 
          ImagePut.pToken := pToken
       }
@@ -1744,7 +1744,7 @@ class ImagePut {
          if DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
             throw Error("The bitmap of this buffer object has already been deleted.")
 
-      ; Check for unpaired calls of gdiplusShutdown. 
+      ; Check for unpaired calls of gdiplusShutdown.
       if (ImagePut.gdiplus < 0)
          throw Error("Missing ImagePut.gdiplusStartup().")
 
@@ -1757,7 +1757,7 @@ class ImagePut {
          DllCall("FreeLibrary", "ptr", DllCall("GetModuleHandle", "str", "gdiplus", "ptr"))
 
          ; Exit if GDI+ is still loaded. GdiplusNotInitialized = 18
-         if (18 != DllCall("gdiplus\GdipCreateImageAttributes", "ptr*", ImageAttr:=0)) {
+         if (18 != DllCall("gdiplus\GdipCreateImageAttributes", "ptr*", &ImageAttr:=0)) {
             DllCall("gdiplus\GdipDisposeImageAttributes", "ptr", ImageAttr)
             return
          }
@@ -1830,10 +1830,10 @@ class ImageEqual extends ImagePut {
          return true
 
       ; The two bitmaps must be the same size.
-      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap1, "uint*", Width1:=0)
-      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap2, "uint*", Width2:=0)
-      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap1, "uint*", Height1:=0)
-      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap2, "uint*", Height2:=0)
+      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap1, "uint*", &Width1:=0)
+      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap2, "uint*", &Width2:=0)
+      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap1, "uint*", &Height1:=0)
+      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap2, "uint*", &Height2:=0)
 
       ; Match bitmap dimensions.
       if (Width1 != Width2 || Height1 != Height2)
@@ -1863,7 +1863,7 @@ class ImageEqual extends ImagePut {
 
          ; If the Stride is negative, clone the image to make it top-down; redo the loop.
          if (Stride%i% < 0) {
-            DllCall("gdiplus\GdipCloneImage", "ptr", pBitmap%i%, "ptr*", pBitmapClone:=0)
+            DllCall("gdiplus\GdipCloneImage", "ptr", pBitmap%i%, "ptr*", &pBitmapClone:=0)
             DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap%i%) ; Permanently deletes.
             pBitmap%i% := pBitmapClone
             i-- ; "Let's go around again! Ha!" https://bit.ly/2AWWcM3
