@@ -623,11 +623,11 @@ class ImagePut {
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
       hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
       VarSetCapacity(bi, 40, 0)                ; sizeof(bi) = 40
-         , NumPut(       40, bi,  0,   "uint") ; Size
-         , NumPut( image[3], bi,  4,   "uint") ; Width
-         , NumPut(-image[4], bi,  8,    "int") ; Height - Negative so (0, 0) is top-left.
-         , NumPut(        1, bi, 12, "ushort") ; Planes
-         , NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
+         NumPut(       40, bi,  0,   "uint") ; Size
+         NumPut( image[3], bi,  4,   "uint") ; Width
+         NumPut(-image[4], bi,  8,    "int") ; Height - Negative so (0, 0) is top-left.
+         NumPut(        1, bi, 12, "ushort") ; Planes
+         NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
       hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
@@ -672,11 +672,11 @@ class ImagePut {
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
       hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
       VarSetCapacity(bi, 40, 0)                ; sizeof(bi) = 40
-         , NumPut(       40, bi,  0,   "uint") ; Size
-         , NumPut(    width, bi,  4,   "uint") ; Width
-         , NumPut(  -height, bi,  8,    "int") ; Height - Negative so (0, 0) is top-left.
-         , NumPut(        1, bi, 12, "ushort") ; Planes
-         , NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
+         NumPut(       40, bi,  0,   "uint") ; Size
+         NumPut(    width, bi,  4,   "uint") ; Width
+         NumPut(  -height, bi,  8,    "int") ; Height - Negative so (0, 0) is top-left.
+         NumPut(        1, bi, 12, "ushort") ; Planes
+         NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
       hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
@@ -721,11 +721,11 @@ class ImagePut {
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
       hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
       VarSetCapacity(bi, 40, 0)                ; sizeof(bi) = 40
-         , NumPut(       40, bi,  0,   "uint") ; Size
-         , NumPut(    width, bi,  4,   "uint") ; Width
-         , NumPut(  -height, bi,  8,    "int") ; Height - Negative so (0, 0) is top-left.
-         , NumPut(        1, bi, 12, "ushort") ; Planes
-         , NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
+         NumPut(       40, bi,  0,   "uint") ; Size
+         NumPut(    width, bi,  4,   "uint") ; Width
+         NumPut(  -height, bi,  8,    "int") ; Height - Negative so (0, 0) is top-left.
+         NumPut(        1, bi, 12, "ushort") ; Planes
+         NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
       hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
@@ -756,11 +756,11 @@ class ImagePut {
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
       hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
       VarSetCapacity(bi, 40, 0)                ; sizeof(bi) = 40
-         , NumPut(       40, bi,  0,   "uint") ; Size
-         , NumPut(    width, bi,  4,   "uint") ; Width
-         , NumPut(  -height, bi,  8,    "int") ; Height - Negative so (0, 0) is top-left.
-         , NumPut(        1, bi, 12, "ushort") ; Planes
-         , NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
+         NumPut(       40, bi,  0,   "uint") ; Size
+         NumPut(    width, bi,  4,   "uint") ; Width
+         NumPut(  -height, bi,  8,    "int") ; Height - Negative so (0, 0) is top-left.
+         NumPut(        1, bi, 12, "ushort") ; Planes
+         NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
       hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
@@ -783,7 +783,7 @@ class ImagePut {
 
       ; struct CURSORINFO - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-cursorinfo
       VarSetCapacity(ci, size := 16+A_PtrSize, 0)        ; sizeof(CURSORINFO) = 20, 24
-         , NumPut(size, ci, "int")
+         NumPut(size, ci, "int")
       DllCall("GetCursorInfo", "ptr", &ci)
          ; cShow   := NumGet(ci,  4, "int")              ; 0x1 = CURSOR_SHOWING, 0x2 = CURSOR_SUPPRESSED
          , hCursor := NumGet(ci,  8, "ptr")
@@ -855,11 +855,11 @@ class ImagePut {
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
       hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
       VarSetCapacity(bi, 40, 0)                ; sizeof(bi) = 40
-         , NumPut(       40, bi,  0,   "uint") ; Size
-         , NumPut(    width, bi,  4,   "uint") ; Width
-         , NumPut(  -height, bi,  8,    "int") ; Height - Negative so (0, 0) is top-left.
-         , NumPut(        1, bi, 12, "ushort") ; Planes
-         , NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
+         NumPut(       40, bi,  0,   "uint") ; Size
+         NumPut(    width, bi,  4,   "uint") ; Width
+         NumPut(  -height, bi,  8,    "int") ; Height - Negative so (0, 0) is top-left.
+         NumPut(        1, bi, 12, "ushort") ; Planes
+         NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
       hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
@@ -869,14 +869,14 @@ class ImagePut {
 
       ; Create a Scan0 buffer pointing to pBits. The buffer has pixel format pARGB.
       VarSetCapacity(Rect, 16, 0)              ; sizeof(Rect) = 16
-         , NumPut(  width, Rect,  8,   "uint") ; Width
-         , NumPut( height, Rect, 12,   "uint") ; Height
+         NumPut(  width, Rect,  8,   "uint") ; Width
+         NumPut( height, Rect, 12,   "uint") ; Height
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)     ; sizeof(BitmapData) = 24, 32
-         , NumPut(     width, BitmapData,  0,   "uint") ; Width
-         , NumPut(    height, BitmapData,  4,   "uint") ; Height
-         , NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
-         , NumPut(   0xE200B, BitmapData, 12,    "int") ; PixelFormat
-         , NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
+         NumPut(     width, BitmapData,  0,   "uint") ; Width
+         NumPut(    height, BitmapData,  4,   "uint") ; Height
+         NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
+         NumPut(   0xE200B, BitmapData, 12,    "int") ; PixelFormat
+         NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
 
       ; Use LockBits to create a writable buffer that converts pARGB to ARGB.
       DllCall("gdiplus\GdipBitmapLockBits"
@@ -926,11 +926,11 @@ class ImagePut {
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
       hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
       VarSetCapacity(bi, 40, 0)                ; sizeof(bi) = 40
-         , NumPut(       40, bi,  0,   "uint") ; Size
-         , NumPut(    width, bi,  4,   "uint") ; Width
-         , NumPut(  -height, bi,  8,    "int") ; Height - Negative so (0, 0) is top-left.
-         , NumPut(        1, bi, 12, "ushort") ; Planes
-         , NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
+         NumPut(       40, bi,  0,   "uint") ; Size
+         NumPut(    width, bi,  4,   "uint") ; Width
+         NumPut(  -height, bi,  8,    "int") ; Height - Negative so (0, 0) is top-left.
+         NumPut(        1, bi, 12, "ushort") ; Planes
+         NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
       hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
@@ -940,14 +940,14 @@ class ImagePut {
 
       ; Create a Scan0 buffer pointing to pBits. The buffer has pixel format pARGB.
       VarSetCapacity(Rect, 16, 0)              ; sizeof(Rect) = 16
-         , NumPut(  width, Rect,  8,   "uint") ; Width
-         , NumPut( height, Rect, 12,   "uint") ; Height
+         NumPut(  width, Rect,  8,   "uint") ; Width
+         NumPut( height, Rect, 12,   "uint") ; Height
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)     ; sizeof(BitmapData) = 24, 32
-         , NumPut(     width, BitmapData,  0,   "uint") ; Width
-         , NumPut(    height, BitmapData,  4,   "uint") ; Height
-         , NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
-         , NumPut(   0xE200B, BitmapData, 12,    "int") ; PixelFormat
-         , NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
+         NumPut(     width, BitmapData,  0,   "uint") ; Width
+         NumPut(    height, BitmapData,  4,   "uint") ; Height
+         NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
+         NumPut(   0xE200B, BitmapData, 12,    "int") ; PixelFormat
+         NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
 
       ; Use LockBits to create a writable buffer that converts pARGB to ARGB.
       DllCall("gdiplus\GdipBitmapLockBits"
@@ -1125,28 +1125,28 @@ class ImagePut {
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
       hdib := DllCall("GlobalAlloc", "uint", 0x42, "uptr", 40 + 12 + size, "ptr")
       pdib := DllCall("GlobalLock", "ptr", hdib, "ptr")
-         , NumPut(        40, pdib+0,  0,   "uint") ; Size
-         , NumPut(     width, pdib+0,  4,    "int") ; Width
-         , NumPut(   -height, pdib+0,  8,    "int") ; Height - Negative so (0, 0) is top-left.
-         , NumPut(         1, pdib+0, 12, "ushort") ; Planes
-         , NumPut(       bpp, pdib+0, 14, "ushort") ; BitCount / BitsPerPixel
-         , NumPut(       0x3, pdib+0, 16,   "uint") ; Compression
-         , NumPut(      size, pdib+0, 20,   "uint") ; SizeImage (bytes)
+         NumPut(        40, pdib+0,  0,   "uint") ; Size
+         NumPut(     width, pdib+0,  4,    "int") ; Width
+         NumPut(   -height, pdib+0,  8,    "int") ; Height - Negative so (0, 0) is top-left.
+         NumPut(         1, pdib+0, 12, "ushort") ; Planes
+         NumPut(       bpp, pdib+0, 14, "ushort") ; BitCount / BitsPerPixel
+         NumPut(       0x3, pdib+0, 16,   "uint") ; Compression
+         NumPut(      size, pdib+0, 20,   "uint") ; SizeImage (bytes)
          ; The following bitfields when masked extract the respective color channels.
-         , NumPut(0x00FF0000, pdib+0, 40,   "uint") ; Red
-         , NumPut(0x0000FF00, pdib+0, 44,   "uint") ; Green
-         , NumPut(0x000000FF, pdib+0, 48,   "uint") ; Blue
+         NumPut(0x00FF0000, pdib+0, 40,   "uint") ; Red
+         NumPut(0x0000FF00, pdib+0, 44,   "uint") ; Green
+         NumPut(0x000000FF, pdib+0, 48,   "uint") ; Blue
 
       ; Transfer data from source pBitmap to the global memory manually.
       VarSetCapacity(Rect, 16, 0)              ; sizeof(Rect) = 16
-         , NumPut(  width, Rect,  8,   "uint") ; Width
-         , NumPut( height, Rect, 12,   "uint") ; Height
+         NumPut(  width, Rect,  8,   "uint") ; Width
+         NumPut( height, Rect, 12,   "uint") ; Height
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)     ; sizeof(BitmapData) = 24, 32
-         , NumPut(     width, BitmapData,  0,   "uint") ; Width
-         , NumPut(    height, BitmapData,  4,   "uint") ; Height
-         , NumPut(    stride, BitmapData,  8,    "int") ; Stride
-         , NumPut(    format, BitmapData, 12,    "int") ; PixelFormat
-         , NumPut( pdib + 52, BitmapData, 16,    "ptr") ; Scan0
+         NumPut(     width, BitmapData,  0,   "uint") ; Width
+         NumPut(    height, BitmapData,  4,   "uint") ; Height
+         NumPut(    stride, BitmapData,  8,    "int") ; Stride
+         NumPut(    format, BitmapData, 12,    "int") ; PixelFormat
+         NumPut( pdib + 52, BitmapData, 16,    "ptr") ; Scan0
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
                ,    "ptr", &Rect
@@ -1254,18 +1254,18 @@ class ImagePut {
       ; struct tagWNDCLASSEXA - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexa
       ; struct tagWNDCLASSEXW - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexw
       VarSetCapacity(WNDCLASSEX, size := A_PtrSize=8 ? 80:48, 0)                                ; sizeof(WNDCLASSEX) = 48 or 80
-         , NumPut(       size, WNDCLASSEX,                   0,   "uint") ; cbSize
-         , NumPut(          0, WNDCLASSEX,                   4,   "uint") ; style
-         , NumPut(   pWndProc, WNDCLASSEX,                   8,    "ptr") ; lpfnWndProc
-         , NumPut(          0, WNDCLASSEX, A_PtrSize=8 ? 16:12,    "int") ; cbClsExtra
-         , NumPut(          0, WNDCLASSEX, A_PtrSize=8 ? 20:16,    "int") ; cbWndExtra
-         , NumPut(          0, WNDCLASSEX, A_PtrSize=8 ? 24:20,    "ptr") ; hInstance
-         , NumPut(          0, WNDCLASSEX, A_PtrSize=8 ? 32:24,    "ptr") ; hIcon
-         , NumPut(    hCursor, WNDCLASSEX, A_PtrSize=8 ? 40:28,    "ptr") ; hCursor
-         , NumPut(     hBrush, WNDCLASSEX, A_PtrSize=8 ? 48:32,    "ptr") ; hbrBackground
-         , NumPut(          0, WNDCLASSEX, A_PtrSize=8 ? 56:36,    "ptr") ; lpszMenuName
-         , NumPut( &class_name, WNDCLASSEX, A_PtrSize=8 ? 64:40,    "ptr") ; lpszClassName
-         , NumPut(          0, WNDCLASSEX, A_PtrSize=8 ? 72:44,    "ptr") ; hIconSm
+         NumPut(       size, WNDCLASSEX,                   0,   "uint") ; cbSize
+         NumPut(          0, WNDCLASSEX,                   4,   "uint") ; style
+         NumPut(   pWndProc, WNDCLASSEX,                   8,    "ptr") ; lpfnWndProc
+         NumPut(          0, WNDCLASSEX, A_PtrSize=8 ? 16:12,    "int") ; cbClsExtra
+         NumPut(          0, WNDCLASSEX, A_PtrSize=8 ? 20:16,    "int") ; cbWndExtra
+         NumPut(          0, WNDCLASSEX, A_PtrSize=8 ? 24:20,    "ptr") ; hInstance
+         NumPut(          0, WNDCLASSEX, A_PtrSize=8 ? 32:24,    "ptr") ; hIcon
+         NumPut(    hCursor, WNDCLASSEX, A_PtrSize=8 ? 40:28,    "ptr") ; hCursor
+         NumPut(     hBrush, WNDCLASSEX, A_PtrSize=8 ? 48:32,    "ptr") ; hbrBackground
+         NumPut(          0, WNDCLASSEX, A_PtrSize=8 ? 56:36,    "ptr") ; lpszMenuName
+         NumPut( &class_name, WNDCLASSEX, A_PtrSize=8 ? 64:40,    "ptr") ; lpszClassName
+         NumPut(          0, WNDCLASSEX, A_PtrSize=8 ? 72:44,    "ptr") ; hIconSm
 
       ; Registers a window class for subsequent use in calls to the CreateWindow or CreateWindowEx function.
       DllCall("RegisterClassEx", "ptr", &WNDCLASSEX, "ushort")
@@ -1289,10 +1289,10 @@ class ImagePut {
          WS_EX_DLGMODALFRAME       :=        0x1
 
          VarSetCapacity(rect, 16, 0)    
-            , NumPut(Floor((A_ScreenWidth - width) / 2), rect,  0, "int")
-            , NumPut(Floor((A_ScreenHeight - height) / 2), rect,  4, "int")
-            , NumPut(Floor((A_ScreenWidth + width) / 2), rect,  8, "int")
-            , NumPut(Floor((A_ScreenHeight + height) / 2), rect, 12, "int")
+            NumPut(Floor((A_ScreenWidth - width) / 2), rect,  0, "int")
+            NumPut(Floor((A_ScreenHeight - height) / 2), rect,  4, "int")
+            NumPut(Floor((A_ScreenWidth + width) / 2), rect,  8, "int")
+            NumPut(Floor((A_ScreenHeight + height) / 2), rect, 12, "int")
 
          style := WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_CLIPCHILDREN | WS_POPUP | WS_CLIPSIBLINGS ;| WS_SIZEBOX
          styleEx := WS_EX_TOPMOST | WS_EX_WINDOWEDGE | WS_EX_DLGMODALFRAME ;| WS_EX_LAYERED ;| WS_EX_STATICEDGE
@@ -1458,7 +1458,7 @@ class ImagePut {
          ; struct ICONINFO - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-iconinfo
          VarSetCapacity(ii, 8+3*A_PtrSize, 0)                         ; sizeof(ICONINFO) = 20, 32
          DllCall("GetIconInfo", "ptr", hIcon, "ptr", &ii)             ; Fill the ICONINFO structure.
-            , NumPut(false, ii, 0, "uint")                            ; true/false are icon/cursor respectively.
+            NumPut(false, ii, 0, "uint")                            ; true/false are icon/cursor respectively.
             , (xHotspot != "") ? NumPut(xHotspot, ii, 4, "uint") : "" ; Set the xHotspot value. (Default: center point)
             , (yHotspot != "") ? NumPut(yHotspot, ii, 8, "uint") : "" ; Set the yHotspot value. (Default: center point)
          DllCall("DestroyIcon", "ptr", hIcon)                         ; Destroy the icon after getting the ICONINFO structure.
@@ -1537,9 +1537,9 @@ class ImagePut {
 
          ; struct EncoderParameter - http://www.jose.it-berater.org/gdiplus/reference/structures/encoderparameter.htm
          ep := &EncoderParameters + elem - A_PtrSize                     ; sizeof(EncoderParameter) = 28, 32
-            , NumPut(      1, ep+0,            0,   "uptr")              ; Must be 1.
-            , NumPut(      4, ep+0, 20+A_PtrSize,   "uint")              ; Type
-            , NumPut(quality, NumGet(ep+24+A_PtrSize, "uptr"), "uint")   ; Value (pointer)
+            NumPut(      1, ep+0,            0,   "uptr")              ; Must be 1.
+            NumPut(      4, ep+0, 20+A_PtrSize,   "uint")              ; Type
+            NumPut(quality, NumGet(ep+24+A_PtrSize, "uptr"), "uint")   ; Value (pointer)
       }
 
       ; Write the file to disk using the specified encoder and encoding parameters.
@@ -1568,24 +1568,24 @@ class ImagePut {
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
       hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
       VarSetCapacity(bi, 40, 0)                ; sizeof(bi) = 40
-         , NumPut(       40, bi,  0,   "uint") ; Size
-         , NumPut(    width, bi,  4,   "uint") ; Width
-         , NumPut(  -height, bi,  8,    "int") ; Height - Negative so (0, 0) is top-left.
-         , NumPut(        1, bi, 12, "ushort") ; Planes
-         , NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
+         NumPut(       40, bi,  0,   "uint") ; Size
+         NumPut(    width, bi,  4,   "uint") ; Width
+         NumPut(  -height, bi,  8,    "int") ; Height - Negative so (0, 0) is top-left.
+         NumPut(        1, bi, 12, "ushort") ; Planes
+         NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
       hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
       ; Transfer data from source pBitmap to an hBitmap manually.
       VarSetCapacity(Rect, 16, 0)              ; sizeof(Rect) = 16
-         , NumPut(  width, Rect,  8,   "uint") ; Width
-         , NumPut( height, Rect, 12,   "uint") ; Height
+         NumPut(  width, Rect,  8,   "uint") ; Width
+         NumPut( height, Rect, 12,   "uint") ; Height
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)     ; sizeof(BitmapData) = 24, 32
-         , NumPut(     width, BitmapData,  0,   "uint") ; Width
-         , NumPut(    height, BitmapData,  4,   "uint") ; Height
-         , NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
-         , NumPut(   0xE200B, BitmapData, 12,    "int") ; PixelFormat
-         , NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
+         NumPut(     width, BitmapData,  0,   "uint") ; Width
+         NumPut(    height, BitmapData,  4,   "uint") ; Height
+         NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
+         NumPut(   0xE200B, BitmapData, 12,    "int") ; PixelFormat
+         NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
                ,    "ptr", &Rect
@@ -1641,9 +1641,9 @@ class ImagePut {
 
          ; struct EncoderParameter - http://www.jose.it-berater.org/gdiplus/reference/structures/encoderparameter.htm
          ep := &EncoderParameters + elem - A_PtrSize                     ; sizeof(EncoderParameter) = 28, 32
-            , NumPut(      1, ep+0,            0,   "uptr")              ; Must be 1.
-            , NumPut(      4, ep+0, 20+A_PtrSize,   "uint")              ; Type
-            , NumPut(quality, NumGet(ep+24+A_PtrSize, "uptr"), "uint")   ; Value (pointer)
+            NumPut(      1, ep+0,            0,   "uptr")              ; Must be 1.
+            NumPut(      4, ep+0, 20+A_PtrSize,   "uint")              ; Type
+            NumPut(quality, NumGet(ep+24+A_PtrSize, "uptr"), "uint")   ; Value (pointer)
       }
 
       ; Create a Stream.
@@ -1731,7 +1731,7 @@ class ImagePut {
          ; Startup gdiplus.
          DllCall("LoadLibrary", "str", "gdiplus")
          VarSetCapacity(si, A_PtrSize = 8 ? 24 : 16, 0) ; sizeof(GdiplusStartupInput) = 16, 24
-            , NumPut(0x1, si, "uint")
+            NumPut(0x1, si, "uint")
          DllCall("gdiplus\GdiplusStartup", "ptr*", pToken:=0, "ptr", &si, "ptr", 0)
 
          ImagePut.pToken := pToken
@@ -1843,8 +1843,8 @@ class ImageEqual extends ImagePut {
 
       ; struct RECT - https://docs.microsoft.com/en-us/windows/win32/api/windef/ns-windef-rect
       VarSetCapacity(Rect, 16, 0)                    ; sizeof(Rect) = 16
-         , NumPut(  Width1, Rect,  8,   "uint")      ; Width
-         , NumPut( Height1, Rect, 12,   "uint")      ; Height
+         NumPut(  Width1, Rect,  8,   "uint")      ; Width
+         NumPut( Height1, Rect, 12,   "uint")      ; Height
 
       ; Do this twice.
       while ((i++:=i?i:0) < 2) { ; for(int i = 0; i < 2; i++)
