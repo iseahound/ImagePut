@@ -273,7 +273,7 @@ class ImagePut {
             return "clipboard"
 
          ; An "object" is an object that implements a Bitmap() method returning a pointer to a GDI+ bitmap.
-         if image.HasOwnMethod("Bitmap")
+         if image.HasMethod("Bitmap")
             return "object"
 
          ; A "buffer" is an AutoHotkey v2 buffer object.
