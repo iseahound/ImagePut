@@ -1,14 +1,10 @@
 ; Script:    ImagePut.ahk
-; Author:    iseahound
 ; License:   MIT License
-; Version:   2020-05-22
-; Release:   2020-10-14
+; Author:    Edison Hua (iseahound)
+; Date:      2021-05-17
+; Version:   v1.00
 
-; ImagePut - Windows Image Transformation Library
-; Copy and paste functions from this reference libary as you wish.
-; -> All put_XXX functions map from a pBitmap to XXX.
-; -> All from_XXX functions map from XXX to a pBitmap.
-; Or use ImagePut functions as part of your standard libary.
+#Requires AutoHotkey v2-a134+
 
 
 ; Puts the image into a file format and returns a base64 encoded string.
