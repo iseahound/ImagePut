@@ -1824,7 +1824,7 @@ class ImageEqual extends ImagePut {
 
    isBitmapEqual(ByRef pBitmap1, ByRef pBitmap2, Format := 0x26200A) {
       ; Make sure both bitmaps are valid pointers.
-      if !(pBitmap1 && pBitmap2)
+      if (!pBitmap1 || !pBitmap2)
          return false
 
       ; Check if pointers are identical.
@@ -1832,22 +1832,22 @@ class ImageEqual extends ImagePut {
          return true
 
       ; The two bitmaps must be the same size.
-      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap1, "uint*", Width1)
-      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap2, "uint*", Width2)
-      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap1, "uint*", Height1)
-      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap2, "uint*", Height2)
+      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap1, "uint*", width1:=0)
+      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap2, "uint*", width2:=0)
+      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap1, "uint*", height1:=0)
+      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap2, "uint*", height2:=0)
 
       ; Match bitmap dimensions.
-      if (Width1 != Width2 || Height1 != Height2)
+      if (width1 != width2 || height1 != height2)
          return false
 
       ; struct RECT - https://docs.microsoft.com/en-us/windows/win32/api/windef/ns-windef-rect
       VarSetCapacity(Rect, 16, 0)                  ; sizeof(Rect) = 16
-         NumPut(  Width1, Rect,  8,   "uint")      ; Width
-         NumPut( Height1, Rect, 12,   "uint")      ; Height
+         NumPut(  width1, Rect,  8,   "uint")      ; Width
+         NumPut( height1, Rect, 12,   "uint")      ; Height
 
       ; Do this twice.
-      while ((i++:=i?i:0) < 2) { ; for(int i = 0; i < 2; i++)
+      while ((i++:=i?i:0) < 2) { ; for(int i = 1; i <= 2; i++)
 
          ; Create a BitmapData structure.
          VarSetCapacity(BitmapData%i%, 16+2*A_PtrSize, 0) ; sizeof(BitmapData) = 24, 32
@@ -1861,11 +1861,11 @@ class ImageEqual extends ImagePut {
                   ,    "ptr", &BitmapData%i%)
 
          ; Get Stride (number of bytes per horizontal line).
-         Stride%i% := NumGet(BitmapData%i%,  8, "int")
+         stride%i% := NumGet(BitmapData%i%, 8, "int")
 
          ; If the Stride is negative, clone the image to make it top-down; redo the loop.
-         if (Stride%i% < 0) {
-            DllCall("gdiplus\GdipCloneImage", "ptr", pBitmap%i%, "ptr*", pBitmapClone)
+         if (stride%i% < 0) {
+            DllCall("gdiplus\GdipCloneImage", "ptr", pBitmap%i%, "ptr*", pBitmapClone:=0)
             DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap%i%) ; Permanently deletes.
             pBitmap%i% := pBitmapClone
             i-- ; "Let's go around again! Ha!" https://bit.ly/2AWWcM3
@@ -1876,7 +1876,7 @@ class ImageEqual extends ImagePut {
       }
 
       ; RtlCompareMemory preforms an unsafe comparison stopping at the first different byte.
-      size := Stride1 * Height1
+      size := stride1 * height1
       byte := DllCall("ntdll\RtlCompareMemory", "ptr", Scan01+0, "ptr", Scan02+0, "uptr", size, "uptr")
 
       ; Unlock Bitmaps. Since they were marked as read only there is no copy back.
