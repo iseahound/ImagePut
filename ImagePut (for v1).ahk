@@ -268,7 +268,7 @@ class ImagePut {
          result := !DllCall("IsClipboardFormatAvailable", "uint", DllCall("RegisterClipboardFormat", "str", "png", "uint")) && !DllCall("IsClipboardFormatAvailable", "uint", 2)
          DllCall("CloseClipboard")
          if !(result)
-            return "clipboard"   
+            return "clipboard"
          throw Exception("Image data is an empty string.")
       }
       if IsObject(image) {
@@ -872,10 +872,7 @@ class ImagePut {
          NumPut(  width, Rect,  8,   "uint") ; Width
          NumPut( height, Rect, 12,   "uint") ; Height
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
-         NumPut(     width, BitmapData,  0,   "uint") ; Width
-         NumPut(    height, BitmapData,  4,   "uint") ; Height
          NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
-         NumPut(   0xE200B, BitmapData, 12,    "int") ; PixelFormat
          NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
 
       ; Use LockBits to create a writable buffer that converts pARGB to ARGB.
@@ -943,10 +940,7 @@ class ImagePut {
          NumPut(  width, Rect,  8,   "uint") ; Width
          NumPut( height, Rect, 12,   "uint") ; Height
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
-         NumPut(     width, BitmapData,  0,   "uint") ; Width
-         NumPut(    height, BitmapData,  4,   "uint") ; Height
          NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
-         NumPut(   0xE200B, BitmapData, 12,    "int") ; PixelFormat
          NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
 
       ; Use LockBits to create a writable buffer that converts pARGB to ARGB.
@@ -1142,10 +1136,7 @@ class ImagePut {
          NumPut(  width, Rect,  8,   "uint") ; Width
          NumPut( height, Rect, 12,   "uint") ; Height
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
-         NumPut(     width, BitmapData,  0,   "uint") ; Width
-         NumPut(    height, BitmapData,  4,   "uint") ; Height
          NumPut(    stride, BitmapData,  8,    "int") ; Stride
-         NumPut(    format, BitmapData, 12,    "int") ; PixelFormat
          NumPut( pdib + 52, BitmapData, 16,    "ptr") ; Scan0
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
@@ -1230,7 +1221,7 @@ class ImagePut {
       }
 
    put_window(ByRef pBitmap, title := "") {
-      ; Make it permanent. 
+      ; Make it permanent.
       void := ObjBindMethod({}, {})
       Hotkey % "^+F12", % void, On
 
@@ -1288,7 +1279,7 @@ class ImagePut {
          WS_EX_TRANSPARENT         :=       0x20
          WS_EX_DLGMODALFRAME       :=        0x1
 
-         VarSetCapacity(rect, 16, 0)    
+         VarSetCapacity(rect, 16, 0)
             NumPut(Floor((A_ScreenWidth - width) / 2), rect,  0, "int")
             NumPut(Floor((A_ScreenHeight - height) / 2), rect,  4, "int")
             NumPut(Floor((A_ScreenWidth + width) / 2), rect,  8, "int")
@@ -1581,10 +1572,7 @@ class ImagePut {
          NumPut(  width, Rect,  8,   "uint") ; Width
          NumPut( height, Rect, 12,   "uint") ; Height
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
-         NumPut(     width, BitmapData,  0,   "uint") ; Width
-         NumPut(    height, BitmapData,  4,   "uint") ; Height
          NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
-         NumPut(   0xE200B, BitmapData, 12,    "int") ; PixelFormat
          NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
@@ -1746,7 +1734,7 @@ class ImagePut {
          if DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
             throw Exception("The bitmap of this buffer object has already been deleted.")
 
-      ; Check for unpaired calls of gdiplusShutdown. 
+      ; Check for unpaired calls of gdiplusShutdown.
       if (ImagePut.gdiplus < 0)
          throw Exception("Missing ImagePut.gdiplusStartup().")
 

@@ -872,10 +872,7 @@ class ImagePut {
          NumPut(  "uint",   width, Rect,  8) ; Width
          NumPut(  "uint",  height, Rect, 12) ; Height
       BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
-         NumPut(  "uint",      width, BitmapData,  0) ; Width
-         NumPut(  "uint",     height, BitmapData,  4) ; Height
          NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
-         NumPut(   "int",    0xE200B, BitmapData, 12) ; PixelFormat
          NumPut(   "ptr",      pBits, BitmapData, 16) ; Scan0
 
       ; Use LockBits to create a writable buffer that converts pARGB to ARGB.
@@ -943,10 +940,7 @@ class ImagePut {
          NumPut(  "uint",   width, Rect,  8) ; Width
          NumPut(  "uint",  height, Rect, 12) ; Height
       BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
-         NumPut(  "uint",      width, BitmapData,  0) ; Width
-         NumPut(  "uint",     height, BitmapData,  4) ; Height
          NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
-         NumPut(   "int",    0xE200B, BitmapData, 12) ; PixelFormat
          NumPut(   "ptr",      pBits, BitmapData, 16) ; Scan0
 
       ; Use LockBits to create a writable buffer that converts pARGB to ARGB.
@@ -1142,10 +1136,7 @@ class ImagePut {
          NumPut(  "uint",   width, Rect,  8) ; Width
          NumPut(  "uint",  height, Rect, 12) ; Height
       BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
-         NumPut(  "uint",      width, BitmapData,  0) ; Width
-         NumPut(  "uint",     height, BitmapData,  4) ; Height
          NumPut(   "int",     stride, BitmapData,  8) ; Stride
-         NumPut(   "int",     format, BitmapData, 12) ; PixelFormat
          NumPut(   "ptr",  pdib + 52, BitmapData, 16) ; Scan0
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
@@ -1581,10 +1572,7 @@ class ImagePut {
          NumPut(  "uint",   width, Rect,  8) ; Width
          NumPut(  "uint",  height, Rect, 12) ; Height
       BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
-         NumPut(  "uint",      width, BitmapData,  0) ; Width
-         NumPut(  "uint",     height, BitmapData,  4) ; Height
          NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
-         NumPut(   "int",    0xE200B, BitmapData, 12) ; PixelFormat
          NumPut(   "ptr",      pBits, BitmapData, 16) ; Scan0
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
