@@ -418,7 +418,7 @@ class ImagePut {
       throw Exception("Conversion from type " type " is not supported.")
    }
 
-   toCotype(cotype, ByRef pBitmap, term1 := "", term2 := "", _*) {
+   toCotype(cotype, pBitmap, term1 := "", term2 := "", _*) {
       ; toCotype("clipboard", pBitmap)
       if (cotype = "clipboard")
          return this.put_clipboard(pBitmap)
@@ -486,11 +486,11 @@ class ImagePut {
       throw Exception("Conversion to type " cotype " is not supported.")
    }
 
-   DisposeImage(ByRef pBitmap) {
+   DisposeImage(pBitmap) {
       return DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
    }
 
-   BitmapCrop(ByRef pBitmap, crop) {
+   BitmapCrop(pBitmap, crop) {
       ; Get Bitmap width, height, and format.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
@@ -536,7 +536,7 @@ class ImagePut {
       return pBitmapCrop
    }
 
-   BitmapScale(ByRef pBitmap, scale) {
+   BitmapScale(pBitmap, scale) {
       ; Get Bitmap width, height, and format.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
@@ -1080,7 +1080,7 @@ class ImagePut {
       return dBitmap
    }
 
-   put_clipboard(ByRef pBitmap) {
+   put_clipboard(pBitmap) {
       ; Standard Clipboard Formats - https://docs.microsoft.com/en-us/windows/win32/dataxchg/standard-clipboard-formats
       ; Synthesized Clipboard Formats - https://docs.microsoft.com/en-us/windows/win32/dataxchg/clipboard-formats
 
@@ -1158,7 +1158,7 @@ class ImagePut {
       return ""
    }
 
-   put_buffer(ByRef pBitmap) {
+   put_buffer(pBitmap) {
       buffer := {__New: ObjBindMethod(this, "gdiplusStartup") ; Increment GDI+ reference count
             , __Delete: ObjBindMethod(this, "gdiplusShutdown", "smart_pointer", pBitmap)}
       buffer := new buffer      ; On deletion the buffer object will dispose of the bitmap.
@@ -1166,7 +1166,7 @@ class ImagePut {
       return buffer
    }
 
-   put_screenshot(ByRef pBitmap, screenshot := "", alpha := "") {
+   put_screenshot(pBitmap, screenshot := "", alpha := "") {
       ; Get Bitmap width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
@@ -1220,7 +1220,7 @@ class ImagePut {
          return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
       }
 
-   put_window(ByRef pBitmap, title := "") {
+   put_window(pBitmap, title := "") {
       ; Make it permanent.
       void := ObjBindMethod({}, {})
       Hotkey % "^+F12", % void, On
@@ -1360,7 +1360,7 @@ class ImagePut {
       return hwnd0
    }
 
-   put_desktop(ByRef pBitmap) {
+   put_desktop(pBitmap) {
       ; Thanks Gerald Degeneve - https://www.codeproject.com/Articles/856020/Draw-Behind-Desktop-Icons-in-Windows-plus
 
       ; Get Bitmap width and height.
@@ -1411,7 +1411,7 @@ class ImagePut {
       return "desktop"
    }
 
-   put_wallpaper(ByRef pBitmap) {
+   put_wallpaper(pBitmap) {
       ; Create a temporary image file.
       filepath := this.put_file(pBitmap)
 
@@ -1438,7 +1438,7 @@ class ImagePut {
       return "wallpaper"
    }
 
-   put_cursor(ByRef pBitmap, xHotspot := "", yHotspot := "") {
+   put_cursor(pBitmap, xHotspot := "", yHotspot := "") {
       ; Thanks Nick - https://stackoverflow.com/a/550965
 
       ; Creates an icon that can be used as a cursor.
@@ -1475,7 +1475,7 @@ class ImagePut {
       return "A_Cursor"
    }
 
-   put_file(ByRef pBitmap, filepath := "", quality := "") {
+   put_file(pBitmap, filepath := "", quality := "") {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
 
       ; Remove whitespace. Seperate the filepath. Adjust for directories.
@@ -1544,7 +1544,7 @@ class ImagePut {
       return filepath
    }
 
-   put_hBitmap(ByRef pBitmap, alpha := "") {
+   put_hBitmap(pBitmap, alpha := "") {
       ; Revert to built in functionality if a replacement color is declared.
       if (alpha != "") { ; This built-in version is about 25% slower.
          DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "ptr", pBitmap, "ptr*", hBitmap:=0, "uint", alpha)
@@ -1589,12 +1589,12 @@ class ImagePut {
       return hbm
    }
 
-   put_hIcon(ByRef pBitmap) {
+   put_hIcon(pBitmap) {
       DllCall("gdiplus\GdipCreateHICONFromBitmap", "ptr", pBitmap, "ptr*", hIcon:=0)
       return hIcon
    }
 
-   put_stream(ByRef pBitmap, extension := "", quality := "") {
+   put_stream(pBitmap, extension := "", quality := "") {
       ; Default extension is TIF for fast speeds!
       if !(extension ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$")
          extension := "tif"
@@ -1641,7 +1641,7 @@ class ImagePut {
       return pStream
    }
 
-   put_RandomAccessStream(ByRef pBitmap, extension := "", quality := "") {
+   put_RandomAccessStream(pBitmap, extension := "", quality := "") {
       ; Thanks teadrinker - https://www.autohotkey.com/boards/viewtopic.php?f=6&t=72674
 
       ; Which is faster, bmp or png?
@@ -1661,7 +1661,7 @@ class ImagePut {
       return pRandomAccessStream
    }
 
-   put_hex(ByRef pBitmap, extension := "", quality := "") {
+   put_hex(pBitmap, extension := "", quality := "") {
       ; Default extension is PNG for small sizes!
       if !(extension ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$")
          extension := "png"
@@ -1683,7 +1683,7 @@ class ImagePut {
       return StrGet(&hex, length, "CP0")
    }
 
-   put_base64(ByRef pBitmap, extension := "", quality := "") {
+   put_base64(pBitmap, extension := "", quality := "") {
       ; Thanks noname - https://www.autohotkey.com/boards/viewtopic.php?style=7&p=144247#p144247
 
       ; Default extension is PNG for small sizes!
@@ -1726,7 +1726,7 @@ class ImagePut {
       }
    }
 
-   gdiplusShutdown(cotype := "", ByRef pBitmap := "") {
+   gdiplusShutdown(cotype := "", pBitmap := "") {
       ImagePut.gdiplus--
 
       ; When a buffer object is deleted a bitmap is sent here for disposal.
@@ -1810,7 +1810,7 @@ class ImageEqual extends ImagePut {
       return result
    }
 
-   isBitmapEqual(ByRef pBitmap1, ByRef pBitmap2, Format := 0x26200A) {
+   isBitmapEqual(pBitmap1, pBitmap2, Format := 0x26200A) {
       ; Make sure both bitmaps are valid pointers.
       if (!pBitmap1 || !pBitmap2)
          return false
