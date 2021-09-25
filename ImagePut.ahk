@@ -1718,7 +1718,7 @@ class ImagePut {
 
          ; Startup gdiplus.
          DllCall("LoadLibrary", "str", "gdiplus")
-         si := Buffer(A_PtrSize = 8 ? 24 : 16, 0) ; sizeof(GdiplusStartupInput) = 16, 24
+         si := Buffer(A_PtrSize = 4 ? 16:24, 0) ; sizeof(GdiplusStartupInput) = 16, 24
             NumPut("uint", 0x1, si)
          DllCall("gdiplus\GdiplusStartup", "ptr*", &pToken:=0, "ptr", si, "ptr", 0)
 
