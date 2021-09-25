@@ -1229,7 +1229,7 @@ class ImagePut {
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
 
-      class_name := "ImagePut"
+      cls := this.__class
       pWndProc := RegisterCallback(this.WindowProc, "Fast",, &this)
 
       hCursor := DllCall("LoadCursor", "ptr", 0, "ptr", 32512, "ptr") ; IDC_ARROW
@@ -1244,22 +1244,23 @@ class ImagePut {
 
       ; struct tagWNDCLASSEXA - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexa
       ; struct tagWNDCLASSEXW - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexw
-      VarSetCapacity(WNDCLASSEX, size := A_PtrSize=8 ? 80:48, 0)        ; sizeof(WNDCLASSEX) = 48 or 80
-         NumPut(       size, WNDCLASSEX,                   0,   "uint") ; cbSize
-         NumPut(          0, WNDCLASSEX,                   4,   "uint") ; style
-         NumPut(   pWndProc, WNDCLASSEX,                   8,    "ptr") ; lpfnWndProc
-         NumPut(          0, WNDCLASSEX, A_PtrSize=8 ? 16:12,    "int") ; cbClsExtra
-         NumPut(          0, WNDCLASSEX, A_PtrSize=8 ? 20:16,    "int") ; cbWndExtra
-         NumPut(          0, WNDCLASSEX, A_PtrSize=8 ? 24:20,    "ptr") ; hInstance
-         NumPut(          0, WNDCLASSEX, A_PtrSize=8 ? 32:24,    "ptr") ; hIcon
-         NumPut(    hCursor, WNDCLASSEX, A_PtrSize=8 ? 40:28,    "ptr") ; hCursor
-         NumPut(     hBrush, WNDCLASSEX, A_PtrSize=8 ? 48:32,    "ptr") ; hbrBackground
-         NumPut(          0, WNDCLASSEX, A_PtrSize=8 ? 56:36,    "ptr") ; lpszMenuName
-         NumPut(&class_name, WNDCLASSEX, A_PtrSize=8 ? 64:40,    "ptr") ; lpszClassName
-         NumPut(          0, WNDCLASSEX, A_PtrSize=8 ? 72:44,    "ptr") ; hIconSm
+      _ := (A_PtrSize = 4)
+      VarSetCapacity(wc, size := _ ? 48:80, 0)         ; sizeof(WNDCLASSEX) = 48, 80
+         NumPut(        size, wc,         0,   "uint") ; cbSize
+         NumPut(           0, wc,         4,   "uint") ; style
+         NumPut(    pWndProc, wc,         8,    "ptr") ; lpfnWndProc
+         NumPut(           0, wc, _ ? 12:16,    "int") ; cbClsExtra
+         NumPut(           0, wc, _ ? 16:20,    "int") ; cbWndExtra
+         NumPut(           0, wc, _ ? 20:24,    "ptr") ; hInstance
+         NumPut(           0, wc, _ ? 24:32,    "ptr") ; hIcon
+         NumPut(     hCursor, wc, _ ? 28:40,    "ptr") ; hCursor
+         NumPut(      hBrush, wc, _ ? 32:48,    "ptr") ; hbrBackground
+         NumPut(           0, wc, _ ? 36:56,    "ptr") ; lpszMenuName
+         NumPut(        &cls, wc, _ ? 40:64,    "ptr") ; lpszClassName
+         NumPut(           0, wc, _ ? 44:72,    "ptr") ; hIconSm
 
       ; Registers a window class for subsequent use in calls to the CreateWindow or CreateWindowEx function.
-      DllCall("RegisterClassEx", "ptr", &WNDCLASSEX, "ushort")
+      DllCall("RegisterClassEx", "ptr", &wc, "ushort")
 
          WS_VISIBLE                := 0x10000000
          WS_SYSMENU                :=    0x80000
