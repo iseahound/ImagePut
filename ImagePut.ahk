@@ -272,12 +272,12 @@ class ImagePut {
          if (image.base.HasOwnProp("__class") && image.base.__class == "ClipboardAll")
             return "clipboard"
 
-         ; An "object" is an object that implements a Bitmap() method returning a pointer to a GDI+ bitmap.
-         if image.HasMethod("Bitmap")
+         ; A "object" has a pBitmap property that points to an internal GDI+ bitmap.
+         if image.HasOwnProp("pBitmap")
             return "object"
 
-         ; A "buffer" is an AutoHotkey v2 buffer object.
-         if image.HasOwnProp("pBitmap")
+         ; A "buffer" is an object with ptr and size properties.
+         if image.HasOwnProp("ptr") && image.HasOwnProp("size")
             return "buffer"
 
          ; A "screenshot" is an array of 4 numbers.
@@ -361,11 +361,11 @@ class ImagePut {
       if (type = "clipboard")
          return this.from_clipboard()
 
-      if (type = "object")                      ; Special
-         return image.Bitmap()
+      if (type = "object")
+         return this.from_object(image)
 
       if (type = "buffer")
-         return this.from_bitmap(image.pBitmap)
+         return this.from_buffer(image)
 
       if (type = "screenshot")
          return this.from_screenshot(image)
