@@ -1032,10 +1032,10 @@ class ImagePut {
 
       ; Converts the image to binary data by first asking for the size.
       DllCall("crypt32\CryptStringToBinary"
-               , "ptr", StrPtr(image), "uint", 0, "uint", 0x0000000C, "ptr",   0, "uint*", &size:=0, "ptr", 0, "ptr", 0)
+               , "ptr", StrPtr(image), "uint", 0, "uint", 0xC, "ptr", 0, "uint*", &size:=0, "ptr", 0, "ptr", 0)
       bin := Buffer(size, 0)
       DllCall("crypt32\CryptStringToBinary"
-               , "ptr", StrPtr(image), "uint", 0, "uint", 0x0000000C, "ptr", bin, "uint*", size   , "ptr", 0, "ptr", 0)
+               , "ptr", StrPtr(image), "uint", 0, "uint", 0xC, "ptr", bin, "uint*", size, "ptr", 0, "ptr", 0)
 
       ; Makes a stream for conversion into a pBitmap.
       pStream := DllCall("shlwapi\SHCreateMemStream", "ptr", bin, "uint", size, "ptr")
@@ -1052,10 +1052,10 @@ class ImagePut {
 
       ; Converts the image to binary data by first asking for the size.
       DllCall("crypt32\CryptStringToBinary"
-               , "ptr", StrPtr(image), "uint", 0, "uint", 0x00000001, "ptr",   0, "uint*", &size:=0, "ptr", 0, "ptr", 0)
+               , "ptr", StrPtr(image), "uint", 0, "uint", 0x1, "ptr", 0, "uint*", &size:=0, "ptr", 0, "ptr", 0)
       bin := Buffer(size, 0)
       DllCall("crypt32\CryptStringToBinary"
-               , "ptr", StrPtr(image), "uint", 0, "uint", 0x00000001, "ptr", bin, "uint*", size   , "ptr", 0, "ptr", 0)
+               , "ptr", StrPtr(image), "uint", 0, "uint", 0x1, "ptr", bin, "uint*", size, "ptr", 0, "ptr", 0)
 
       ; Makes a stream for conversion into a pBitmap.
       pStream := DllCall("shlwapi\SHCreateMemStream", "ptr", bin, "uint", size, "ptr")
