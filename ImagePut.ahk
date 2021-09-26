@@ -1229,7 +1229,7 @@ class ImagePut {
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
 
       cls := this.prototype.__class
-      pWndProc := CallbackCreate(WindowProc, "Fast")
+      pWndProc := CallbackCreate(WindowProc)
 
       hCursor := DllCall("LoadCursor", "ptr", 0, "ptr", 32512, "ptr") ; IDC_ARROW
       ;hBrush := DllCall("CreateSolidBrush", "uint", 0x00F0F0F0, "ptr")
