@@ -1207,8 +1207,7 @@ class ImagePut {
 
          ; WM_DESTROY
          if (uMsg = 0x2) {
-         ;  MsgBox "NICE TRY! LOL!"
-         ;   return
+            return Persistent(false)
          }
 
          ; WM_LBUTTONDOWN
@@ -1222,8 +1221,8 @@ class ImagePut {
       }
 
       ; Make it permanent.
-      void := ObjBindMethod({}, {})
-      Hotkey "^+F12", void, "On"
+      Persistent(true)
+
 
       ; Get Bitmap width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
