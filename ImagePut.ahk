@@ -589,13 +589,14 @@ class ImagePut {
    }
 
    static from_clipboard() {
-      ; Open the clipboard.
-      Loop 6 ; Try this 6 times.
-         if (A_Index > 1)
-            Sleep (2**(A_Index-2) * 30)
-      until (result := DllCall("OpenClipboard", "ptr", 0))
-      if !(result)
-         throw Error("Clipboard could not be opened.")
+      ; Open the clipboard with exponential backoff.
+      loop
+         if DllCall("OpenClipboard", "ptr", 0)
+            break
+         else
+            if A_Index < 6
+               Sleep (2**(A_Index-1) * 30)
+            else throw Error("Clipboard could not be opened.")
 
       ; Prefer the PNG stream if available considering it supports transparency.
       png := DllCall("RegisterClipboardFormat", "str", "png", "uint")
@@ -1084,13 +1085,14 @@ class ImagePut {
       ; Standard Clipboard Formats - https://docs.microsoft.com/en-us/windows/win32/dataxchg/standard-clipboard-formats
       ; Synthesized Clipboard Formats - https://docs.microsoft.com/en-us/windows/win32/dataxchg/clipboard-formats
 
-      ; Open the clipboard.
-      Loop 6 ; Try this 6 times.
-         if (A_Index > 1)
-            Sleep (2**(A_Index-2) * 30)
-      until (result := DllCall("OpenClipboard", "ptr", 0))
-      if !(result)
-         throw Error("Clipboard could not be opened.")
+      ; Open the clipboard with exponential backoff.
+      loop
+         if DllCall("OpenClipboard", "ptr", 0)
+            break
+         else
+            if A_Index < 6
+               Sleep (2**(A_Index-1) * 30)
+            else throw Error("Clipboard could not be opened.")
 
       ; Clear the clipboard.
       DllCall("EmptyClipboard")
@@ -1421,12 +1423,13 @@ class ImagePut {
       DllCall("GetFullPathName", "str", filepath, "uint", length, "str", buf, "ptr", 0, "uint")
 
       ; Keep waiting until the file has been created. (It should be instant!)
-      Loop 6 ; Try this 6 times.
-         if (A_Index > 1)
-            Sleep (2**(A_Index-2) * 30)
-      until FileExist(filepath)
-      if !FileExist(filepath)
-         throw Error("Unable to create temporary image file.")
+      loop
+         if FileExist(filepath)
+            break
+         else
+            if A_Index < 6
+               Sleep (2**(A_Index-1) * 30)
+            else throw Error("Unable to create temporary image file.")
 
       ; Set the temporary image file as the new desktop wallpaper.
       DllCall("SystemParametersInfo", "uint", 20, "uint", 0, "str", buf, "uint", 2)
@@ -1533,13 +1536,14 @@ class ImagePut {
             NumPut(  "uint", quality, NumGet(ep+24+A_PtrSize, "uptr")) ; Value (pointer)
       }
 
-      ; Write the file to disk using the specified encoder and encoding parameters.
-      Loop 6 ; Try this 6 times.
-         if (A_Index > 1)
-            Sleep (2**(A_Index-2) * 30)
-      until (result := !DllCall("gdiplus\GdipSaveImageToFile", "ptr", pBitmap, "wstr", filepath, "ptr", pCodec, "uint", IsSet(ep) ? ep : 0))
-      if !(result)
-         throw Error("Could not save file to disk.")
+      ; Write the file to disk using the specified encoder and encoding parameters with exponential backoff.
+      loop
+         if !DllCall("gdiplus\GdipSaveImageToFile", "ptr", pBitmap, "wstr", filepath, "ptr", pCodec, "uint", IsSet(ep) ? ep : 0)
+            break
+         else
+            if A_Index < 6
+               Sleep (2**(A_Index-1) * 30)
+            else throw Error("Could not save file to disk.")
 
       return filepath
    }
