@@ -1497,16 +1497,17 @@ class ImagePut {
          extension := "png"
       }
       filename := RegExReplace(filename, "S)(?i:^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$|[<>:|?*\x00-\x1F\x22\/\\])")
-      if (filename == "")
+      if (filename == "") {
          FormatTime, filename,, % "yyyy-MM-dd HH꞉mm꞉ss"
-      filepath := directory "\" filename "." extension
-
-      ; Check for collisions.
-      if FileExist(filepath) {
-         loop
-            filepath := directory "\" filename " (" A_Index ")." extension
-         until !FileExist(filepath)
+         filepath := directory "\" filename "." extension
+         if FileExist(filepath) { ; Check for collisions.
+            loop
+               filepath := directory "\" filename " (" A_Index ")." extension
+            until !FileExist(filepath)
+         }
       }
+      else
+         filepath := directory "\" filename "." extension
 
       ; Fill a buffer with the available encoders.
       DllCall("gdiplus\GdipGetImageEncodersSize", "uint*", count:=0, "uint*", size:=0)
