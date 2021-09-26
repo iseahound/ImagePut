@@ -932,15 +932,15 @@ class ImagePut {
 
    from_hIcon(image) {
       ; struct ICONINFO - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-iconinfo
-      VarSetCapacity(ii, 8+3*A_PtrSize, 0)               ; sizeof(ICONINFO) = 20, 32
+      VarSetCapacity(ii, 8+3*A_PtrSize, 0)              ; sizeof(ICONINFO) = 20, 32
       DllCall("GetIconInfo", "ptr", image, "ptr", &ii)
          ; xHotspot := NumGet(ii, 4, "uint")
          ; yHotspot := NumGet(ii, 8, "uint")
-         , hbmMask  := NumGet(ii, 8+A_PtrSize, "ptr")    ; x86:12, x64:16
-         , hbmColor := NumGet(ii, 8+2*A_PtrSize, "ptr")  ; x86:16, x64:24
+         , hbmMask  := NumGet(ii, 8+A_PtrSize, "ptr")   ; 12, 16
+         , hbmColor := NumGet(ii, 8+2*A_PtrSize, "ptr") ; 16, 24
 
       ; struct BITMAP - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmap
-      VarSetCapacity(bm, size := 16+2*A_PtrSize)         ; sizeof(BITMAP) = 24, 32
+      VarSetCapacity(bm, size := 16+2*A_PtrSize)        ; sizeof(BITMAP) = 24, 32
       DllCall("GetObject", "ptr", hbmMask, "int", size, "ptr", &bm)
          , width  := NumGet(bm, 4, "uint")
          , height := NumGet(bm, 8, "uint") / (hbmColor ? 1 : 2) ; Black and White cursors have doubled height.
