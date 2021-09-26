@@ -627,7 +627,7 @@ class ImagePut {
          ObjRelease(pStream)
       }
 
-      ; Fallback to CF_BITMAP.
+      ; Fallback to CF_BITMAP. This format does not support transparency even with put_hBitmap().
       else if DllCall("IsClipboardFormatAvailable", "uint", 2, "int") {
          hBitmap := DllCall("GetClipboardData", "uint", 2, "ptr")
          DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", hBitmap, "ptr", 0, "ptr*", pBitmap:=0)
