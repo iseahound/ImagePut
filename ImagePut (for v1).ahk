@@ -1537,40 +1537,8 @@ class ImagePut {
       else
          filepath := directory "\" filename "." extension
 
-      ; Fill a buffer with the available encoders.
-      DllCall("gdiplus\GdipGetImageEncodersSize", "uint*", count:=0, "uint*", size:=0)
-      VarSetCapacity(ci, size)
-      DllCall("gdiplus\GdipGetImageEncoders", "uint", count, "uint", size, "ptr", &ci)
-      if !(count && size)
-         throw Exception("Could not get a list of image codec encoders on this system.")
-
-      ; Search for an encoder with a matching extension.
-      Loop % count
-         EncoderExtensions := StrGet(NumGet(ci, (idx:=(48+7*A_PtrSize)*(A_Index-1))+32+3*A_PtrSize, "uptr"), "UTF-16")
-      until InStr(EncoderExtensions, "*." extension)
-
-      ; Get the pointer to the index/offset of the matching encoder.
-      if !(pCodec := &ci + idx)
-         throw Exception("Could not find a matching encoder for the specified file format.")
-
-      ; JPEG is a lossy image format that requires a quality value from 0-100. Default quality is 75.
-      if (extension ~= "^(?i:jpg|jpeg|jpe|jfif)$"
-      && 0 <= quality && quality <= 100 && quality != 75) {
-         DllCall("gdiplus\GdipGetEncoderParameterListSize", "ptr", pBitmap, "ptr", pCodec, "uint*", size:=0)
-         VarSetCapacity(EncoderParameters, size, 0)
-         DllCall("gdiplus\GdipGetEncoderParameterList", "ptr", pBitmap, "ptr", pCodec, "uint", size, "ptr", &EncoderParameters)
-
-         ; Search for an encoder parameter with 1 value of type 6.
-         Loop % NumGet(EncoderParameters, "uint")
-            elem := (24+A_PtrSize)*(A_Index-1) + A_PtrSize
-         until (NumGet(EncoderParameters, elem+16, "uint") = 1) && (NumGet(EncoderParameters, elem+20, "uint") = 6)
-
-         ; struct EncoderParameter - http://www.jose.it-berater.org/gdiplus/reference/structures/encoderparameter.htm
-         ep := &EncoderParameters + elem - A_PtrSize                   ; sizeof(EncoderParameter) = 28, 32
-            NumPut(      1, ep+0,            0,   "uptr")              ; Must be 1.
-            NumPut(      4, ep+0, 20+A_PtrSize,   "uint")              ; Type
-            NumPut(quality, NumGet(ep+24+A_PtrSize, "uptr"), "uint")   ; Value (pointer)
-      }
+      ; Select the proper codec based on the extension of the file.
+      this.select_codec(pBitmap, extension, quality, pCodec, ep)
 
       ; Write the file to disk using the specified encoder and encoding parameters with exponential backoff.
       loop
@@ -1639,40 +1607,8 @@ class ImagePut {
       if !(extension ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$")
          extension := "tif"
 
-      ; Fill a buffer with the available encoders.
-      DllCall("gdiplus\GdipGetImageEncodersSize", "uint*", count:=0, "uint*", size:=0)
-      VarSetCapacity(ci, size)
-      DllCall("gdiplus\GdipGetImageEncoders", "uint", count, "uint", size, "ptr", &ci)
-      if !(count && size)
-         throw Exception("Could not get a list of image codec encoders on this system.")
-
-      ; Search for an encoder with a matching extension.
-      Loop % count
-         EncoderExtensions := StrGet(NumGet(ci, (idx:=(48+7*A_PtrSize)*(A_Index-1))+32+3*A_PtrSize, "uptr"), "UTF-16")
-      until InStr(EncoderExtensions, "*." extension)
-
-      ; Get the pointer to the index/offset of the matching encoder.
-      if !(pCodec := &ci + idx)
-         throw Exception("Could not find a matching encoder for the specified file format.")
-
-      ; JPEG is a lossy image format that requires a quality value from 0-100. Default quality is 75.
-      if (extension ~= "^(?i:jpg|jpeg|jpe|jfif)$"
-      && 0 <= quality && quality <= 100 && quality != 75) {
-         DllCall("gdiplus\GdipGetEncoderParameterListSize", "ptr", pBitmap, "ptr", pCodec, "uint*", size:=0)
-         VarSetCapacity(EncoderParameters, size, 0)
-         DllCall("gdiplus\GdipGetEncoderParameterList", "ptr", pBitmap, "ptr", pCodec, "uint", size, "ptr", &EncoderParameters)
-
-         ; Search for an encoder parameter with 1 value of type 6.
-         Loop % NumGet(EncoderParameters, "uint")
-            elem := (24+A_PtrSize)*(A_Index-1) + A_PtrSize
-         until (NumGet(EncoderParameters, elem+16, "uint") = 1) && (NumGet(EncoderParameters, elem+20, "uint") = 6)
-
-         ; struct EncoderParameter - http://www.jose.it-berater.org/gdiplus/reference/structures/encoderparameter.htm
-         ep := &EncoderParameters + elem - A_PtrSize                   ; sizeof(EncoderParameter) = 28, 32
-            NumPut(      1, ep+0,            0,   "uptr")              ; Must be 1.
-            NumPut(      4, ep+0, 20+A_PtrSize,   "uint")              ; Type
-            NumPut(quality, NumGet(ep+24+A_PtrSize, "uptr"), "uint")   ; Value (pointer)
-      }
+      ; Select the proper codec based on the extension of the file.
+      this.select_codec(pBitmap, extension, quality, pCodec, ep)
 
       ; Create a Stream.
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", true, "ptr*", pStream:=0)
@@ -1745,6 +1681,43 @@ class ImagePut {
       ObjRelease(pStream)
 
       return StrGet(&base64, length, "CP0")
+   }
+
+   select_codec(pBitmap, extension, quality, ByRef pCodec, ByRef ep) {
+      ; Fill a buffer with the available encoders.
+      DllCall("gdiplus\GdipGetImageEncodersSize", "uint*", count:=0, "uint*", size:=0)
+      VarSetCapacity(ci, size)
+      DllCall("gdiplus\GdipGetImageEncoders", "uint", count, "uint", size, "ptr", &ci)
+      if !(count && size)
+         throw Exception("Could not get a list of image codec encoders on this system.")
+
+      ; Search for an encoder with a matching extension.
+      loop % count
+         EncoderExtensions := StrGet(NumGet(ci, (idx:=(48+7*A_PtrSize)*(A_Index-1))+32+3*A_PtrSize, "uptr"), "UTF-16")
+      until InStr(EncoderExtensions, "*." extension)
+
+      ; Get the pointer to the index/offset of the matching encoder.
+      if !(pCodec := &ci + idx)
+         throw Exception("Could not find a matching encoder for the specified file format.")
+
+      ; JPEG is a lossy image format that requires a quality value from 0-100. Default quality is 75.
+      if (extension ~= "^(?i:jpg|jpeg|jpe|jfif)$"
+      && quality ~= "^\d+$" && 0 <= quality && quality <= 100 && quality != 75) {
+         DllCall("gdiplus\GdipGetEncoderParameterListSize", "ptr", pBitmap, "ptr", pCodec, "uint*", size:=0)
+         VarSetCapacity(EncoderParameters, size, 0)
+         DllCall("gdiplus\GdipGetEncoderParameterList", "ptr", pBitmap, "ptr", pCodec, "uint", size, "ptr", &EncoderParameters)
+
+         ; Search for an encoder parameter with 1 value of type 6.
+         loop % NumGet(EncoderParameters, "uint")
+            elem := (24+A_PtrSize)*(A_Index-1) + A_PtrSize
+         until (NumGet(EncoderParameters, elem+16, "uint") = 1) && (NumGet(EncoderParameters, elem+20, "uint") = 6)
+
+         ; struct EncoderParameter - http://www.jose.it-berater.org/gdiplus/reference/structures/encoderparameter.htm
+         ep := &EncoderParameters + elem - A_PtrSize                   ; sizeof(EncoderParameter) = 28, 32
+            NumPut(      1, ep+0,            0,   "uptr")              ; Must be 1.
+            NumPut(      4, ep+0, 20+A_PtrSize,   "uint")              ; Type
+            NumPut(quality, NumGet(ep+24+A_PtrSize, "uptr"), "uint")   ; Value (Set a pointer)
+      }
    }
 
    ; All references to gdiplus and pToken must be absolute!
