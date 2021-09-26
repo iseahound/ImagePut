@@ -834,7 +834,7 @@ class ImagePut {
       req.Send()
       IStream := ComObjQuery(req.ResponseStream, "{0000000C-0000-0000-C000-000000000046}")
       DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", IStream, "ptr*", &pBitmap:=0)
-      ObjRelease(IStream.ptr)
+      IStream := ""
       return pBitmap
    }
 
