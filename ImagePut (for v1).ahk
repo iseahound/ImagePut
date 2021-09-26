@@ -1206,8 +1206,7 @@ class ImagePut {
 
          ; WM_DESTROY
          if (uMsg = 0x2) {
-         ;   MsgBox "NICE TRY! LOL!"
-         ;   return
+            Hotkey % "^+F12", Off
          }
 
          ; WM_LBUTTONDOWN
