@@ -1463,7 +1463,7 @@ class ImagePut {
       DllCall("SystemParametersInfo", "uint", 20, "uint", 0, "str", buf, "uint", 2)
 
       ; This is a delayed delete call. #Persistent may be required on v1.
-      DeleteFile := Func("DllCall").Bind("DeleteFile", "str", filepath)
+      DeleteFile := DllCall.Bind("DeleteFile", "str", filepath)
       SetTimer DeleteFile, -2000
 
       return "wallpaper"
