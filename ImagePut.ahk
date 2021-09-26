@@ -1246,19 +1246,19 @@ class ImagePut {
       ; struct tagWNDCLASSEXA - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexa
       ; struct tagWNDCLASSEXW - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexw
       _ := (A_PtrSize = 4)
-      wc := Buffer(_ ? 48:80, 0)                       ; sizeof(WNDCLASSEX) = 48, 80
-         NumPut(   "uint",     wc.size, wc,         0) ; cbSize
-         NumPut(   "uint",           0, wc,         4) ; style
-         NumPut(    "ptr",    pWndProc, wc,         8) ; lpfnWndProc
-         NumPut(    "int",           0, wc, _ ? 12:16) ; cbClsExtra
-         NumPut(    "int",           0, wc, _ ? 16:20) ; cbWndExtra
-         NumPut(    "ptr",           0, wc, _ ? 20:24) ; hInstance
-         NumPut(    "ptr",           0, wc, _ ? 24:32) ; hIcon
-         NumPut(    "ptr",     hCursor, wc, _ ? 28:40) ; hCursor
-         NumPut(    "ptr",      hBrush, wc, _ ? 32:48) ; hbrBackground
-         NumPut(    "ptr",           0, wc, _ ? 36:56) ; lpszMenuName
-         NumPut(    "ptr", StrPtr(cls), wc, _ ? 40:64) ; lpszClassName
-         NumPut(    "ptr",           0, wc, _ ? 44:72) ; hIconSm
+      wc := Buffer(_ ? 48:80, 0)                      ; sizeof(WNDCLASSEX) = 48, 80
+         NumPut(  "uint",     wc.size, wc,         0) ; cbSize
+         NumPut(  "uint",           0, wc,         4) ; style
+         NumPut(   "ptr",    pWndProc, wc,         8) ; lpfnWndProc
+         NumPut(   "int",           0, wc, _ ? 12:16) ; cbClsExtra
+         NumPut(   "int",           0, wc, _ ? 16:20) ; cbWndExtra
+         NumPut(   "ptr",           0, wc, _ ? 20:24) ; hInstance
+         NumPut(   "ptr",           0, wc, _ ? 24:32) ; hIcon
+         NumPut(   "ptr",     hCursor, wc, _ ? 28:40) ; hCursor
+         NumPut(   "ptr",      hBrush, wc, _ ? 32:48) ; hbrBackground
+         NumPut(   "ptr",           0, wc, _ ? 36:56) ; lpszMenuName
+         NumPut(   "ptr", StrPtr(cls), wc, _ ? 40:64) ; lpszClassName
+         NumPut(   "ptr",           0, wc, _ ? 44:72) ; hIconSm
 
       ; Registers a window class for subsequent use in calls to the CreateWindow or CreateWindowEx function.
       DllCall("RegisterClassEx", "ptr", wc, "ushort")
