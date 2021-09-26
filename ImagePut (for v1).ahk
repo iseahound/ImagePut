@@ -1213,7 +1213,7 @@ class ImagePut {
          if (uMsg = 0x201) {
             parent := DllCall("GetParent", "ptr", hwnd, "ptr")
             hwnd := (parent != A_ScriptHwnd && parent != 0) ? parent : hwnd
-            PostMessage 0xA1, 2,,, % "ahk_id" hwnd
+            return DllCall("DefWindowProc", "ptr", hwnd, "uint", 0xA1, "uptr", 2, "ptr", 0, "ptr")
          }
 
          return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
