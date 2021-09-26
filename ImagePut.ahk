@@ -940,7 +940,7 @@ class ImagePut {
          , hbmColor := NumGet(ii, 8+2*A_PtrSize, "ptr") ; 16, 24
 
       ; struct BITMAP - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmap
-      bm := Buffer(16+2*A_PtrSize) ; sizeof(BITMAP) = 24, 32
+      bm := Buffer(16+2*A_PtrSize)                      ; sizeof(BITMAP) = 24, 32
       DllCall("GetObject", "ptr", hbmMask, "int", bm.size, "ptr", bm)
          , width  := NumGet(bm, 4, "uint")
          , height := NumGet(bm, 8, "uint") / (hbmColor ? 1 : 2) ; Black and White cursors have doubled height.
