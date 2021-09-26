@@ -1501,6 +1501,13 @@ class ImagePut {
          FormatTime, filename,, % "yyyy-MM-dd HH꞉mm꞉ss"
       filepath := directory "\" filename "." extension
 
+      ; Check for collisions.
+      if FileExist(filepath) {
+         loop
+            filepath := directory "\" filename " (" A_Index ")." extension
+         until !FileExist(filepath)
+      }
+
       ; Fill a buffer with the available encoders.
       DllCall("gdiplus\GdipGetImageEncodersSize", "uint*", count:=0, "uint*", size:=0)
       VarSetCapacity(ci, size)
