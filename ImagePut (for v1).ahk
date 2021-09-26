@@ -10,96 +10,96 @@
 ; Puts the image into a file format and returns a base64 encoded string.
 ;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
-ImagePutBase64(ByRef image, extension := "", quality := "") {
+ImagePutBase64(image, extension := "", quality := "") {
    return ImagePut("base64", image,,, extension, quality)
 }
 
 ; Puts the image into a GDI+ Bitmap and returns a pointer.
-ImagePutBitmap(ByRef image) {
+ImagePutBitmap(image) {
    return ImagePut("bitmap", image)
 }
 
 ; Puts the image into a GDI+ Bitmap and returns a buffer object with GDI+ scope.
-ImagePutBuffer(ByRef image) {
+ImagePutBuffer(image) {
    return ImagePut("buffer", image)
 }
 
 ; Puts the image onto the clipboard and returns an empty string.
-ImagePutClipboard(ByRef image) {
+ImagePutClipboard(image) {
    return ImagePut("clipboard", image)
 }
 
 ; Puts the image as the cursor and returns the variable A_Cursor.
 ;   xHotspot   -  X Click Point           |  pixel    ->   0 - width
 ;   yHotspot   -  Y Click Point           |  pixel    ->   0 - height
-ImagePutCursor(ByRef image, xHotspot := "", yHotspot := "") {
+ImagePutCursor(image, xHotspot := "", yHotspot := "") {
    return ImagePut("cursor", image,,, xHotspot, yHotspot)
 }
 
 ; Puts the image behind the desktop icons and returns the string "desktop".
 ;   scale      -  Scale Factor            |  real     ->   A_ScreenHeight / height.
-ImagePutDesktop(ByRef image, scale := 1) {
+ImagePutDesktop(image, scale := 1) {
    return ImagePut("desktop", image,, scale)
 }
 
 ; Puts the image into a file and returns a relative filepath.
 ;   filepath   -  Filepath + Extension    |  string   ->   *.bmp, *.gif, *.jpg, *.png, *.tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
-ImagePutFile(ByRef image, filepath := "", quality := "") {
+ImagePutFile(image, filepath := "", quality := "") {
    return ImagePut("file", image,,, filepath, quality)
 }
 
 ; Puts the image into a device independent bitmap and returns the handle.
 ;   alpha      -  Alpha Replacement Color |  RGB      ->   0xFFFFFF
-ImagePutHBitmap(ByRef image, alpha := "") {
+ImagePutHBitmap(image, alpha := "") {
    return ImagePut("hBitmap", image,,, alpha)
 }
 
 ; Puts the image into a file format and returns a hexadecimal encoded string.
 ;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
-ImagePutHex(ByRef image, extension := "", quality := "") {
+ImagePutHex(image, extension := "", quality := "") {
    return ImagePut("hex", image,,, extension, quality)
 }
 
 ; Puts the image into an icon and returns the handle.
-ImagePutHIcon(ByRef image) {
+ImagePutHIcon(image) {
    return ImagePut("hBitmap", image)
 }
 
 ; Puts the image into a file format and returns a pointer to a RandomAccessStream.
 ;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
-ImagePutRandomAccessStream(ByRef image, extension := "", quality := "") {
+ImagePutRandomAccessStream(image, extension := "", quality := "") {
    return ImagePut("RandomAccessStream", image,,, extension, quality)
 }
 
 ; Puts the image on the shared screen device context and returns an array of coordinates.
 ;   screenshot -  Screen Coordinates      |  array    ->   [x,y,w,h] or [0,0]
 ;   alpha      -  Alpha Replacement Color |  RGB      ->   0xFFFFFF
-ImagePutScreenshot(ByRef image, screenshot := "", alpha := "") {
+ImagePutScreenshot(image, screenshot := "", alpha := "") {
    return ImagePut("screenshot", image,,, screenshot, alpha)
 }
 
 ; Puts the image into a file format and returns a pointer to a stream.
 ;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
-ImagePutStream(ByRef image, extension := "", quality := "") {
+ImagePutStream(image, extension := "", quality := "") {
    return ImagePut("stream", image,,, extension, quality)
 }
 
 ; Puts the image as the desktop wallpaper and returns the string "wallpaper".
-ImagePutWallpaper(ByRef image) {
+ImagePutWallpaper(image) {
    return ImagePut("wallpaper", image)
 }
 
 ; Puts the image in a window and returns a handle to a window.
 ;   title      -  Window Caption Title    |  string   ->   MyTitle
-ImagePutWindow(ByRef image, title := "") {
+ImagePutWindow(image, title := "") {
    return ImagePut("window", image,,, title)
 }
 
-ImagePut(cotype, ByRef image, crop := "", scale := "", terms*) {
+ImagePut(cotype, image, crop := "", scale := "", terms*) {
    return ImagePut.call(cotype, image, crop, scale, terms*)
 }
 
@@ -112,7 +112,7 @@ class ImagePut {
    ;   crop       -  Crop Coordinates        |  array    ->   [x,y,w,h] could be negative or percent.
    ;   scale      -  Scale Factor            |  real     ->   2.0
    ;   terms*     -  Additional Parameters   |  variadic ->   Extra parameters found in toCotype().
-   call(cotype, ByRef image, crop := "", scale := "", terms*) {
+   call(cotype, image, crop := "", scale := "", terms*) {
 
       this.gdiplusStartup()
 
@@ -156,7 +156,7 @@ class ImagePut {
       return coimage
    }
 
-   DontVerifyImageType(ByRef image) {
+   DontVerifyImageType(image) {
 
       if !IsObject(image)
          throw Exception("Must be an object.")
@@ -262,7 +262,7 @@ class ImagePut {
       throw Exception("Invalid type.")
    }
 
-   ImageType(ByRef image) {
+   ImageType(image) {
       if (image == "") {
          DllCall("OpenClipboard", "ptr", 0)
          result := !DllCall("IsClipboardFormatAvailable", "uint", DllCall("RegisterClipboardFormat", "str", "png", "uint")) && !DllCall("IsClipboardFormatAvailable", "uint", 2)
@@ -356,7 +356,7 @@ class ImagePut {
       throw Exception("Image type could not be identified.")
    }
 
-   toBitmap(type, ByRef image) {
+   toBitmap(type, image) {
 
       if (type = "clipboard")
          return this.from_clipboard()
@@ -638,7 +638,7 @@ class ImagePut {
       return pBitmap
    }
 
-   from_screenshot(ByRef image) {
+   from_screenshot(image) {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
 
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
@@ -674,7 +674,7 @@ class ImagePut {
       return pBitmap
    }
 
-   from_window(ByRef image) {
+   from_window(image) {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
 
       ; Get the handle to the window.
@@ -820,7 +820,7 @@ class ImagePut {
       return pBitmap
    }
 
-   from_url(ByRef image) {
+   from_url(image) {
       req := ComObjCreate("WinHttp.WinHttpRequest.5.1")
       req.Open("GET", image)
       req.Send()
@@ -830,12 +830,12 @@ class ImagePut {
       return pBitmap
    }
 
-   from_file(ByRef image) {
+   from_file(image) {
       DllCall("gdiplus\GdipCreateBitmapFromFile", "wstr", image, "ptr*", pBitmap:=0)
       return pBitmap
    }
 
-   from_monitor(ByRef image) {
+   from_monitor(image) {
       if (image > 0) {
          SysGet _, Monitor, image
          x := _Left
@@ -851,7 +851,7 @@ class ImagePut {
       return this.from_screenshot([x,y,w,h])
    }
 
-   from_hBitmap(ByRef image) {
+   from_hBitmap(image) {
       ; struct DIBSECTION - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-dibsection
       ; struct BITMAP - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmap
       VarSetCapacity(dib, size := 64+5*A_PtrSize) ; sizeof(DIBSECTION) = 84, 104
@@ -922,7 +922,7 @@ class ImagePut {
       return pBitmap
    }
 
-   from_hIcon(ByRef image) {
+   from_hIcon(image) {
       ; struct ICONINFO - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-iconinfo
       VarSetCapacity(ii, 8+3*A_PtrSize, 0)               ; sizeof(ICONINFO) = 20, 32
       DllCall("GetIconInfo", "ptr", image, "ptr", &ii)
@@ -989,17 +989,17 @@ class ImagePut {
       return pBitmap
    }
 
-   from_bitmap(ByRef image) {
+   from_bitmap(image) {
       DllCall("gdiplus\GdipCloneImage", "ptr", image, "ptr*", pBitmap:=0)
       return pBitmap
    }
 
-   from_stream(ByRef image) {
+   from_stream(image) {
       DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", image, "ptr*", pBitmap:=0)
       return pBitmap
    }
 
-   from_RandomAccessStream(ByRef image) {
+   from_RandomAccessStream(image) {
       ; Get the Class ID from a GUID string.
       VarSetCapacity(CLSID, 16, 0)
       if result := DllCall("ole32\CLSIDFromString", "wstr", "{0000000C-0000-0000-C000-000000000046}", "ptr", &CLSID, "uint")
@@ -1017,7 +1017,7 @@ class ImagePut {
       return pBitmap
    }
 
-   from_hex(ByRef image) {
+   from_hex(image) {
       ; Trim whitespace and remove header.
       image := Trim(image)
       image := RegExReplace(image, "^(0[xX])")
@@ -1037,7 +1037,7 @@ class ImagePut {
       return pBitmap
    }
 
-   from_base64(ByRef image) {
+   from_base64(image) {
       ; Trim whitespace and remove header.
       image := Trim(image)
       image := RegExReplace(image, "^data:image\/[a-z]+;base64,")
@@ -1057,7 +1057,7 @@ class ImagePut {
       return pBitmap
    }
 
-   from_sprite(ByRef image) {
+   from_sprite(image) {
       ; Create a source pBitmap and extract the width and height.
       if DllCall("gdiplus\GdipCreateBitmapFromFile", "wstr", image, "ptr*", sBitmap:=0)
          if !(sBitmap := this.from_url(image))
