@@ -638,6 +638,14 @@ class ImagePut {
       return pBitmap
    }
 
+   from_object(image) {
+      return this.from_bitmap(image.pBitmap)
+   }
+
+   from_buffer(image) {
+      ; to do
+   }
+
    from_screenshot(image) {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
 
