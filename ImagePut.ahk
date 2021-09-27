@@ -1538,7 +1538,7 @@ class ImagePut {
          filepath := directory "\" filename "." extension
 
       ; Select the proper codec based on the extension of the file.
-      this.select_codec(pBitmap, extension, quality, &pCodec, &ep)
+      this.select_codec(pBitmap, extension, quality, &pCodec, &ep, &ci, &v)
 
       ; Write the file to disk using the specified encoder and encoding parameters with exponential backoff.
       loop
@@ -1608,11 +1608,11 @@ class ImagePut {
          extension := "tif"
 
       ; Select the proper codec based on the extension of the file.
-      this.select_codec(pBitmap, extension, quality, &pCodec, &ep)
+      this.select_codec(pBitmap, extension, quality, &pCodec, &ep, &ci, &v)
 
       ; Create a Stream.
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", true, "ptr*", &pStream:=0)
-      DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", pStream, "ptr", pCodec, "uint", IsSet(ep) ? ep : 0)
+      DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", pStream, "ptr", pCodec, "ptr", IsSet(ep) ? ep : 0)
 
       return pStream
    }
@@ -1683,8 +1683,7 @@ class ImagePut {
       return StrGet(base64, length, "CP0")
    }
 
-   static select_codec(pBitmap, extension, quality, &pCodec, &ep) {
-      static ci, v
+   static select_codec(pBitmap, extension, quality, &pCodec, &ep, &ci, &v) {
       ; Fill a buffer with the available image codec info.
       DllCall("gdiplus\GdipGetImageEncodersSize", "uint*", &count:=0, "uint*", &size:=0)
       DllCall("gdiplus\GdipGetImageEncoders", "uint", count, "uint", size, "ptr", ci := Buffer(size))
