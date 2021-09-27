@@ -1538,11 +1538,11 @@ class ImagePut {
          filepath := directory "\" filename "." extension
 
       ; Select the proper codec based on the extension of the file.
-      this.select_codec(pBitmap, extension, quality, pCodec, ep)
+      this.select_codec(pBitmap, extension, quality, pCodec, ep, ci, v)
 
       ; Write the file to disk using the specified encoder and encoding parameters with exponential backoff.
       loop
-         if !DllCall("gdiplus\GdipSaveImageToFile", "ptr", pBitmap, "wstr", filepath, "ptr", pCodec, "uint", (ep) ? ep : 0)
+         if !DllCall("gdiplus\GdipSaveImageToFile", "ptr", pBitmap, "wstr", filepath, "ptr", pCodec, "ptr", (ep) ? &ep : 0)
             break
          else
             if A_Index < 6
@@ -1608,11 +1608,11 @@ class ImagePut {
          extension := "tif"
 
       ; Select the proper codec based on the extension of the file.
-      this.select_codec(pBitmap, extension, quality, pCodec, ep)
+      this.select_codec(pBitmap, extension, quality, pCodec, ep, ci, v)
 
       ; Create a Stream.
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", true, "ptr*", pStream:=0)
-      DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", pStream, "ptr", pCodec, "uint", ep ? ep : 0)
+      DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", pStream, "ptr", pCodec, "ptr", ep ? ep : 0)
 
       return pStream
    }
@@ -1683,8 +1683,7 @@ class ImagePut {
       return StrGet(&base64, length, "CP0")
    }
 
-   select_codec(pBitmap, extension, quality, ByRef pCodec, ByRef ep) {
-      static ci, v
+   select_codec(pBitmap, extension, quality, ByRef pCodec, ByRef ep, ByRef ci, ByRef v) {
       ; Fill a buffer with the available image codec info.
       DllCall("gdiplus\GdipGetImageEncodersSize", "uint*", count:=0, "uint*", size:=0)
       DllCall("gdiplus\GdipGetImageEncoders", "uint", count, "uint", size, "ptr", &ci := VarSetCapacity(ci, size))
@@ -1699,7 +1698,7 @@ class ImagePut {
          throw Exception("Could not find a matching encoder for the specified file format.")
 
       ; JPEG default quality is 75. Otherwise set a quality value from [0-100].
-      if quality ~= "^\d+$" && ("image/jpeg" = StrGet(NumGet(ci, idx+32+4*A_PtrSize, "ptr"), "UTF-16")) { ; MimeType
+      if quality ~= "^-?\d+$" && ("image/jpeg" = StrGet(NumGet(ci, idx+32+4*A_PtrSize, "ptr"), "UTF-16")) { ; MimeType
          ; Use a separate buffer to store the quality as ValueTypeLong (4).
          VarSetCapacity(v, 4, 0), NumPut(quality, v, "uint")
 
