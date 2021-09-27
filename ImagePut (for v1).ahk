@@ -1684,39 +1684,34 @@ class ImagePut {
    }
 
    select_codec(pBitmap, extension, quality, ByRef pCodec, ByRef ep) {
-      ; Fill a buffer with the available encoders.
+      static ci, v
+      ; Fill a buffer with the available image codec info.
       DllCall("gdiplus\GdipGetImageEncodersSize", "uint*", count:=0, "uint*", size:=0)
-      VarSetCapacity(ci, size)
-      DllCall("gdiplus\GdipGetImageEncoders", "uint", count, "uint", size, "ptr", &ci)
-      if !(count && size)
-         throw Exception("Could not get a list of image codec encoders on this system.")
+      DllCall("gdiplus\GdipGetImageEncoders", "uint", count, "uint", size, "ptr", &ci := VarSetCapacity(ci, size))
 
-      ; Search for an encoder with a matching extension.
+      ; struct ImageCodecInfo - http://www.jose.it-berater.org/gdiplus/reference/structures/imagecodecinfo.htm
       loop % count
-         EncoderExtensions := StrGet(NumGet(ci, (idx:=(48+7*A_PtrSize)*(A_Index-1))+32+3*A_PtrSize, "uptr"), "UTF-16")
-      until InStr(EncoderExtensions, "*." extension)
+         idx := (48+7*A_PtrSize)*(A_Index-1)
+      until InStr(StrGet(NumGet(ci, idx+32+3*A_PtrSize, "ptr"), "UTF-16"), "*." extension) ; FilenameExtension
 
-      ; Get the pointer to the index/offset of the matching encoder.
-      if !(pCodec := &ci + idx)
+      ; Get the pointer to the clsid of the matching encoder.
+      if !(pCodec := &ci + idx) ; ClassID
          throw Exception("Could not find a matching encoder for the specified file format.")
 
-      ; JPEG is a lossy image format that requires a quality value from 0-100. Default quality is 75.
-      if (extension ~= "^(?i:jpg|jpeg|jpe|jfif)$"
-      && quality ~= "^\d+$" && 0 <= quality && quality <= 100 && quality != 75) {
-         DllCall("gdiplus\GdipGetEncoderParameterListSize", "ptr", pBitmap, "ptr", pCodec, "uint*", size:=0)
-         VarSetCapacity(EncoderParameters, size, 0)
-         DllCall("gdiplus\GdipGetEncoderParameterList", "ptr", pBitmap, "ptr", pCodec, "uint", size, "ptr", &EncoderParameters)
-
-         ; Search for an encoder parameter with 1 value of type 6.
-         loop % NumGet(EncoderParameters, "uint")
-            elem := (24+A_PtrSize)*(A_Index-1) + A_PtrSize
-         until (NumGet(EncoderParameters, elem+16, "uint") = 1) && (NumGet(EncoderParameters, elem+20, "uint") = 6)
+      ; JPEG default quality is 75. Otherwise set a quality value from [0-100].
+      if quality ~= "^\d+$" && ("image/jpeg" = StrGet(NumGet(ci, idx+32+4*A_PtrSize, "ptr"), "UTF-16")) { ; MimeType
+         ; Use a separate buffer to store the quality as ValueTypeLong (4).
+         VarSetCapacity(v, 4, 0), NumPut(quality, v, "uint")
 
          ; struct EncoderParameter - http://www.jose.it-berater.org/gdiplus/reference/structures/encoderparameter.htm
-         ep := &EncoderParameters + elem - A_PtrSize                   ; sizeof(EncoderParameter) = 28, 32
-            NumPut(      1, ep+0,            0,   "uptr")              ; Must be 1.
-            NumPut(      4, ep+0, 20+A_PtrSize,   "uint")              ; Type
-            NumPut(quality, NumGet(ep+24+A_PtrSize, "uptr"), "uint")   ; Value (Set a pointer)
+         ; enum ValueType - https://docs.microsoft.com/en-us/dotnet/api/system.drawing.imaging.encoderparametervaluetype
+         ; clsid Image Encoder Constants - http://www.jose.it-berater.org/gdiplus/reference/constants/gdipimageencoderconstants.htm
+         VarSetCapacity(ep, 24+2*A_PtrSize)            ; sizeof(EncoderParameter) = ptr + n*(28, 32)
+            NumPut(    1, ep,            0,   "uptr")  ; Count
+            DllCall("ole32\CLSIDFromString", "wstr", "{1D5BE4B5-FA4A-452D-9CDD-5DB35105E7EB}", "ptr", &ep+A_PtrSize)
+            NumPut(    1, ep, 16+A_PtrSize,   "uint")  ; Number of Values
+            NumPut(    4, ep, 20+A_PtrSize,   "uint")  ; Type
+            NumPut(   &v, ep, 24+A_PtrSize,    "ptr")  ; Value
       }
    }
 
