@@ -1653,7 +1653,6 @@ class ImagePut {
       DllCall("Crypt32.dll\CryptBinaryToStringA", "ptr", pData, "uint", nSize, "uint", 0x4000000C, "ptr", hex, "uint*", length)
 
       DllCall("GlobalUnlock", "ptr", hData)
-      DllCall("GlobalFree", "ptr", hData)
       ObjRelease(pStream)
 
       return StrGet(hex, length, "CP0")
@@ -1677,7 +1676,6 @@ class ImagePut {
       DllCall("Crypt32.dll\CryptBinaryToStringA", "ptr", pData, "uint", nSize, "uint", 0x40000001, "ptr", base64, "uint*", length)
 
       DllCall("GlobalUnlock", "ptr", hData)
-      DllCall("GlobalFree", "ptr", hData)
       ObjRelease(pStream)
 
       return StrGet(base64, length, "CP0")
