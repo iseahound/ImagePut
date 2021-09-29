@@ -1,8 +1,8 @@
 ﻿; Script:    ImagePut.ahk
 ; License:   MIT License
 ; Author:    Edison Hua (iseahound)
-; Date:      2021-05-17
-; Version:   v1.00
+; Date:      2021-09-28
+; Version:   v1.1
 
 #Requires AutoHotkey v2-a134+
 
