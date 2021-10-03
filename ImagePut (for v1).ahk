@@ -1238,11 +1238,21 @@ class ImagePut {
 
       ; #1 - Place the image onto the clipboard as a PNG stream.
       ; Thanks Jochen Arndt - https://www.codeproject.com/Answers/1207927/Saving-an-image-to-the-clipboard#answer3
-      pStream := this.put_stream(pBitmap, "png")
+
+      ; Create a Stream whose underlying HGlobal must be referenced or lost forever.
+      ; Please read: https://devblogs.microsoft.com/oldnewthing/20210929-00/?p=105742
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", false, "ptr*", pStream:=0, "uint")
+      this.select_codec(pBitmap, "png",, pCodec, ep, ci, v)
+      DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", pStream, "ptr", pCodec, "ptr", (ep) ? &ep : 0)
+
+      ; Rescue the HGlobal after GDI+ has written the PNG to stream and release the stream.
       DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "uint*", hData:=0, "uint")
+      ObjRelease(pStream)
+
+      ; Set the rescued HGlobal to the clipboard as a shared object.
       png := DllCall("RegisterClipboardFormat", "str", "png", "uint") ; case insensitive
       DllCall("SetClipboardData", "uint", png, "ptr", hData)
-      ; DO NOT RELEASE THE STREAM. CLIPBOARD IS SHARED MEMORY IF YOU RELEASE IT WILL BE DELETED.
+
 
       ; #2 - Place the image onto the clipboard in the CF_DIB format using a bottom-up bitmap.
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
