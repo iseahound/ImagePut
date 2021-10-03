@@ -703,9 +703,12 @@ class ImagePut {
       if DllCall("IsClipboardFormatAvailable", "uint", png, "int") {
          if !(hData := DllCall("GetClipboardData", "uint", png, "ptr"))
             throw Exception("Shared clipboard data has been deleted.")
-         DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", true, "ptr*", pStream:=0, "uint")
+
+         ; Allow the stream to be freed while leaving the hData intact.
+         ; Please read: https://devblogs.microsoft.com/oldnewthing/20210930-00/?p=105745
+         DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", false, "ptr*", pStream:=0, "uint")         
          DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", pBitmap:=0)
-      ; DO NOT RELEASE THE STREAM. CLIPBOARD IS SHARED MEMORY IF YOU RELEASE IT WILL BE DELETED.
+         ObjRelease(pStream)
       }
 
       ; Fallback to CF_BITMAP. This format does not support transparency even with put_hBitmap().
