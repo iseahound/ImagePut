@@ -700,7 +700,7 @@ class ImagePut {
 
       ; Prefer the PNG stream if available because of transparency support.
       png := DllCall("RegisterClipboardFormat", "str", "png", "uint")
-      if DllCall("IsClipboardFormatAvailable", "uint", png, "int") {
+      if DllCall("IsClipboardFormatAvailable", "uint", png) {
          if !(hData := DllCall("GetClipboardData", "uint", png, "ptr"))
             throw Exception("Shared clipboard data has been deleted.")
 
@@ -712,7 +712,7 @@ class ImagePut {
       }
 
       ; Fallback to CF_BITMAP. This format does not support transparency even with put_hBitmap().
-      else if DllCall("IsClipboardFormatAvailable", "uint", 2, "int") {
+      else if DllCall("IsClipboardFormatAvailable", "uint", 2) {
          if !(hBitmap := DllCall("GetClipboardData", "uint", 2, "ptr"))
             throw Exception("Shared clipboard data has been deleted.")
          DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", hBitmap, "ptr", 0, "ptr*", pBitmap:=0)
