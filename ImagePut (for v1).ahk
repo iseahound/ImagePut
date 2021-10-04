@@ -1262,19 +1262,17 @@ class ImagePut {
       ; struct BITMAP - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmap
       VarSetCapacity(dib, size := 64+5*A_PtrSize) ; sizeof(DIBSECTION) = 84, 104
       DllCall("GetObject", "ptr", hBitmap, "int", size, "ptr", &dib)
-
-      ; Find the pointer to the bitmap bits and the size of the bitmap bits.
-      pBits := NumGet(dib, A_PtrSize = 4 ? 20:24, "ptr") ; bmBits
-      size := NumGet(dib, A_PtrSize = 4 ? 44:52, "uint") ; biSizeImage
+         , pBits := NumGet(dib, A_PtrSize = 4 ? 20:24, "ptr")  ; bmBits
+         , size  := NumGet(dib, A_PtrSize = 4 ? 44:52, "uint") ; biSizeImage
 
       ; Allocate space for a new device independent bitmap on movable memory.
       hdib := DllCall("GlobalAlloc", "uint", 0x2, "uptr", 40 + size, "ptr") ; sizeof(BITMAPINFOHEADER) = 40
       pdib := DllCall("GlobalLock", "ptr", hdib, "ptr")
 
-      ; Copy the BITMAPINFOHEADER from the old DIB to the new DIB.
+      ; Copy the BITMAPINFOHEADER.
       DllCall("RtlMoveMemory", "ptr", pdib, "ptr", &dib + (A_PtrSize = 4 ? 24:32), "uptr", 40)
 
-      ; Copy the pixel data from the old DIB to the new DIB.
+      ; Copy the pixel data.
       DllCall("RtlMoveMemory", "ptr", pdib+40, "ptr", pBits, "uptr", size)
 
       ; Unlock to moveable memory because the clipboard requires it.
@@ -1414,21 +1412,20 @@ class ImagePut {
          WS_EX_TRANSPARENT         :=       0x20
          WS_EX_DLGMODALFRAME       :=        0x1
 
+         style := WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_CLIPCHILDREN | WS_POPUP | WS_CLIPSIBLINGS ;| WS_SIZEBOX
+         styleEx := WS_EX_TOPMOST | WS_EX_WINDOWEDGE | WS_EX_DLGMODALFRAME ;| WS_EX_LAYERED ;| WS_EX_STATICEDGE
+
          VarSetCapacity(rect, 16)
             NumPut(Floor((A_ScreenWidth - width) / 2), rect,  0, "int")
             NumPut(Floor((A_ScreenHeight - height) / 2), rect,  4, "int")
             NumPut(Floor((A_ScreenWidth + width) / 2), rect,  8, "int")
             NumPut(Floor((A_ScreenHeight + height) / 2), rect, 12, "int")
 
-         style := WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_CLIPCHILDREN | WS_POPUP | WS_CLIPSIBLINGS ;| WS_SIZEBOX
-         styleEx := WS_EX_TOPMOST | WS_EX_WINDOWEDGE | WS_EX_DLGMODALFRAME ;| WS_EX_LAYERED ;| WS_EX_STATICEDGE
-
          DllCall("AdjustWindowRectEx", "ptr", &rect, "uint", style, "uint", 0, "uint", styleEx)
-
-         x := NumGet(rect,  0, "int")
-         y := NumGet(rect,  4, "int")
-         w := NumGet(rect,  8, "int") - NumGet(rect,  0, "int")
-         h := NumGet(rect, 12, "int") - NumGet(rect,  4, "int")
+            , x := NumGet(rect,  0, "int")
+            , y := NumGet(rect,  4, "int")
+            , w := NumGet(rect,  8, "int") - NumGet(rect,  0, "int")
+            , h := NumGet(rect, 12, "int") - NumGet(rect,  4, "int")
 
          hwnd0 := DllCall("CreateWindowEx"
             ,   "uint", styleEx
