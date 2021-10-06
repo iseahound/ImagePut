@@ -1611,8 +1611,8 @@ class ImagePut {
 
    put_file(pBitmap, filepath := "", quality := "") {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
-      default := "png"
-      this.select_filepath(filepath, default)
+      extension := "png"
+      this.select_filepath(filepath, extension)
 
       ; Select the proper codec based on the extension of the file.
       this.select_codec(pBitmap, extension, quality, pCodec, ep, ci, v)
@@ -1630,8 +1630,8 @@ class ImagePut {
    }
 
    set_file(pStream, filepath := "") {
-      default := "png"
-      this.select_filepath(filepath, default, pStream)
+      extension := "png"
+      this.select_filepath(filepath, extension, pStream)
 
       ; For compatibility with SHCreateMemStream do not use GetHGlobalFromStream.
       DllCall("shlwapi\SHCreateStreamOnFileEx"
@@ -1847,7 +1847,10 @@ class ImagePut {
          extension := "bmp"
    }
 
-   select_filepath(ByRef filepath, ByRef default, pStream := "") {
+   select_filepath(ByRef filepath, ByRef extension, pStream := "") {
+      ; Save extension as default.
+      default := extension
+
       ; Remove whitespace. Seperate the filepath. Adjust for directories.
       filepath := Trim(filepath)
       SplitPath filepath,, directory, extension, filename
