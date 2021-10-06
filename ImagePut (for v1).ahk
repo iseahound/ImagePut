@@ -1318,6 +1318,9 @@ class ImagePut {
       ; Retrieve the device context for the screen.
       ddc := DllCall("GetDC", "ptr", 0, "ptr")
 
+      ; Perform bilinear interpolation. See: https://stackoverflow.com/a/4358798
+      DllCall("SetStretchBltMode", "ptr", ddc, "int", 4) ; HALFTONE
+
       ; Copies a portion of the screen to a new device context.
       DllCall("gdi32\StretchBlt"
                , "ptr", ddc, "int", x, "int", y, "int", w,     "int", h
