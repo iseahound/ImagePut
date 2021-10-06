@@ -133,6 +133,8 @@ class ImagePut {
          && crop[3] ~= "^-?\d+(\.\d*)?%?$" && crop[4] ~= "^-?\d+(\.\d*)?%?$"
       _scale := scale != 1 && scale ~= "^\d+(\.\d+)?$"
 
+
+      ; Check if a stream can be used as an intermediate.
       if not this.ForceDecodeImagePixels and not _crop and not _scale
          and (type ~= "^(?i:url|file|stream|RandomAccessStream|hex|base64)$")
          and (cotype ~= "^(?i:file|stream|RandomAccessStream|hex|base64)$") {
@@ -150,6 +152,8 @@ class ImagePut {
 
          return coimage
       }
+
+      ; Fallback to GDI+ bitmap as the intermediate.
       else {
          ; Make a copy of the image as a pBitmap.
          pBitmap := this.ToBitmap(type, image)
@@ -184,6 +188,7 @@ class ImagePut {
             DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
       }
 
+      ; Check for dangling pointers.
       this.gdiplusShutdown(cotype)
 
       return coimage
@@ -371,7 +376,6 @@ class ImagePut {
          try if ComObjQuery(image, "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}")
             return "RandomAccessStream", ObjRelease(image)
       }
-
          ; A "hex" string is binary image data encoded into text using hexadecimal.
          if (StrLen(image) >= 116) && (image ~= "(?i)^\s*(0x)?[0-9a-f]+\s*$")
             return "hex"
@@ -380,6 +384,7 @@ class ImagePut {
          if (StrLen(image) >= 80) && (image ~= "^\s*(?:data:image\/[a-z]+;base64,)?"
          . "(?:[A-Za-z0-9+\/]{4})*+(?:[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{2}==)?\s*$")
             return "base64"
+
 
       ; For more helpful error messages: Catch file names without extensions!
       for extension in ["bmp","dib","rle","jpg","jpeg","jpe","jfif","gif","tif","tiff","png","ico","exe","dll"]
@@ -563,7 +568,7 @@ class ImagePut {
       if (cotype = "base64")
          return this.set_base64(pStream)
 
-      throw Exception("Conversion from bitmap to " cotype " is not supported.")
+      throw Exception("Conversion from stream to " cotype " is not supported.")
    }
 
    DisposeImage(pBitmap) {
@@ -706,7 +711,7 @@ class ImagePut {
 
          ; Allow the stream to be freed while leaving the hData intact.
          ; Please read: https://devblogs.microsoft.com/oldnewthing/20210930-00/?p=105745
-         DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", false, "ptr*", pStream:=0, "uint")         
+         DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", false, "ptr*", pStream:=0, "uint")
          DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", pBitmap:=0)
          ObjRelease(pStream)
       }
@@ -719,10 +724,7 @@ class ImagePut {
          DllCall("DeleteObject", "ptr", hBitmap)
       }
 
-      ; Close the clipboard.
-      if !DllCall("CloseClipboard")
-         throw Exception("Clipboard could not be closed.")
-
+      DllCall("CloseClipboard")
       return pBitmap
    }
 
@@ -1285,8 +1287,7 @@ class ImagePut {
       DllCall("SetClipboardData", "uint", 8, "ptr", hdib)
 
       ; Close the clipboard.
-      if !DllCall("CloseClipboard")
-         throw Exception("Clipboard could not be closed.")
+      DllCall("CloseClipboard")
 
       return ""
    }
@@ -1856,8 +1857,9 @@ class ImagePut {
          FileCreateDir % directory
       directory := (directory != "") ? directory : "."
 
-      ; Validate filepath, defaulting to PNG. https://stackoverflow.com/a/6804755
+      ; Validate filepath. https://stackoverflow.com/a/6804755
       if !(extension ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$") {
+         ; If the extension does not match a known file type, append it to the filename.
          if (extension != "")
             filename .= "." extension
 
@@ -1960,7 +1962,7 @@ class ImageEqual extends ImagePut {
 
       ; Convert only the first image to a bitmap.
       if !(pBitmap1 := this.ToBitmap(type, image))
-         throw Exception("The image cannot be converted into a bitmap. The pointer value is zero.")
+         throw Exception("Conversion to bitmap failed. The pointer value is zero.")
 
       ; If there is only one image, verify that image.
       if (images.length() == 1) {
@@ -2004,20 +2006,20 @@ class ImageEqual extends ImagePut {
       return false
    }
 
-   BitmapEqual(sBitmap1, sBitmap2, Format := 0x26200A) {
+   BitmapEqual(SourceBitmap1, SourceBitmap2, Format := 0x26200A) {
       ; Make sure both source bitmaps are valid pointers.
-      if (!sBitmap1 || !sBitmap2)
-         throw Exception("The pointer has a value of zero.")
+      if (!SourceBitmap1 || !SourceBitmap2)
+         throw Exception("The bitmap pointer cannot be a value of zero.")
 
       ; Create clones of the supplied source bitmaps.
-      if DllCall("gdiplus\GdipCloneImage", "ptr", sBitmap1, "ptr*", pBitmap1:=0)
-         throw Exception("Bitmap 1 is not a valid bitmap.")
+      if DllCall("gdiplus\GdipCloneImage", "ptr", SourceBitmap1, "ptr*", pBitmap1:=0)
+         throw Exception("Cloning Bitmap1 failed.")
 
-      if DllCall("gdiplus\GdipCloneImage", "ptr", sBitmap2, "ptr*", pBitmap2:=0)
-         throw Exception("Bitmap 2 is not a valid bitmap.")
+      if DllCall("gdiplus\GdipCloneImage", "ptr", SourceBitmap2, "ptr*", pBitmap2:=0)
+         throw Exception("Cloning Bitmap2 failed.")
 
       ; Check if source bitmap pointers are identical.
-      if (sBitmap1 == sBitmap2)
+      if (SourceBitmap1 == SourceBitmap2)
          return true
 
       ; The two bitmaps must be the same size.
@@ -2028,7 +2030,7 @@ class ImageEqual extends ImagePut {
 
       ; Dimensions must be non-zero.
       if (!width1 || !width2 || !height1 || !height2)
-         throw Exception("The size of the bitmap is zero.")
+         throw Exception("The bitmap dimensions cannot be zero.")
 
       ; Match bitmap dimensions.
       if (width1 != width2 || height1 != height2)
