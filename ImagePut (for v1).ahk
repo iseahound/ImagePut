@@ -1788,13 +1788,15 @@ class ImagePut {
       DllCall("gdiplus\GdipGetImageEncoders", "uint", count, "uint", size, "ptr", &ci := VarSetCapacity(ci, size))
 
       ; struct ImageCodecInfo - http://www.jose.it-berater.org/gdiplus/reference/structures/imagecodecinfo.htm
-      loop % count
+      loop {
+         if (A_Index > count)
+            throw Exception("Could not find a matching encoder for the specified file format.")
+
          idx := (48+7*A_PtrSize)*(A_Index-1)
-      until InStr(StrGet(NumGet(ci, idx+32+3*A_PtrSize, "ptr"), "UTF-16"), "*." extension) ; FilenameExtension
+      } until InStr(StrGet(NumGet(ci, idx+32+3*A_PtrSize, "ptr"), "UTF-16"), "*." extension) ; FilenameExtension
 
       ; Get the pointer to the clsid of the matching encoder.
-      if !(pCodec := &ci + idx) ; ClassID
-         throw Exception("Could not find a matching encoder for the specified file format.")
+      pCodec := &ci + idx ; ClassID
 
       ; JPEG default quality is 75. Otherwise set a quality value from [0-100].
       if (quality ~= "^-?\d+$") and ("image/jpeg" = StrGet(NumGet(ci, idx+32+4*A_PtrSize, "ptr"), "UTF-16")) { ; MimeType
