@@ -579,7 +579,7 @@ class ImagePut {
       ; Get Bitmap width, height, and format.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
-      DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", pBitmap, "uint*", format:=0)
+      DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", pBitmap, "int*", format:=0)
 
       ; Are the numbers percentages?
       crop[3] := (crop[3] ~= "%$") ? SubStr(crop[3], 1, -1) * 0.01 *  width : crop[3]
@@ -625,7 +625,7 @@ class ImagePut {
       ; Get Bitmap width, height, and format.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
-      DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", pBitmap, "uint*", format:=0)
+      DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", pBitmap, "int*", format:=0)
 
       safe_w := Ceil(width * scale)
       safe_h := Ceil(height * scale)
