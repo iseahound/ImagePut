@@ -1244,7 +1244,7 @@ class ImagePut {
       ; Create a Stream whose underlying HGlobal must be referenced or lost forever.
       ; Please read: https://devblogs.microsoft.com/oldnewthing/20210929-00/?p=105742
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", false, "ptr*", pStream:=0, "uint")
-      this.select_codec(pBitmap, "png",, pCodec, ep, ci, v)
+      this.select_codec(pBitmap, "png", "", pCodec, ep, ci, v)
       DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", pStream, "ptr", pCodec, "ptr", (ep) ? &ep : 0)
 
       ; Rescue the HGlobal after GDI+ has written the PNG to stream and release the stream.
