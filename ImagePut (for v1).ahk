@@ -1104,7 +1104,18 @@ class ImagePut {
    }
 
    from_bitmap(image) {
-      DllCall("gdiplus\GdipCloneImage", "ptr", image, "ptr*", pBitmap:=0)
+      ; Retain the current PixelFormat, unlike GdipCloneImage.
+      DllCall("gdiplus\GdipGetImageWidth", "ptr", image, "uint*", width:=0)
+      DllCall("gdiplus\GdipGetImageHeight", "ptr", image, "uint*", height:=0)
+      DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", image, "int*", format:=0)
+      DllCall("gdiplus\GdipCloneBitmapAreaI"
+               ,    "int", 0
+               ,    "int", 0
+               ,    "int", width
+               ,    "int", height
+               ,    "int", format
+               ,    "ptr", image
+               ,   "ptr*", pBitmap:=0)
       return pBitmap
    }
 
@@ -1972,7 +1983,7 @@ class ImageEqual extends ImagePut {
       if !(pBitmap1 := this.ToBitmap(type, image))
          throw Exception("Conversion to bitmap failed. The pointer value is zero.")
 
-      ; If there is only one image, verify that image.
+      ; If there is only one image, verify that image and return.
       if (images.length() == 1) {
          if DllCall("gdiplus\GdipCloneImage", "ptr", pBitmap1, "ptr*", pBitmapClone:=0)
             throw Exception("Validation failed. Unable to access and clone the bitmap.")
@@ -1981,7 +1992,7 @@ class ImageEqual extends ImagePut {
          Goto Good_Ending
       }
 
-      ; If there are multiple images, do not convert the first image.
+      ; If there are multiple images, compare each subsequent image to the first.
       for i, image in images {
          if (A_Index != 1) {
 
@@ -2014,69 +2025,82 @@ class ImageEqual extends ImagePut {
       return false
    }
 
-   BitmapEqual(SourceBitmap1, SourceBitmap2, Format := 0x26200A) {
-      ; Make sure both source bitmaps are valid pointers.
-      if (!SourceBitmap1 || !SourceBitmap2)
-         throw Exception("The bitmap pointer cannot be a value of zero.")
+   BitmapEqual(SourceBitmap1, SourceBitmap2, PixelFormat := 0x26200A) {
+      ; Make sure both source bitmaps are valid GDI+ pointers. This will throw if not...
+      DllCall("gdiplus\GdipGetImageType", "ptr", SourceBitmap1, "ptr*", type1:=0)
+      DllCall("gdiplus\GdipGetImageType", "ptr", SourceBitmap2, "ptr*", type2:=0)
 
-      ; Create clones of the supplied source bitmaps.
-      if DllCall("gdiplus\GdipCloneImage", "ptr", SourceBitmap1, "ptr*", pBitmap1:=0)
-         throw Exception("Cloning Bitmap1 failed.")
-
-      if DllCall("gdiplus\GdipCloneImage", "ptr", SourceBitmap2, "ptr*", pBitmap2:=0)
-         throw Exception("Cloning Bitmap2 failed.")
+      ; ImageTypeUnknown = 0, ImageTypeBitmap = 1, and ImageTypeMetafile = 2.
+      if (type1 != 1 || type2 != 1)
+         throw Exception("The GDI+ pointer is not a bitmap.")
 
       ; Check if source bitmap pointers are identical.
       if (SourceBitmap1 == SourceBitmap2)
          return true
 
       ; The two bitmaps must be the same size.
-      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap1, "uint*", width1:=0)
-      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap2, "uint*", width2:=0)
-      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap1, "uint*", height1:=0)
-      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap2, "uint*", height2:=0)
+      DllCall("gdiplus\GdipGetImageWidth", "ptr", SourceBitmap1, "uint*", width1:=0)
+      DllCall("gdiplus\GdipGetImageWidth", "ptr", SourceBitmap2, "uint*", width2:=0)
+      DllCall("gdiplus\GdipGetImageHeight", "ptr", SourceBitmap1, "uint*", height1:=0)
+      DllCall("gdiplus\GdipGetImageHeight", "ptr", SourceBitmap2, "uint*", height2:=0)
+      DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", SourceBitmap1, "int*", format1:=0)
+      DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", SourceBitmap2, "int*", format2:=0)
 
       ; Dimensions must be non-zero.
-      if (!width1 || !width2 || !height1 || !height2)
+      if !(width1 && width2 && height1 && height2)
          throw Exception("The bitmap dimensions cannot be zero.")
 
       ; Match bitmap dimensions.
       if (width1 != width2 || height1 != height2)
          return false
 
+      ; Create clones of the supplied source bitmaps in their original PixelFormat.
+      ; This has the side effect of (1) removing negative stride and solves
+      ; the problem when (2) both bitmaps reference the same stream and only
+      ; one of them is able to retrieve the pixel data through LockBits.
+      ; I assume that instead of locking the stream, the clones lock the originals.
+
+      pBitmap1 := pBitmap2 := 0
+      Loop 2
+         if DllCall("gdiplus\GdipCloneBitmapAreaI"
+                     ,    "int", 0
+                     ,    "int", 0
+                     ,    "int", width%A_Index%
+                     ,    "int", height%A_Index%
+                     ,    "int", format%A_Index%
+                     ,    "ptr", SourceBitmap%A_Index%
+                     ,   "ptr*", pBitmap%A_Index%:=0)
+            throw Exception("Cloning Bitmap" A_Index " failed.")
+
       ; struct RECT - https://docs.microsoft.com/en-us/windows/win32/api/windef/ns-windef-rect
-      VarSetCapacity(Rect, 16, 0)                  ; sizeof(Rect) = 16
-         NumPut(  width1, Rect,  8,   "uint")      ; Width
-         NumPut( height1, Rect, 12,   "uint")      ; Height
+      VarSetCapacity(Rect, 16, 0)                 ; sizeof(Rect) = 16
+         NumPut(  width1, Rect,  8,   "uint")     ; Width
+         NumPut( height1, Rect, 12,   "uint")     ; Height
 
-      ; Do this twice.
-      while ((i++:=i?i:0) < 2) { ; for(int i = 1; i <= 2; i++)
+      ; Create a BitmapData structure.
+      VarSetCapacity(BitmapData1, 16+2*A_PtrSize) ; sizeof(BitmapData) = 24, 32
+      VarSetCapacity(BitmapData2, 16+2*A_PtrSize) ; sizeof(BitmapData) = 24, 32
 
-         ; Create a BitmapData structure.
-         VarSetCapacity(BitmapData%i%, 16+2*A_PtrSize, 0) ; sizeof(BitmapData) = 24, 32
-
-         ; Transfer the pixels to a read-only buffer. Avoid using a different PixelFormat.
+      ; Transfer the pixels to a read-only buffer. The user can declare a PixelFormat.
+      Loop 2
          DllCall("gdiplus\GdipBitmapLockBits"
-                  ,    "ptr", pBitmap%i%
+                  ,    "ptr", pBitmap%A_Index%
                   ,    "ptr", &Rect
                   ,   "uint", 1            ; ImageLockMode.ReadOnly
-                  ,    "int", Format       ; Format32bppArgb is fast.
-                  ,    "ptr", &BitmapData%i%)
+                  ,    "int", PixelFormat  ; Format32bppArgb is fast.
+                  ,    "ptr", &BitmapData%A_Index%)
 
-         ; Get Stride (number of bytes per horizontal line).
-         stride%i% := NumGet(BitmapData%i%, 8, "int")
+      ; Get Stride (number of bytes per horizontal line).
+      stride1 := NumGet(BitmapData1, 8, "int")
+      stride2 := NumGet(BitmapData2, 8, "int")
 
-         ; If the Stride is negative, clone the image to make it top-down; redo the loop.
-         if (stride%i% < 0) {
-            DllCall("gdiplus\GdipCloneImage", "ptr", pBitmap%i%, "ptr*", pBitmapClone:=0)
-            DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap%i%) ; Permanently deletes.
-            pBitmap%i% := pBitmapClone
-            i-- ; "Let's go around again! Ha!" https://bit.ly/2AWWcM3
-         }
+      ; Well the image has already been cloned, so the stride should never be negative.
+      if (stride1 < 0 || stride2 < 0) ; See: https://stackoverflow.com/a/10341340
+         throw Exception("Negative stride. Please report this error to the developer.")
 
-         ; Get Scan0 (top-left pixel at 0,0).
-         Scan0%i%  := NumGet(BitmapData%i%, 16, "ptr")
-      }
+      ; Get Scan0 (top-left pixel at 0,0).
+      Scan01 := NumGet(BitmapData1, 16, "ptr")
+      Scan02 := NumGet(BitmapData2, 16, "ptr")
 
       ; RtlCompareMemory preforms an unsafe comparison stopping at the first different byte.
       size := stride1 * height1
