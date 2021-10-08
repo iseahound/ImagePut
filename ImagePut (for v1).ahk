@@ -913,7 +913,7 @@ class ImagePut {
       pBitmap := this.from_hIcon(hCursor)
 
       ; Cleanup the handle to the cursor. Same as DestroyIcon.
-      DllCall("DestroyCursor",  "ptr", hCursor)
+      DllCall("DestroyCursor", "ptr", hCursor)
 
       return pBitmap
    }
@@ -1087,7 +1087,7 @@ class ImagePut {
                ,    "ptr", &BitmapData) ; Contains the pointer (pBits) to the hbm.
 
       ; Don't use DI_DEFAULTSIZE to draw the icon like DrawIcon does as it will resize to 32 x 32.
-      DllCall("DrawIconEx"
+      DllCall("user32\DrawIconEx"
                , "ptr", hdc,   "int", 0, "int", 0
                , "ptr", image, "int", 0, "int", 0
                , "uint", 0, "ptr", 0, "uint", 0x1 | 0x2 | 0x4) ; DI_MASK | DI_IMAGE | DI_COMPAT
