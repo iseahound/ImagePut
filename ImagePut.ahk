@@ -11,7 +11,7 @@
 ;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
 ImagePutBase64(image, extension := "", quality := "") {
-   return ImagePut("base64", image,,, extension, quality)
+   return ImagePut("base64", image, extension, quality)
 }
 
 ; Puts the image into a GDI+ Bitmap and returns a pointer.
@@ -33,33 +33,32 @@ ImagePutClipboard(image) {
 ;   xHotspot   -  X Click Point           |  pixel    ->   0 - width
 ;   yHotspot   -  Y Click Point           |  pixel    ->   0 - height
 ImagePutCursor(image, xHotspot := "", yHotspot := "") {
-   return ImagePut("cursor", image,,, xHotspot, yHotspot)
+   return ImagePut("cursor", image, xHotspot, yHotspot)
 }
 
 ; Puts the image behind the desktop icons and returns the string "desktop".
-;   scale      -  Scale Factor            |  real     ->   A_ScreenHeight / height.
-ImagePutDesktop(image, scale := 1) {
-   return ImagePut("desktop", image,, scale)
+ImagePutDesktop(image) {
+   return ImagePut("desktop", image)
 }
 
 ; Puts the image into a file and returns a relative filepath.
 ;   filepath   -  Filepath + Extension    |  string   ->   *.bmp, *.gif, *.jpg, *.png, *.tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
 ImagePutFile(image, filepath := "", quality := "") {
-   return ImagePut("file", image,,, filepath, quality)
+   return ImagePut("file", image, filepath, quality)
 }
 
 ; Puts the image into a device independent bitmap and returns the handle.
 ;   alpha      -  Alpha Replacement Color |  RGB      ->   0xFFFFFF
 ImagePutHBitmap(image, alpha := "") {
-   return ImagePut("hBitmap", image,,, alpha)
+   return ImagePut("hBitmap", image, alpha)
 }
 
 ; Puts the image into a file format and returns a hexadecimal encoded string.
 ;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
 ImagePutHex(image, extension := "", quality := "") {
-   return ImagePut("hex", image,,, extension, quality)
+   return ImagePut("hex", image, extension, quality)
 }
 
 ; Puts the image into an icon and returns the handle.
@@ -71,21 +70,21 @@ ImagePutHIcon(image) {
 ;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
 ImagePutRandomAccessStream(image, extension := "", quality := "") {
-   return ImagePut("RandomAccessStream", image,,, extension, quality)
+   return ImagePut("RandomAccessStream", image, extension, quality)
 }
 
 ; Puts the image on the shared screen device context and returns an array of coordinates.
 ;   screenshot -  Screen Coordinates      |  array    ->   [x,y,w,h] or [0,0]
 ;   alpha      -  Alpha Replacement Color |  RGB      ->   0xFFFFFF
 ImagePutScreenshot(image, screenshot := "", alpha := "") {
-   return ImagePut("screenshot", image,,, screenshot, alpha)
+   return ImagePut("screenshot", image, screenshot, alpha)
 }
 
 ; Puts the image into a file format and returns a pointer to a stream.
 ;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
 ImagePutStream(image, extension := "", quality := "") {
-   return ImagePut("stream", image,,, extension, quality)
+   return ImagePut("stream", image, extension, quality)
 }
 
 ; Puts the image as the desktop wallpaper and returns the string "wallpaper".
@@ -96,7 +95,7 @@ ImagePutWallpaper(image) {
 ; Puts the image in a window and returns a handle to a window.
 ;   title      -  Window Caption Title    |  string   ->   MyTitle
 ImagePutWindow(image, title := "") {
-   return ImagePut("window", image,,, title)
+   return ImagePut("window", image, title)
 }
 
 
@@ -118,24 +117,31 @@ class ImagePut {
    ;   crop       -  Crop Coordinates        |  array    ->   [x,y,w,h] could be negative or percent.
    ;   scale      -  Scale Factor            |  real     ->   2.0
    ;   p*         -  Additional Parameters   |  variadic ->   Extra parameters found in BitmapToCoimage().
-   static call(cotype, image, crop := "", scale := "", p*) {
+   static call(cotype, image, p*) {
 
+      ; Extract parameters.
+      crop := image.HasOwnProp("crop") && IsObject(image.crop)
+         && image.crop[1] ~= "^-?\d+(\.\d*)?%?$" && image.crop[2] ~= "^-?\d+(\.\d*)?%?$"
+         && image.crop[3] ~= "^-?\d+(\.\d*)?%?$" && image.crop[4] ~= "^-?\d+(\.\d*)?%?$"
+         ? image.crop : false
+      scale := image.HasOwnProp("scale") && image.scale != 1 && image.scale ~= "^\d+(\.\d+)?$"
+         ? image.scale : false
+
+
+      ; Start!
       this.gdiplusStartup()
 
-      ; Take a guess as to what the image might be. (>90% accuracy!)
+      ; Dereference the image unknown.
+      if ObjHasOwnProp(image, "image")
+         image := image.image
+
+      ; Take a guess as to what the image might be. (>95% accuracy!)
       try type := this.DontVerifyImageType(&image)
       catch
          type := this.ImageType(image)
 
-      ; Qualify additional parameters for correctness.
-      _crop := IsObject(crop)
-         && crop[1] ~= "^-?\d+(\.\d*)?%?$" && crop[2] ~= "^-?\d+(\.\d*)?%?$"
-         && crop[3] ~= "^-?\d+(\.\d*)?%?$" && crop[4] ~= "^-?\d+(\.\d*)?%?$"
-      _scale := scale != 1 && scale ~= "^\d+(\.\d+)?$"
-
-
       ; Check if a stream can be used as an intermediate.
-      if not this.ForceDecodeImagePixels and not _crop and not _scale
+      if not this.ForceDecodeImagePixels and not crop and not scale
          and (type ~= "^(?i:url|file|stream|RandomAccessStream|hex|base64)$")
          and (cotype ~= "^(?i:file|stream|RandomAccessStream|hex|base64)$")
          and (!p.Has(1) || p[1] == "") { ; For now, disallow any specification of extensions.
@@ -168,14 +174,14 @@ class ImagePut {
             DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmap)
 
          ; Crop the image.
-         if (_crop) {
+         if (crop) {
             pBitmap2 := this.BitmapCrop(pBitmap, crop)
             DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
             pBitmap := pBitmap2
          }
 
          ; Scale the image.
-         if (_scale) {
+         if (scale) {
             pBitmap2 := this.BitmapScale(pBitmap, scale)
             DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
             pBitmap := pBitmap2
