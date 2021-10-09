@@ -1864,31 +1864,41 @@ class ImagePut {
    }
 
    select_filepath(ByRef filepath, ByRef extension, pStream := "") {
-      ; Save extension as default.
+      ; Save default extension.
       default := extension
 
-      ; Remove whitespace. Seperate the filepath. Adjust for directories.
-      filepath := Trim(filepath)
-      SplitPath filepath,, directory, extension, filename
+      ; Split the filepath.
+      SplitPath % Trim(filepath),, directory, extension, filename
+
+      ; Check if the entire filepath is a directory.
       if InStr(FileExist(filepath), "D")
          directory .= "\" filename, filename := ""
+
+      ; Create a new directory if needed.
       if (directory != "" && !InStr(FileExist(directory), "D"))
          FileCreateDir % directory
+
+      ; Default directory is a dot.
       directory := (directory != "") ? directory : "."
 
-      ; Validate filepath. https://stackoverflow.com/a/6804755
+      ; Check if the filename is actually the extension.
+      if (extension == "" && filename ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$")
+         extension := filename, filename := ""
+
+      ; Append an invalid extension to the filename.
       if !(extension ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$") {
-         ; If the extension does not match a known file type, append it to the filename.
          if (extension != "")
             filename .= "." extension
 
+         ; Restore default extension.
          extension := default
 
-         if (pStream) {
+         ; Try extracting the filetype from the stream.
+         if (pStream)
             this.select_extension(pStream, extension)
-         }
       }
-      filename := RegExReplace(filename, "S)(?i:^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$|[<>:|?*\x00-\x1F\x22\/\\])")
+
+      ; Create a filepath based on the timestamp.
       if (filename == "") {
          FormatTime, filename,, % "yyyy-MM-dd HH꞉mm꞉ss"
          filepath := directory "\" filename "." extension
@@ -1898,8 +1908,9 @@ class ImagePut {
             until !FileExist(filepath)
          }
       }
-      else
-         filepath := directory "\" filename "." extension
+
+      ; Filepath is complete!
+      else filepath := directory "\" filename "." extension
    }
 
    ; All references to gdiplus and pToken must be absolute!
