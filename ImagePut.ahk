@@ -137,7 +137,8 @@ class ImagePut {
       ; Check if a stream can be used as an intermediate.
       if not this.ForceDecodeImagePixels and not _crop and not _scale
          and (type ~= "^(?i:url|file|stream|RandomAccessStream|hex|base64)$")
-         and (cotype ~= "^(?i:file|stream|RandomAccessStream|hex|base64)$") {
+         and (cotype ~= "^(?i:file|stream|RandomAccessStream|hex|base64)$")
+         and (!p.Has(1) || p[1] == "") { ; For now, disallow any specification of extensions.
 
          ; Convert to a stream intermediate then to the output coimage.
          pStream := this.ToStream(type, image)
