@@ -921,7 +921,7 @@ class ImagePut {
    static from_url(image) {
       pStream := this.get_url(image)
       DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
-      pStream := ""
+      ObjRelease(pStream)
       return pBitmap
    }
 
