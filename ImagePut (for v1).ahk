@@ -1716,7 +1716,7 @@ class ImagePut {
 
    put_stream(pBitmap, extension := "", quality := "") {
       ; Default extension is TIF for fast speeds!
-      if !(extension ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$")
+      if (extension == "")
          extension := "tif"
 
       ; Select the proper codec based on the extension of the file.
@@ -1751,7 +1751,7 @@ class ImagePut {
 
    put_hex(pBitmap, extension := "", quality := "") {
       ; Default extension is PNG for small sizes!
-      if !(extension ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$")
+      if (extension == "")
          extension := "png"
 
       pStream := this.put_stream(pBitmap, extension, quality)
@@ -1766,7 +1766,7 @@ class ImagePut {
 
    put_base64(pBitmap, extension := "", quality := "") {
       ; Default extension is PNG for small sizes!
-      if !(extension ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$")
+      if (extension == "")
          extension := "png"
 
       pStream := this.put_stream(pBitmap, extension, quality)
@@ -1807,7 +1807,7 @@ class ImagePut {
             throw Exception("Could not find a matching encoder for the specified file format.")
 
          idx := (48+7*A_PtrSize)*(A_Index-1)
-      } until InStr(StrGet(NumGet(ci, idx+32+3*A_PtrSize, "ptr"), "UTF-16"), "*." extension) ; FilenameExtension
+      } until InStr(StrGet(NumGet(ci, idx+32+3*A_PtrSize, "ptr"), "UTF-16"), extension) ; FilenameExtension
 
       ; Get the pointer to the clsid of the matching encoder.
       pCodec := &ci + idx ; ClassID
