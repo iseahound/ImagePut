@@ -99,8 +99,8 @@ ImagePutWindow(image, title := "") {
    return ImagePut("window", image,,, title)
 }
 
-ImagePut(cotype, image, crop := "", scale := "", terms*) {
-   return ImagePut.call(cotype, image, crop, scale, terms*)
+ImagePut(cotype, image, crop := "", scale := "", p*) {
+   return ImagePut.call(cotype, image, crop, scale, p*)
 }
 
 
@@ -117,8 +117,8 @@ class ImagePut {
    ;   image      -  Input Image             |  image    ->   Anything. Refer to ImageType().
    ;   crop       -  Crop Coordinates        |  array    ->   [x,y,w,h] could be negative or percent.
    ;   scale      -  Scale Factor            |  real     ->   2.0
-   ;   terms*     -  Additional Parameters   |  variadic ->   Extra parameters found in BitmapToCoimage().
-   call(cotype, image, crop := "", scale := "", terms*) {
+   ;   p*         -  Additional Parameters   |  variadic ->   Extra parameters found in BitmapToCoimage().
+   call(cotype, image, crop := "", scale := "", p*) {
 
       this.gdiplusStartup()
 
@@ -141,7 +141,7 @@ class ImagePut {
 
          ; Convert to a stream intermediate then to the output coimage.
          pStream := this.ToStream(type, image)
-         coimage := this.StreamToCoimage(cotype, pStream, terms*)
+         coimage := this.StreamToCoimage(cotype, pStream, p*)
 
          ; Prevents the stream object from being freed.
          if (cotype = "stream")
@@ -181,7 +181,7 @@ class ImagePut {
          }
 
          ; Put the pBitmap to wherever the cotype specifies.
-         coimage := this.BitmapToCoimage(cotype, pBitmap, terms*)
+         coimage := this.BitmapToCoimage(cotype, pBitmap, p*)
 
          ; Clean up the pBitmap copy. Export raw pointers if requested.
          if !(cotype = "bitmap" || cotype = "buffer")
