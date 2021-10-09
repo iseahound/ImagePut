@@ -348,7 +348,7 @@ class ImagePut {
          if FileExist(image)
             return "file"
 
-      if (image ~= "^\d+$") {
+      if (image ~= "^-?\d+$") {
          SysGet MonitorGetCount, MonitorCount ; A non-zero "monitor" number identifies each display uniquely; and 0 refers to the entire virtual screen.
          if (image >= 0 && image <= MonitorGetCount)
             return "monitor"
