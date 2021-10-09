@@ -353,7 +353,7 @@ class ImagePut {
             return "monitor"
 
          ; An "hBitmap" is a handle to a GDI Bitmap.
-         if (DllCall("GetObjectType", "ptr", image) == 7)
+         if (DllCall("GetObjectType", "ptr", image, "uint") == 7)
             return "hBitmap"
 
          ; An "hIcon" is a handle to a GDI icon.
