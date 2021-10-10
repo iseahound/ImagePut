@@ -45,7 +45,7 @@ There's also some weird functions like ```ImagePutCursor``` which lets you set a
 Finally, there are several advanced features. The first is the ability to specify the [input type](https://github.com/iseahound/ImagePut/wiki/Input-Types-&-Output-Functions#input-types) directly. The second is [cropping](https://github.com/iseahound/ImagePut/wiki/Crop,-Scale,-&-Other-Flags#crop) and [scaling](https://github.com/iseahound/ImagePut/wiki/Crop,-Scale,-&-Other-Flags#scale) functionality. Third is use of ImageEqual() a function that can convert multiple inputs across different windows image data types!
 
     ; Declare input type as file.
-    ImagePutScreenshot({file: "cats.jpg"})
+    ImagePutWindow({file: "cats.jpg"})
     
     ; Scale 2x and crop 10% from each edge.
     ImagePutScreenshot({file: "cats.jpg", scale: 2, crop:["-10%", "-10%", "-10%", "-10%"]})
