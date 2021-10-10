@@ -354,7 +354,7 @@ class ImagePut {
          if FileExist(image)
             return "file"
 
-      if IsInteger(image) {
+      if (image ~= "^-?\d+$") {
          ; A non-zero "monitor" number identifies each display uniquely; and 0 refers to the entire virtual screen.
          if (image >= 0 && image <= MonitorGetCount())
             return "monitor"
@@ -1820,7 +1820,7 @@ class ImagePut {
       pCodec := ci.ptr + idx ; ClassID
 
       ; JPEG default quality is 75. Otherwise set a quality value from [0-100].
-      if IsInteger(quality) and ("image/jpeg" = StrGet(NumGet(ci, idx+32+4*A_PtrSize, "ptr"), "UTF-16")) { ; MimeType
+      if (quality ~= "^-?\d+$") and ("image/jpeg" = StrGet(NumGet(ci, idx+32+4*A_PtrSize, "ptr"), "UTF-16")) { ; MimeType
          ; Use a separate buffer to store the quality as ValueTypeLong (4).
          v := Buffer(4), NumPut("uint", quality, v)
 
