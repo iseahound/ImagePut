@@ -22,7 +22,7 @@ But you don't how. That's okay because you can just do this:
 
 or this
 
-    ImagePutClipboard("https:\\example.com\cats.jpg")
+    ImagePutClipboard("https://example.com/cats.jpg")
     
 or something like this:
 
@@ -54,7 +54,7 @@ Finally, there are several advanced features. The first is the ability to specif
     ImagePutScreenshot({image: "cats.jpg", crop: [0, 0, 200, 200]})
     
     ; Compare a url to a file
-    MsgBox % ImageEqual("https:\\example.com\cats.jpg", "cats.jpg")
+    MsgBox % ImageEqual("https://example.com/cats.jpg", "cats.jpg")
     
     ; Validate an image as an actual image.
     ImageEqual("cats.jpg")
