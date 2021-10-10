@@ -1,5 +1,6 @@
 # ImagePut
 
+* Accepts many [inputs](https://github.com/iseahound/ImagePut/wiki/Input-Types-&-Output-Functions#input-types). 
 * Standalone library.
 * Easily understandable syntax. 
 * Fast conversions.
