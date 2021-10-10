@@ -42,7 +42,7 @@ You can also move between different image types and file formats.
     
 There's also some weird functions like ```ImagePutCursor``` which lets you set anything as your cursor. Make sure you don't choose an extremely large image! 
 
-Finally, there are several advanced features. The first is the ability to ability to specify the [input type](https://github.com/iseahound/ImagePut/wiki/Input-Types-&-Output-Functions#input-types) directly. The second is [cropping](https://github.com/iseahound/ImagePut/wiki/Crop,-Scale,-&-Other-Flags#crop) and [scaling](https://github.com/iseahound/ImagePut/wiki/Crop,-Scale,-&-Other-Flags#scale) functionality. Third is use of ImageEqual() a function that can convert multiple inputs across different windows image data types!
+Finally, there are several advanced features. The first is the ability to specify the [input type](https://github.com/iseahound/ImagePut/wiki/Input-Types-&-Output-Functions#input-types) directly. The second is [cropping](https://github.com/iseahound/ImagePut/wiki/Crop,-Scale,-&-Other-Flags#crop) and [scaling](https://github.com/iseahound/ImagePut/wiki/Crop,-Scale,-&-Other-Flags#scale) functionality. Third is use of ImageEqual() a function that can convert multiple inputs across different windows image data types!
 
     ; Declare input type as file.
     ImagePutScreenshot({file: "cats.jpg"})
@@ -61,7 +61,7 @@ Finally, there are several advanced features. The first is the ability to abilit
 
 ## Design Philosophy
 
-ImagePut is designed to be fast. However, because of the nature of ImagePut, it has been deigned to be as fast as possible for many to many, one to many, and many to one operations. If you find that your script relies on a single conversion of one input type to one output type, then you are advised to look at the source code and see what you need. Single conversions can be optimized in ImagePut by declaring an input type as shown above. If you copy and paste my source code, you may get another small gain. For certain operations on Windows that involve specific conversions from one specific file format & input type to another, such as a PNG file in memory to hIcon, there do exist even faster operations that I have not implemented because they are extremely specific and rely on little known behavior. 
+ImagePut is designed to be fast. However, because of the nature of ImagePut, it has been deigned to be as fast as possible for many to many, one to many, and many to one operations. If you find that your script relies on a single conversion of one input type to one output type, then you are advised to look at the source code and see what you need. Single conversions can be optimized in ImagePut by declaring an input type as shown above. If you copy and paste my source code, you may get an additional small gain. For certain operations on Windows that involve specific conversions from one specific file format & input type to another, such as a PNG file in memory to hIcon, there do exist even faster operations that I have not implemented because they are extremely specific and rely on little known behavior. 
 
 ## Help and Support
 
