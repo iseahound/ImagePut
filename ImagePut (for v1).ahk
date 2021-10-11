@@ -119,21 +119,25 @@ class ImagePut {
    ;   p*         -  Additional Parameters   |  variadic ->   Extra parameters found in BitmapToCoimage().
    call(cotype, image, p*) {
 
+      crop := scale := false
+
       ; Extract parameters.
-      crop := IsObject(image.crop)
-         && image.crop[1] ~= "^-?\d+(\.\d*)?%?$" && image.crop[2] ~= "^-?\d+(\.\d*)?%?$"
-         && image.crop[3] ~= "^-?\d+(\.\d*)?%?$" && image.crop[4] ~= "^-?\d+(\.\d*)?%?$"
-         ? image.crop : false
-      scale := image.scale != 1 && image.scale ~= "^\d+(\.\d+)?$"
-         ? image.scale : false
+      if IsObject(image) {
+         crop := IsObject(image.crop)
+            && image.crop[1] ~= "^-?\d+(\.\d*)?%?$" && image.crop[2] ~= "^-?\d+(\.\d*)?%?$"
+            && image.crop[3] ~= "^-?\d+(\.\d*)?%?$" && image.crop[4] ~= "^-?\d+(\.\d*)?%?$"
+            ? image.crop : false
+         scale := image.scale != 1 && image.scale ~= "^\d+(\.\d+)?$"
+            ? image.scale : false
+
+         ; Dereference the image unknown.
+         if ObjHasKey(image, "image")
+            image := image.image
+      }
 
 
       ; Start!
       this.gdiplusStartup()
-
-      ; Dereference the image unknown.
-      if ObjHasKey(image, "image")
-         image := image.image
 
       ; Take a guess as to what the image might be. (>95% accuracy!)
       try type := this.DontVerifyImageType(image)
