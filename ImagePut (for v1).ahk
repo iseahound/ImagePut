@@ -1383,6 +1383,17 @@ class ImagePut {
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
 
+      balance := width / height > A_ScreenWidth / A_ScreenHeight
+      if (balance && width > A_ScreenWidth)
+         scale := (A_ScreenWidth / width), width := A_ScreenWidth, height *= scale
+      if (!balance && height > A_ScreenHeight)
+         scale := (A_ScreenHeight / height), height := A_ScreenHeight, width *= scale
+      if (scale != "") {
+         pBitmapScale := this.BitmapScale(pBitmap, scale)
+         DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
+         pBitmap := pBitmapScale
+      }
+
       cls := this.__class
       pWndProc := RegisterCallback(this.WindowProc, "Fast",, &this)
 
