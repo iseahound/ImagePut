@@ -1381,6 +1381,11 @@ class ImagePut {
             return DllCall("DefWindowProc", "ptr", hwnd, "uint", 0xA1, "uptr", 2, "ptr", 0, "ptr")
          }
 
+         ; WM_RBUTTONDOWN
+         if (uMsg = 0x204) {
+            DllCall("DestroyWindow", "ptr", hwnd)
+         }
+
          return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
       }
 
