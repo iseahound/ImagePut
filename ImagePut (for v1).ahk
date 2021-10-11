@@ -1382,7 +1382,9 @@ class ImagePut {
 
          ; WM_RBUTTONUP
          if (uMsg = 0x205) {
-            DllCall("DestroyWindow", "ptr", hwnd)
+            parent := DllCall("GetParent", "ptr", hwnd, "ptr")
+            hwnd := (parent != A_ScriptHwnd && parent != 0) ? parent : hwnd
+            return DllCall("DestroyWindow", "ptr", hwnd)
          }
 
          return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
