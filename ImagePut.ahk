@@ -1383,6 +1383,17 @@ class ImagePut {
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
 
+      balance := width / height > A_ScreenWidth / A_ScreenHeight
+      if (balance && width > A_ScreenWidth)
+         scale := (A_ScreenWidth / width), width := A_ScreenWidth, height *= scale
+      if (!balance && height > A_ScreenHeight)
+         scale := (A_ScreenHeight / height), height := A_ScreenHeight, width *= scale
+      if IsSet(scale) {
+         pBitmapScale := this.BitmapScale(pBitmap, scale)
+         DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
+         pBitmap := pBitmapScale
+      }
+
       cls := this.prototype.__class
       pWndProc := CallbackCreate(WindowProc)
 
@@ -1496,7 +1507,7 @@ class ImagePut {
                   ,    "ptr", hwnd                   ; hWnd
                   ,    "ptr", 0                           ; hdcDst
                   ,"uint64*", 0 | 0 << 32                      ; *pptDst
-                  ,"uint64*", width | height << 32                     ; *psize
+                  ,"uint64*", Integer(width) | Integer(height) << 32                     ; *psize
                   ,    "ptr", hdc                    ; hdcSrc
                   , "int64*", 0                           ; *pptSrc
                   ,   "uint", 0                           ; crKey
