@@ -178,18 +178,12 @@ class ImagePut {
             DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmap)
 
          ; Crop the image.
-         if (crop) {
-            pBitmap2 := this.BitmapCrop(pBitmap, crop)
-            DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
-            pBitmap := pBitmap2
-         }
+         if (crop)
+            this.BitmapCrop(&pBitmap, crop)
 
          ; Scale the image.
-         if (scale) {
-            pBitmap2 := this.BitmapScale(pBitmap, scale)
-            DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
-            pBitmap := pBitmap2
-         }
+         if (scale)
+            this.BitmapScale(&pBitmap, scale)
 
          ; Put the pBitmap to wherever the cotype specifies.
          coimage := this.BitmapToCoimage(cotype, pBitmap, p*)
@@ -586,7 +580,7 @@ class ImagePut {
       return DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
    }
 
-   static BitmapCrop(pBitmap, crop) {
+   static BitmapCrop(&pBitmap, crop, dispose := true) {
       ; Get Bitmap width, height, and format.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
@@ -629,10 +623,15 @@ class ImagePut {
                ,    "ptr", pBitmap
                ,   "ptr*", &pBitmapCrop:=0)
 
+      if (dispose) {
+         DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
+         pBitmap := pBitmapCrop
+      }
+
       return pBitmapCrop
    }
 
-   static BitmapScale(pBitmap, scale) {
+   static BitmapScale(&pBitmap, scale, dispose := true) {
       ; Get Bitmap width, height, and format.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
@@ -667,6 +666,12 @@ class ImagePut {
 
       ; Clean up the graphics context.
       DllCall("gdiplus\GdipDeleteGraphics", "ptr", pGraphics)
+
+      if (dispose) {
+         DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
+         pBitmap := pBitmapScale
+      }
+
       return pBitmapScale
    }
 
@@ -1392,11 +1397,8 @@ class ImagePut {
          scale := (A_ScreenWidth / width), width := A_ScreenWidth, height *= scale
       if (!balance && height > A_ScreenHeight)
          scale := (A_ScreenHeight / height), height := A_ScreenHeight, width *= scale
-      if IsSet(scale) {
-         pBitmapScale := this.BitmapScale(pBitmap, scale)
-         DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
-         pBitmap := pBitmapScale
-      }
+      if IsSet(scale)
+         this.BitmapScale(&pBitmap, scale)
 
       cls := this.prototype.__class
       pWndProc := CallbackCreate(WindowProc)
