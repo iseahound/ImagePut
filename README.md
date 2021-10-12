@@ -13,7 +13,7 @@
 
 Projects using ImagePut:
 
-* [PaddleOCR-AutoHotkey](https://github.com/telppa/PaddleOCR-AutoHotkey) - Best OCR for AutoHotkey
+* [PaddleOCR-AutoHotkey](https://github.com/telppa/PaddleOCR-AutoHotkey)
 
 If you like this and want to see my other AutoHotkey libraries:
 
