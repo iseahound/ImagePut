@@ -11,6 +11,10 @@
 * [Input Types & Output Functions](https://github.com/iseahound/ImagePut/wiki/Input-Types-&-Output-Functions)
 * [Crop, Scale, & Other Flags](https://github.com/iseahound/ImagePut/wiki/Crop,-Scale,-&-Other-Flags)
 
+Projects using ImagePut:
+
+* [PaddleOCR-AutoHotkey](https://github.com/telppa/PaddleOCR-AutoHotkey)
+
 If you like this and want to see my other AutoHotkey libraries:
 
 * [TextRender & ImageRender](https://github.com/iseahound/TextRender) - Draw text and images to screen. 
