@@ -799,8 +799,7 @@ class ImagePut {
          DllCall("ShowWindow", "ptr", image, "int", 4)
 
       ; Get the width and height of the client window.
-      VarSetCapacity(Rect, 16) ; sizeof(RECT) = 16
-      DllCall("GetClientRect", "ptr", image, "ptr", &Rect)
+      DllCall("GetClientRect", "ptr", image, "ptr", &Rect := VarSetCapacity(Rect, 16)) ; sizeof(RECT) = 16
          , width  := NumGet(Rect, 8, "int")
          , height := NumGet(Rect, 12, "int")
 
@@ -845,8 +844,7 @@ class ImagePut {
          throw Exception("Could not locate hidden window behind desktop.")
 
       ; Get the width and height of the client window.
-      VarSetCapacity(Rect, 16) ; sizeof(RECT) = 16
-      DllCall("GetClientRect", "ptr", WorkerW, "ptr", &Rect)
+      DllCall("GetClientRect", "ptr", WorkerW, "ptr", &Rect := VarSetCapacity(Rect, 16)) ; sizeof(RECT) = 16
          , width  := NumGet(Rect, 8, "int")
          , height := NumGet(Rect, 12, "int")
 
@@ -1156,8 +1154,7 @@ class ImagePut {
 
    get_RandomAccessStream(image) {
       ; Note that the returned stream shares a reference count with the original RandomAccessStream.
-      VarSetCapacity(CLSID, 16)
-      DllCall("ole32\CLSIDFromString", "wstr", "{0000000C-0000-0000-C000-000000000046}", "ptr", &CLSID, "uint")
+      DllCall("ole32\CLSIDFromString", "wstr", "{0000000C-0000-0000-C000-000000000046}", "ptr", &CLSID := VarSetCapacity(CLSID, 16), "uint")
       DllCall("ShCore\CreateStreamOverRandomAccessStream", "ptr", image, "ptr", &CLSID, "ptr*", pStream:=0, "uint")
       return pStream
    }
@@ -1769,8 +1766,7 @@ class ImagePut {
 
    set_RandomAccessStream(pStream) {
       ; Thanks teadrinker - https://www.autohotkey.com/boards/viewtopic.php?f=6&t=72674
-      VarSetCapacity(CLSID, 16)
-      DllCall("ole32\CLSIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", &CLSID, "uint")
+      DllCall("ole32\CLSIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", &CLSID := VarSetCapacity(CLSID, 16), "uint")
       DllCall("ShCore\CreateRandomAccessStreamOverStream"
                ,    "ptr", pStream
                ,   "uint", BSOS_PREFERDESTINATIONSTREAM := 1
@@ -1815,9 +1811,8 @@ class ImagePut {
 
       ; For compatibility with SHCreateMemStream do not use GetHGlobalFromStream.
       DllCall("shlwapi\IStream_Size", "ptr", pStream, "ptr*", size:=0, "uint")
-      VarSetCapacity(bin, size)
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
-      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", &bin, "uint", size, "uint")
+      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", &bin := VarSetCapacity(bin, size), "uint", size, "uint")
 
       ; Using CryptBinaryToStringA saves about 2MB in memory.
       DllCall("crypt32\CryptBinaryToStringA", "ptr", &bin, "uint", size, "uint", flags, "ptr", 0, "uint*", length:=0)
@@ -1861,9 +1856,8 @@ class ImagePut {
    }
 
    select_extension(pStream, ByRef extension) {
-      VarSetCapacity(signature, 12)
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
-      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", &signature, "uint", 12, "uint")
+      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", &signature := VarSetCapacity(signature, 12), "uint", 12, "uint")
 
       ; This function sniffs the first 12 bytes and matches a known file signature.
       ; 256 bytes is recommended, but images only need 12 bytes.
