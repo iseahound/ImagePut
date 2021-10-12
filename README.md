@@ -13,11 +13,11 @@
 
 Projects using ImagePut:
 
-* [PaddleOCR-AutoHotkey](https://github.com/telppa/PaddleOCR-AutoHotkey)
+* [PaddleOCR-AutoHotkey](https://github.com/telppa/PaddleOCR-AutoHotkey) - Best OCR for AutoHotkey
 
 If you like this and want to see my other AutoHotkey libraries:
 
-* [TextRender & ImageRender](https://github.com/iseahound/TextRender) - Draw text and images to screen. 
+* [TextRender & ImageRender](https://github.com/iseahound/TextRender)
 
 ## So you want to convert an image?
 
