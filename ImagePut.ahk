@@ -1392,18 +1392,6 @@ class ImagePut {
       Persistent(true)
 
 
-      ; Get Bitmap width and height.
-      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
-      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
-
-      balance := width / height > A_ScreenWidth / A_ScreenHeight
-      if (balance && width > A_ScreenWidth)
-         scale := (A_ScreenWidth / width), width := A_ScreenWidth, height *= scale
-      if (!balance && height > A_ScreenHeight)
-         scale := (A_ScreenHeight / height), height := A_ScreenHeight, width *= scale
-      if IsSet(scale)
-         this.BitmapScale(&pBitmap, scale)
-
       cls := this.prototype.__class
       pWndProc := CallbackCreate(WindowProc)
 
@@ -1455,8 +1443,20 @@ class ImagePut {
          WS_EX_TRANSPARENT         :=       0x20
          WS_EX_DLGMODALFRAME       :=        0x1
 
-         style := WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_CLIPCHILDREN | WS_POPUP | WS_CLIPSIBLINGS ;| WS_SIZEBOX
-         styleEx := WS_EX_TOPMOST | WS_EX_WINDOWEDGE | WS_EX_DLGMODALFRAME ;| WS_EX_LAYERED ;| WS_EX_STATICEDGE
+      style := WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_CLIPCHILDREN | WS_POPUP | WS_CLIPSIBLINGS ;| WS_SIZEBOX
+      styleEx := WS_EX_TOPMOST | WS_EX_WINDOWEDGE | WS_EX_DLGMODALFRAME ;| WS_EX_STATICEDGE
+
+      ; Get Bitmap width and height.
+      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
+      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
+
+      balance := width / height > A_ScreenWidth / A_ScreenHeight
+      if (balance && width > A_ScreenWidth)
+         scale := (A_ScreenWidth / width), width := A_ScreenWidth, height *= scale
+      if (!balance && height > A_ScreenHeight)
+         scale := (A_ScreenHeight / height), height := A_ScreenHeight, width *= scale
+      if IsSet(scale)
+         this.BitmapScale(&pBitmap, scale)
 
          rect := Buffer(16)
             NumPut("int", Floor((A_ScreenWidth - width) / 2), rect,  0)
