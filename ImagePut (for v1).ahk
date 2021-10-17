@@ -987,9 +987,10 @@ class ImagePut {
          , width  := NumGet(dib, 4, "uint")
          , height := NumGet(dib, 8, "uint")
          , bpp    := NumGet(dib, 18, "ushort")
+         , pBits  := NumGet(dib, A_PtrSize = 4 ? 20:24, "ptr")
 
-      ; Fallback to built-in method if pixels are not 32-bit ARGB.
-      if (bpp != 32) { ; This built-in version is 120% faster but ignores transparency.
+      ; Fallback to built-in method if pixels are not 32-bit ARGB or hBitmap is a device dependent bitmap.
+      if (pBits = 0 || bpp != 32) { ; This built-in version is 120% faster but ignores transparency.
          DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", image, "ptr", 0, "ptr*", pBitmap:=0)
          return pBitmap
       }
@@ -1459,10 +1460,10 @@ class ImagePut {
          this.BitmapScale(pBitmap, scale)
 
          VarSetCapacity(rect, 16)
-            NumPut(Floor((A_ScreenWidth - width) / 2), rect,  0, "int")
-            NumPut(Floor((A_ScreenHeight - height) / 2), rect,  4, "int")
-            NumPut(Floor((A_ScreenWidth + width) / 2), rect,  8, "int")
-            NumPut(Floor((A_ScreenHeight + height) / 2), rect, 12, "int")
+            NumPut(Floor((A_ScreenWidth - width) / 2.0), rect,  0, "int")
+            NumPut(Floor((A_ScreenHeight - height) / 2.0), rect,  4, "int")
+            NumPut(Floor((A_ScreenWidth + width) / 2.0), rect,  8, "int")
+            NumPut(Floor((A_ScreenHeight + height) / 2.0), rect, 12, "int")
 
          DllCall("AdjustWindowRectEx", "ptr", &rect, "uint", style, "uint", 0, "uint", styleEx)
             , x := NumGet(rect,  0, "int")
