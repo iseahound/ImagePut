@@ -756,10 +756,10 @@ class ImagePut {
 
       ; Fallback to CF_BITMAP. This format does not support transparency even with put_hBitmap().
       else if DllCall("IsClipboardFormatAvailable", "uint", 2) {
-         if !(hBitmap := DllCall("GetClipboardData", "uint", 2, "ptr"))
+         if !(hbm := DllCall("GetClipboardData", "uint", 2, "ptr"))
             throw Exception("Shared clipboard data has been deleted.")
-         DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", hBitmap, "ptr", 0, "ptr*", pBitmap:=0)
-         DllCall("DeleteObject", "ptr", hBitmap)
+         DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", hbm, "ptr", 0, "ptr*", pBitmap:=0)
+         DllCall("DeleteObject", "ptr", hbm)
       }
 
       DllCall("CloseClipboard")
@@ -1311,12 +1311,12 @@ class ImagePut {
 
       ; #2 - Place the image onto the clipboard in the CF_DIB format using a bottom-up bitmap.
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
-      DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "ptr", pBitmap, "ptr*", hBitmap:=0, "uint", 0)
+      DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "ptr", pBitmap, "ptr*", hbm:=0, "uint", 0)
 
       ; struct DIBSECTION - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-dibsection
       ; struct BITMAP - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmap
       VarSetCapacity(dib, size := 64+5*A_PtrSize) ; sizeof(DIBSECTION) = 84, 104
-      DllCall("GetObject", "ptr", hBitmap, "int", size, "ptr", &dib)
+      DllCall("GetObject", "ptr", hbm, "int", size, "ptr", &dib)
          , pBits := NumGet(dib, A_PtrSize = 4 ? 20:24, "ptr")  ; bmBits
          , size  := NumGet(dib, A_PtrSize = 4 ? 44:52, "uint") ; biSizeImage
 
@@ -1334,7 +1334,7 @@ class ImagePut {
       DllCall("GlobalUnlock", "ptr", hdib)
 
       ; Delete the temporary hBitmap.
-      DllCall("DeleteObject", "ptr", hBitmap)
+      DllCall("DeleteObject", "ptr", hbm)
 
       ; CF_DIB (8) can be synthesized into CF_BITMAP (2), CF_PALETTE (9), and CF_DIBV5 (17).
       DllCall("SetClipboardData", "uint", 8, "ptr", hdib)
@@ -1733,8 +1733,8 @@ class ImagePut {
    put_hBitmap(pBitmap, alpha := "") {
       ; Revert to built in functionality if a replacement color is declared.
       if (alpha != "") { ; This built-in version is about 25% slower.
-         DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "ptr", pBitmap, "ptr*", hBitmap:=0, "uint", alpha)
-         return hBitmap
+         DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "ptr", pBitmap, "ptr*", hbm:=0, "uint", alpha)
+         return hbm
       }
 
       ; Get Bitmap width and height.
