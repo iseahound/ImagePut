@@ -36,6 +36,12 @@ ImagePutCursor(image, xHotspot := "", yHotspot := "") {
    return ImagePut("cursor", image, xHotspot, yHotspot)
 }
 
+; Puts the image onto a device context and returns the handle.
+;   alpha      -  Alpha Replacement Color |  RGB      ->   0xFFFFFF
+ImagePutDC(image, alpha := "") {
+   return ImagePut("dc", image, alpha)
+}
+
 ; Puts the image behind the desktop icons and returns the string "desktop".
 ImagePutDesktop(image) {
    return ImagePut("desktop", image)
@@ -262,6 +268,11 @@ class ImagePut {
          return "monitor"
       }
 
+      if ObjHasOwnProp(image, "dc") {
+         image := image.dc
+         return "dc"
+      }
+
       if ObjHasOwnProp(image, "hBitmap") {
          image := image.hBitmap
          return "hBitmap"
@@ -357,6 +368,10 @@ class ImagePut {
          if (image >= 0 && image <= MonitorGetCount())
             return "monitor"
 
+         ; A "dc" is a handle to a GDI device context.
+         if (DllCall("GetObjectType", "ptr", image, "uint") == 3 || DllCall("GetObjectType", "ptr", image, "uint") == 10)
+            return "dc"
+
          ; An "hBitmap" is a handle to a GDI Bitmap.
          if (DllCall("GetObjectType", "ptr", image, "uint") == 7)
             return "hBitmap"
@@ -434,6 +449,9 @@ class ImagePut {
       if (type = "monitor")
          return this.from_monitor(image)
 
+      if (type = "dc")
+         return this.from_dc(image)
+
       if (type = "hBitmap")
          return this.from_hBitmap(image)
 
@@ -497,6 +515,10 @@ class ImagePut {
       ; BitmapToCoimage("file", pBitmap, filepath, quality)
       if (cotype = "file")
          return this.put_file(pBitmap, p1, p2)
+
+      ; BitmapToCoimage("dc", pBitmap, alpha)
+      if (cotype = "dc")
+         return this.put_dc(pBitmap, p1)
 
       ; BitmapToCoimage("hBitmap", pBitmap, alpha)
       if (cotype = "hBitmap")
@@ -977,6 +999,12 @@ class ImagePut {
          h := DllCall("GetSystemMetrics", "int", 79, "int")
       }
       return this.from_screenshot([x,y,w,h])
+   }
+
+   static from_dc(image) {
+      if !(hbm := DllCall("GetCurrentObject", "ptr", image, "uint", 7))
+         throw Error("The device context has no bitmap selected.")
+      return this.from_hBitmap(hbm)
    }
 
    static from_hBitmap(image) {
@@ -1788,6 +1816,15 @@ else {
       ObjRelease(pFileStream)
 
       return filepath
+   }
+
+   static put_dc(pBitmap, alpha := "") {
+      ; This may seem strange, but the hBitmap is selected onto the device context, 
+      ; and therefore cannot be deleted. In addition, the stock bitmap can never be leaked.
+      hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
+      hbm := this.put_hBitmap(pBitmap, alpha)
+      obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
+      return hdc
    }
 
    static put_hBitmap(pBitmap, alpha := "") {
