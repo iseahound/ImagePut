@@ -69,7 +69,7 @@ ImagePutHex(image, extension := "", quality := "") {
 
 ; Puts the image into an icon and returns the handle.
 ImagePutHIcon(image) {
-   return ImagePut("hBitmap", image)
+   return ImagePut("hIcon", image)
 }
 
 ; Puts the image into a file format and returns a pointer to a RandomAccessStream.
