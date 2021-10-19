@@ -135,11 +135,16 @@ class ImagePut {
             ? image.crop : false
          scale := image.scale != 1 && image.scale ~= "^\d+(\.\d+)?$"
             ? image.scale : false
+         ForceDecodeImagePixels := image.ForceDecodeImagePixels
+         ForcePushImageToMemory := image.ForcePushImageToMemory
 
          ; Dereference the image unknown.
          if ObjHasKey(image, "image")
             image := image.image
       }
+
+      ForceDecodeImagePixels := this.ForceDecodeImagePixels ? true : ForceDecodeImagePixels ? true : false
+      ForcePushImageToMemory := this.ForcePushImageToMemory ? true : ForcePushImageToMemory ? true : false
 
 
       ; Start!
@@ -151,7 +156,7 @@ class ImagePut {
          type := this.ImageType(image)
 
       ; Check if a stream can be used as an intermediate.
-      if not this.ForceDecodeImagePixels and not crop and not scale
+      if not ForceDecodeImagePixels and not crop and not scale
          and (type ~= "^(?i:url|file|stream|RandomAccessStream|hex|base64)$")
          and (cotype ~= "^(?i:file|stream|RandomAccessStream|hex|base64)$")
          and (p[1] = "") { ; For now, disallow any specification of extensions.
@@ -180,7 +185,7 @@ class ImagePut {
          ; and bypasses any copy-on-write and copy on LockBits read behavior.
          ; This must be called immediately after the pBitmap is created
          ; or it will fail without throwing any errors.
-         if (this.ForcePushImageToMemory)
+         if (ForcePushImageToMemory)
             DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmap)
 
          ; Crop the image.
