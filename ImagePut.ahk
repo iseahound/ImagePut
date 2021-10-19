@@ -842,7 +842,7 @@ class ImagePut {
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
       ; Print the window onto the hBitmap using an undocumented flag. https://stackoverflow.com/a/40042587
-      DllCall("PrintWindow", "ptr", image, "ptr", hdc, "uint", 0x3) ; PW_RENDERFULLCONTENT | PW_CLIENTONLY
+      DllCall("user32\PrintWindow", "ptr", image, "ptr", hdc, "uint", 0x3) ; PW_RENDERFULLCONTENT | PW_CLIENTONLY
       ; Additional info on how this is implemented: https://www.reddit.com/r/windows/comments/8ffr56/altprintscreen/
 
       ; Convert the hBitmap to a Bitmap using a built in function as there is no transparency.
@@ -924,8 +924,8 @@ class ImagePut {
       hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", bi, "uint", 0, "ptr*", &pBits:=0, "ptr", 0, "uint", 0, "ptr")
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
-      ; Paints the desktop.
-      DllCall("PaintDesktop", "ptr", hdc)
+      ; Paints the wallpaper.
+      DllCall("user32\PaintDesktop", "ptr", hdc)
 
       ; Convert the hBitmap to a Bitmap using a built in function as there is no transparency.
       DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", hbm, "ptr", 0, "ptr*", &pBitmap:=0)
