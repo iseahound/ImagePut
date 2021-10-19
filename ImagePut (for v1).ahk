@@ -1030,7 +1030,7 @@ class ImagePut {
 
       ; Create a handle to a device context and associate the image.
       sdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")           ; Creates a memory DC compatible with the current screen.
-      sbm := DllCall("SelectObject", "ptr", sdc, "ptr", image, "ptr") ; Put the (hBitmap) image onto the device context.
+      obm := DllCall("SelectObject", "ptr", sdc, "ptr", image, "ptr") ; Put the (hBitmap) image onto the device context.
 
       ; Create a device independent bitmap with negative height. All DIBs use the screen pixel format (pARGB).
       ; Use hbm to buffer the image such that top-down and bottom-up images are mapped to this top-down buffer.
@@ -1078,7 +1078,7 @@ class ImagePut {
       DllCall("SelectObject", "ptr", hdc, "ptr", obm)
       DllCall("DeleteObject", "ptr", hbm)
       DllCall("DeleteDC",     "ptr", hdc)
-      DllCall("SelectObject", "ptr", sdc, "ptr", sbm)
+      DllCall("SelectObject", "ptr", sdc, "ptr", obm)
       DllCall("DeleteDC",     "ptr", sdc)
 
       return pBitmap
