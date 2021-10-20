@@ -1676,7 +1676,7 @@ class ImagePut {
       }
 
       ; Loop over all 16 system cursors and change them all to the new cursor.
-      SystemCursors := "32512,32513,32514,32515,32516,32640,32641,32642,32643,32644,32645,32646,32648,32649,32650,32651"
+      SystemCursors := "32512,32513,32514,32515,32516,32642,32643,32644,32645,32646,32648,32649,32650,32651"
       Loop Parse, SystemCursors, % ","
       { ; Must copy the handle 16 times as SetSystemCursor deletes the handle 16 times.
          hCursor := DllCall("CopyImage", "ptr", hIcon, "uint", 2, "int", 0, "int", 0, "uint", 0, "ptr")

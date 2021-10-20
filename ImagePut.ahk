@@ -1477,7 +1477,7 @@ class ImagePut {
          WS_EX_TRANSPARENT         :=       0x20
          WS_EX_DLGMODALFRAME       :=        0x1
 
-      style := WS_CAPTION | WS_SYSMENU | WS_CLIPCHILDREN | WS_POPUP | WS_CLIPSIBLINGS ;| WS_SIZEBOX WS_VISIBLE | 
+      style := WS_CAPTION | WS_SYSMENU | WS_CLIPCHILDREN | WS_POPUP | WS_CLIPSIBLINGS ;| WS_SIZEBOX WS_VISIBLE |
       styleEx := WS_EX_TOPMOST | WS_EX_WINDOWEDGE | WS_EX_DLGMODALFRAME ;| WS_EX_STATICEDGE
 
       ; Get Bitmap width and height.
@@ -1485,7 +1485,7 @@ class ImagePut {
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
 
       ; If both dimensions exceed the screen boundaries, compare the aspect ratio of the image
-      ; to the aspect ratio of the screen to determine the scale factor. Default scale is 1. 
+      ; to the aspect ratio of the screen to determine the scale factor. Default scale is 1.
       s  := (width > A_ScreenWidth) && (width / height > A_ScreenWidth / A_ScreenHeight) ? A_ScreenWidth / width
          : (height > A_ScreenHeight) && (width / height <= A_ScreenWidth / A_ScreenHeight) ? A_ScreenHeight / height
          : 1
@@ -1539,7 +1539,7 @@ class ImagePut {
          ,   "uint", WS_VISIBLE | WS_CHILD ; dwStyle
          ,    "int", 0
          ,    "int", 0
-         ,    "int", w 
+         ,    "int", w
          ,    "int", h
          ,    "ptr", hwnd0                 ; hWndParent
          ,    "ptr", 0                     ; hMenu
@@ -1577,7 +1577,7 @@ if (s = 1) {
                ,    "int", 0xE200B      ; Format32bppPArgb
                ,    "ptr", BitmapData)  ; Contains the pointer (pBits) to the hbm.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
-} 
+}
 else if ((0xFF00 & format) >> 8 = 24) {
 
       hdc2 := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
@@ -1768,7 +1768,7 @@ else {
       }
 
       ; Loop over all 16 system cursors and change them all to the new cursor.
-      SystemCursors := "32512,32513,32514,32515,32516,32640,32641,32642,32643,32644,32645,32646,32648,32649,32650,32651"
+      SystemCursors := "32512,32513,32514,32515,32516,32642,32643,32644,32645,32646,32648,32649,32650,32651"
       Loop Parse, SystemCursors, ","
       { ; Must copy the handle 16 times as SetSystemCursor deletes the handle 16 times.
          hCursor := DllCall("CopyImage", "ptr", hIcon, "uint", 2, "int", 0, "int", 0, "uint", 0, "ptr")
@@ -1824,7 +1824,7 @@ else {
    }
 
    static put_dc(pBitmap, alpha := "") {
-      ; This may seem strange, but the hBitmap is selected onto the device context, 
+      ; This may seem strange, but the hBitmap is selected onto the device context,
       ; and therefore cannot be deleted. In addition, the stock bitmap can never be leaked.
       hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
       hbm := this.put_hBitmap(pBitmap, alpha)
