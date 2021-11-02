@@ -2092,7 +2092,7 @@ else {
 
       ; Check if the entire filepath is a directory.
       if DirExist(filepath)
-         directory .= "\" filename, filename := ""
+         directory := (directory != "") ? directory "\" filename : ".\" filename, filename := ""
 
       ; Create a new directory if needed.
       if (directory != "" && !DirExist(directory))
