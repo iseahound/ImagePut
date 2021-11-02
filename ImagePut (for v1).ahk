@@ -2000,7 +2000,7 @@ class ImagePut {
 
       ; Check if the entire filepath is a directory.
       if InStr(FileExist(filepath), "D")
-         directory .= "\" filename, filename := ""
+         directory := (directory != "") ? directory "\" filename : ".\" filename, filename := ""
 
       ; Create a new directory if needed.
       if (directory != "" && !InStr(FileExist(directory), "D"))
