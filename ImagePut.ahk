@@ -1791,7 +1791,7 @@ else {
             else throw Error("Unable to create temporary image file.")
 
       ; Set the temporary image file as the new desktop wallpaper.
-      DllCall("SystemParametersInfo", "uint", SPI_SETDESKWALLPAPER := 20, "uint", 0, "str", buf, "uint", 2)
+      DllCall("SystemParametersInfo", "uint", SPI_SETDESKWALLPAPER := 0x14, "uint", 0, "str", buf, "uint", 2)
 
       ; This is a delayed delete call. #Persistent may be required on v1.
       DeleteFile := DllCall.Bind("DeleteFile", "str", filepath)
