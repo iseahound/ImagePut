@@ -47,7 +47,7 @@ ImagePutDesktop(image) {
    return ImagePut("desktop", image)
 }
 
-; Puts the image into a file and returns a relative filepath.
+; Puts the image into a file and returns its filepath.
 ;   filepath   -  Filepath + Extension    |  string   ->   *.bmp, *.gif, *.jpg, *.png, *.tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
 ImagePutFile(image, filepath := "", quality := "") {
