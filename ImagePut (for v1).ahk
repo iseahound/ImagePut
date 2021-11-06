@@ -370,8 +370,12 @@ class ImagePut {
             return "url"
 
          ; A "file" is stored on the disk or network.
-         if FileExist(image)
+         if FileExist(image) {
+            if image ~= ".pdf$"
+               return "pdf"
+
             return "file"
+         }
 
       if (image ~= "^-?\d+$") {
          SysGet MonitorGetCount, MonitorCount ; A non-zero "monitor" number identifies each display uniquely; and 0 refers to the entire virtual screen.
@@ -452,6 +456,9 @@ class ImagePut {
 
       if (type = "url")
          return this.from_url(image)
+
+      if (type = "pdf")
+         return this.from_pdf(image)
 
       if (type = "file")
          return this.from_file(image)
@@ -1043,6 +1050,60 @@ class ImagePut {
       file.Close()
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", true, "ptr*", pStream:=0, "uint")
       return pStream
+   }
+
+   from_pdf(image, page := 0) {
+      ; Create the "Windows.Data.Pdf.PdfDocument" class using IPdfDocumentStatics.
+      DllCall("combase\WindowsCreateString", "wstr", "Windows.Data.Pdf.PdfDocument", "uint", 28, "ptr*", hString:=0, "uint")
+      DllCall("ole32\CLSIDFromString", "wstr", "{433A0B5F-C007-4788-90F2-08143D922599}", "ptr", &CLSID := VarSetCapacity(CLSID, 16), "uint")
+      DllCall("combase\RoGetActivationFactory", "ptr", hString, "ptr", &CLSID, "ptr*", PdfDocumentStatics:=0, "uint")
+      DllCall("combase\WindowsDeleteString", "ptr", hString, "uint")
+
+      ; Open a file as a RandomAccessStream.
+      DllCall("ole32\CLSIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", &CLSID := VarSetCapacity(CLSID, 16), "uint")
+      DllCall("ShCore\CreateRandomAccessStreamOnFile", "wstr", image, "uint", Read := 0, "ptr", &CLSID, "ptr*", IRandomAccessStream, "uint")
+
+      ; Create the PDF document.
+      DllCall(PdfDocument_LoadFromStreamAsync := NumGet(NumGet(PdfDocumentStatics+0)+8*A_PtrSize), "ptr", PdfDocumentStatics, "ptr", IRandomAccessStream, "ptr*", PdfDocument)
+      this.WaitForAsync(PdfDocument)
+
+      ; Get Page
+      DllCall(NumGet(NumGet(PdfDocument+0)+6*A_PtrSize), "ptr", PdfDocument, "uint", page, "ptr*", PdfPage) ; GetPage
+
+      ; Render the page to an output stream.
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "uint", true, "ptr*", IStream)
+      DllCall("ole32\CLSIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", &CLSID := VarSetCapacity(CLSID, 16), "uint")
+      DllCall("ShCore\CreateRandomAccessStreamOverStream", "ptr", IStream, "uint", BSOS_DEFAULT := 0, "ptr", &CLSID, "ptr*", IRandomAccessStreamOut)
+      DllCall(NumGet(NumGet(PdfPage+0)+6*A_PtrSize), "ptr", PdfPage, "ptr", IRandomAccessStreamOut, "ptr*", asyncInfo) ; RenderToStreamAsync
+      this.WaitForAsync(asyncInfo)
+
+      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", IStream, "ptr*", pBitmap:=0)
+
+      ObjRelease(IRandomAccessStreamOut)
+      ObjRelease(IStream)
+      ObjRelease(PdfPage)
+      ObjRelease(PdfDocument)
+      ObjRelease(IRandomAccessStream)
+      ObjRelease(PdfDocumentStatics)
+      return pBitmap
+   }
+
+   WaitForAsync(ByRef Object) {
+      AsyncInfo := ComObjQuery(Object, IAsyncInfo := "{00000036-0000-0000-C000-000000000046}")
+      while !DllCall(IAsyncInfo_Status := NumGet(NumGet(AsyncInfo+0)+7*A_PtrSize), "ptr", AsyncInfo, "uint*", status:=0)
+         and (status = 0)
+            Sleep 10
+
+      if (status != 1) {
+         DllCall(IAsyncInfo_ErrorCode := NumGet(NumGet(AsyncInfo+0)+8*A_PtrSize), "ptr", AsyncInfo, "uint*", ErrorCode:=0)
+         throw Exception("AsyncInfo status error: " ErrorCode)
+      }
+
+      ObjRelease(AsyncInfo)
+
+      DllCall(NumGet(NumGet(Object+0)+8*A_PtrSize), "ptr", Object, "ptr*", ObjectResult) ; GetResults
+      ObjRelease(Object)
+      Object := ObjectResult
    }
 
    from_monitor(image) {
