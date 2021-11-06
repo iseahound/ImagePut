@@ -2037,11 +2037,8 @@ class ImagePut {
       if (filename == "") {
          FormatTime, filename,, % "yyyy-MM-dd HH꞉mm꞉ss"
          filepath := directory "\" filename "." extension
-         if FileExist(filepath) { ; Check for collisions.
-            loop
-               filepath := directory "\" filename " (" A_Index ")." extension
-            until !FileExist(filepath)
-         }
+         while FileExist(filepath) ; Check for collisions.
+            filepath := directory "\" filename " (" A_Index ")." extension
       }
 
       ; Filepath is complete!
