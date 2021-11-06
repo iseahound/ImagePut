@@ -2094,12 +2094,12 @@ else {
       if DirExist(filepath)                 ; If the filepath refers to a directory,
          directory := (directory != "")     ; then SplitPath wrongly assumes a directory to be a filename.
             ? ((filename != "")
-                ? directory "\" filename    ; Combine directory + filename.
-                : directory)                ; Omit the final backslash if filename is empty.
+               ? directory "\" filename    ; Combine directory + filename.
+               : directory)                ; Omit the final backslash if filename is empty.
             : (filepath ~= "^\\")
-                ? "\" filename              ; Root level directory.
-                : ".\" filename             ; Script level directory.
-        , filename := ""
+               ? "\" filename              ; Root level directory.
+               : ".\" filename             ; Script level directory.
+         , filename := ""
 
       ; Create a new directory if needed.
       if (directory != "" && !DirExist(directory))
