@@ -1999,8 +1999,15 @@ class ImagePut {
       SplitPath % Trim(filepath),, directory, extension, filename
 
       ; Check if the entire filepath is a directory.
-      if InStr(FileExist(filepath), "D")
-         directory := (directory != "") ? directory "\" filename : ".\" filename, filename := ""
+      if InStr(FileExist(filepath), "D")    ; If the filepath refers to a directory,
+         directory := (directory != "")     ; then SplitPath wrongly assumes a directory to be a filename.
+            ? ((filename != "")
+                ? directory "\" filename    ; Combine directory + filename.
+                : directory)                ; Omit the final backslash if filename is empty.
+            : (filepath ~= "^\\")
+                ? "\" filename              ; Root level directory.
+                : ".\" filename             ; Script level directory.
+        , filename := ""
 
       ; Create a new directory if needed.
       if (directory != "" && !InStr(FileExist(directory), "D"))
