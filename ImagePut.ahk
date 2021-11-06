@@ -1616,7 +1616,6 @@ class ImagePut {
 
       DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", pBitmap, "int*", &format:=0)
 
-
 if (s = 1) {
       ; Transfer data from source pBitmap to an hBitmap manually.
       Rect := Buffer(16, 0)                  ; sizeof(Rect) = 16
@@ -1681,7 +1680,7 @@ else {
       ; Set settings in graphics context.
       DllCall("gdiplus\GdipSetPixelOffsetMode",    "ptr", pGraphics, "int", 2) ; Half pixel offset.
       DllCall("gdiplus\GdipSetCompositingMode",    "ptr", pGraphics, "int", 1) ; Overwrite/SourceCopy.
-      DllCall("gdiplus\GdipSetInterpolationMode",  "ptr", pGraphics, "int", 6) ; HighQualityBicubic
+      DllCall("gdiplus\GdipSetInterpolationMode",  "ptr", pGraphics, "int", 7) ; HighQualityBicubic
 
       ; Draw Image.
       DllCall("gdiplus\GdipCreateImageAttributes", "ptr*", &ImageAttr:=0)
