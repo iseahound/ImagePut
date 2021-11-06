@@ -1451,7 +1451,7 @@ class ImagePut {
       return [x,y,w,h]
    }
 
-   static put_window(pBitmap, pos := "", title := "") {
+   static put_window(pBitmap, title := "", pos := "") {
 
       WindowProc(hwnd, uMsg, wParam, lParam) {
 
