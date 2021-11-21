@@ -143,6 +143,8 @@ class ImagePut {
          ForceDecodeImagePixels := image.ForceDecodeImagePixels
          ForcePushImageToMemory := image.ForcePushImageToMemory
 
+         index := image.index
+
          ; Dereference the image unknown.
          if ObjHasKey(image, "image")
             image := image.image
@@ -183,7 +185,7 @@ class ImagePut {
       ; Fallback to GDI+ bitmap as the intermediate.
       else {
          ; Make a copy of the image as a pBitmap.
-         pBitmap := this.ToBitmap(type, image)
+         pBitmap := this.ToBitmap(type, image, index)
 
          ; Load the image pixels to the bitmap buffer.
          ; This increases memory usage but prevents any changes to the pixels,
@@ -428,7 +430,7 @@ class ImagePut {
       throw Exception("Image type could not be identified.")
    }
 
-   ToBitmap(type, image) {
+   ToBitmap(type, image, index := "") {
 
       if (type = "clipboard")
          return this.from_clipboard()
@@ -458,7 +460,7 @@ class ImagePut {
          return this.from_url(image)
 
       if (type = "pdf")
-         return this.from_pdf(image)
+         return this.from_pdf(image, index)
 
       if (type = "file")
          return this.from_file(image)
@@ -1052,7 +1054,9 @@ class ImagePut {
       return pStream
    }
 
-   from_pdf(image, page := 0) {
+   from_pdf(image, page) {
+      page := (page) ? page - 1 : 0 ; Zero indexed.
+
       ; Create the "Windows.Data.Pdf.PdfDocument" class using IPdfDocumentStatics.
       DllCall("combase\WindowsCreateString", "wstr", "Windows.Data.Pdf.PdfDocument", "uint", 28, "ptr*", hString:=0, "uint")
       DllCall("ole32\CLSIDFromString", "wstr", "{433A0B5F-C007-4788-90F2-08143D922599}", "ptr", &CLSID := VarSetCapacity(CLSID, 16), "uint")
