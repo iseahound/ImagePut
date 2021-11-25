@@ -275,6 +275,11 @@ class ImagePut {
          return "file"
       }
 
+      if ObjHasKey(image, "pdf") {
+         image := image.pdf
+         return "pdf"
+      }
+
       if ObjHasKey(image, "monitor") {
          image := image.monitor
          return "monitor"
