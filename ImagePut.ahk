@@ -2090,11 +2090,11 @@ else {
       SplitPath Trim(filepath),, &directory, &extension, &filename
 
       ; Check if the entire filepath is a directory.
-      if DirExist(filepath)                 ; If the filepath refers to a directory,
-         directory := (directory != "")     ; then SplitPath wrongly assumes a directory to be a filename.
+      if DirExist(filepath)                ; If the filepath refers to a directory,
+         directory := (directory != "")    ; then SplitPath wrongly assumes a directory to be a filename.
             ? ((filename != "")
                ? directory "\" filename    ; Combine directory + filename.
-               : directory)                ; Omit the final backslash if filename is empty.
+               : directory)                ; Do nothing.
             : (filepath ~= "^\\")
                ? "\" filename              ; Root level directory.
                : ".\" filename             ; Script level directory.
