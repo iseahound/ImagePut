@@ -130,27 +130,18 @@ class ImagePut {
    ;   p*         -  Additional Parameters   |  variadic ->   Extra parameters found in BitmapToCoimage().
    static call(cotype, image, p*) {
 
-      crop := scale := false
-
       ; Extract parameters.
       if IsObject(image) {
-         crop := image.HasOwnProp("crop") && IsObject(image.crop)
-            && image.crop[1] ~= "^-?\d+(\.\d*)?%?$" && image.crop[2] ~= "^-?\d+(\.\d*)?%?$"
-            && image.crop[3] ~= "^-?\d+(\.\d*)?%?$" && image.crop[4] ~= "^-?\d+(\.\d*)?%?$"
-            ? image.crop : false
-         scale := image.HasOwnProp("scale") && image.scale != 1 && image.scale ~= "^\d+(\.\d+)?$"
-            ? image.scale : false
-         ForceDecodeImagePixels := image.HasOwnProp("ForceDecodeImagePixels") ? image.ForceDecodeImagePixels : false
-         ForcePushImageToMemory := image.HasOwnProp("ForcePushImageToMemory") ? image.ForcePushImageToMemory : false
+         index := ObjHasOwnProp(image, "index") ? image.index : ""
+         crop := ObjHasOwnProp(image, "crop") ? image.crop : false
+         scale := ObjHasOwnProp(image, "scale") ? image.scale : false
+         ForceDecodeImagePixels := this.ForceDecodeImagePixels ? true : ObjHasOwnProp(image, "ForceDecodeImagePixels") ? image.ForceDecodeImagePixels : false
+         ForcePushImageToMemory := this.ForcePushImageToMemory ? true : ObjHasOwnProp(image, "ForcePushImageToMemory") ? image.ForcePushImageToMemory : false
 
          ; Dereference the image unknown.
          if ObjHasOwnProp(image, "image")
             image := image.image
       }
-
-      ForceDecodeImagePixels := this.ForceDecodeImagePixels ? true : IsSet(ForceDecodeImagePixels) ? true : false
-      ForcePushImageToMemory := this.ForcePushImageToMemory ? true : IsSet(ForcePushImageToMemory) ? true : false
-
 
       ; Start!
       this.gdiplusStartup()
@@ -663,12 +654,11 @@ class ImagePut {
    }
 
    static BitmapCrop(&pBitmap, crop) {
-      pBitmapCrop := this.BitmapCropNew(pBitmap, crop)
-      DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
-      pBitmap := pBitmapCrop
-   }
+      if not (IsObject(crop)
+      && crop[1] ~= "^-?\d+(\.\d*)?%?$" && crop[2] ~= "^-?\d+(\.\d*)?%?$"
+      && crop[3] ~= "^-?\d+(\.\d*)?%?$" && crop[4] ~= "^-?\d+(\.\d*)?%?$")
+         throw Error("Invalid crop.")
 
-   static BitmapCropNew(pBitmap, crop) {
       ; Get Bitmap width, height, and format.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
@@ -711,23 +701,31 @@ class ImagePut {
                ,    "ptr", pBitmap
                ,   "ptr*", &pBitmapCrop:=0)
 
-      return pBitmapCrop
+      DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
+
+      return pBitmap := pBitmapCrop
    }
 
    static BitmapScale(&pBitmap, scale) {
-      pBitmapScale := this.BitmapScaleNew(pBitmap, scale)
-      DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
-      pBitmap := pBitmapScale
-   }
+      if not (IsObject(scale) && (scale[1] ~= "^\d+$") && (scale[2] ~= "^\d+$") || (scale ~= "^\d+(\.\d+)?$"))
+         throw Error("Invalid scale.")
 
-   static BitmapScaleNew(pBitmap, scale) {
       ; Get Bitmap width, height, and format.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
       DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", pBitmap, "int*", &format:=0)
 
-      safe_w := Ceil(width * scale)
-      safe_h := Ceil(height * scale)
+      if IsObject(scale) {
+         safe_w := Round(scale[1])
+         safe_h := Round(scale[2])
+      } else {
+         safe_w := Ceil(width * scale)
+         safe_h := Ceil(height * scale)
+      }
+
+      ; Avoid drawing if no changes detected.
+      if (safe_w = width && safe_h = height)
+         return pBitmap
 
       ; Create a new bitmap and get the graphics context.
       DllCall("gdiplus\GdipCreateBitmapFromScan0"
@@ -755,8 +753,9 @@ class ImagePut {
 
       ; Clean up the graphics context.
       DllCall("gdiplus\GdipDeleteGraphics", "ptr", pGraphics)
+      DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
 
-      return pBitmapScale
+      return pBitmap := pBitmapScale
    }
 
    static is_url(url) {
