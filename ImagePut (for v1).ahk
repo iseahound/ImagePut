@@ -676,7 +676,13 @@ class ImagePut {
       return DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
    }
 
-   BitmapCrop(ByRef pBitmap, crop, dispose := true) {
+   BitmapCrop(ByRef pBitmap, crop) {
+      pBitmapCrop := this.BitmapCropNew(pBitmap, crop)
+      DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
+      pBitmap := pBitmapCrop
+   }
+
+   BitmapCropNew(pBitmap, crop) {
       ; Get Bitmap width, height, and format.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
@@ -719,15 +725,16 @@ class ImagePut {
                ,    "ptr", pBitmap
                ,   "ptr*", pBitmapCrop:=0)
 
-      if (dispose) {
-         DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
-         pBitmap := pBitmapCrop
-      }
-
       return pBitmapCrop
    }
 
-   BitmapScale(ByRef pBitmap, scale, dispose := true) {
+   BitmapScale(ByRef pBitmap, scale) {
+      pBitmapScale := this.BitmapScaleNew(pBitmap, scale)
+      DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
+      pBitmap := pBitmapScale
+   }
+
+   BitmapScaleNew(pBitmap, scale) {
       ; Get Bitmap width, height, and format.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
@@ -762,11 +769,6 @@ class ImagePut {
 
       ; Clean up the graphics context.
       DllCall("gdiplus\GdipDeleteGraphics", "ptr", pGraphics)
-
-      if (dispose) {
-         DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
-         pBitmap := pBitmapScale
-      }
 
       return pBitmapScale
    }
