@@ -141,6 +141,11 @@ class ImagePut {
          ; Dereference the image unknown.
          if ObjHasKey(image, "image")
             image := image.image
+
+      } else {
+         index := crop := scale := false
+         ForceDecodeImagePixels := this.ForceDecodeImagePixels
+         ForcePushImageToMemory := this.ForcePushImageToMemory
       }
 
       ; Start!
@@ -151,13 +156,13 @@ class ImagePut {
       catch
          type := this.ImageType(image)
 
-      ; Check if a stream can be used as an intermediate.
+      ; #1 - Stream intermediate.
       if not ForceDecodeImagePixels and not crop and not scale
          and (type ~= "^(?i:url|file|stream|RandomAccessStream|hex|base64)$")
          and (cotype ~= "^(?i:file|stream|RandomAccessStream|hex|base64)$")
          and (p[1] = "") { ; For now, disallow any specification of extensions.
 
-         ; Convert to a stream intermediate then to the output coimage.
+         ; Convert via stream intermediate.
          pStream := this.ToStream(type, image)
          coimage := this.StreamToCoimage(cotype, pStream, p*)
 
@@ -171,28 +176,17 @@ class ImagePut {
          return coimage
       }
 
-      ; Fallback to GDI+ bitmap as the intermediate.
+      ; #2 - Fallback to GDI+ bitmap as the intermediate.
       else {
-         ; Make a copy of the image as a pBitmap.
+         ; GdipImageForceValidation must be called immediately or it fails without any errors.
+         ; It load the image pixels to the bitmap buffer, increasing memory usage and prevents
+         ; changes to the pixels while bypassing any copy-on-write and copy on LockBits(read) behavior.
+
+         ; Convert via GDI+ bitmap intermediate.
          pBitmap := this.ToBitmap(type, image, index)
-
-         ; Load the image pixels to the bitmap buffer.
-         ; This increases memory usage but prevents any changes to the pixels,
-         ; and bypasses any copy-on-write and copy on LockBits read behavior.
-         ; This must be called immediately after the pBitmap is created
-         ; or it will fail without throwing any errors.
-         if (ForcePushImageToMemory)
-            DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmap)
-
-         ; Crop the image.
-         if (crop)
-            this.BitmapCrop(pBitmap, crop)
-
-         ; Scale the image.
-         if (scale)
-            this.BitmapScale(pBitmap, scale)
-
-         ; Put the pBitmap to wherever the cotype specifies.
+         (ForcePushImageToMemory) ? DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmap) : {}
+         (crop) ? this.BitmapCrop(pBitmap, crop) : {}
+         (scale) ? this.BitmapScale(pBitmap, scale) : {}
          coimage := this.BitmapToCoimage(cotype, pBitmap, p*)
 
          ; Clean up the pBitmap copy. Export raw pointers if requested.
