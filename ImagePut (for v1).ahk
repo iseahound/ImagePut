@@ -713,7 +713,7 @@ class ImagePut {
    }
 
    BitmapScale(ByRef pBitmap, scale) {
-      if not (IsObject(scale) && (scale[1] ~= "^\d+$") && (scale[2] ~= "^\d+$") || (scale ~= "^\d+(\.\d+)?$"))
+      if not (IsObject(scale) && ((scale[1] ~= "^\d+$") || (scale[2] ~= "^\d+$")) || (scale ~= "^\d+(\.\d+)?$"))
          throw Exception("Invalid scale.")
 
       ; Get Bitmap width, height, and format.
@@ -722,8 +722,8 @@ class ImagePut {
       DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", pBitmap, "int*", format:=0)
 
       if IsObject(scale) {
-         safe_w := Round(scale[1])
-         safe_h := Round(scale[2])
+         safe_w := (scale[1] ~= "^\d+$") ? scale[1] : Round(width / height * scale[2])
+         safe_h := (scale[2] ~= "^\d+$") ? scale[2] : Round(height / width * scale[1])
       } else {
          safe_w := Ceil(width * scale)
          safe_h := Ceil(height * scale)
