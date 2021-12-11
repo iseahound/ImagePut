@@ -1019,7 +1019,10 @@ class ImagePut {
    }
 
    from_pdf(image, page) {
-      page := (page) ? page - 1 : 0 ; Zero indexed.
+      ; Thanks malcev - https://www.autohotkey.com/boards/viewtopic.php?t=80735
+
+      ; Zero indexed.
+      page := (page) ? page - 1 : 0
 
       ; Create the "Windows.Data.Pdf.PdfDocument" class using IPdfDocumentStatics.
       DllCall("combase\WindowsCreateString", "wstr", "Windows.Data.Pdf.PdfDocument", "uint", 28, "ptr*", hString:=0, "uint")
