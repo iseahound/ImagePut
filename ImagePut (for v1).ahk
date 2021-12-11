@@ -116,11 +116,8 @@ ImagePut(cotype, image, p*) {
 
 class ImagePut {
 
-   ; If true the conversion will always go through a GDI+ Bitmap and the original file encoding will be lost.
-   static ForceDecodeImagePixels := false
-
-   ; If true the pBitmap will always be filled with image data instead of referencing it and copying when needed.
-   static ForcePushImageToMemory := false
+   static decode := false   ; Forces conversion using a bitmap. The original file encoding will be lost.
+   static validate := false ; Always copies image data into memory instead of passing references.
 
    ; ImagePut() - Puts an image from anywhere to anywhere.
    ;   cotype     -  Output Type             |  string   ->   Case Insensitive. Read documentation.
@@ -135,8 +132,8 @@ class ImagePut {
          index := ObjHasKey(image, "index") ? image.index : false
          crop := ObjHasKey(image, "crop") ? image.crop : false
          scale := ObjHasKey(image, "scale") ? image.scale : false
-         ForceDecodeImagePixels := this.ForceDecodeImagePixels ? true : image.ForceDecodeImagePixels
-         ForcePushImageToMemory := this.ForcePushImageToMemory ? true : image.ForcePushImageToMemory
+         decode := ObjHasKey(image, "decode") ? image.decode : this.decode
+         validate := ObjHasKey(image, "validate") ? image.validate : this.validate
 
          ; Dereference the image unknown.
          if ObjHasKey(image, "image")
@@ -144,8 +141,8 @@ class ImagePut {
 
       } else {
          index := crop := scale := false
-         ForceDecodeImagePixels := this.ForceDecodeImagePixels
-         ForcePushImageToMemory := this.ForcePushImageToMemory
+         decode := this.decode
+         validate := this.validate
       }
 
       ; Start!
@@ -157,7 +154,7 @@ class ImagePut {
          type := this.ImageType(image)
 
       ; #1 - Stream intermediate.
-      if not ForceDecodeImagePixels and not crop and not scale
+      if not decode and not crop and not scale
          and (type ~= "^(?i:url|file|stream|RandomAccessStream|hex|base64)$")
          and (cotype ~= "^(?i:file|stream|RandomAccessStream|hex|base64)$")
          and (p[1] = "") { ; For now, disallow any specification of extensions.
@@ -184,7 +181,7 @@ class ImagePut {
 
          ; Convert via GDI+ bitmap intermediate.
          pBitmap := this.ToBitmap(type, image, index)
-         (ForcePushImageToMemory) ? DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmap) : {}
+         (validate) ? DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmap) : {}
          (crop) ? this.BitmapCrop(pBitmap, crop) : {}
          (scale) ? this.BitmapScale(pBitmap, scale) : {}
          coimage := this.BitmapToCoimage(cotype, pBitmap, p*)
