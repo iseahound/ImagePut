@@ -132,7 +132,7 @@ class ImagePut {
 
       ; Extract parameters.
       if IsObject(image) {
-         index := ObjHasKey(image, "index") ? image.index : ""
+         index := ObjHasKey(image, "index") ? image.index : false
          crop := ObjHasKey(image, "crop") ? image.crop : false
          scale := ObjHasKey(image, "scale") ? image.scale : false
          ForceDecodeImagePixels := this.ForceDecodeImagePixels ? true : image.ForceDecodeImagePixels
@@ -1783,8 +1783,8 @@ class ImagePut {
          VarSetCapacity(ii, 8+3*A_PtrSize)                          ; sizeof(ICONINFO) = 20, 32
          DllCall("GetIconInfo", "ptr", hIcon, "ptr", &ii)           ; Fill the ICONINFO structure.
             NumPut(false, ii, 0, "uint")                            ; true/false are icon/cursor respectively.
-            (xHotspot != "") ? NumPut(xHotspot, ii, 4, "uint") : "" ; Set the xHotspot value. (Default: center point)
-            (yHotspot != "") ? NumPut(yHotspot, ii, 8, "uint") : "" ; Set the yHotspot value. (Default: center point)
+            (xHotspot != "") ? NumPut(xHotspot, ii, 4, "uint") : {} ; Set the xHotspot value. (Default: center point)
+            (yHotspot != "") ? NumPut(yHotspot, ii, 8, "uint") : {} ; Set the yHotspot value. (Default: center point)
          DllCall("DestroyIcon", "ptr", hIcon)                       ; Destroy the icon after getting the ICONINFO structure.
          hIcon := DllCall("CreateIconIndirect", "ptr", &ii, "ptr")  ; Create a new cursor using ICONINFO.
 
