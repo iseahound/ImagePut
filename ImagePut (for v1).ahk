@@ -245,6 +245,11 @@ class ImagePut {
          return "cursor"
       }
 
+      if ObjHasKey(image, "pdf") {
+         image := image.pdf
+         return "pdf"
+      }
+
       if ObjHasKey(image, "url") {
          image := image.url
          return "url"
@@ -253,11 +258,6 @@ class ImagePut {
       if ObjHasKey(image, "file") {
          image := image.file
          return "file"
-      }
-
-      if ObjHasKey(image, "pdf") {
-         image := image.pdf
-         return "pdf"
       }
 
       if ObjHasKey(image, "monitor") {
@@ -352,17 +352,17 @@ class ImagePut {
          . "Icon|No|Size|SizeAll|SizeNESW|SizeNS|SizeNWSE|SizeWE|UpArrow|Wait|Unknown)$")
             return "cursor"
 
+         ; A "pdf" is either a file or url with a .pdf extension.
+         if (image ~= "\.pdf$") && (FileExist(image) || this.is_url(image))
+            return "pdf"
+
          ; A "url" satisfies the url format.
          if this.is_url(image)
             return "url"
 
          ; A "file" is stored on the disk or network.
-         if FileExist(image) {
-            if image ~= ".pdf$"
-               return "pdf"
-
+         if FileExist(image)
             return "file"
-         }
 
       if (image ~= "^-?\d+$") {
          SysGet MonitorGetCount, MonitorCount ; A non-zero "monitor" number identifies each display uniquely; and 0 refers to the entire virtual screen.
@@ -441,11 +441,11 @@ class ImagePut {
       if (type = "cursor")
          return this.from_cursor()
 
-      if (type = "url")
-         return this.from_url(image)
-
       if (type = "pdf")
          return this.from_pdf(image, index)
+
+      if (type = "url")
+         return this.from_url(image)
 
       if (type = "file")
          return this.from_file(image)
@@ -1018,37 +1018,6 @@ class ImagePut {
       return pBitmap
    }
 
-   from_url(image) {
-      pStream := this.get_url(image)
-      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", pBitmap:=0)
-      ObjRelease(pStream)
-      return pBitmap
-   }
-
-   get_url(image) {
-      req := ComObjCreate("WinHttp.WinHttpRequest.5.1")
-      req.Open("GET", image)
-      req.Send()
-      pStream := ComObjQuery(req.ResponseStream, "{0000000C-0000-0000-C000-000000000046}")
-      return pStream
-   }
-
-   from_file(image) {
-      DllCall("gdiplus\GdipCreateBitmapFromFile", "wstr", image, "ptr*", pBitmap:=0)
-      return pBitmap
-   }
-
-   get_file(image) {
-      file := FileOpen(image, "r")
-      hData := DllCall("GlobalAlloc", "uint", 0x2, "uptr", file.length, "ptr")
-      pData := DllCall("GlobalLock", "ptr", hData, "ptr")
-      file.RawRead(pData+0, file.length)
-      DllCall("GlobalUnlock", "ptr", hData)
-      file.Close()
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", true, "ptr*", pStream:=0, "uint")
-      return pStream
-   }
-
    from_pdf(image, page) {
       page := (page) ? page - 1 : 0 ; Zero indexed.
 
@@ -1103,6 +1072,37 @@ class ImagePut {
       DllCall(NumGet(NumGet(Object+0)+8*A_PtrSize), "ptr", Object, "ptr*", ObjectResult) ; GetResults
       ObjRelease(Object)
       Object := ObjectResult
+   }
+
+   from_url(image) {
+      pStream := this.get_url(image)
+      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", pBitmap:=0)
+      ObjRelease(pStream)
+      return pBitmap
+   }
+
+   get_url(image) {
+      req := ComObjCreate("WinHttp.WinHttpRequest.5.1")
+      req.Open("GET", image)
+      req.Send()
+      pStream := ComObjQuery(req.ResponseStream, "{0000000C-0000-0000-C000-000000000046}")
+      return pStream
+   }
+
+   from_file(image) {
+      DllCall("gdiplus\GdipCreateBitmapFromFile", "wstr", image, "ptr*", pBitmap:=0)
+      return pBitmap
+   }
+
+   get_file(image) {
+      file := FileOpen(image, "r")
+      hData := DllCall("GlobalAlloc", "uint", 0x2, "uptr", file.length, "ptr")
+      pData := DllCall("GlobalLock", "ptr", hData, "ptr")
+      file.RawRead(pData+0, file.length)
+      DllCall("GlobalUnlock", "ptr", hData)
+      file.Close()
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", true, "ptr*", pStream:=0, "uint")
+      return pStream
    }
 
    from_monitor(image) {

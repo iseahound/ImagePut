@@ -245,6 +245,11 @@ class ImagePut {
          return "cursor"
       }
 
+      if ObjHasOwnProp(image, "pdf") {
+         image := image.pdf
+         return "pdf"
+      }
+
       if ObjHasOwnProp(image, "url") {
          image := image.url
          return "url"
@@ -347,6 +352,10 @@ class ImagePut {
          . "Icon|No|Size|SizeAll|SizeNESW|SizeNS|SizeNWSE|SizeWE|UpArrow|Wait|Unknown)$")
             return "cursor"
 
+         ; A "pdf" is either a file or url with a .pdf extension.
+         if (image ~= "\.pdf$") && (FileExist(image) || this.is_url(image))
+            return "pdf"
+
          ; A "url" satisfies the url format.
          if this.is_url(image)
             return "url"
@@ -431,6 +440,9 @@ class ImagePut {
 
       if (type = "cursor")
          return this.from_cursor()
+
+      if (type = "pdf")
+         return this.from_pdf(image, index)
 
       if (type = "url")
          return this.from_url(image)
