@@ -1060,8 +1060,13 @@ class ImagePut {
       ; Get Page
       ComCall(IPdfDocument_GetPage := 7, PdfDocument, "uint*", &count:=0)
       index := (index > 0) ? index - 1 : (index < 0) ? count + index : 0 ; Zero indexed.
-      if (index > count || index < 0)
+      if (index > count || index < 0) {
+         ObjRelease(PdfDocument)
+         ObjRelease(PdfDocumentStatics)
+         this.ObjReleaseClose(&pRandomAccessStream)
+         ObjRelease(pStream)
          throw Error("The maximum number of pages in this pdf is " count ".")
+      }
       ComCall(IPdfDocument_GetPage := 6, PdfDocument, "uint", index, "ptr*", &PdfPage:=0)
 
       ; Render the page to an output stream.
