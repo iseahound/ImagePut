@@ -1034,13 +1034,14 @@ class ImagePut {
    static get_pdf(image, index := 0) {
       ; Thanks malcev - https://www.autohotkey.com/boards/viewtopic.php?t=80735
 
-      ; Zero indexed.
-      index := (index) ? index - 1 : 0
+      ; Create a stream from either a url or a file.-
+      if this.is_url(image)
+         pStream := this.get_url(image)
+      else
+         pStream := this.get_file(image)
 
-      ; Create a source pBitmap and extract the width and height.
-      if !(pStream := this.get_file(image))
-         if !(pStream := this.get_url(image))
-            throw Error("Could not be loaded from a valid file path or URL.")
+      if !(pStream)
+         throw Error("Could not be loaded from a valid file path or URL.")
 
       ; Create a RandomAccessStream with BSOS_PREFERDESTINATIONSTREAM.
       DllCall("ole32\CLSIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", CLSID := Buffer(16), "HRESULT")
@@ -1058,7 +1059,8 @@ class ImagePut {
 
       ; Get Page
       ComCall(IPdfDocument_GetPage := 7, PdfDocument, "uint*", &count:=0)
-      if (index > count)
+      index := (index > 0) ? index - 1 : (index < 0) ? count + index : 0 ; Zero indexed.
+      if (index > count || index < 0)
          throw Error("The maximum number of pages in this pdf is " count ".")
       ComCall(IPdfDocument_GetPage := 6, PdfDocument, "uint", index, "ptr*", &PdfPage:=0)
 
