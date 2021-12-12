@@ -1057,6 +1057,9 @@ class ImagePut {
       this.WaitForAsync(PdfDocument)
 
       ; Get Page
+      DllCall(IPdfDocument_GetPage := NumGet(NumGet(PdfDocument+0)+7*A_PtrSize), "ptr", PdfDocument, "uint*", count:=0)
+      if (index > count)
+         throw Exception("The maximum number of pages in this pdf is " count ".")
       DllCall(IPdfDocument_GetPage := NumGet(NumGet(PdfDocument+0)+6*A_PtrSize), "ptr", PdfDocument, "uint", index, "ptr*", PdfPage:=0)
 
       ; Render the page to an output stream.
