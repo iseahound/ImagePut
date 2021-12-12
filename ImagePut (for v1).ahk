@@ -129,20 +129,23 @@ class ImagePut {
 
       ; Extract parameters.
       if IsObject(image) {
-         index := ObjHasKey(image, "index") ? image.index : false
          crop := ObjHasKey(image, "crop") ? image.crop : false
          scale := ObjHasKey(image, "scale") ? image.scale : false
          decode := ObjHasKey(image, "decode") ? image.decode : this.decode
          validate := ObjHasKey(image, "validate") ? image.validate : this.validate
+
+         index := ObjHasKey(image, "index") ? image.index : 0
 
          ; Dereference the image unknown.
          if ObjHasKey(image, "image")
             image := image.image
 
       } else {
-         index := crop := scale := false
+         crop := scale := false
          decode := this.decode
          validate := this.validate
+
+         index := 0
       }
 
       ; Start!
@@ -155,12 +158,12 @@ class ImagePut {
 
       ; #1 - Stream intermediate.
       if not decode and not crop and not scale
-         and (type ~= "^(?i:url|file|stream|RandomAccessStream|hex|base64)$")
+         and (type ~= "^(?i:pdf|url|file|stream|RandomAccessStream|hex|base64)$")
          and (cotype ~= "^(?i:file|stream|RandomAccessStream|hex|base64)$")
          and (p[1] = "") { ; For now, disallow any specification of extensions.
 
          ; Convert via stream intermediate.
-         pStream := this.ToStream(type, image)
+         pStream := this.ToStream(type, image, index)
          coimage := this.StreamToCoimage(cotype, pStream, p*)
 
          ; Prevents the stream object from being freed.
@@ -415,7 +418,7 @@ class ImagePut {
       throw Exception("Image type could not be identified.")
    }
 
-   ToBitmap(type, image, index := "") {
+   ToBitmap(type, image, index := 0) {
 
       if (type = "clipboard")
          return this.from_clipboard()
@@ -555,7 +558,10 @@ class ImagePut {
       throw Exception("Conversion from bitmap to " cotype " is not supported.")
    }
 
-   ToStream(type, image) {
+   ToStream(type, image, index := 0) {
+
+      if (type = "pdf")
+         return this.get_pdf(image, index)
 
       if (type = "url")
          return this.get_url(image)
@@ -1018,11 +1024,27 @@ class ImagePut {
       return pBitmap
    }
 
-   from_pdf(image, page) {
+   from_pdf(image, index := 0) {
+      pStream := this.get_pdf(image, index)
+      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", pBitmap:=0)
+      ObjRelease(pStream)
+      return pBitmap
+   }
+
+   get_pdf(image, index := 0) {
       ; Thanks malcev - https://www.autohotkey.com/boards/viewtopic.php?t=80735
 
       ; Zero indexed.
-      page := (page) ? page - 1 : 0
+      index := (index) ? index - 1 : 0
+
+      ; Create a source pBitmap and extract the width and height.
+      if !(pStream := this.get_file(image))
+         if !(pStream := this.get_url(image))
+            throw Exception("Could not be loaded from a valid file path or URL.")
+
+      ; Create a RandomAccessStream with BSOS_PREFERDESTINATIONSTREAM.
+      DllCall("ole32\CLSIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", &CLSID := VarSetCapacity(CLSID, 16), "uint")
+      DllCall("ShCore\CreateRandomAccessStreamOverStream", "ptr", pStream, "uint", 1, "ptr", &CLSID, "ptr*", pRandomAccessStream:=0, "uint")
 
       ; Create the "Windows.Data.Pdf.PdfDocument" class using IPdfDocumentStatics.
       DllCall("combase\WindowsCreateString", "wstr", "Windows.Data.Pdf.PdfDocument", "uint", 28, "ptr*", hString:=0, "uint")
@@ -1030,33 +1052,31 @@ class ImagePut {
       DllCall("combase\RoGetActivationFactory", "ptr", hString, "ptr", &CLSID, "ptr*", PdfDocumentStatics:=0, "uint")
       DllCall("combase\WindowsDeleteString", "ptr", hString, "uint")
 
-      ; Open a file as a RandomAccessStream.
-      DllCall("ole32\CLSIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", &CLSID := VarSetCapacity(CLSID, 16), "uint")
-      DllCall("ShCore\CreateRandomAccessStreamOnFile", "wstr", image, "uint", Read := 0, "ptr", &CLSID, "ptr*", IRandomAccessStream, "uint")
-
       ; Create the PDF document.
-      DllCall(PdfDocument_LoadFromStreamAsync := NumGet(NumGet(PdfDocumentStatics+0)+8*A_PtrSize), "ptr", PdfDocumentStatics, "ptr", IRandomAccessStream, "ptr*", PdfDocument)
+      DllCall(IPdfDocumentStatics_LoadFromStreamAsync := NumGet(NumGet(PdfDocumentStatics+0)+8*A_PtrSize), "ptr", PdfDocumentStatics, "ptr", pRandomAccessStream, "ptr*", PdfDocument:=0)
       this.WaitForAsync(PdfDocument)
 
       ; Get Page
-      DllCall(NumGet(NumGet(PdfDocument+0)+6*A_PtrSize), "ptr", PdfDocument, "uint", page, "ptr*", PdfPage) ; GetPage
+      DllCall(IPdfDocument_GetPage := NumGet(NumGet(PdfDocument+0)+6*A_PtrSize), "ptr", PdfDocument, "uint", index, "ptr*", PdfPage:=0)
 
       ; Render the page to an output stream.
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "uint", true, "ptr*", IStream)
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "uint", true, "ptr*", pStreamOut:=0)
       DllCall("ole32\CLSIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", &CLSID := VarSetCapacity(CLSID, 16), "uint")
-      DllCall("ShCore\CreateRandomAccessStreamOverStream", "ptr", IStream, "uint", BSOS_DEFAULT := 0, "ptr", &CLSID, "ptr*", IRandomAccessStreamOut)
-      DllCall(NumGet(NumGet(PdfPage+0)+6*A_PtrSize), "ptr", PdfPage, "ptr", IRandomAccessStreamOut, "ptr*", asyncInfo) ; RenderToStreamAsync
-      this.WaitForAsync(asyncInfo)
+      DllCall("ShCore\CreateRandomAccessStreamOverStream", "ptr", pStreamOut, "uint", BSOS_DEFAULT := 0, "ptr", &CLSID, "ptr*", pRandomAccessStreamOut:=0)
+      DllCall(IPdfPage_RenderToStreamAsync := NumGet(NumGet(PdfPage+0)+6*A_PtrSize), "ptr", PdfPage, "ptr", pRandomAccessStreamOut, "ptr*", AsyncInfo:=0)
+      this.WaitForAsync(AsyncInfo)
 
-      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", IStream, "ptr*", pBitmap:=0)
+      ; Cleanup
+      this.ObjReleaseClose(pRandomAccessStreamOut)
+      this.ObjReleaseClose(PdfPage)
 
-      ObjRelease(IRandomAccessStreamOut)
-      ObjRelease(IStream)
-      ObjRelease(PdfPage)
       ObjRelease(PdfDocument)
-      ObjRelease(IRandomAccessStream)
       ObjRelease(PdfDocumentStatics)
-      return pBitmap
+
+      this.ObjReleaseClose(pRandomAccessStream)
+      ObjRelease(pStream)
+
+      return pStreamOut
    }
 
    WaitForAsync(ByRef Object) {
@@ -1070,11 +1090,24 @@ class ImagePut {
          throw Exception("AsyncInfo status error: " ErrorCode)
       }
 
-      ObjRelease(AsyncInfo)
-
-      DllCall(NumGet(NumGet(Object+0)+8*A_PtrSize), "ptr", Object, "ptr*", ObjectResult) ; GetResults
+      DllCall(NumGet(NumGet(Object+0)+8*A_PtrSize), "ptr", Object, "ptr*", ObjectResult:=0) ; GetResults
       ObjRelease(Object)
       Object := ObjectResult
+
+      DllCall(IAsyncInfo_Close := NumGet(NumGet(AsyncInfo+0)+10*A_PtrSize), "ptr", AsyncInfo)
+      ObjRelease(AsyncInfo)
+   }
+
+   ObjReleaseClose(ByRef Object) {
+      if Object {
+         if (Close := ComObjQuery(Object, IClosable := "{30D5A829-7FA4-4026-83BB-D75BAE4EA99E}")) {
+            DllCall(IClosable_Close := NumGet(NumGet(Close+0)+6*A_PtrSize), "ptr", Close)
+            ObjRelease(Close)
+         }
+         refcount := ObjRelease(Object)
+         Object := ""
+         return refcount
+      }
    }
 
    from_url(image) {
