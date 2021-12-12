@@ -1057,6 +1057,9 @@ class ImagePut {
       this.WaitForAsync(&PdfDocument)
 
       ; Get Page
+      ComCall(IPdfDocument_GetPage := 7, PdfDocument, "uint*", &count:=0)
+      if (index > count)
+         throw Error("The maximum number of pages in this pdf is " count ".")
       ComCall(IPdfDocument_GetPage := 6, PdfDocument, "uint", index, "ptr*", &PdfPage:=0)
 
       ; Render the page to an output stream.
