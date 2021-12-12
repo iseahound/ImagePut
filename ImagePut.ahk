@@ -1034,13 +1034,13 @@ class ImagePut {
    static get_pdf(image, index := 0) {
       ; Thanks malcev - https://www.autohotkey.com/boards/viewtopic.php?t=80735
 
-      ; Create a stream from either a url or a file.-
-      if this.is_url(image)
-         pStream := this.get_url(image)
-      else
-         pStream := this.get_file(image)
+      ; Create a stream from either a url or a file.
+      pStream := this.is_url(image) ? this.get_url(image) : this.get_file(image)
 
-      if !(pStream)
+      ; Compare the signature of the file with the PDF magic string "%PDF".
+      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", signature := Buffer(4), "uint", 4, "HRESULT")
+      StrPut("%PDF", magic := Buffer(4), "CP0")
+      if 4 > DllCall("ntdll\RtlCompareMemory", "ptr", signature, "ptr", magic, "uptr", 4, "uptr")
          throw Error("Could not be loaded from a valid file path or URL.")
 
       ; Create a RandomAccessStream with BSOS_PREFERDESTINATIONSTREAM.
