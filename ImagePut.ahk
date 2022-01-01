@@ -390,6 +390,7 @@ class ImagePut {
 
          ; Note 1: All GDI+ functions add 1 to the reference count of COM objects.
          ; Note 2: GDI+ pBitmaps that are queried cease to stay pBitmaps.
+         ; Note 3: Critical error for ranges 0-4095 on v1 and 0-65535 on v2.
          ObjRelease(image) ; Therefore do not move this, it has been tested.
 
          ; A "stream" is a pointer to the IStream interface.
