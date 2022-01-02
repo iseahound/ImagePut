@@ -36,15 +36,15 @@ or something like this:
     
 Working with images should be this easy. ImagePut has automatic type inference, meaning that it will guess whether the input is (1) a file (2) a website url or (3) a series of coordinates that map to the screen. This functionality enables the user to only memorize a single function for any possible input. For a full list of supported input types, click on the documentation link [here](https://github.com/iseahound/ImagePut/wiki/Input-Types-&-Output-Functions#input-types). For output types click [here](https://github.com/iseahound/ImagePut/wiki/Input-Types-&-Output-Functions#output-functions). 
 
-Converting between file formats is also straightforward. 
+Conversion between file formats is straightforward. 
 
     ; Saves a JPEG as a GIF. 
     ImagePutFile("cats.jpg", "gif")
     
-You can also move between different image types and file formats. 
+Convert file formats and image types at the same time!
 
-    ; Returns a base64 encoded GIF. 
-    ImagePutBase64("cats.jpg", "gif")
+    ; Saves a JPEG as a base64 encoded GIF. 
+    str := ImagePutBase64("cats.jpg", "gif")
     
 There's also some weird functions like ```ImagePutCursor``` which lets you set anything as your cursor. Make sure you don't choose an extremely large image! 
 
@@ -54,12 +54,12 @@ Finally, there are several advanced features. The first is the ability to specif
     ImagePutWindow({file: "cats.jpg"})
     
     ; Scale 2x and crop 10% from each edge.
-    ImagePutScreenshot({file: "cats.jpg", scale: 2, crop:["-10%", "-10%", "-10%", "-10%"]})
+    ImagePutWindow({file: "cats.jpg", scale: 2, crop:["-10%", "-10%", "-10%", "-10%"]})
     
     ; Unknown image type declared as "image" to be cropped to 200x200 pixels. 
-    ImagePutScreenshot({image: "cats.jpg", crop: [0, 0, 200, 200]})
+    ImagePutWindow({image: "cats.jpg", crop: [0, 0, 200, 200]})
     
-    ; Compare a url to a file
+    ; Compare a url to a file.
     MsgBox % ImageEqual("https://example.com/cats.jpg", "cats.jpg")
     
     ; Validate an image as an actual image.
