@@ -1969,10 +1969,8 @@ else {
 
       ; Set all 14 System Cursors. Must CopyImage 14 times as SetSystemCursor deletes the handle each time.
       Loop Parse, "32512,32513,32514,32515,32516,32642,32643,32644,32645,32646,32648,32649,32650,32651", ","
-      {
-         hCursor := DllCall("CopyImage", "ptr", hIcon, "uint", 2, "int", 0, "int", 0, "uint", 0, "ptr")
-         DllCall("SetSystemCursor", "ptr", hCursor, "int", A_LoopField) ; calls DestroyCursor
-      }
+         if hCursor := DllCall("CopyImage", "ptr", hIcon, "uint", 2, "int", 0, "int", 0, "uint", 0, "ptr")
+            DllCall("SetSystemCursor", "ptr", hCursor, "int", A_LoopField) ; calls DestroyCursor
 
       ; Destroy the original hIcon. Same as DestroyCursor.
       DllCall("DestroyIcon", "ptr", hIcon)
