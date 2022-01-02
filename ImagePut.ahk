@@ -364,8 +364,8 @@ class ImagePut {
             return "wallpaper"
 
          ; A "cursor" is the name of a known cursor name.
-         if (image ~= "(?i)^A_Cursor|Unknown|(IDC_)?(AppStarting|Arrow|Cross|Hand|Help|IBeam|No|
-            . "SizeAll|SizeNESW|SizeNS|SizeNWSE|SizeWE|UpArrow|Wait)$")
+         if (image ~= "(?i)^A_Cursor|Unknown|(IDC_)?(AppStarting|Arrow|Cross|Hand|Help|
+         . "IBeam|No|Pin|Person|SizeAll|SizeNESW|SizeNS|SizeNWSE|SizeWE|UpArrow|Wait)$")
             return "cursor"
 
          ; A "pdf" is either a file or url with a .pdf extension.
@@ -1967,10 +1967,11 @@ else {
          DllCall("DeleteObject", "ptr", NumGet(ii, 8+2*A_PtrSize, "ptr")) ; hbmColor
       }
 
-      ; Set all 14 System Cursors. Must CopyImage 14 times as SetSystemCursor deletes the handle each time.
-      Loop Parse, "32512,32513,32514,32515,32516,32642,32643,32644,32645,32646,32648,32649,32650,32651", ","
+      ; Set all 16 System Cursors. Must copy 16 times as SetSystemCursor deletes the handle each time.
+      Loop Parse, "32512,32513,32514,32515,32516,32642,32643,32644,32645,32646,32648,32649,32650,32651,32671,32672", ","
          if hCursor := DllCall("CopyImage", "ptr", hIcon, "uint", 2, "int", 0, "int", 0, "uint", 0, "ptr")
-            DllCall("SetSystemCursor", "ptr", hCursor, "int", A_LoopField) ; calls DestroyCursor
+            if !DllCall("SetSystemCursor", "ptr", hCursor, "int", A_LoopField) ; calls DestroyCursor
+               DllCall("DestroyCursor", "ptr", hCursor)
 
       ; Destroy the original hIcon. Same as DestroyCursor.
       DllCall("DestroyIcon", "ptr", hIcon)
