@@ -158,7 +158,7 @@ class ImagePut {
 
       ; #1 - Stream intermediate.
       if not decode and not crop and not scale
-         and (type ~= "^(?i:pdf|url|file|stream|RandomAccessStream|hex|base64)$")
+         and (type ~= "^(?i:clipboard_png|pdf|url|file|stream|RandomAccessStream|hex|base64)$")
          and (cotype ~= "^(?i:file|stream|RandomAccessStream|hex|base64)$")
          and (!p.Has(1) || p[1] == "") { ; For now, disallow any specification of extensions.
 
@@ -207,6 +207,11 @@ class ImagePut {
 
       ; Check for image type declarations.
       ; Assumes that the user is telling the truth.
+
+      if ObjHasOwnProp(image, "clipboard_png") {
+         image := image.clipboard_png
+         return "clipboard_png"
+      }
 
       if ObjHasOwnProp(image, "clipboard") {
          image := image.clipboard
@@ -322,9 +327,17 @@ class ImagePut {
          throw Error("Image data is an empty string.")
 
       if IsObject(image) {
-         ; A "clipboard" is a buffer object containing binary data returned by ClipboardAll()
-         if (image.base.HasOwnProp("__class") && image.base.__class == "ClipboardAll")
-            return "clipboard"
+         if (image.base.HasOwnProp("__class") && image.base.__class == "ClipboardAll") {
+            ; A "clipboard_png" is a pointer to a PNG stream saved as the "png" clipboard format.
+            if DllCall("IsClipboardFormatAvailable", "uint", DllCall("RegisterClipboardFormat", "str", "png", "uint"))
+               return "clipboard_png"
+
+            ; A "clipboard" is a handle to a GDI bitmap saved as CF_BITMAP.
+            if DllCall("IsClipboardFormatAvailable", "uint", 2)
+               return "clipboard"
+
+            throw Error("Clipboard format not supported.")
+         }
 
          ; A "object" has a pBitmap property that points to an internal GDI+ bitmap.
          if image.HasOwnProp("pBitmap")
@@ -420,6 +433,9 @@ class ImagePut {
    }
 
    static ToBitmap(type, image, index := 0) {
+
+      if (type = "clipboard_png")
+         return this.from_clipboard_png()
 
       if (type = "clipboard")
          return this.from_clipboard()
@@ -560,6 +576,9 @@ class ImagePut {
    }
 
    static ToStream(type, image, index := 0) {
+
+      if (type = "clipboard_png")
+         return this.get_clipboard_png()
 
       if (type = "pdf")
          return this.get_pdf(image, index)
@@ -812,29 +831,48 @@ class ImagePut {
                Sleep (2**(A_Index-1) * 30)
             else throw Error("Clipboard could not be opened.")
 
-      ; Prefer the PNG stream if available because of transparency support.
-      png := DllCall("RegisterClipboardFormat", "str", "png", "uint")
-      if DllCall("IsClipboardFormatAvailable", "uint", png) {
-         if !(hData := DllCall("GetClipboardData", "uint", png, "ptr"))
-            throw Error("Shared clipboard data has been deleted.")
-
-         ; Allow the stream to be freed while leaving the hData intact.
-         ; Please read: https://devblogs.microsoft.com/oldnewthing/20210930-00/?p=105745
-         DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", false, "ptr*", &pStream:=0, "HRESULT")
-         DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
-         ObjRelease(pStream)
-      }
-
       ; Fallback to CF_BITMAP. This format does not support transparency even with put_hBitmap().
-      else if DllCall("IsClipboardFormatAvailable", "uint", 2) {
-         if !(hbm := DllCall("GetClipboardData", "uint", 2, "ptr"))
-            throw Error("Shared clipboard data has been deleted.")
-         DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", hbm, "ptr", 0, "ptr*", &pBitmap:=0)
-         DllCall("DeleteObject", "ptr", hbm)
-      }
+      if !DllCall("IsClipboardFormatAvailable", "uint", 2)
+         throw Error("Clipboard does not have CF_BITMAP data.")
 
+      if !(hbm := DllCall("GetClipboardData", "uint", 2, "ptr"))
+         throw Error("Shared clipboard data has been deleted.")
+
+      DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", hbm, "ptr", 0, "ptr*", &pBitmap:=0)
+      DllCall("DeleteObject", "ptr", hbm)
       DllCall("CloseClipboard")
       return pBitmap
+   }
+
+   static from_clipboard_png() {
+      pStream := this.get_clipboard_png()
+      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
+      ObjRelease(pStream)
+      return pBitmap
+   }
+
+   static get_clipboard_png() {
+      ; Open the clipboard with exponential backoff.
+      loop
+         if DllCall("OpenClipboard", "ptr", A_ScriptHwnd)
+            break
+         else
+            if A_Index < 6
+               Sleep (2**(A_Index-1) * 30)
+            else throw Error("Clipboard could not be opened.")
+
+      png := DllCall("RegisterClipboardFormat", "str", "png", "uint")
+      if !DllCall("IsClipboardFormatAvailable", "uint", png)
+         throw Error("Clipboard does not have PNG stream data.")
+
+      if !(hData := DllCall("GetClipboardData", "uint", png, "ptr"))
+         throw Error("Shared clipboard data has been deleted.")
+
+      ; Allow the stream to be freed while leaving the hData intact.
+      ; Please read: https://devblogs.microsoft.com/oldnewthing/20210930-00/?p=105745
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", false, "ptr*", &pStream:=0, "HRESULT")
+      DllCall("CloseClipboard")
+      return pStream
    }
 
    static from_object(image) {
