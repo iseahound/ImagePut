@@ -1967,10 +1967,9 @@ else {
          DllCall("DeleteObject", "ptr", NumGet(ii, 8+2*A_PtrSize, "ptr")) ; hbmColor
       }
 
-      ; Loop over all 16 system cursors and change them all to the new cursor.
-      SystemCursors := "32512,32513,32514,32515,32516,32642,32643,32644,32645,32646,32648,32649,32650,32651"
-      Loop Parse, SystemCursors, ","
-      { ; Must copy the handle 16 times as SetSystemCursor deletes the handle 16 times.
+      ; Set all 14 System Cursors. Must CopyImage 14 times as SetSystemCursor deletes the handle each time.
+      Loop Parse, "32512,32513,32514,32515,32516,32642,32643,32644,32645,32646,32648,32649,32650,32651", ","
+      {
          hCursor := DllCall("CopyImage", "ptr", hIcon, "uint", 2, "int", 0, "int", 0, "uint", 0, "ptr")
          DllCall("SetSystemCursor", "ptr", hCursor, "int", A_LoopField) ; calls DestroyCursor
       }
