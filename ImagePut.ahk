@@ -268,6 +268,16 @@ class ImagePut {
          return "file"
       }
 
+      if ObjHasOwnProp(image, "hex") {
+         image := image.hex
+         return "hex"
+      }
+
+      if ObjHasOwnProp(image, "base64") {
+         image := image.base64
+         return "base64"
+      }
+
       if ObjHasOwnProp(image, "monitor") {
          image := image.monitor
          return "monitor"
@@ -301,16 +311,6 @@ class ImagePut {
       if ObjHasOwnProp(image, "RandomAccessStream") {
          image := image.RandomAccessStream
          return "RandomAccessStream"
-      }
-
-      if ObjHasOwnProp(image, "hex") {
-         image := image.hex
-         return "hex"
-      }
-
-      if ObjHasOwnProp(image, "base64") {
-         image := image.base64
-         return "base64"
       }
 
       if ObjHasOwnProp(image, "sprite") {
@@ -380,6 +380,15 @@ class ImagePut {
          if FileExist(image)
             return "file"
 
+         ; A "hex" string is binary image data encoded into text using hexadecimal.
+         if (StrLen(image) >= 116) && (image ~= "(?i)^\s*(0x)?[0-9a-f]+\s*$")
+            return "hex"
+
+         ; A "base64" string is binary image data encoded into text using standard 64 characters.
+         if (StrLen(image) >= 80) && (image ~= "^\s*(?:data:image\/[a-z]+;base64,)?"
+         . "(?:[A-Za-z0-9+\/]{4})*+(?:[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{2}==)?\s*$")
+            return "base64"
+
       if (image ~= "^-?\d+$") {
          ; A non-zero "monitor" number identifies each display uniquely; and 0 refers to the entire virtual screen.
          if (image >= 0 && image <= MonitorGetCount())
@@ -414,14 +423,6 @@ class ImagePut {
          try if ComObjQuery(image, "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}")
             return "RandomAccessStream"
       }
-         ; A "hex" string is binary image data encoded into text using hexadecimal.
-         if (StrLen(image) >= 116) && (image ~= "(?i)^\s*(0x)?[0-9a-f]+\s*$")
-            return "hex"
-
-         ; A "base64" string is binary image data encoded into text using only 64 characters.
-         if (StrLen(image) >= 80) && (image ~= "^\s*(?:data:image\/[a-z]+;base64,)?"
-         . "(?:[A-Za-z0-9+\/]{4})*+(?:[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{2}==)?\s*$")
-            return "base64"
 
 
       ; For more helpful error messages: Catch file names without extensions!
@@ -470,6 +471,12 @@ class ImagePut {
       if (type = "file")
          return this.from_file(image)
 
+      if (type = "hex")
+         return this.from_hex(image)
+
+      if (type = "base64")
+         return this.from_base64(image)
+
       if (type = "monitor")
          return this.from_monitor(image)
 
@@ -490,12 +497,6 @@ class ImagePut {
 
       if (type = "RandomAccessStream")
          return this.from_RandomAccessStream(image)
-
-      if (type = "hex")
-         return this.from_hex(image)
-
-      if (type = "base64")
-         return this.from_base64(image)
 
       if (type = "sprite")
          return this.from_sprite(image)
@@ -540,6 +541,14 @@ class ImagePut {
       if (cotype = "file")
          return this.put_file(pBitmap, p1, p2)
 
+      ; BitmapToCoimage("hex", pBitmap, extension, quality)
+      if (cotype = "hex")
+         return this.put_hex(pBitmap, p1, p2)
+
+      ; BitmapToCoimage("base64", pBitmap, extension, quality)
+      if (cotype = "base64")
+         return this.put_base64(pBitmap, p1, p2)
+
       ; BitmapToCoimage("dc", pBitmap, alpha)
       if (cotype = "dc")
          return this.put_dc(pBitmap, p1)
@@ -564,14 +573,6 @@ class ImagePut {
       if (cotype = "RandomAccessStream")
          return this.put_RandomAccessStream(pBitmap, p1, p2)
 
-      ; BitmapToCoimage("hex", pBitmap, extension, quality)
-      if (cotype = "hex")
-         return this.put_hex(pBitmap, p1, p2)
-
-      ; BitmapToCoimage("base64", pBitmap, extension, quality)
-      if (cotype = "base64")
-         return this.put_base64(pBitmap, p1, p2)
-
       throw Error("Conversion from bitmap to " cotype " is not supported.")
    }
 
@@ -589,17 +590,17 @@ class ImagePut {
       if (type = "file")
          return this.get_file(image)
 
-      if (type = "stream")
-         return this.get_stream(image)
-
-      if (type = "RandomAccessStream")
-         return this.get_RandomAccessStream(image)
-
       if (type = "hex")
          return this.get_hex(image)
 
       if (type = "base64")
          return this.get_base64(image)
+
+      if (type = "stream")
+         return this.get_stream(image)
+
+      if (type = "RandomAccessStream")
+         return this.get_RandomAccessStream(image)
 
       throw Error("Conversion from " type " to stream is not supported.")
    }
@@ -609,14 +610,6 @@ class ImagePut {
       if (cotype = "file")
          return this.set_file(pStream, p1)
 
-      ; StreamToCoimage("stream", pStream)
-      if (cotype = "stream")
-         return pStream
-
-      ; StreamToCoimage("RandomAccessStream", pStream)
-      if (cotype = "RandomAccessStream")
-         return this.set_RandomAccessStream(pStream)
-
       ; StreamToCoimage("hex", pStream)
       if (cotype = "hex")
          return this.set_hex(pStream)
@@ -624,6 +617,14 @@ class ImagePut {
       ; StreamToCoimage("base64", pStream)
       if (cotype = "base64")
          return this.set_base64(pStream)
+
+      ; StreamToCoimage("stream", pStream)
+      if (cotype = "stream")
+         return pStream
+
+      ; StreamToCoimage("RandomAccessStream", pStream)
+      if (cotype = "RandomAccessStream")
+         return this.set_RandomAccessStream(pStream)
 
       throw Error("Conversion from stream to " cotype " is not supported.")
    }
@@ -1191,6 +1192,49 @@ class ImagePut {
       return pStream
    }
 
+   static from_hex(image) {
+      pStream := this.get_hex(image)
+      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
+      ObjRelease(pStream)
+      return pBitmap
+   }
+
+   static get_hex(image) {
+      image := Trim(image)
+      image := RegExReplace(image, "^(0[xX])")
+      return this.get_string(image, 0xC) ; CRYPT_STRING_HEXRAW
+   }
+
+   static from_base64(image) {
+      pStream := this.get_base64(image)
+      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
+      ObjRelease(pStream)
+      return pBitmap
+   }
+
+   static get_base64(image) {
+      image := Trim(image)
+      image := RegExReplace(image, "^data:image\/[a-z]+;base64,")
+      return this.get_string(image, 0x1) ; CRYPT_STRING_BASE64
+   }
+
+   static get_string(image, flags) {
+      ; Ask for the size. Then allocate movable memory, copy to the buffer, unlock, and create stream.
+      DllCall("crypt32\CryptStringToBinary"
+               , "ptr", StrPtr(image), "uint", 0, "uint", flags, "ptr", 0, "uint*", &size:=0, "ptr", 0, "ptr", 0)
+
+      hData := DllCall("GlobalAlloc", "uint", 0x2, "uptr", size, "ptr")
+      pData := DllCall("GlobalLock", "ptr", hData, "ptr")
+
+      DllCall("crypt32\CryptStringToBinary"
+               , "ptr", StrPtr(image), "uint", 0, "uint", flags, "ptr", pData, "uint*", size, "ptr", 0, "ptr", 0)
+
+      DllCall("GlobalUnlock", "ptr", hData)
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", true, "ptr*", &pStream:=0, "HRESULT")
+
+      return pStream
+   }
+
    static from_monitor(image) {
       if (image > 0) {
          MonitorGet(image, &Left, &Top, &Right, &Bottom)
@@ -1391,49 +1435,6 @@ class ImagePut {
       ; Note that the returned stream shares a reference count with the original RandomAccessStream.
       DllCall("ole32\CLSIDFromString", "wstr", "{0000000C-0000-0000-C000-000000000046}", "ptr", CLSID := Buffer(16), "HRESULT")
       DllCall("ShCore\CreateStreamOverRandomAccessStream", "ptr", image, "ptr", CLSID, "ptr*", &pStream:=0, "HRESULT")
-      return pStream
-   }
-
-   static from_hex(image) {
-      pStream := this.get_hex(image)
-      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
-      ObjRelease(pStream)
-      return pBitmap
-   }
-
-   static get_hex(image) {
-      image := Trim(image)
-      image := RegExReplace(image, "^(0[xX])")
-      return this.get_string(image, 0xC) ; CRYPT_STRING_HEXRAW
-   }
-
-   static from_base64(image) {
-      pStream := this.get_base64(image)
-      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
-      ObjRelease(pStream)
-      return pBitmap
-   }
-
-   static get_base64(image) {
-      image := Trim(image)
-      image := RegExReplace(image, "^data:image\/[a-z]+;base64,")
-      return this.get_string(image, 0x1) ; CRYPT_STRING_BASE64
-   }
-
-   static get_string(image, flags) {
-      ; Ask for the size. Then allocate movable memory, copy to the buffer, unlock, and create stream.
-      DllCall("crypt32\CryptStringToBinary"
-               , "ptr", StrPtr(image), "uint", 0, "uint", flags, "ptr", 0, "uint*", &size:=0, "ptr", 0, "ptr", 0)
-
-      hData := DllCall("GlobalAlloc", "uint", 0x2, "uptr", size, "ptr")
-      pData := DllCall("GlobalLock", "ptr", hData, "ptr")
-
-      DllCall("crypt32\CryptStringToBinary"
-               , "ptr", StrPtr(image), "uint", 0, "uint", flags, "ptr", pData, "uint*", size, "ptr", 0, "ptr", 0)
-
-      DllCall("GlobalUnlock", "ptr", hData)
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", true, "ptr*", &pStream:=0, "HRESULT")
-
       return pStream
    }
 
@@ -2021,6 +2022,52 @@ else {
       return filepath
    }
 
+   static put_hex(pBitmap, extension := "", quality := "") {
+      ; Default extension is PNG for small sizes!
+      if (extension == "")
+         extension := "png"
+
+      pStream := this.put_stream(pBitmap, extension, quality)
+      hex := this.set_hex(pStream)
+      ObjRelease(pStream)
+      return hex
+   }
+
+   static set_hex(pStream) {
+      return this.set_string(pStream, 0x4000000C) ; CRYPT_STRING_NOCRLF | CRYPT_STRING_HEXRAW
+   }
+
+   static put_base64(pBitmap, extension := "", quality := "") {
+      ; Default extension is PNG for small sizes!
+      if (extension == "")
+         extension := "png"
+
+      pStream := this.put_stream(pBitmap, extension, quality)
+      base64 := this.set_base64(pStream)
+      ObjRelease(pStream)
+      return base64
+   }
+
+   static set_base64(pStream) {
+      return this.set_string(pStream, 0x40000001) ; CRYPT_STRING_NOCRLF | CRYPT_STRING_BASE64
+   }
+
+   static set_string(pStream, flags) {
+      ; Thanks noname - https://www.autohotkey.com/boards/viewtopic.php?style=7&p=144247#p144247
+
+      ; For compatibility with SHCreateMemStream do not use GetHGlobalFromStream.
+      DllCall("shlwapi\IStream_Size", "ptr", pStream, "ptr*", &size:=0, "HRESULT")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "HRESULT")
+      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", bin := Buffer(size), "uint", size, "HRESULT")
+
+      ; Using CryptBinaryToStringA saves about 2MB in memory.
+      DllCall("crypt32\CryptBinaryToStringA", "ptr", bin, "uint", size, "uint", flags, "ptr", 0, "uint*", &length:=0)
+      str := Buffer(length)
+      DllCall("crypt32\CryptBinaryToStringA", "ptr", bin, "uint", size, "uint", flags, "ptr", str, "uint*", length)
+
+      return StrGet(str, length, "CP0")
+   }
+
    static put_dc(pBitmap, alpha := "") {
       ; This may seem strange, but the hBitmap is selected onto the device context,
       ; and therefore cannot be deleted. In addition, the stock bitmap can never be leaked.
@@ -2112,52 +2159,6 @@ else {
                ,   "ptr*", &pRandomAccessStream:=0
                ,"HRESULT")
       return pRandomAccessStream
-   }
-
-   static put_hex(pBitmap, extension := "", quality := "") {
-      ; Default extension is PNG for small sizes!
-      if (extension == "")
-         extension := "png"
-
-      pStream := this.put_stream(pBitmap, extension, quality)
-      hex := this.set_hex(pStream)
-      ObjRelease(pStream)
-      return hex
-   }
-
-   static set_hex(pStream) {
-      return this.set_string(pStream, 0x4000000C) ; CRYPT_STRING_NOCRLF | CRYPT_STRING_HEXRAW
-   }
-
-   static put_base64(pBitmap, extension := "", quality := "") {
-      ; Default extension is PNG for small sizes!
-      if (extension == "")
-         extension := "png"
-
-      pStream := this.put_stream(pBitmap, extension, quality)
-      base64 := this.set_base64(pStream)
-      ObjRelease(pStream)
-      return base64
-   }
-
-   static set_base64(pStream) {
-      return this.set_string(pStream, 0x40000001) ; CRYPT_STRING_NOCRLF | CRYPT_STRING_BASE64
-   }
-
-   static set_string(pStream, flags) {
-      ; Thanks noname - https://www.autohotkey.com/boards/viewtopic.php?style=7&p=144247#p144247
-
-      ; For compatibility with SHCreateMemStream do not use GetHGlobalFromStream.
-      DllCall("shlwapi\IStream_Size", "ptr", pStream, "ptr*", &size:=0, "HRESULT")
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "HRESULT")
-      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", bin := Buffer(size), "uint", size, "HRESULT")
-
-      ; Using CryptBinaryToStringA saves about 2MB in memory.
-      DllCall("crypt32\CryptBinaryToStringA", "ptr", bin, "uint", size, "uint", flags, "ptr", 0, "uint*", &length:=0)
-      str := Buffer(length)
-      DllCall("crypt32\CryptBinaryToStringA", "ptr", bin, "uint", size, "uint", flags, "ptr", str, "uint*", length)
-
-      return StrGet(str, length, "CP0")
    }
 
    static select_codec(pBitmap, extension, quality, &pCodec, &ep, &ci, &v) {
