@@ -364,8 +364,8 @@ class ImagePut {
             return "wallpaper"
 
          ; A "cursor" is the name of a known cursor name.
-         if (image ~= "(?i)^(IDC|OCR)?_?(A_Cursor|AppStarting|Arrow|Cross|Help|IBeam|"
-         . "Icon|No|Size|SizeAll|SizeNESW|SizeNS|SizeNWSE|SizeWE|UpArrow|Wait|Unknown)$")
+         if (image ~= "(?i)^A_Cursor|Unknown|(IDC_)?(AppStarting|Arrow|Cross|Hand|Help|IBeam|No|
+            . "SizeAll|SizeNESW|SizeNS|SizeNWSE|SizeWE|UpArrow|Wait)$")
             return "cursor"
 
          ; A "pdf" is either a file or url with a .pdf extension.
