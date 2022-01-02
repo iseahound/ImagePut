@@ -36,7 +36,7 @@ or something like this:
     
 Working with images should be this easy. ImagePut has automatic type inference, meaning that it will guess whether the input is (1) a file (2) a website url or (3) a series of coordinates that map to the screen. This functionality enables the user to only memorize a single function for any possible input. For a full list of supported input types, click on the documentation link [here](https://github.com/iseahound/ImagePut/wiki/Input-Types-&-Output-Functions#input-types). For output types click [here](https://github.com/iseahound/ImagePut/wiki/Input-Types-&-Output-Functions#output-functions). 
 
-Conversion between file formats is straightforward. 
+Convert file formats. 
 
     ; Saves a JPEG as a GIF. 
     ImagePutFile("cats.jpg", "gif")
