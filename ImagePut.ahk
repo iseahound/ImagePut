@@ -1555,87 +1555,40 @@ class ImagePut {
 
    static put_window(pBitmap, title := "", pos := "") {
 
-      WindowProc(hwnd, uMsg, wParam, lParam) {
-
-         ; WM_DESTROY
-         if (uMsg = 0x2) {
-            return Persistent(false)
-         }
-
-         ; WM_LBUTTONDOWN
-         if (uMsg = 0x201) {
-            parent := DllCall("GetParent", "ptr", hwnd, "ptr")
-            hwnd := (parent != A_ScriptHwnd && parent != 0) ? parent : hwnd
-            return DllCall("DefWindowProc", "ptr", hwnd, "uint", 0xA1, "uptr", 2, "ptr", 0, "ptr")
-         }
-
-         ; WM_RBUTTONUP
-         if (uMsg = 0x205) {
-            parent := DllCall("GetParent", "ptr", hwnd, "ptr")
-            hwnd := (parent != A_ScriptHwnd && parent != 0) ? parent : hwnd
-            return DllCall("DestroyWindow", "ptr", hwnd)
-         }
-
-         return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
-      }
-
-      ; Make it permanent.
+      ; Prevent the script from exiting early.
       Persistent(true)
 
-
+      ; The class name is ImagePut.
       cls := this.prototype.__class
-      pWndProc := CallbackCreate(WindowProc)
+      wc := Buffer(A_PtrSize = 4 ? 48:80)             ; sizeof(WNDCLASSEX) = 48, 80
 
-      hCursor := DllCall("LoadCursor", "ptr", 0, "ptr", 32512, "ptr") ; IDC_ARROW
-      ;hBrush := DllCall("CreateSolidBrush", "uint", 0x00F0F0F0, "ptr")
-      hBrush := DllCall("GetStockObject", "int", 5, "ptr") ; Hollow_brush
+      ; Register the window class.
+      if !DllCall("GetClassInfoEx", "ptr", 0, "str", cls, "ptr", wc) {
 
-      ; explanation or guess: There's 2 layers. The bottom layer is F0F0F0 and it is set to transparent.
-      ; However, transparency is click through. But if the hollow brush is used instead, it paints with
-      ; no color. But the system interprets that as the default color, F0F0F0. So later when F0F0F0 is made
-      ; transparent, it can't set the bounds as click though, because the system used the default color to
-      ; represent the empty color, and all we did was remove the system shading. (Just a guess.)
+         ; Create window data.
+         pWndProc := CallbackCreate(WindowProc)
+         hCursor := DllCall("LoadCursor", "ptr", 0, "ptr", 32512, "ptr") ; IDC_ARROW
+         hBrush := DllCall("GetStockObject", "int", 5, "ptr") ; Hollow_brush
 
-      ; struct tagWNDCLASSEXA - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexa
-      ; struct tagWNDCLASSEXW - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexw
-      _ := (A_PtrSize = 4)
-      wc := Buffer(_ ? 48:80)                         ; sizeof(WNDCLASSEX) = 48, 80
-         NumPut(  "uint",     wc.size, wc,         0) ; cbSize
-         NumPut(  "uint",           0, wc,         4) ; style
-         NumPut(   "ptr",    pWndProc, wc,         8) ; lpfnWndProc
-         NumPut(   "int",           0, wc, _ ? 12:16) ; cbClsExtra
-         NumPut(   "int",           0, wc, _ ? 16:20) ; cbWndExtra
-         NumPut(   "ptr",           0, wc, _ ? 20:24) ; hInstance
-         NumPut(   "ptr",           0, wc, _ ? 24:32) ; hIcon
-         NumPut(   "ptr",     hCursor, wc, _ ? 28:40) ; hCursor
-         NumPut(   "ptr",      hBrush, wc, _ ? 32:48) ; hbrBackground
-         NumPut(   "ptr",           0, wc, _ ? 36:56) ; lpszMenuName
-         NumPut(   "ptr", StrPtr(cls), wc, _ ? 40:64) ; lpszClassName
-         NumPut(   "ptr",           0, wc, _ ? 44:72) ; hIconSm
+         ; struct tagWNDCLASSEXA - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexa
+         ; struct tagWNDCLASSEXW - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexw
+         _ := (A_PtrSize = 4)
+            NumPut(  "uint",     wc.size, wc,         0) ; cbSize
+            NumPut(  "uint",           0, wc,         4) ; style
+            NumPut(   "ptr",    pWndProc, wc,         8) ; lpfnWndProc
+            NumPut(   "int",           0, wc, _ ? 12:16) ; cbClsExtra
+            NumPut(   "int",           0, wc, _ ? 16:20) ; cbWndExtra
+            NumPut(   "ptr",           0, wc, _ ? 20:24) ; hInstance
+            NumPut(   "ptr",           0, wc, _ ? 24:32) ; hIcon
+            NumPut(   "ptr",     hCursor, wc, _ ? 28:40) ; hCursor
+            NumPut(   "ptr",      hBrush, wc, _ ? 32:48) ; hbrBackground
+            NumPut(   "ptr",           0, wc, _ ? 36:56) ; lpszMenuName
+            NumPut(   "ptr", StrPtr(cls), wc, _ ? 40:64) ; lpszClassName
+            NumPut(   "ptr",           0, wc, _ ? 44:72) ; hIconSm
 
-      ; Registers a window class for subsequent use in calls to the CreateWindow or CreateWindowEx function.
-      DllCall("RegisterClassEx", "ptr", wc, "ushort")
-
-         WS_VISIBLE                := 0x10000000
-         WS_SYSMENU                :=    0x80000
-         WS_CHILD                  := 0x40000000
-         WS_EX_TOPMOST             :=        0x8
-         WS_EX_LAYERED             :=    0x80000
-         WS_TILEDWINDOW            :=   0xCF0000
-         WS_CAPTION                :=   0xC00000
-         WS_EX_STATICEDGE          :=    0x20000
-         WS_EX_WINDOWEDGE          :=      0x100
-         WS_SIZEBOX                :=    0x40000
-         WS_CLIPCHILDREN           :=  0x2000000
-         WS_POPUP                  := 0x80000000
-         WS_BORDER                 :=   0x800000
-         WS_EX_TOOLWINDOW          :=       0x80
-         WS_CLIPSIBLINGS           :=  0x4000000
-         WS_EX_TRANSPARENT         :=       0x20
-         WS_EX_DLGMODALFRAME       :=        0x1
-
-      style := WS_CAPTION | WS_SYSMENU | WS_CLIPCHILDREN | WS_POPUP | WS_CLIPSIBLINGS ;| WS_SIZEBOX WS_VISIBLE |
-      styleEx := WS_EX_TOPMOST | WS_EX_WINDOWEDGE | WS_EX_DLGMODALFRAME ;| WS_EX_STATICEDGE
+         ; Registers a window class for subsequent use in calls to the CreateWindow or CreateWindowEx function.
+         DllCall("RegisterClassEx", "ptr", wc, "ushort")
+      }
 
       ; Get Bitmap width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
@@ -1658,12 +1611,90 @@ class ImagePut {
       y2 := Round(y + h)
       x  := Round(x)
       y  := Round(y)
-      w  := Round(w)
-      h  := Round(h)
-/*
-      if (s != 1)
-         this.BitmapScale(&pBitmap, s)
-*/
+      w  := x2 - x
+      h  := y2 - y
+
+      ; Convert the source pBitmap into a hBitmap manually.
+      ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
+      hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
+      bi := Buffer(40, 0)                    ; sizeof(bi) = 40
+         NumPut(  "uint",        40, bi,  0) ; Size
+         NumPut(   "int",         w, bi,  4) ; Width
+         NumPut(   "int",        -h, bi,  8) ; Height - Negative so (0, 0) is top-left.
+         NumPut("ushort",         1, bi, 12) ; Planes
+         NumPut("ushort",        32, bi, 14) ; BitCount / BitsPerPixel
+      hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", bi, "uint", 0, "ptr*", &pBits:=0, "ptr", 0, "uint", 0, "ptr")
+      obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
+
+      DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", pBitmap, "int*", &format:=0)
+
+      ; Case 1: Image is not scaled.
+      if (s = 1) {
+         ; Transfer data from source pBitmap to an hBitmap manually.
+         Rect := Buffer(16, 0)                  ; sizeof(Rect) = 16
+            NumPut(  "uint",   width, Rect,  8) ; Width
+            NumPut(  "uint",  height, Rect, 12) ; Height
+         BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
+            NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
+            NumPut(   "ptr",      pBits, BitmapData, 16) ; Scan0
+         DllCall("gdiplus\GdipBitmapLockBits"
+                  ,    "ptr", pBitmap
+                  ,    "ptr", Rect
+                  ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
+                  ,    "int", 0xE200B      ; Format32bppPArgb
+                  ,    "ptr", BitmapData)  ; Contains the pointer (pBits) to the hbm.
+         DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
+      }
+
+      ; Case 2: Image is scaled.
+      else {
+         ; Create a graphics context from the device context.
+         DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc , "ptr*", &pGraphics:=0)
+
+         ; Set settings in graphics context.
+         DllCall("gdiplus\GdipSetPixelOffsetMode",    "ptr", pGraphics, "int", 2) ; Half pixel offset.
+         DllCall("gdiplus\GdipSetCompositingMode",    "ptr", pGraphics, "int", 1) ; Overwrite/SourceCopy.
+         DllCall("gdiplus\GdipSetInterpolationMode",  "ptr", pGraphics, "int", 7) ; HighQualityBicubic
+
+         ; Draw Image.
+         DllCall("gdiplus\GdipCreateImageAttributes", "ptr*", &ImageAttr:=0)
+         DllCall("gdiplus\GdipSetImageAttributesWrapMode", "ptr", ImageAttr, "int", 3) ; WrapModeTileFlipXY
+         DllCall("gdiplus\GdipDrawImageRectRectI"
+                  ,    "ptr", pGraphics
+                  ,    "ptr", pBitmap
+                  ,    "int", 0, "int", 0, "int", w,     "int", h      ; destination rectangle
+                  ,    "int", 0, "int", 0, "int", width, "int", height ; source rectangle
+                  ,    "int", 2
+                  ,    "ptr", ImageAttr
+                  ,    "ptr", 0
+                  ,    "ptr", 0)
+         DllCall("gdiplus\GdipDisposeImageAttributes", "ptr", ImageAttr)
+
+         ; Clean up the graphics context.
+         DllCall("gdiplus\GdipDeleteGraphics", "ptr", pGraphics)
+      }
+
+         WS_VISIBLE                := 0x10000000
+         WS_SYSMENU                :=    0x80000
+         WS_CHILD                  := 0x40000000
+         WS_EX_TOPMOST             :=        0x8
+         WS_EX_LAYERED             :=    0x80000
+         WS_TILEDWINDOW            :=   0xCF0000
+         WS_CAPTION                :=   0xC00000
+         WS_EX_STATICEDGE          :=    0x20000
+         WS_EX_WINDOWEDGE          :=      0x100
+         WS_SIZEBOX                :=    0x40000
+         WS_CLIPCHILDREN           :=  0x2000000
+         WS_POPUP                  := 0x80000000
+         WS_BORDER                 :=   0x800000
+         WS_EX_TOOLWINDOW          :=       0x80
+         WS_CLIPSIBLINGS           :=  0x4000000
+         WS_EX_TRANSPARENT         :=       0x20
+         WS_EX_DLGMODALFRAME       :=        0x1
+
+      style := WS_CAPTION | WS_SYSMENU | WS_CLIPCHILDREN | WS_POPUP | WS_CLIPSIBLINGS ;| WS_SIZEBOX WS_VISIBLE |
+      styleEx := WS_EX_TOPMOST | WS_EX_WINDOWEDGE | WS_EX_DLGMODALFRAME ;| WS_EX_STATICEDGE
+
       rect := Buffer(16)
          NumPut("int",  x, rect,  0)
          NumPut("int",  y, rect,  4)
@@ -1704,104 +1735,7 @@ class ImagePut {
          ,    "ptr", 0                     ; lpParam
          ,    "ptr")
 
-      ; Convert the source pBitmap into a hBitmap manually.
-      ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
-      hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
-      bi := Buffer(40, 0)                    ; sizeof(bi) = 40
-         NumPut(  "uint",        40, bi,  0) ; Size
-         NumPut(   "int",         w, bi,  4) ; Width
-         NumPut(   "int",        -h, bi,  8) ; Height - Negative so (0, 0) is top-left.
-         NumPut("ushort",         1, bi, 12) ; Planes
-         NumPut("ushort",        32, bi, 14) ; BitCount / BitsPerPixel
-      hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", bi, "uint", 0, "ptr*", &pBits:=0, "ptr", 0, "uint", 0, "ptr")
-      obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
-
-      DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", pBitmap, "int*", &format:=0)
-
-if (s = 1) {
-      ; Transfer data from source pBitmap to an hBitmap manually.
-      Rect := Buffer(16, 0)                  ; sizeof(Rect) = 16
-         NumPut(  "uint",   width, Rect,  8) ; Width
-         NumPut(  "uint",  height, Rect, 12) ; Height
-      BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
-         NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
-         NumPut(   "ptr",      pBits, BitmapData, 16) ; Scan0
-      DllCall("gdiplus\GdipBitmapLockBits"
-               ,    "ptr", pBitmap
-               ,    "ptr", Rect
-               ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
-               ,    "int", 0xE200B      ; Format32bppPArgb
-               ,    "ptr", BitmapData)  ; Contains the pointer (pBits) to the hbm.
-      DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
-}
-else if ((0xFF00 & format) >> 8 = 24) {
-
-      hdc2 := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
-      hbm2 := this.put_hBitmap(pBitmap)
-      obm2 := DllCall("SelectObject", "ptr", hdc2, "ptr", hbm2, "ptr")
-
-      ; Perform bilinear interpolation. See: https://stackoverflow.com/a/4358798
-      DllCall("SetStretchBltMode", "ptr", hdc, "int", 4) ; HALFTONE
-
-      ; Copies a portion of the screen to a new device context.
-      DllCall("gdi32\StretchBlt"
-               , "ptr", hdc, "int", 0, "int", 0, "int", w, "int", h
-               , "ptr", hdc2, "int", 0, "int", 0, "int", width, "int", height
-               , "uint", 0x00CC0020) ; SRCCOPY
-
-      DllCall("SelectObject", "ptr", hdc2, "ptr", obm2)
-      DllCall("DeleteObject", "ptr", hbm2)
-      DllCall("DeleteDC",     "ptr", hdc2)
-
-      ; Unfortunately, using HALFTONE destroys the alpha channel.
-      ; There is no way around it, using SRCPAINT forces COLORONCOLOR (3).
-      ; See: https://devblogs.microsoft.com/oldnewthing/20210915-00/?p=105687
-
-      ; Create a single pixel to map onto a device context.
-      bi := Buffer(40, 0)                    ; sizeof(bi) = 40
-         NumPut(  "uint",        40, bi,  0) ; Size
-         NumPut(   "int",         1, bi,  4) ; Width
-         NumPut(   "int",         1, bi,  8) ; Height
-         NumPut("ushort",         1, bi, 12) ; Planes
-         NumPut("ushort",        32, bi, 14) ; BitCount / BitsPerPixel
-
-      ; Restore alpha channel to opaque.
-      DllCall("gdi32\StretchDIBits"
-               ,    "ptr", hdc
-               ,    "int", 0, "int", 0, "int", w, "int", h
-               ,    "int", 0, "int", 0, "int", 1, "int", 1
-               ,  "uint*", 0xFF000000
-               ,    "ptr", bi
-               ,   "uint", 0
-               ,   "uint", 0x00EE0086) ; SRCPAINT
-}
-else {
-      ; Create a graphics context from the device context.
-      DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc , "ptr*", &pGraphics:=0)
-
-      ; Set settings in graphics context.
-      DllCall("gdiplus\GdipSetPixelOffsetMode",    "ptr", pGraphics, "int", 2) ; Half pixel offset.
-      DllCall("gdiplus\GdipSetCompositingMode",    "ptr", pGraphics, "int", 1) ; Overwrite/SourceCopy.
-      DllCall("gdiplus\GdipSetInterpolationMode",  "ptr", pGraphics, "int", 7) ; HighQualityBicubic
-
-      ; Draw Image.
-      DllCall("gdiplus\GdipCreateImageAttributes", "ptr*", &ImageAttr:=0)
-      DllCall("gdiplus\GdipSetImageAttributesWrapMode", "ptr", ImageAttr, "int", 3) ; WrapModeTileFlipXY
-      DllCall("gdiplus\GdipDrawImageRectRectI"
-               ,    "ptr", pGraphics
-               ,    "ptr", pBitmap
-               ,    "int", 0, "int", 0, "int", w,     "int", h      ; destination rectangle
-               ,    "int", 0, "int", 0, "int", width, "int", height ; source rectangle
-               ,    "int", 2
-               ,    "ptr", ImageAttr
-               ,    "ptr", 0
-               ,    "ptr", 0)
-      DllCall("gdiplus\GdipDisposeImageAttributes", "ptr", ImageAttr)
-
-      ; Clean up the graphics context.
-      DllCall("gdiplus\GdipDeleteGraphics", "ptr", pGraphics)
-}
-
+      ; Draw the contents of the device context onto the layered window.
       DllCall("UpdateLayeredWindow"
                ,    "ptr", hwnd                    ; hWnd
                ,    "ptr", 0                       ; hdcDst
@@ -1820,6 +1754,31 @@ else {
       DllCall("DeleteDC",     "ptr", hdc)
 
       return hwnd0
+
+      ; Define window behavior.
+      WindowProc(hwnd, uMsg, wParam, lParam) {
+
+         ; WM_DESTROY
+         if (uMsg = 0x2) {
+            return Persistent(false)
+         }
+
+         ; WM_LBUTTONDOWN
+         if (uMsg = 0x201) {
+            parent := DllCall("GetParent", "ptr", hwnd, "ptr")
+            hwnd := (parent != A_ScriptHwnd && parent != 0) ? parent : hwnd
+            return DllCall("DefWindowProc", "ptr", hwnd, "uint", 0xA1, "uptr", 2, "ptr", 0, "ptr")
+         }
+
+         ; WM_RBUTTONUP
+         if (uMsg = 0x205) {
+            parent := DllCall("GetParent", "ptr", hwnd, "ptr")
+            hwnd := (parent != A_ScriptHwnd && parent != 0) ? parent : hwnd
+            return DllCall("DestroyWindow", "ptr", hwnd)
+         }
+
+         return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
+      }
    }
 
    static put_desktop(pBitmap) {
