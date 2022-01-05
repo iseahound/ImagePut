@@ -1553,9 +1553,242 @@ class ImagePut {
       return [x,y,w,h]
    }
 
+   put_window(pBitmap, title := "", pos := "") {
+      WS_CAPTION                :=   0xC00000
+      WS_CLIPCHILDREN           :=  0x2000000
+      WS_EX_DLGMODALFRAME       :=        0x1
+      WS_EX_TOPMOST             :=        0x8
+      WS_EX_WINDOWEDGE          :=      0x100
+      WS_POPUP                  := 0x80000000
+      WS_SYSMENU                :=    0x80000
+      WS_CHILD                  := 0x40000000
+      WS_EX_LAYERED             :=    0x80000
+      WS_VISIBLE                := 0x10000000
+      WS_EX_TOOLWINDOW          :=       0x80
+
+      style := WS_CAPTION | WS_SYSMENU | WS_CLIPCHILDREN | WS_POPUP
+      styleEx := WS_EX_TOPMOST | WS_EX_WINDOWEDGE | WS_EX_DLGMODALFRAME
+
+      ; Get Bitmap width and height.
+      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
+      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
+
+      ; If both dimensions exceed the screen boundaries, compare the aspect ratio of the image
+      ; to the aspect ratio of the screen to determine the scale factor. Default scale is 1.
+      s  := (width > A_ScreenWidth) && (width / height > A_ScreenWidth / A_ScreenHeight) ? A_ScreenWidth / width
+         : (height > A_ScreenHeight) && (width / height <= A_ScreenWidth / A_ScreenHeight) ? A_ScreenHeight / height
+         : 1
+
+      w  := IsObject(pos) && pos.HasKey(3) ? pos[3] : s * width
+      h  := IsObject(pos) && pos.HasKey(4) ? pos[4] : s * height
+
+      x  := IsObject(pos) && pos.HasKey(1) ? pos[1] : 0.5*(A_ScreenWidth - w)
+      y  := IsObject(pos) && pos.HasKey(2) ? pos[2] : 0.5*(A_ScreenHeight - h)
+
+      ; Resolve dependent coordinates first, coordinates second, and distances last.
+      x2 := Round(x + w)
+      y2 := Round(y + h)
+      x  := Round(x)
+      y  := Round(y)
+      w  := x2 - x
+      h  := y2 - y
+
+      VarSetCapacity(rect, 16)
+         NumPut( x, rect,  0, "int")
+         NumPut( y, rect,  4, "int")
+         NumPut(x2, rect,  8, "int")
+         NumPut(y2, rect, 12, "int")
+
+      DllCall("AdjustWindowRectEx", "ptr", &rect, "uint", style, "uint", 0, "uint", styleEx)
+
+      hwnd := DllCall("CreateWindowEx"
+               ,   "uint", styleEx
+               ,    "str", this.WindowClass()    ; lpClassName
+               ,    "str", title                 ; lpWindowName
+               ,   "uint", style
+               ,    "int", NumGet(rect,  0, "int")
+               ,    "int", NumGet(rect,  4, "int")
+               ,    "int", NumGet(rect,  8, "int") - NumGet(rect,  0, "int")
+               ,    "int", NumGet(rect, 12, "int") - NumGet(rect,  4, "int")
+               ,    "ptr", A_ScriptHwnd          ; hWndParent
+               ,    "ptr", 0                     ; hMenu
+               ,    "ptr", 0                     ; hInstance
+               ,    "ptr", 0                     ; lpParam
+               ,    "ptr")
+
+      ; Tests have shown that changing the system default colors has no effect on F0F0F0.
+      WinSet TransColor, % "F0F0F0", % "ahk_id" hwnd0
+
+      this.show(pBitmap, title, [0, 0, w, h], WS_CHILD | WS_VISIBLE, WS_EX_LAYERED, hwnd)
+
+      DllCall("ShowWindow", "ptr", hwnd, "int", 1)
+
+      return hwnd
+   }
+
+   show(pBitmap, title := "", pos := "", style := 0x10000000, styleEx := 0x80088, parent := 0) {
+      ; Prevent the script from exiting early.
+      void := ObjBindMethod({}, {})
+      Hotkey % "^+F12", % void, On
+
+      ; Get Bitmap width and height.
+      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
+      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
+
+      ; If both dimensions exceed the screen boundaries, compare the aspect ratio of the image
+      ; to the aspect ratio of the screen to determine the scale factor. Default scale is 1.
+      s  := (width > A_ScreenWidth) && (width / height > A_ScreenWidth / A_ScreenHeight) ? A_ScreenWidth / width
+         : (height > A_ScreenHeight) && (width / height <= A_ScreenWidth / A_ScreenHeight) ? A_ScreenHeight / height
+         : 1
+
+      w  := IsObject(pos) && pos.HasKey(3) ? pos[3] : s * width
+      h  := IsObject(pos) && pos.HasKey(4) ? pos[4] : s * height
+
+      x  := IsObject(pos) && pos.HasKey(1) ? pos[1] : 0.5*(A_ScreenWidth - w)
+      y  := IsObject(pos) && pos.HasKey(2) ? pos[2] : 0.5*(A_ScreenHeight - h)
+
+      ; Resolve dependent coordinates first, coordinates second, and distances last.
+      x2 := Round(x + w)
+      y2 := Round(y + h)
+      x  := Round(x)
+      y  := Round(y)
+      w  := x2 - x
+      h  := y2 - y
+
+      ; Convert the source pBitmap into a hBitmap manually.
+      ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
+      hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
+      VarSetCapacity(bi, 40, 0)              ; sizeof(bi) = 40
+         NumPut(       40, bi,  0,   "uint") ; Size
+         NumPut(    width, bi,  4,   "uint") ; Width
+         NumPut(  -height, bi,  8,    "int") ; Height - Negative so (0, 0) is top-left.
+         NumPut(        1, bi, 12, "ushort") ; Planes
+         NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
+      hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
+      obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
+
+      DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", pBitmap, "int*", format:=0)
+
+      ; Case 1: Image is not scaled.
+      if (s = 1) {
+         ; Transfer data from source pBitmap to an hBitmap manually.
+         VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
+            NumPut(  width, Rect,  8,   "uint") ; Width
+            NumPut( height, Rect, 12,   "uint") ; Height
+         VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
+            NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
+            NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
+         DllCall("gdiplus\GdipBitmapLockBits"
+                  ,    "ptr", pBitmap
+                  ,    "ptr", &Rect
+                  ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
+                  ,    "int", 0xE200B      ; Format32bppPArgb
+                  ,    "ptr", &BitmapData) ; Contains the pointer (pBits) to the hbm.
+         DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
+      }
+
+      ; Case 2: Image is scaled.
+      else {
+         ; Create a graphics context from the device context.
+         DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc , "ptr*", &pGraphics:=0)
+
+         ; Set settings in graphics context.
+         DllCall("gdiplus\GdipSetPixelOffsetMode",    "ptr", pGraphics, "int", 2) ; Half pixel offset.
+         DllCall("gdiplus\GdipSetCompositingMode",    "ptr", pGraphics, "int", 1) ; Overwrite/SourceCopy.
+         DllCall("gdiplus\GdipSetInterpolationMode",  "ptr", pGraphics, "int", 7) ; HighQualityBicubic
+
+         ; Draw Image.
+         DllCall("gdiplus\GdipCreateImageAttributes", "ptr*", ImageAttr:=0)
+         DllCall("gdiplus\GdipSetImageAttributesWrapMode", "ptr", ImageAttr, "int", 3) ; WrapModeTileFlipXY
+         DllCall("gdiplus\GdipDrawImageRectRectI"
+                  ,    "ptr", pGraphics
+                  ,    "ptr", pBitmap
+                  ,    "int", 0, "int", 0, "int", w,     "int", h      ; destination rectangle
+                  ,    "int", 0, "int", 0, "int", width, "int", height ; source rectangle
+                  ,    "int", 2
+                  ,    "ptr", ImageAttr
+                  ,    "ptr", 0
+                  ,    "ptr", 0)
+         DllCall("gdiplus\GdipDisposeImageAttributes", "ptr", ImageAttr)
+
+         ; Clean up the graphics context.
+         DllCall("gdiplus\GdipDeleteGraphics", "ptr", pGraphics)
+      }
+
+      hwnd := DllCall("CreateWindowEx"
+               ,   "uint", styleEx | 0x80000        ; dwExStyle
+               ,    "str", this.WindowClass()       ; lpClassName
+               ,    "str", title                    ; lpWindowName
+               ,   "uint", style                    ; dwStyle
+               ,    "int", x
+               ,    "int", y
+               ,    "int", w
+               ,    "int", h
+               ,    "ptr", parent ? parent : 0      ; hWndParent
+               ,    "ptr", 0                        ; hMenu
+               ,    "ptr", 0                        ; hInstance
+               ,    "ptr", 0                        ; lpParam
+               ,    "ptr")
+
+      ; Draw the contents of the device context onto the layered window.
+      DllCall("UpdateLayeredWindow"
+               ,    "ptr", hwnd                     ; hWnd
+               ,    "ptr", 0                        ; hdcDst
+               ,    "ptr", 0                        ; *pptDst
+               ,"uint64*", w | h << 32              ; *psize
+               ,    "ptr", hdc                      ; hdcSrc
+               , "int64*", 0                        ; *pptSrc
+               ,   "uint", 0                        ; crKey
+               ,  "uint*", 0xFF << 16 | 0x01 << 24  ; *pblend
+               ,   "uint", 2)                       ; dwFlags
+
+      ; Cleanup the hBitmap and device contexts.
+      DllCall("SelectObject", "ptr", hdc, "ptr", obm)
+      DllCall("DeleteObject", "ptr", hbm)
+      DllCall("DeleteDC",     "ptr", hdc)
+
+      return hwnd0
+   }
+
+   WindowClass() {
+      ; The class name is ImagePut.
+      cls := this.__class
+      VarSetCapacity(wc, size := _ ? 48:80)           ; sizeof(WNDCLASSEX) = 48, 80
+
+      ; Check if the window class is already registered.
+      if DllCall("GetClassInfoEx", "ptr", 0, "str", cls, "ptr", wc)
+         return cls
+
+      ; Create window data.
+      pWndProc := RegisterCallback(this.WindowProc,,, &this)
+      hCursor := DllCall("LoadCursor", "ptr", 0, "ptr", 32512, "ptr") ; IDC_ARROW
+      hBrush := DllCall("GetStockObject", "int", 5, "ptr") ; Hollow_brush
+
+      ; struct tagWNDCLASSEXA - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexa
+      ; struct tagWNDCLASSEXW - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexw
+      _ := (A_PtrSize = 4)
+         NumPut(       size, wc,         0,   "uint") ; cbSize
+         NumPut(          0, wc,         4,   "uint") ; style
+         NumPut(   pWndProc, wc,         8,    "ptr") ; lpfnWndProc
+         NumPut(          0, wc, _ ? 12:16,    "int") ; cbClsExtra
+         NumPut(          0, wc, _ ? 16:20,    "int") ; cbWndExtra
+         NumPut(          0, wc, _ ? 20:24,    "ptr") ; hInstance
+         NumPut(          0, wc, _ ? 24:32,    "ptr") ; hIcon
+         NumPut(    hCursor, wc, _ ? 28:40,    "ptr") ; hCursor
+         NumPut(     hBrush, wc, _ ? 32:48,    "ptr") ; hbrBackground
+         NumPut(          0, wc, _ ? 36:56,    "ptr") ; lpszMenuName
+         NumPut(       &cls, wc, _ ? 40:64,    "ptr") ; lpszClassName
+         NumPut(          0, wc, _ ? 44:72,    "ptr") ; hIconSm
+
+      ; Registers a window class for subsequent use in calls to the CreateWindow or CreateWindowEx function.
+      DllCall("RegisterClassEx", "ptr", &wc, "ushort")
+
+      ; Return the class name as a string.
+      return cls
+   }
+      ; Define window behavior.
       WindowProc(uMsg, wParam, lParam) {
          hwnd := this
-
          ; WM_DESTROY
          if (uMsg = 0x2) {
             Hotkey % "^+F12", Off
@@ -1578,158 +1811,6 @@ class ImagePut {
          return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
       }
 
-   put_window(pBitmap, title := "") {
-      ; Make it permanent.
-      void := ObjBindMethod({}, {})
-      Hotkey % "^+F12", % void, On
-
-      cls := this.__class
-      pWndProc := RegisterCallback(this.WindowProc, "Fast",, &this)
-
-      hCursor := DllCall("LoadCursor", "ptr", 0, "ptr", 32512, "ptr") ; IDC_ARROW
-      ;hBrush := DllCall("CreateSolidBrush", "uint", 0x00F0F0F0, "ptr")
-      hBrush := DllCall("GetStockObject", "int", 5, "ptr") ; Hollow_brush
-
-      ; explanation or guess: There's 2 layers. The bottom layer is F0F0F0 and it is set to transparent.
-      ; However, transparency is click through. But if the hollow brush is used instead, it paints with
-      ; no color. But the system interprets that as the default color, F0F0F0. So later when F0F0F0 is made
-      ; transparent, it can't set the bounds as click though, because the system used the default color to
-      ; represent the empty color, and all we did was remove the system shading. (Just a guess.)
-
-      ; struct tagWNDCLASSEXA - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexa
-      ; struct tagWNDCLASSEXW - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexw
-      _ := (A_PtrSize = 4)
-      VarSetCapacity(wc, size := _ ? 48:80)           ; sizeof(WNDCLASSEX) = 48, 80
-         NumPut(       size, wc,         0,   "uint") ; cbSize
-         NumPut(          0, wc,         4,   "uint") ; style
-         NumPut(   pWndProc, wc,         8,    "ptr") ; lpfnWndProc
-         NumPut(          0, wc, _ ? 12:16,    "int") ; cbClsExtra
-         NumPut(          0, wc, _ ? 16:20,    "int") ; cbWndExtra
-         NumPut(          0, wc, _ ? 20:24,    "ptr") ; hInstance
-         NumPut(          0, wc, _ ? 24:32,    "ptr") ; hIcon
-         NumPut(    hCursor, wc, _ ? 28:40,    "ptr") ; hCursor
-         NumPut(     hBrush, wc, _ ? 32:48,    "ptr") ; hbrBackground
-         NumPut(          0, wc, _ ? 36:56,    "ptr") ; lpszMenuName
-         NumPut(       &cls, wc, _ ? 40:64,    "ptr") ; lpszClassName
-         NumPut(          0, wc, _ ? 44:72,    "ptr") ; hIconSm
-
-      ; Registers a window class for subsequent use in calls to the CreateWindow or CreateWindowEx function.
-      DllCall("RegisterClassEx", "ptr", &wc, "ushort")
-
-         WS_VISIBLE                := 0x10000000
-         WS_SYSMENU                :=    0x80000
-         WS_CHILD                  := 0x40000000
-         WS_EX_TOPMOST             :=        0x8
-         WS_EX_LAYERED             :=    0x80000
-         WS_TILEDWINDOW            :=   0xCF0000
-         WS_CAPTION                :=   0xC00000
-         WS_EX_STATICEDGE          :=    0x20000
-         WS_EX_WINDOWEDGE          :=      0x100
-         WS_SIZEBOX                :=    0x40000
-         WS_CLIPCHILDREN           :=  0x2000000
-         WS_POPUP                  := 0x80000000
-         WS_BORDER                 :=   0x800000
-         WS_EX_TOOLWINDOW          :=       0x80
-         WS_CLIPSIBLINGS           :=  0x4000000
-         WS_EX_TRANSPARENT         :=       0x20
-         WS_EX_DLGMODALFRAME       :=        0x1
-
-      style := WS_VISIBLE | WS_CAPTION | WS_SYSMENU | WS_CLIPCHILDREN | WS_POPUP | WS_CLIPSIBLINGS ;| WS_SIZEBOX
-      styleEx := WS_EX_TOPMOST | WS_EX_WINDOWEDGE | WS_EX_DLGMODALFRAME ;| WS_EX_STATICEDGE
-
-      ; Get Bitmap width and height.
-      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
-      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
-
-      balance := width / height > A_ScreenWidth / A_ScreenHeight
-      if (balance && width > A_ScreenWidth)
-         scale := (A_ScreenWidth / width), width := A_ScreenWidth, height *= scale
-      if (!balance && height > A_ScreenHeight)
-         scale := (A_ScreenHeight / height), height := A_ScreenHeight, width *= scale
-      if (scale != "")
-         this.BitmapScale(pBitmap, scale)
-
-         VarSetCapacity(rect, 16)
-            NumPut(Floor((A_ScreenWidth - width) / 2.0), rect,  0, "int")
-            NumPut(Floor((A_ScreenHeight - height) / 2.0), rect,  4, "int")
-            NumPut(Floor((A_ScreenWidth + width) / 2.0), rect,  8, "int")
-            NumPut(Floor((A_ScreenHeight + height) / 2.0), rect, 12, "int")
-
-         DllCall("AdjustWindowRectEx", "ptr", &rect, "uint", style, "uint", 0, "uint", styleEx)
-            , x := NumGet(rect,  0, "int")
-            , y := NumGet(rect,  4, "int")
-            , w := NumGet(rect,  8, "int") - NumGet(rect,  0, "int")
-            , h := NumGet(rect, 12, "int") - NumGet(rect,  4, "int")
-
-         hwnd0 := DllCall("CreateWindowEx"
-            ,   "uint", styleEx
-            ,    "str", "ImagePut"  ; lpClassName
-            ,    "str", title ;"Pichu"            ; lpWindowName
-            ,   "uint", style
-            ,    "int", x      ; X
-            ,    "int", y        ; Y
-            ,    "int", w      ; nWidth
-            ,    "int", h     ; nHeight
-            ,    "ptr", A_ScriptHwnd                     ; hWndParent
-            ,    "ptr", 0                     ; hMenu
-            ,    "ptr", 0                     ; hInstance
-            ,    "ptr", 0                     ; lpParam
-            ,    "ptr")
-
-         ;if transparent
-            WinSet TransColor, % "F0F0F0", % "ahk_id" hwnd0
-
-         vWinStyle := WS_VISIBLE | WS_CHILD
-         vWinExStyle := WS_EX_LAYERED ;| WS_EX_TOPMOST
-
-         hwnd := DllCall("CreateWindowEx"
-            ,   "uint", vWinExStyle           ; dwExStyle
-            ,    "str", "ImagePut"  ; lpClassName
-            ,    "str", "Pikachu"            ; lpWindowName
-            ,   "uint", vWinStyle             ; dwStyle
-            ,    "int", 0       ; X
-            ,    "int", 0        ; Y
-            ,    "int", width      ; nWidth
-            ,    "int", height     ; nHeight
-            ,    "ptr", hwnd0                     ; hWndParent
-            ,    "ptr", 0                     ; hMenu
-            ,    "ptr", 0                     ; hInstance
-            ,    "ptr", 0                     ; lpParam
-            ,    "ptr")
-
-         ;DllCall("ShowWindow", "ptr", hwnd, "int", 1)
-
-         hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
-         hbm := this.put_hBitmap(pBitmap)
-         obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
-         ;DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc , "ptr*", gfx:=0)
-
-         DllCall("UpdateLayeredWindow"
-                  ,    "ptr", hwnd                   ; hWnd
-                  ,    "ptr", 0                           ; hdcDst
-                  ,"uint64*", 0 | 0 << 32                      ; *pptDst
-                  ,"uint64*", width | height << 32                     ; *psize
-                  ,    "ptr", hdc                    ; hdcSrc
-                  , "int64*", 0                           ; *pptSrc
-                  ,   "uint", 0                           ; crKey
-                  ,  "uint*", 0xFF << 16 | 0x01 << 24         ; *pblend
-                  ,   "uint", 2)                          ; dwFlags
-
-
-
-         ;MsgBox Format("{:X}", Style) " | " Format("{:X}", WinGetStyle(hwnd0))
-         ;MsgBox Format("{:X}", StyleEx) " | " Format("{:X}", WinGetExStyle(hwnd0))
-
-         ;MsgBox Format("{:X}", vWinStyle) " | " Format("{:X}", WinGetStyle(hwnd))
-         ;MsgBox Format("{:X}", vWinExStyle) " | " Format("{:X}", WinGetExStyle(hwnd))
-
-      ; Cleanup the hBitmap and device contexts.
-      DllCall("SelectObject", "ptr", hdc, "ptr", obm)
-      DllCall("DeleteObject", "ptr", hbm)
-      DllCall("DeleteDC",     "ptr", hdc)
-
-      return hwnd0
-   }
 
    put_desktop(pBitmap) {
       ; Thanks Gerald Degeneve - https://www.codeproject.com/Articles/856020/Draw-Behind-Desktop-Icons-in-Windows-plus
