@@ -1554,41 +1554,82 @@ class ImagePut {
    }
 
    static put_window(pBitmap, title := "", pos := "") {
+      WS_CAPTION                :=   0xC00000
+      WS_CLIPCHILDREN           :=  0x2000000
+      WS_EX_DLGMODALFRAME       :=        0x1
+      WS_EX_TOPMOST             :=        0x8
+      WS_EX_WINDOWEDGE          :=      0x100
+      WS_POPUP                  := 0x80000000
+      WS_SYSMENU                :=    0x80000
+      WS_CHILD                  := 0x40000000
+      WS_EX_LAYERED             :=    0x80000
+      WS_VISIBLE                := 0x10000000
+      WS_EX_TOOLWINDOW          :=       0x80
+
+      style := WS_CAPTION | WS_SYSMENU | WS_CLIPCHILDREN | WS_POPUP
+      styleEx := WS_EX_TOPMOST | WS_EX_WINDOWEDGE | WS_EX_DLGMODALFRAME
+
+      ; Get Bitmap width and height.
+      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
+      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
+
+      ; If both dimensions exceed the screen boundaries, compare the aspect ratio of the image
+      ; to the aspect ratio of the screen to determine the scale factor. Default scale is 1.
+      s  := (width > A_ScreenWidth) && (width / height > A_ScreenWidth / A_ScreenHeight) ? A_ScreenWidth / width
+         : (height > A_ScreenHeight) && (width / height <= A_ScreenWidth / A_ScreenHeight) ? A_ScreenHeight / height
+         : 1
+
+      w  := IsObject(pos) && pos.has(3) ? pos[3] : s * width
+      h  := IsObject(pos) && pos.has(4) ? pos[4] : s * height
+
+      x  := IsObject(pos) && pos.has(1) ? pos[1] : 0.5*(A_ScreenWidth - w)
+      y  := IsObject(pos) && pos.has(2) ? pos[2] : 0.5*(A_ScreenHeight - h)
+
+      ; Resolve dependent coordinates first, coordinates second, and distances last.
+      x2 := Round(x + w)
+      y2 := Round(y + h)
+      x  := Round(x)
+      y  := Round(y)
+      w  := x2 - x
+      h  := y2 - y
+
+      rect := Buffer(16)
+         NumPut("int",  x, rect,  0)
+         NumPut("int",  y, rect,  4)
+         NumPut("int", x2, rect,  8)
+         NumPut("int", y2, rect, 12)
+
+      DllCall("AdjustWindowRectEx", "ptr", rect, "uint", style, "uint", 0, "uint", styleEx)
+
+      hwnd := DllCall("CreateWindowEx"
+               ,   "uint", styleEx
+               ,    "str", this.WindowClass()    ; lpClassName
+               ,    "str", title                 ; lpWindowName
+               ,   "uint", style
+               ,    "int", NumGet(rect,  0, "int")
+               ,    "int", NumGet(rect,  4, "int")
+               ,    "int", NumGet(rect,  8, "int") - NumGet(rect,  0, "int")
+               ,    "int", NumGet(rect, 12, "int") - NumGet(rect,  4, "int")
+               ,    "ptr", A_ScriptHwnd          ; hWndParent
+               ,    "ptr", 0                     ; hMenu
+               ,    "ptr", 0                     ; hInstance
+               ,    "ptr", 0                     ; lpParam
+               ,    "ptr")
+
+      ; Tests have shown that changing the system default colors has no effect on F0F0F0.
+      WinSetTransColor "F0F0F0", hwnd
+
+      this.show(pBitmap, title, [0, 0, w, h], WS_CHILD | WS_VISIBLE, WS_EX_LAYERED, hwnd)
+
+      DllCall("ShowWindow", "ptr", hwnd, "int", 1)
+
+      return hwnd
+   }
+
+   static show(pBitmap, title := "", pos := "", style := 0x10000000, styleEx := 0x80088, parent := 0) {
 
       ; Prevent the script from exiting early.
       Persistent(true)
-
-      ; The class name is ImagePut.
-      cls := this.prototype.__class
-      wc := Buffer(A_PtrSize = 4 ? 48:80)             ; sizeof(WNDCLASSEX) = 48, 80
-
-      ; Register the window class.
-      if !DllCall("GetClassInfoEx", "ptr", 0, "str", cls, "ptr", wc) {
-
-         ; Create window data.
-         pWndProc := CallbackCreate(WindowProc)
-         hCursor := DllCall("LoadCursor", "ptr", 0, "ptr", 32512, "ptr") ; IDC_ARROW
-         hBrush := DllCall("GetStockObject", "int", 5, "ptr") ; Hollow_brush
-
-         ; struct tagWNDCLASSEXA - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexa
-         ; struct tagWNDCLASSEXW - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexw
-         _ := (A_PtrSize = 4)
-            NumPut(  "uint",     wc.size, wc,         0) ; cbSize
-            NumPut(  "uint",           0, wc,         4) ; style
-            NumPut(   "ptr",    pWndProc, wc,         8) ; lpfnWndProc
-            NumPut(   "int",           0, wc, _ ? 12:16) ; cbClsExtra
-            NumPut(   "int",           0, wc, _ ? 16:20) ; cbWndExtra
-            NumPut(   "ptr",           0, wc, _ ? 20:24) ; hInstance
-            NumPut(   "ptr",           0, wc, _ ? 24:32) ; hIcon
-            NumPut(   "ptr",     hCursor, wc, _ ? 28:40) ; hCursor
-            NumPut(   "ptr",      hBrush, wc, _ ? 32:48) ; hbrBackground
-            NumPut(   "ptr",           0, wc, _ ? 36:56) ; lpszMenuName
-            NumPut(   "ptr", StrPtr(cls), wc, _ ? 40:64) ; lpszClassName
-            NumPut(   "ptr",           0, wc, _ ? 44:72) ; hIconSm
-
-         ; Registers a window class for subsequent use in calls to the CreateWindow or CreateWindowEx function.
-         DllCall("RegisterClassEx", "ptr", wc, "ushort")
-      }
 
       ; Get Bitmap width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
@@ -1674,86 +1715,76 @@ class ImagePut {
          DllCall("gdiplus\GdipDeleteGraphics", "ptr", pGraphics)
       }
 
-         WS_VISIBLE                := 0x10000000
-         WS_SYSMENU                :=    0x80000
-         WS_CHILD                  := 0x40000000
-         WS_EX_TOPMOST             :=        0x8
-         WS_EX_LAYERED             :=    0x80000
-         WS_TILEDWINDOW            :=   0xCF0000
-         WS_CAPTION                :=   0xC00000
-         WS_EX_STATICEDGE          :=    0x20000
-         WS_EX_WINDOWEDGE          :=      0x100
-         WS_SIZEBOX                :=    0x40000
-         WS_CLIPCHILDREN           :=  0x2000000
-         WS_POPUP                  := 0x80000000
-         WS_BORDER                 :=   0x800000
-         WS_EX_TOOLWINDOW          :=       0x80
-         WS_CLIPSIBLINGS           :=  0x4000000
-         WS_EX_TRANSPARENT         :=       0x20
-         WS_EX_DLGMODALFRAME       :=        0x1
-
-      style := WS_CAPTION | WS_SYSMENU | WS_CLIPCHILDREN | WS_POPUP | WS_CLIPSIBLINGS ;| WS_SIZEBOX WS_VISIBLE |
-      styleEx := WS_EX_TOPMOST | WS_EX_WINDOWEDGE | WS_EX_DLGMODALFRAME ;| WS_EX_STATICEDGE
-
-      rect := Buffer(16)
-         NumPut("int",  x, rect,  0)
-         NumPut("int",  y, rect,  4)
-         NumPut("int", x2, rect,  8)
-         NumPut("int", y2, rect, 12)
-
-      DllCall("AdjustWindowRectEx", "ptr", rect, "uint", style, "uint", 0, "uint", styleEx)
-
-      hwnd0 := DllCall("CreateWindowEx"
-         ,   "uint", styleEx
-         ,    "str", "ImagePut"            ; lpClassName
-         ,    "str", title                 ; lpWindowName
-         ,   "uint", style
-         ,    "int", NumGet(rect,  0, "int")
-         ,    "int", NumGet(rect,  4, "int")
-         ,    "int", NumGet(rect,  8, "int") - NumGet(rect,  0, "int")
-         ,    "int", NumGet(rect, 12, "int") - NumGet(rect,  4, "int")
-         ,    "ptr", A_ScriptHwnd          ; hWndParent
-         ,    "ptr", 0                     ; hMenu
-         ,    "ptr", 0                     ; hInstance
-         ,    "ptr", 0                     ; lpParam
-         ,    "ptr")
-
-      WinSetTransColor "F0F0F0", hwnd0
-
       hwnd := DllCall("CreateWindowEx"
-         ,   "uint", WS_EX_LAYERED         ; dwExStyle
-         ,    "str", cls                   ; lpClassName
-         ,    "str", "Pikachu"             ; lpWindowName
-         ,   "uint", WS_VISIBLE | WS_CHILD ; dwStyle
-         ,    "int", 0
-         ,    "int", 0
-         ,    "int", w
-         ,    "int", h
-         ,    "ptr", hwnd0                 ; hWndParent
-         ,    "ptr", 0                     ; hMenu
-         ,    "ptr", 0                     ; hInstance
-         ,    "ptr", 0                     ; lpParam
-         ,    "ptr")
+               ,   "uint", styleEx | 0x80000        ; dwExStyle
+               ,    "str", this.WindowClass()       ; lpClassName
+               ,    "str", title                    ; lpWindowName
+               ,   "uint", style                    ; dwStyle
+               ,    "int", x
+               ,    "int", y
+               ,    "int", w
+               ,    "int", h
+               ,    "ptr", parent ? parent : 0      ; hWndParent
+               ,    "ptr", 0                        ; hMenu
+               ,    "ptr", 0                        ; hInstance
+               ,    "ptr", 0                        ; lpParam
+               ,    "ptr")
 
       ; Draw the contents of the device context onto the layered window.
       DllCall("UpdateLayeredWindow"
-               ,    "ptr", hwnd                    ; hWnd
-               ,    "ptr", 0                       ; hdcDst
-               ,"uint64*", 0 | 0 << 32             ; *pptDst
-               ,"uint64*", w | h << 32             ; *psize
-               ,    "ptr", hdc                     ; hdcSrc
-               , "int64*", 0                       ; *pptSrc
-               ,   "uint", 0                       ; crKey
-               ,  "uint*", 0xFF << 16 | 0x01 << 24 ; *pblend
-               ,   "uint", 2)                      ; dwFlags
-      DllCall("ShowWindow", "ptr", hwnd0, "int", 1)
+               ,    "ptr", hwnd                     ; hWnd
+               ,    "ptr", 0                        ; hdcDst
+               ,    "ptr", 0                        ; *pptDst
+               ,"uint64*", w | h << 32              ; *psize
+               ,    "ptr", hdc                      ; hdcSrc
+               , "int64*", 0                        ; *pptSrc
+               ,   "uint", 0                        ; crKey
+               ,  "uint*", 0xFF << 16 | 0x01 << 24  ; *pblend
+               ,   "uint", 2)                       ; dwFlags
 
       ; Cleanup the hBitmap and device contexts.
       DllCall("SelectObject", "ptr", hdc, "ptr", obm)
       DllCall("DeleteObject", "ptr", hbm)
       DllCall("DeleteDC",     "ptr", hdc)
 
-      return hwnd0
+      return hwnd
+   }
+
+   static WindowClass() {
+      ; The class name is ImagePut.
+      cls := this.prototype.__class
+      wc := Buffer(A_PtrSize = 4 ? 48:80)             ; sizeof(WNDCLASSEX) = 48, 80
+
+      ; Check if the window class is already registered.
+      if DllCall("GetClassInfoEx", "ptr", 0, "str", cls, "ptr", wc)
+         return cls
+
+      ; Create window data.
+      pWndProc := CallbackCreate(WindowProc)
+      hCursor := DllCall("LoadCursor", "ptr", 0, "ptr", 32512, "ptr") ; IDC_ARROW
+      hBrush := DllCall("GetStockObject", "int", 5, "ptr") ; Hollow_brush
+
+      ; struct tagWNDCLASSEXA - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexa
+      ; struct tagWNDCLASSEXW - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexw
+      _ := (A_PtrSize = 4)
+         NumPut(  "uint",     wc.size, wc,         0) ; cbSize
+         NumPut(  "uint",           0, wc,         4) ; style
+         NumPut(   "ptr",    pWndProc, wc,         8) ; lpfnWndProc
+         NumPut(   "int",           0, wc, _ ? 12:16) ; cbClsExtra
+         NumPut(   "int",           0, wc, _ ? 16:20) ; cbWndExtra
+         NumPut(   "ptr",           0, wc, _ ? 20:24) ; hInstance
+         NumPut(   "ptr",           0, wc, _ ? 24:32) ; hIcon
+         NumPut(   "ptr",     hCursor, wc, _ ? 28:40) ; hCursor
+         NumPut(   "ptr",      hBrush, wc, _ ? 32:48) ; hbrBackground
+         NumPut(   "ptr",           0, wc, _ ? 36:56) ; lpszMenuName
+         NumPut(   "ptr", StrPtr(cls), wc, _ ? 40:64) ; lpszClassName
+         NumPut(   "ptr",           0, wc, _ ? 44:72) ; hIconSm
+
+      ; Registers a window class for subsequent use in calls to the CreateWindow or CreateWindowEx function.
+      DllCall("RegisterClassEx", "ptr", wc, "ushort")
+
+      ; Return the class name as a string.
+      return cls
 
       ; Define window behavior.
       WindowProc(hwnd, uMsg, wParam, lParam) {
