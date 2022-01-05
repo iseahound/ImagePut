@@ -99,15 +99,20 @@ ImagePutWallpaper(image) {
 }
 
 ; Puts the image in a window and returns a handle to a window.
-;   title      -  Window Caption Title    |  string   ->   MyTitle
-ImagePutWindow(image, title := "") {
-   return ImagePut("window", image, title)
+;   title      -  Window Title            |  string   ->   MyTitle
+;   pos        -  Window Coordinates      |  array    ->   [x,y,w,h] or [0,0]
+ImagePutWindow(image, title := "", pos := "") {
+   return ImagePut("window", image, title, pos)
 }
 
 
-
-ImageShow() {
-   return
+;   title      -  Window Title            |  string   ->   MyTitle
+;   pos        -  Window Coordinates      |  array    ->   [x,y,w,h] or [0,0]
+;   style      -  Window Style            |  uint     ->   WS_VISIBLE
+;   styleEx    -  Window Extended Style   |  uint     ->   WS_EX_LAYERED
+;   parent     -  Window Parent           |  ptr      ->   hwnd
+ImageShow(image, title := "", pos := "", style := 0x10000000, styleEx := 0x80088, parent := 0) {
+   return ImagePut("show", image, title, pos, style, styleEx, parent)
 }
 
 ImagePut(cotype, image, p*) {
@@ -513,7 +518,7 @@ class ImagePut {
       throw Exception("Conversion from " type " to bitmap is not supported.")
    }
 
-   BitmapToCoimage(cotype, pBitmap, p1 := "", p2 := "", p*) {
+   BitmapToCoimage(cotype, pBitmap, p1:="", p2:="", p3:="", p4:="", p5:="", p*) {
       ; BitmapToCoimage("clipboard", pBitmap)
       if (cotype = "clipboard")
          return this.put_clipboard(pBitmap)
@@ -526,9 +531,13 @@ class ImagePut {
       if (cotype = "screenshot")
          return this.put_screenshot(pBitmap, p1, p2)
 
-      ; BitmapToCoimage("window", pBitmap, title)
+      ; BitmapToCoimage("show", pBitmap, title, pos, style, styleEx, parent)
+      if (cotype = "show")
+         return this.show(pBitmap, p1, p2, p3, p4, p5)
+
+      ; BitmapToCoimage("window", pBitmap, title, pos)
       if (cotype = "window")
-         return this.put_window(pBitmap, p1)
+         return this.put_window(pBitmap, p1, p2)
 
       ; BitmapToCoimage("desktop", pBitmap)
       if (cotype = "desktop")

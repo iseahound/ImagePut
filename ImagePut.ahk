@@ -99,15 +99,20 @@ ImagePutWallpaper(image) {
 }
 
 ; Puts the image in a window and returns a handle to a window.
-;   title      -  Window Caption Title    |  string   ->   MyTitle
-ImagePutWindow(image, title := "") {
-   return ImagePut("window", image, title)
+;   title      -  Window Title            |  string   ->   MyTitle
+;   pos        -  Window Coordinates      |  array    ->   [x,y,w,h] or [0,0]
+ImagePutWindow(image, title := "", pos := "") {
+   return ImagePut("window", image, title, pos)
 }
 
 
-
-ImageShow() {
-   return
+;   title      -  Window Title            |  string   ->   MyTitle
+;   pos        -  Window Coordinates      |  array    ->   [x,y,w,h] or [0,0]
+;   style      -  Window Style            |  uint     ->   WS_VISIBLE
+;   styleEx    -  Window Extended Style   |  uint     ->   WS_EX_LAYERED
+;   parent     -  Window Parent           |  ptr      ->   hwnd
+ImageShow(image, title := "", pos := "", style := 0x10000000, styleEx := 0x80088, parent := 0) {
+   return ImagePut("show", image, title, pos, style, styleEx, parent)
 }
 /*
 ImagePut(cotype, image, p*) {
@@ -513,7 +518,7 @@ class ImagePut {
       throw Error("Conversion from " type " to bitmap is not supported.")
    }
 
-   static BitmapToCoimage(cotype, pBitmap, p1 := "", p2 := "", p*) {
+   static BitmapToCoimage(cotype, pBitmap, p1:="", p2:="", p3:="", p4:="", p5:="", p*) {
       ; BitmapToCoimage("clipboard", pBitmap)
       if (cotype = "clipboard")
          return this.put_clipboard(pBitmap)
@@ -526,9 +531,13 @@ class ImagePut {
       if (cotype = "screenshot")
          return this.put_screenshot(pBitmap, p1, p2)
 
-      ; BitmapToCoimage("window", pBitmap, title)
+      ; BitmapToCoimage("show", pBitmap, title, pos, style, styleEx, parent)
+      if (cotype = "show")
+         return this.show(pBitmap, p1, p2, p3, p4, p5)
+
+      ; BitmapToCoimage("window", pBitmap, title, pos)
       if (cotype = "window")
-         return this.put_window(pBitmap, p1)
+         return this.put_window(pBitmap, p1, p2)
 
       ; BitmapToCoimage("desktop", pBitmap)
       if (cotype = "desktop")
@@ -1579,11 +1588,11 @@ class ImagePut {
          : (height > A_ScreenHeight) && (width / height <= A_ScreenWidth / A_ScreenHeight) ? A_ScreenHeight / height
          : 1
 
-      w  := IsObject(pos) && pos.has(3) ? pos[3] : s * width
-      h  := IsObject(pos) && pos.has(4) ? pos[4] : s * height
+      w  := IsObject(pos) && pos.Has(3) ? pos[3] : s * width
+      h  := IsObject(pos) && pos.Has(4) ? pos[4] : s * height
 
-      x  := IsObject(pos) && pos.has(1) ? pos[1] : 0.5*(A_ScreenWidth - w)
-      y  := IsObject(pos) && pos.has(2) ? pos[2] : 0.5*(A_ScreenHeight - h)
+      x  := IsObject(pos) && pos.Has(1) ? pos[1] : 0.5*(A_ScreenWidth - w)
+      y  := IsObject(pos) && pos.Has(2) ? pos[2] : 0.5*(A_ScreenHeight - h)
 
       ; Resolve dependent coordinates first, coordinates second, and distances last.
       x2 := Round(x + w)
@@ -1641,11 +1650,11 @@ class ImagePut {
          : (height > A_ScreenHeight) && (width / height <= A_ScreenWidth / A_ScreenHeight) ? A_ScreenHeight / height
          : 1
 
-      w  := IsObject(pos) && pos.has(3) ? pos[3] : s * width
-      h  := IsObject(pos) && pos.has(4) ? pos[4] : s * height
+      w  := IsObject(pos) && pos.Has(3) ? pos[3] : s * width
+      h  := IsObject(pos) && pos.Has(4) ? pos[4] : s * height
 
-      x  := IsObject(pos) && pos.has(1) ? pos[1] : 0.5*(A_ScreenWidth - w)
-      y  := IsObject(pos) && pos.has(2) ? pos[2] : 0.5*(A_ScreenHeight - h)
+      x  := IsObject(pos) && pos.Has(1) ? pos[1] : 0.5*(A_ScreenWidth - w)
+      y  := IsObject(pos) && pos.Has(2) ? pos[2] : 0.5*(A_ScreenHeight - h)
 
       ; Resolve dependent coordinates first, coordinates second, and distances last.
       x2 := Round(x + w)
