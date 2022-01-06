@@ -1517,11 +1517,18 @@ class ImagePut {
    }
 
    static put_buffer(pBitmap) {
-      buffer := {pBitmap: pBitmap}
-         .DefineMethod("__New" , (self) => (this.gdiplusStartup(), self)) ; Increment GDI+ reference count
-         .DefineMethod("__Delete", (self) => (this.gdiplusShutdown("smart_pointer", self.pBitmap)))
-         .__New()  ; On deletion the buffer object will dispose of the bitmap. And it will decrement this.gdiplus.
-      return buffer
+      return ImagePut.BitmapBuffer(pBitmap)
+   }
+
+   class BitmapBuffer {
+      __New(pBitmap) {
+         this.pBitmap := pBitmap
+         ImagePut.gdiplusStartup()
+      }
+
+      __Delete() {
+         ImagePut.gdiplusShutdown("smart_pointer", this.pBitmap)
+      }
    }
 
    static put_screenshot(pBitmap, screenshot := "", alpha := "") {
