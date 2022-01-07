@@ -101,8 +101,11 @@ ImagePutWallpaper(image) {
 ; Puts the image in a window and returns a handle to a window.
 ;   title      -  Window Title            |  string   ->   MyTitle
 ;   pos        -  Window Coordinates      |  array    ->   [x,y,w,h] or [0,0]
-ImagePutWindow(image, title := "", pos := "") {
-   return ImagePut("window", image, title, pos)
+;   style      -  Window Style            |  uint     ->   WS_VISIBLE
+;   styleEx    -  Window Extended Style   |  uint     ->   WS_EX_LAYERED
+;   parent     -  Window Parent           |  ptr      ->   hwnd
+ImagePutWindow(image, title := "", pos := "", style := 0x82C80000, styleEx := 0x9, parent := "") {
+   return ImagePut("window", image, title, pos, style, styleEx, parent)
 }
 
 
@@ -111,7 +114,7 @@ ImagePutWindow(image, title := "", pos := "") {
 ;   style      -  Window Style            |  uint     ->   WS_VISIBLE
 ;   styleEx    -  Window Extended Style   |  uint     ->   WS_EX_LAYERED
 ;   parent     -  Window Parent           |  ptr      ->   hwnd
-ImageShow(image, title := "", pos := "", style := 0x10000000, styleEx := 0x80088, parent := 0) {
+ImageShow(image, title := "", pos := "", style := 0x10000000, styleEx := 0x80088, parent := "") {
    return ImagePut("show", image, title, pos, style, styleEx, parent)
 }
 /*
@@ -535,9 +538,9 @@ class ImagePut {
       if (cotype = "show")
          return this.show(pBitmap, p1, p2, p3, p4, p5)
 
-      ; BitmapToCoimage("window", pBitmap, title, pos)
+      ; BitmapToCoimage("window", pBitmap, title, pos, style, styleEx, parent)
       if (cotype = "window")
-         return this.put_window(pBitmap, p1, p2)
+         return this.put_window(pBitmap, p1, p2, p3, p4, p5)
 
       ; BitmapToCoimage("desktop", pBitmap)
       if (cotype = "desktop")
@@ -1569,21 +1572,27 @@ class ImagePut {
       return [x,y,w,h]
    }
 
-   static put_window(pBitmap, title := "", pos := "") {
-      WS_CAPTION                :=   0xC00000
-      WS_CLIPCHILDREN           :=  0x2000000
-      WS_EX_DLGMODALFRAME       :=        0x1
-      WS_EX_TOPMOST             :=        0x8
-      WS_EX_WINDOWEDGE          :=      0x100
+   static put_window(pBitmap, title := "", pos := "", style := 0x82C80000, styleEx := 0x9, parent := "") {
+      ; style := WS_POPUP | WS_CLIPCHILDREN | WS_CAPTION | WS_SYSMENU
+      ; styleEx := WS_EX_TOPMOST | WS_EX_DLGMODALFRAME
+
+      ; WS_POPUP            - Allows proper display of small windows.
+      ; WS_CLIPCHILDREN     - Prevents redraw of dead pixels behind the child window.
+      ; WS_CAPTION          - Titlebar.
+      ; WS_SYSMENU          - Close button. Also sets the Alt+Space menu.
+      ; WS_EX_TOPMOST       - Always on top.
+      ; WS_EX_DLGMODALFRAME - Removes the small icon in conjunction with A_ScriptHwnd as parent.
+
       WS_POPUP                  := 0x80000000
+      WS_CLIPCHILDREN           :=  0x2000000
+      WS_CAPTION                :=   0xC00000
       WS_SYSMENU                :=    0x80000
+      WS_EX_TOPMOST             :=        0x8
+      WS_EX_DLGMODALFRAME       :=        0x1
       WS_CHILD                  := 0x40000000
       WS_EX_LAYERED             :=    0x80000
       WS_VISIBLE                := 0x10000000
       WS_EX_TOOLWINDOW          :=       0x80
-
-      style := WS_CAPTION | WS_SYSMENU | WS_CLIPCHILDREN | WS_POPUP
-      styleEx := WS_EX_TOPMOST | WS_EX_WINDOWEDGE | WS_EX_DLGMODALFRAME
 
       ; Get Bitmap width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
@@ -1619,22 +1628,23 @@ class ImagePut {
 
       hwnd := DllCall("CreateWindowEx"
                ,   "uint", styleEx
-               ,    "str", this.WindowClass()    ; lpClassName
-               ,    "str", title                 ; lpWindowName
+               ,    "str", this.WindowClass()       ; lpClassName
+               ,    "str", title                    ; lpWindowName
                ,   "uint", style
                ,    "int", NumGet(rect,  0, "int")
                ,    "int", NumGet(rect,  4, "int")
                ,    "int", NumGet(rect,  8, "int") - NumGet(rect,  0, "int")
                ,    "int", NumGet(rect, 12, "int") - NumGet(rect,  4, "int")
-               ,    "ptr", A_ScriptHwnd          ; hWndParent
-               ,    "ptr", 0                     ; hMenu
-               ,    "ptr", 0                     ; hInstance
-               ,    "ptr", 0                     ; lpParam
+               ,    "ptr", (parent != "") ? parent : A_ScriptHwnd
+               ,    "ptr", 0                        ; hMenu
+               ,    "ptr", 0                        ; hInstance
+               ,    "ptr", 0                        ; lpParam
                ,    "ptr")
 
       ; Tests have shown that changing the system default colors has no effect on F0F0F0.
       WinSetTransColor "F0F0F0", hwnd
 
+      ; A layered child window is only available on Windows 8+.
       this.show(pBitmap, title, [0, 0, w, h], WS_CHILD | WS_VISIBLE, WS_EX_LAYERED, hwnd)
 
       DllCall("ShowWindow", "ptr", hwnd, "int", 1)
@@ -1642,10 +1652,15 @@ class ImagePut {
       return hwnd
    }
 
-   static show(pBitmap, title := "", pos := "", style := 0x10000000, styleEx := 0x80088, parent := 0) {
+   static show(pBitmap, title := "", pos := "", style := 0x10000000, styleEx := 0x80088, parent := "") {
+      ; WS_VISIBLE       - Shows the window.
+      ; WS_EX_LAYERED    - Must be set for UpdateLayeredWindow.
+      ; WS_EX_TOOLWINDOW - Hides from Alt+Tab. Removes small icon.
+      ; WS_EX_TOPMOST    - Always on top.
 
       ; Prevent the script from exiting early.
       Persistent(true)
+      
 
       ; Get Bitmap width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
@@ -1740,7 +1755,7 @@ class ImagePut {
                ,    "int", y
                ,    "int", w
                ,    "int", h
-               ,    "ptr", parent ? parent : 0      ; hWndParent
+               ,    "ptr", (parent != "") ? parent : A_ScriptHwnd
                ,    "ptr", 0                        ; hMenu
                ,    "ptr", 0                        ; hInstance
                ,    "ptr", 0                        ; lpParam
