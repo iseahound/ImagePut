@@ -829,20 +829,12 @@ class ImagePut {
                Sleep (2**(A_Index-1) * 30)
             else throw Exception("Clipboard could not be opened.")
 
-      for i, format in ["bmp", 6, "jpg", "gif"] {
-         if !(format ~= "^\d+$")
-            format := DllCall("RegisterClipboardFormat", "str", format, "uint")
+      png := DllCall("RegisterClipboardFormat", "str", "png", "uint")
+      if !DllCall("IsClipboardFormatAvailable", "uint", png)
+         throw Exception("Clipboard does not have PNG stream data.")
 
-         if !DllCall("IsClipboardFormatAvailable", "uint", format)
-            continue
-            ;throw Exception("Clipboard does not have stream data.")
-
-         if !(hData := DllCall("GetClipboardData", "uint", format, "ptr"))
-            throw Exception("Shared clipboard data has been deleted.")
-      }
-
-      if !hData
-         Msgbox :(
+      if !(hData := DllCall("GetClipboardData", "uint", png, "ptr"))
+         throw Exception("Shared clipboard data has been deleted.")
 
       ; Allow the stream to be freed while leaving the hData intact.
       ; Please read: https://devblogs.microsoft.com/oldnewthing/20210930-00/?p=105745
@@ -1601,7 +1593,6 @@ class ImagePut {
       WS_EX_LAYERED             :=    0x80000
       WS_VISIBLE                := 0x10000000
       WS_EX_TOOLWINDOW          :=       0x80
-
 
       ; Get Bitmap width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
