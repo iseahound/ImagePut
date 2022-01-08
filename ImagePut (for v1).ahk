@@ -1721,7 +1721,7 @@ class ImagePut {
       ; Case 2: Image is scaled.
       else {
          ; Create a graphics context from the device context.
-         DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc , "ptr*", &pGraphics:=0)
+         DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc , "ptr*", pGraphics:=0)
 
          ; Set settings in graphics context.
          DllCall("gdiplus\GdipSetPixelOffsetMode",    "ptr", pGraphics, "int", 2) ; Half pixel offset.
