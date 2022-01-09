@@ -1404,7 +1404,7 @@ class ImagePut {
    }
 
    static get_RandomAccessStream(image) {
-      ; Note that the returned stream shares a reference count with the original RandomAccessStream.
+      ; Note that the returned stream shares a reference count with the original RandomAccessStream's internal stream.
       DllCall("ole32\CLSIDFromString", "wstr", "{0000000C-0000-0000-C000-000000000046}", "ptr", CLSID := Buffer(16), "HRESULT")
       DllCall("ShCore\CreateStreamOverRandomAccessStream", "ptr", image, "ptr", CLSID, "ptr*", &pStream:=0, "HRESULT")
       return pStream
