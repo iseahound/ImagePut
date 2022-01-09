@@ -398,7 +398,7 @@ class ImagePut {
             return "file"
 
          ; A "hex" string is binary image data encoded into text using hexadecimal.
-         if (StrLen(image) >= 48) && (image ~= "(?i)^\s*(0x)?[0-9a-f]+\s*$")
+         if (StrLen(image) >= 48) && (image ~= "^\s*(?:[A-Fa-f0-9]{2})*+\s*$")
             return "hex"
 
          ; A "base64" string is binary image data encoded into text using standard 64 characters.
@@ -1404,7 +1404,7 @@ class ImagePut {
    }
 
    get_RandomAccessStream(image) {
-      ; Note that the returned stream shares a reference count with the original RandomAccessStream.
+      ; Note that the returned stream shares a reference count with the original RandomAccessStream's internal stream.
       DllCall("ole32\CLSIDFromString", "wstr", "{0000000C-0000-0000-C000-000000000046}", "ptr", &CLSID := VarSetCapacity(CLSID, 16), "uint")
       DllCall("ShCore\CreateStreamOverRandomAccessStream", "ptr", image, "ptr", &CLSID, "ptr*", pStream:=0, "uint")
       return pStream
