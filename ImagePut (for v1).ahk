@@ -398,11 +398,11 @@ class ImagePut {
             return "file"
 
          ; A "hex" string is binary image data encoded into text using hexadecimal.
-         if (StrLen(image) >= 116) && (image ~= "(?i)^\s*(0x)?[0-9a-f]+\s*$")
+         if (StrLen(image) >= 48) && (image ~= "(?i)^\s*(0x)?[0-9a-f]+\s*$")
             return "hex"
 
          ; A "base64" string is binary image data encoded into text using standard 64 characters.
-         if (StrLen(image) >= 80) && (image ~= "^\s*(?:data:image\/[a-z]+;base64,)?"
+         if (StrLen(image) >= 32) && (image ~= "^\s*(?:data:image\/[a-z]+;base64,)?"
          . "(?:[A-Za-z0-9+\/]{4})*+(?:[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{2}==)?\s*$")
             return "base64"
 
