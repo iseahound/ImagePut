@@ -689,6 +689,10 @@ class ImagePut {
       safe_w := (safe_w = 0 || safe_x + safe_w > width) ? width - safe_x : safe_w   ; Default w is max width.
       safe_h := (safe_h = 0 || safe_y + safe_h > height) ? height - safe_y : safe_h ; Default h is max height.
 
+      ; Avoid cropping if no changes are detected.
+      if (safe_x = 0 && safe_y = 0 && safe_w = width && safe_h = height)
+         return pBitmap
+
       ; Clone
       DllCall("gdiplus\GdipCloneBitmapAreaI"
                ,    "int", safe_x
