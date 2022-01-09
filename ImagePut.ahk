@@ -661,32 +661,33 @@ class ImagePut {
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
       DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", pBitmap, "int*", &format:=0)
 
+      ; Abstraction Shift.
+      ; Previously, real values depended on abstract values.
+      ; Now, real values have been resolved, and abstract values depend on reals.
+
       ; Are the numbers percentages?
-      crop[3] := (crop[3] ~= "%$") ? SubStr(crop[3], 1, -1) * 0.01 *  width : crop[3]
-      crop[4] := (crop[4] ~= "%$") ? SubStr(crop[4], 1, -1) * 0.01 * height : crop[4]
       crop[1] := (crop[1] ~= "%$") ? SubStr(crop[1], 1, -1) * 0.01 *  width : crop[1]
       crop[2] := (crop[2] ~= "%$") ? SubStr(crop[2], 1, -1) * 0.01 * height : crop[2]
+      crop[3] := (crop[3] ~= "%$") ? SubStr(crop[3], 1, -1) * 0.01 *  width : crop[3]
+      crop[4] := (crop[4] ~= "%$") ? SubStr(crop[4], 1, -1) * 0.01 * height : crop[4]
 
       ; If numbers are negative, subtract the values from the edge.
-      crop[3] := (crop[3] < 0) ?  width - Abs(crop[3]) - Abs(crop[1]) : crop[3]
-      crop[4] := (crop[4] < 0) ? height - Abs(crop[4]) - Abs(crop[2]) : crop[4]
       crop[1] := Abs(crop[1])
       crop[2] := Abs(crop[2])
+      crop[3] := (crop[3] < 0) ?  width - Abs(crop[3]) - Abs(crop[1]) : crop[3]
+      crop[4] := (crop[4] < 0) ? height - Abs(crop[4]) - Abs(crop[2]) : crop[4]
 
-      ; Round to the nearest integer.
-      crop[3] := Round(crop[1] + crop[3]) - Round(crop[1]) ; A reminder that width and height
-      crop[4] := Round(crop[2] + crop[4]) - Round(crop[2]) ; are distances, not coordinates.
-      crop[1] := Round(crop[1]) ; so the abstract concept of a distance must be resolved
-      crop[2] := Round(crop[2]) ; into coordinates and then rounded and added up again.
+      ; Round to the nearest integer. Reminder: width and height are distances, not coordinates.
+      safe_x := Round(crop[1])
+      safe_y := Round(crop[2])
+      safe_w := Round(crop[1] + crop[3]) - Round(crop[1])
+      safe_h := Round(crop[2] + crop[4]) - Round(crop[2])
 
-      ; Variance Shift. Now place x,y before w,h because we are building abstracts from reals now.
-      ; Before we were resolving abstracts into real coordinates, now it's the opposite.
-
-      ; Ensure that coordinates can never exceed the expected Bitmap area.
-      safe_x := (crop[1] > width) ? 0 : crop[1]                          ; Zero x if bigger.
-      safe_y := (crop[2] > height) ? 0 : crop[2]                         ; Zero y if bigger.
-      safe_w := (crop[1] + crop[3] > width) ? width - safe_x : crop[3]   ; Max w if bigger.
-      safe_h := (crop[2] + crop[4] > height) ? height - safe_y : crop[4] ; Max h if bigger.
+      ; Minimum size is 1 x 1. Ensure that coordinates can never exceed the expected Bitmap area.
+      safe_x := (safe_x >= width) ? 0 : safe_x                                      ; Default x is zero.
+      safe_y := (safe_y >= height) ? 0 : safe_y                                     ; Default y is zero.
+      safe_w := (safe_w = 0 || safe_x + safe_w > width) ? width - safe_x : safe_w   ; Default w is max width.
+      safe_h := (safe_h = 0 || safe_y + safe_h > height) ? height - safe_y : safe_h ; Default h is max height.
 
       ; Clone
       DllCall("gdiplus\GdipCloneBitmapAreaI"
@@ -1660,7 +1661,7 @@ class ImagePut {
 
       ; Prevent the script from exiting early.
       Persistent(true)
-      
+
 
       ; Get Bitmap width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
