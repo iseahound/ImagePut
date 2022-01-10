@@ -1053,7 +1053,7 @@ class ImagePut {
       DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", signature := Buffer(4), "uint", 4, "HRESULT")
       StrPut("%PDF", magic := Buffer(4), "CP0")
       if 4 > DllCall("ntdll\RtlCompareMemory", "ptr", signature, "ptr", magic, "uptr", 4, "uptr")
-         throw Error("Could not be loaded from a valid file path or URL.")
+         throw Error("Invalid PDF.")
 
       ; Create a RandomAccessStream with BSOS_PREFERDESTINATIONSTREAM.
       DllCall("ole32\CLSIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", CLSID := Buffer(16), "HRESULT")
