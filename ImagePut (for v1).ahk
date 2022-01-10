@@ -2488,7 +2488,7 @@ class ImageEqual extends ImagePut {
                      ,   "ptr*", pBitmap%A_Index%:=0)
             throw Exception("Cloning Bitmap" A_Index " failed.")
 
-      ; struct RECT - https://docs.microsoft.com/en-us/windows/win32/api/windef/ns-windef-rect
+      ; struct RECT - https://referencesource.microsoft.com/#System.Drawing/commonui/System/Drawing/Rectangle.cs,32
       VarSetCapacity(Rect, 16, 0)                 ; sizeof(Rect) = 16
          NumPut(  width1, Rect,  8,   "uint")     ; Width
          NumPut( height1, Rect, 12,   "uint")     ; Height
