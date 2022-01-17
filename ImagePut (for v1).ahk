@@ -2462,11 +2462,11 @@ class ImageEqual extends ImagePut {
       DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", SourceBitmap1, "int*", format1:=0)
       DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", SourceBitmap2, "int*", format2:=0)
 
-      ; Dimensions must be non-zero.
+      ; Determine if get width and height failed (as dimensions can never be zero).
       if !(width1 && width2 && height1 && height2)
-         throw Exception("The bitmap dimensions cannot be zero.")
+         throw Exception("Get bitmap width and height failed.")
 
-      ; Match bitmap dimensions.
+      ; Dimensions must be equal.
       if (width1 != width2 || height1 != height2)
          return false
 
