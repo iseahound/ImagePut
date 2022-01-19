@@ -2237,7 +2237,7 @@ class ImagePut {
       if (extension == "" && filename ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$")
          extension := filename, filename := ""
 
-      ; Append an invalid extension to the filename.
+      ; An invalid extension is actually part of the filename.
       if !(extension ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$") {
          if (extension != "")
             filename .= "." extension
