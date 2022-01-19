@@ -1805,7 +1805,7 @@ class ImagePut {
       ; struct tagWNDCLASSEXW - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexw
       _ := (A_PtrSize = 4)
          NumPut(  "uint",     wc.size, wc,         0) ; cbSize
-         NumPut(  "uint",           0, wc,         4) ; style
+         NumPut(  "uint",         0x8, wc,         4) ; style
          NumPut(   "ptr",    pWndProc, wc,         8) ; lpfnWndProc
          NumPut(   "int",           0, wc, _ ? 12:16) ; cbClsExtra
          NumPut(   "int",           0, wc, _ ? 16:20) ; cbWndExtra
