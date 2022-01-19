@@ -115,7 +115,7 @@ ImagePutWindow(image, title := "", pos := "", style := 0x82C80000, styleEx := 0x
 ;   style      -  Window Style            |  uint     ->   WS_VISIBLE
 ;   styleEx    -  Window Extended Style   |  uint     ->   WS_EX_LAYERED
 ;   parent     -  Window Parent           |  ptr      ->   hwnd
-ImageShow(image, title := "", pos := "", style := 0x10000000, styleEx := 0x80088, parent := "") {
+ImageShow(image, title := "", pos := "", style := 0x90000000, styleEx := 0x80088, parent := "") {
    return ImagePut("show", image, title, pos, style, styleEx, parent)
 }
 
@@ -1658,11 +1658,15 @@ class ImagePut {
       return hwnd
    }
 
-   show(pBitmap, title := "", pos := "", style := 0x10000000, styleEx := 0x80088, parent := "") {
-      ; WS_VISIBLE       - Shows the window.
-      ; WS_EX_LAYERED    - Must be set for UpdateLayeredWindow.
-      ; WS_EX_TOOLWINDOW - Hides from Alt+Tab. Removes small icon.
-      ; WS_EX_TOPMOST    - Always on top.
+   show(pBitmap, title := "", pos := "", style := 0x90000000, styleEx := 0x80088, parent := "") {
+      ; Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
+      WS_POPUP                  := 0x80000000   ; Allow small windows.
+      WS_VISIBLE                := 0x10000000   ; Show on creation.
+
+      ; Extended Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/extended-window-styles
+      WS_EX_TOPMOST             :=        0x8   ; Always on top.
+      WS_EX_TOOLWINDOW          :=       0x80   ; Hides from Alt+Tab menu. Removes small icon.
+      WS_EX_LAYERED             :=    0x80000   ; For UpdateLayeredWindow.
 
       ; Prevent the script from exiting early.
       void := ObjBindMethod({}, {})
@@ -1753,7 +1757,7 @@ class ImagePut {
       }
 
       hwnd := DllCall("CreateWindowEx"
-               ,   "uint", styleEx | 0x80000        ; dwExStyle
+               ,   "uint", styleEx | WS_EX_LAYERED  ; dwExStyle
                ,    "str", this.WindowClass()       ; lpClassName
                ,    "str", title                    ; lpWindowName
                ,   "uint", style                    ; dwStyle
