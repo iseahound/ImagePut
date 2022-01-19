@@ -1788,7 +1788,7 @@ class ImagePut {
    }
 
    static WindowClass() {
-      ; The class name is ImagePut.
+      ; The window class shares the name of this class.
       cls := this.prototype.__class
       wc := Buffer(A_PtrSize = 4 ? 48:80)             ; sizeof(WNDCLASSEX) = 48, 80
 
