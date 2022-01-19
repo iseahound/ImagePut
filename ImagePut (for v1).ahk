@@ -1579,26 +1579,21 @@ class ImagePut {
    }
 
    put_window(pBitmap, title := "", pos := "", style := 0x82C80000, styleEx := 0x9, parent := "") {
-      ; style := WS_POPUP | WS_CLIPCHILDREN | WS_CAPTION | WS_SYSMENU
-      ; styleEx := WS_EX_TOPMOST | WS_EX_DLGMODALFRAME
+      ; Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
+      ; Extended Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/extended-window-styles
 
-      ; WS_POPUP            - Allows proper display of small windows.
-      ; WS_CLIPCHILDREN     - Prevents redraw of dead pixels behind the child window.
-      ; WS_CAPTION          - Titlebar.
-      ; WS_SYSMENU          - Close button. Also sets the Alt+Space menu.
-      ; WS_EX_TOPMOST       - Always on top.
-      ; WS_EX_DLGMODALFRAME - Removes the small icon in conjunction with A_ScriptHwnd as parent.
+      ; Parent Window
+      WS_POPUP                  := 0x80000000   ; Allow small windows.
+      WS_CLIPCHILDREN           :=  0x2000000   ; Prevents redraw of pixels covered by child windows.
+      WS_CAPTION                :=   0xC00000   ; Titlebar.
+      WS_SYSMENU                :=    0x80000   ; Close button. Comes with Alt+Space menu.
+      WS_EX_TOPMOST             :=        0x8   ; Always on top.
+      WS_EX_DLGMODALFRAME       :=        0x1   ; Removes small icon in titlebar with A_ScriptHwnd as parent.
 
-      WS_POPUP                  := 0x80000000
-      WS_CLIPCHILDREN           :=  0x2000000
-      WS_CAPTION                :=   0xC00000
-      WS_SYSMENU                :=    0x80000
-      WS_EX_TOPMOST             :=        0x8
-      WS_EX_DLGMODALFRAME       :=        0x1
-      WS_CHILD                  := 0x40000000
-      WS_EX_LAYERED             :=    0x80000
-      WS_VISIBLE                := 0x10000000
-      WS_EX_TOOLWINDOW          :=       0x80
+      ; Child Window
+      WS_CHILD                  := 0x40000000   ; Creates a child window.
+      WS_VISIBLE                := 0x10000000   ; Show on creation.
+      WS_EX_LAYERED             :=    0x80000   ; For UpdateLayeredWindow.
 
       ; Get Bitmap width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
