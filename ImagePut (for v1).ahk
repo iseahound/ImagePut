@@ -1788,7 +1788,7 @@ class ImagePut {
    }
 
    WindowClass() {
-      ; The class name is ImagePut.
+      ; The window class shares the name of this class.
       cls := this.__class
       VarSetCapacity(wc, size := _ ? 48:80)           ; sizeof(WNDCLASSEX) = 48, 80
 
