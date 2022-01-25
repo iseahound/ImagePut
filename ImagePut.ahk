@@ -2212,6 +2212,9 @@ class ImagePut {
       ; Save default extension.
       default := extension
 
+      ; Convert forward style slashes into Windows style backslashes.
+      filepath := RegExReplace(filepath, "/", "\")
+
       ; Split the filepath.
       SplitPath Trim(filepath),, &directory, &extension, &filename
 
