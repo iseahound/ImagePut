@@ -1643,7 +1643,9 @@ class ImagePut {
                ,    "ptr")
 
       ; Tests have shown that changing the system default colors has no effect on F0F0F0.
-      WinSet TransColor, % "F0F0F0", % "ahk_id" hwnd
+      ; Must call SetWindowLong with WS_EX_LAYERED immediately before SetLayeredWindowAttributes.
+      DllCall("SetWindowLong", "ptr", hwnd, "int", -20, "int", styleEx | WS_EX_LAYERED)
+      DllCall("SetLayeredWindowAttributes", "ptr", hwnd, "uint", 0xF0F0F0, "uchar", 0, "int", 1)
 
       ; A layered child window is only available on Windows 8+.
       this.show(pBitmap, title, [0, 0, w, h], WS_CHILD | WS_VISIBLE, WS_EX_LAYERED, hwnd)
