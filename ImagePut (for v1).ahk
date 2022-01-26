@@ -1643,7 +1643,7 @@ class ImagePut {
                ,    "ptr")
 
       ; Tests have shown that changing the system default colors has no effect on F0F0F0.
-      WinSet TransColor, % "F0F0F0", % "ahk_id" hwnd0
+      WinSet TransColor, % "F0F0F0", % "ahk_id" hwnd
 
       ; A layered child window is only available on Windows 8+.
       this.show(pBitmap, title, [0, 0, w, h], WS_CHILD | WS_VISIBLE, WS_EX_LAYERED, hwnd)
