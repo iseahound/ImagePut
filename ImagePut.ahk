@@ -1789,10 +1789,11 @@ class ImagePut {
    static WindowClass() {
       ; The window class shares the name of this class.
       cls := this.prototype.__class
-      wc := Buffer(A_PtrSize = 4 ? 48:80)             ; sizeof(WNDCLASSEX) = 48, 80
+      wc := Buffer(A_PtrSize = 4 ? 48:80) ; sizeof(WNDCLASSEX) = 48, 80
 
       ; Check if the window class is already registered.
-      if DllCall("GetClassInfoEx", "ptr", 0, "str", cls, "ptr", wc)
+      hInstance := DllCall("GetModuleHandle", "ptr", 0, "ptr")
+      if DllCall("GetClassInfoEx", "ptr", hInstance, "str", cls, "ptr", wc)
          return cls
 
       ; Create window data.
