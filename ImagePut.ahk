@@ -2432,6 +2432,9 @@ class ImageDestroy extends ImagePut {
          }
 
          if (DllCall("GetObjectType", "ptr", image, "uint") == 10) { ; OBJ_MEMDC
+            obm := DllCall("CreateBitmap", "int", 0, "int", 0, "uint", 1, "uint", 1, "ptr", 0, "ptr")
+            hbm := DllCall("SelectObject", "ptr", image, "ptr", obm, "ptr")
+            DllCall("DeleteObject", "ptr", hbm)
             DllCall("DeleteDC", "ptr", image)
          }
       }
