@@ -1314,6 +1314,9 @@ class ImagePut {
       sdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")           ; Creates a memory DC compatible with the current screen.
       obm := DllCall("SelectObject", "ptr", sdc, "ptr", image, "ptr") ; Put the (hBitmap) image onto the device context.
 
+      if (obm == 0)
+         throw Exception("The bitmap is already selected onto a device context.")
+
       ; Create a device independent bitmap with negative height. All DIBs use the screen pixel format (pARGB).
       ; Use hbm to buffer the image such that top-down and bottom-up images are mapped to this top-down buffer.
       ; pBits is the pointer to (top-down) pixel values. The Scan0 will point to the pBits.
