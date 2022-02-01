@@ -3,7 +3,7 @@
 ; Author:    Edison Hua (iseahound)
 ; Github:    https://github.com/iseahound/ImagePut
 ; Date:      2022-01-01
-; Version:   1.5.1
+; Version:   1.6.0
 
 #Requires AutoHotkey v2.0-beta.3+
 
