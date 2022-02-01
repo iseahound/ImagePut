@@ -1318,13 +1318,6 @@ class ImagePut {
          return pBitmap
       }
 
-      ; Create a handle to a device context and associate the image.
-      sdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")           ; Creates a memory DC compatible with the current screen.
-      obm := DllCall("SelectObject", "ptr", sdc, "ptr", image, "ptr") ; Put the (hBitmap) image onto the device context.
-
-      if (obm == 0)
-         throw Exception("The bitmap is already selected onto a device context.")
-
       ; Create a device independent bitmap with negative height. All DIBs use the screen pixel format (pARGB).
       ; Use hbm to buffer the image such that top-down and bottom-up images are mapped to this top-down buffer.
       ; pBits is the pointer to (top-down) pixel values. The Scan0 will point to the pBits.
@@ -1351,7 +1344,7 @@ class ImagePut {
          NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
          NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
 
-      ; Use LockBits to create a writable buffer that converts pARGB to ARGB.
+      ; Use LockBits to create a copy-from buffer on pBits that converts pARGB to ARGB.
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
                ,    "ptr", &Rect
@@ -1359,20 +1352,29 @@ class ImagePut {
                ,    "int", 0xE200B      ; Format32bppPArgb
                ,    "ptr", &BitmapData) ; Contains the pointer (pBits) to the hbm.
 
-      ; Copies the image (hBitmap) to a top-down bitmap. Removes bottom-up-ness if present.
-      DllCall("gdi32\BitBlt"
-               , "ptr", hdc, "int", 0, "int", 0, "int", width, "int", height
-               , "ptr", sdc, "int", 0, "int", 0, "uint", 0x00CC0020) ; SRCCOPY
+      ; If the source image cannot be selected onto a device context BitBlt cannot be used.
+      sdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")           ; Creates a memory DC compatible with the current screen.
+      old := DllCall("SelectObject", "ptr", sdc, "ptr", image, "ptr") ; Returns 0 on failure.
 
-      ; Convert the pARGB pixels copied into the device independent bitmap (hbm) to ARGB.
+      ; Copies the image (hBitmap) to a top-down bitmap. Removes bottom-up-ness if present.
+      if (old) ; Using BitBlt is about 10% faster than GetDIBits.
+         DllCall("gdi32\BitBlt"
+                  , "ptr", hdc, "int", 0, "int", 0, "int", width, "int", height
+                  , "ptr", sdc, "int", 0, "int", 0, "uint", 0x00CC0020) ; SRCCOPY
+      else
+         DllCall("GetDIBits", "ptr", hdc, "ptr", image, "uint", 0, "uint", height, "ptr", pBits, "ptr", &bi, "uint", 0)
+
+      ; The stock bitmap (obm) can never be leaked.
+      DllCall("SelectObject", "ptr", sdc, "ptr", obm)
+      DllCall("DeleteDC",     "ptr", sdc)
+
+      ; Write the pARGB pixels from the device independent bitmap (hbm) to the ARGB pBitmap.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
 
       ; Cleanup the hBitmap and device contexts.
       DllCall("SelectObject", "ptr", hdc, "ptr", obm)
       DllCall("DeleteObject", "ptr", hbm)
       DllCall("DeleteDC",     "ptr", hdc)
-      DllCall("SelectObject", "ptr", sdc, "ptr", obm)
-      DllCall("DeleteDC",     "ptr", sdc)
 
       return pBitmap
    }
