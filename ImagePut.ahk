@@ -951,9 +951,11 @@ class ImagePut {
          throw Error("Could not locate hidden window behind desktop.")
 
       ; Get the width and height of the client window.
+      dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
       DllCall("GetClientRect", "ptr", WorkerW, "ptr", Rect := Buffer(16)) ; sizeof(RECT) = 16
          , width  := NumGet(Rect, 8, "int")
          , height := NumGet(Rect, 12, "int")
+      DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
       ; Get device context of spawned window.
       sdc := DllCall("GetDCEx", "ptr", WorkerW, "ptr", 0, "int", 0x403, "ptr") ; LockWindowUpdate | Cache | Window
