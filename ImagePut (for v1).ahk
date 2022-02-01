@@ -1670,6 +1670,10 @@ class ImagePut {
       WS_VISIBLE                := 0x10000000   ; Show on creation.
       WS_EX_LAYERED             :=    0x80000   ; For UpdateLayeredWindow.
 
+      ; Set default styles if null.
+      style := (style == "") ? WS_POPUP | WS_CLIPCHILDREN | WS_CAPTION | WS_SYSMENU : style
+      styleEx := (styleEx == "") ? WS_EX_TOPMOST | WS_EX_DLGMODALFRAME : styleEx
+
       ; Get Bitmap width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
@@ -1747,6 +1751,10 @@ class ImagePut {
       WS_EX_TOPMOST             :=        0x8   ; Always on top.
       WS_EX_TOOLWINDOW          :=       0x80   ; Hides from Alt+Tab menu. Removes small icon.
       WS_EX_LAYERED             :=    0x80000   ; For UpdateLayeredWindow.
+
+      ; Set default styles if null.
+      style := (style == "") ? WS_POPUP | WS_VISIBLE : style
+      styleEx := (styleEx == "") ? WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_LAYERED : styleEx
 
       ; Prevent the script from exiting early.
       void := ObjBindMethod({}, {})
