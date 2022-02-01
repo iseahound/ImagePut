@@ -2164,7 +2164,7 @@ class ImagePut {
 
    put_hBitmap(pBitmap, alpha := "") {
       ; Revert to built in functionality if a replacement color is declared.
-      if (alpha != "") { ; This built-in version is about 25% slower.
+      if (alpha != "") { ; This built-in version is about 25% slower and also preserves transparency.
          DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "ptr", pBitmap, "ptr*", hbm:=0, "uint", alpha)
          return hbm
       }
