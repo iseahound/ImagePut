@@ -1666,17 +1666,23 @@ class ImagePut {
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
 
+      ; Get Screen width and height with DPI awareness.
+      dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -4, "ptr")
+      ScreenWidth := A_ScreenWidth
+      ScreenHeight := A_ScreenHeight
+      DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+
       ; If both dimensions exceed the screen boundaries, compare the aspect ratio of the image
       ; to the aspect ratio of the screen to determine the scale factor. Default scale is 1.
-      s  := (width > A_ScreenWidth) && (width / height > A_ScreenWidth / A_ScreenHeight) ? A_ScreenWidth / width
-         : (height > A_ScreenHeight) && (width / height <= A_ScreenWidth / A_ScreenHeight) ? A_ScreenHeight / height
+      s  := (width > ScreenWidth) && (width / height > ScreenWidth / ScreenHeight) ? ScreenWidth / width
+         : (height > ScreenHeight) && (width / height <= ScreenWidth / ScreenHeight) ? ScreenHeight / height
          : 1
 
       w  := IsObject(pos) && pos.HasKey(3) ? pos[3] : s * width
       h  := IsObject(pos) && pos.HasKey(4) ? pos[4] : s * height
 
-      x  := IsObject(pos) && pos.HasKey(1) ? pos[1] : 0.5*(A_ScreenWidth - w)
-      y  := IsObject(pos) && pos.HasKey(2) ? pos[2] : 0.5*(A_ScreenHeight - h)
+      x  := IsObject(pos) && pos.HasKey(1) ? pos[1] : 0.5*(ScreenWidth - w)
+      y  := IsObject(pos) && pos.HasKey(2) ? pos[2] : 0.5*(ScreenHeight - h)
 
       ; Resolve dependent coordinates first, coordinates second, and distances last.
       x2 := Round(x + w)
@@ -1740,17 +1746,23 @@ class ImagePut {
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
 
+      ; Get Screen width and height with DPI awareness.
+      dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -4, "ptr")
+      ScreenWidth := A_ScreenWidth
+      ScreenHeight := A_ScreenHeight
+      DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+
       ; If both dimensions exceed the screen boundaries, compare the aspect ratio of the image
       ; to the aspect ratio of the screen to determine the scale factor. Default scale is 1.
-      s  := (width > A_ScreenWidth) && (width / height > A_ScreenWidth / A_ScreenHeight) ? A_ScreenWidth / width
-         : (height > A_ScreenHeight) && (width / height <= A_ScreenWidth / A_ScreenHeight) ? A_ScreenHeight / height
+      s  := (width > ScreenWidth) && (width / height > ScreenWidth / ScreenHeight) ? ScreenWidth / width
+         : (height > ScreenHeight) && (width / height <= ScreenWidth / ScreenHeight) ? ScreenHeight / height
          : 1
 
       w  := IsObject(pos) && pos.HasKey(3) ? pos[3] : s * width
       h  := IsObject(pos) && pos.HasKey(4) ? pos[4] : s * height
 
-      x  := IsObject(pos) && pos.HasKey(1) ? pos[1] : 0.5*(A_ScreenWidth - w)
-      y  := IsObject(pos) && pos.HasKey(2) ? pos[2] : 0.5*(A_ScreenHeight - h)
+      x  := IsObject(pos) && pos.HasKey(1) ? pos[1] : 0.5*(ScreenWidth - w)
+      y  := IsObject(pos) && pos.HasKey(2) ? pos[2] : 0.5*(ScreenHeight - h)
 
       ; Resolve dependent coordinates first, coordinates second, and distances last.
       x2 := Round(x + w)
