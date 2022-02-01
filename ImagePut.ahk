@@ -1700,6 +1700,7 @@ class ImagePut {
 
       DllCall("AdjustWindowRectEx", "ptr", rect, "uint", style, "uint", 0, "uint", styleEx)
 
+      dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
       hwnd := DllCall("CreateWindowEx"
                ,   "uint", styleEx
                ,    "str", this.WindowClass()       ; lpClassName
@@ -1714,6 +1715,7 @@ class ImagePut {
                ,    "ptr", 0                        ; hInstance
                ,    "ptr", 0                        ; lpParam
                ,    "ptr")
+      DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
       ; Tests have shown that changing the system default colors has no effect on F0F0F0.
       ; Must call SetWindowLong with WS_EX_LAYERED immediately before SetLayeredWindowAttributes.
@@ -1832,6 +1834,7 @@ class ImagePut {
          DllCall("gdiplus\GdipDeleteGraphics", "ptr", pGraphics)
       }
 
+      dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
       hwnd := DllCall("CreateWindowEx"
                ,   "uint", styleEx | WS_EX_LAYERED  ; dwExStyle
                ,    "str", this.WindowClass()       ; lpClassName
@@ -1846,6 +1849,7 @@ class ImagePut {
                ,    "ptr", 0                        ; hInstance
                ,    "ptr", 0                        ; lpParam
                ,    "ptr")
+      DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
       ; Draw the contents of the device context onto the layered window.
       DllCall("UpdateLayeredWindow"
