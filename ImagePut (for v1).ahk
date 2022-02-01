@@ -988,8 +988,10 @@ class ImagePut {
 
    from_wallpaper() {
       ; Get the width and height of all monitors.
+      dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
       width  := DllCall("GetSystemMetrics", "int", 78, "int")
       height := DllCall("GetSystemMetrics", "int", 79, "int")
+      DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
       hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
@@ -1209,8 +1211,9 @@ class ImagePut {
    }
 
    from_monitor(image) {
+      dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
       if (image > 0) {
-         SysGet _, Monitor, image
+         SysGet _, Monitor, % image
          x := _Left
          y := _Top
          w := _Right - _Left
@@ -1221,6 +1224,7 @@ class ImagePut {
          w := DllCall("GetSystemMetrics", "int", 78, "int")
          h := DllCall("GetSystemMetrics", "int", 79, "int")
       }
+      DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
       return this.from_screenshot([x,y,w,h])
    }
 
