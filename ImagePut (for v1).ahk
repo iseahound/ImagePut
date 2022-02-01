@@ -904,9 +904,11 @@ class ImagePut {
          DllCall("ShowWindow", "ptr", image, "int", 4)
 
       ; Get the width and height of the client window.
+      dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
       DllCall("GetClientRect", "ptr", image, "ptr", &Rect := VarSetCapacity(Rect, 16)) ; sizeof(RECT) = 16
          , width  := NumGet(Rect, 8, "int")
          , height := NumGet(Rect, 12, "int")
+      DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
       hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
