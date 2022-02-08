@@ -22,7 +22,7 @@ If you like this and want to see my other AutoHotkey libraries:
 
 ## So you want to convert an image?
 
-But you don't how. That's okay because you can just do this:
+But you don't know how. That's okay because you can just do this:
 
     str := ImagePutBase64("cats.jpg")
 
