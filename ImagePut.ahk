@@ -2281,16 +2281,16 @@ class ImagePut {
 
    static select_extension(pStream, &extension) {
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "HRESULT")
-      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", signature := Buffer(12), "uint", 12, "HRESULT")
+      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", signature := Buffer(256), "uint", 256, "HRESULT")
 
-      ; This function sniffs the first 12 bytes and matches a known file signature.
+      ; This function sniffs the first 256 bytes and matches a known file signature.
       ; 256 bytes is recommended, but images only need 12 bytes.
       ; See: https://en.wikipedia.org/wiki/List_of_file_signatures
       DllCall("urlmon\FindMimeFromData"
                ,    "ptr", 0             ; pBC
                ,    "ptr", 0             ; pwzUrl
                ,    "ptr", signature     ; pBuffer
-               ,   "uint", 12            ; cbSize
+               ,   "uint", 256           ; cbSize
                ,    "ptr", 0             ; pwzMimeProposed
                ,   "uint", 0x20          ; dwMimeFlags
                ,   "ptr*", &MimeType:=0  ; ppwzMimeOut
