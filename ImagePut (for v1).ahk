@@ -2359,7 +2359,7 @@ class ImagePut {
 
       ; Create a filepath based on the timestamp.
       if (filename == "") {
-         FormatTime, filename,, % "yyyy-MM-dd HH?mm?ss"
+         FormatTime, filename,, % "yyyy-MM-dd HH꞉mm꞉ss"
          filepath := directory "\" filename "." extension
          while FileExist(filepath) ; Check for collisions.
             filepath := directory "\" filename " (" A_Index ")." extension
