@@ -2102,6 +2102,7 @@ class ImagePut {
       DllCall("shlwapi\IStream_Size", "ptr", pStream, "ptr*", size:=0, "uint")
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
       DllCall("shlwapi\IStream_Copy", "ptr", pStream, "ptr", pFileStream, "uint", size, "uint")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
       ObjRelease(pFileStream)
 
       return filepath
@@ -2144,6 +2145,7 @@ class ImagePut {
       DllCall("shlwapi\IStream_Size", "ptr", pStream, "ptr*", size:=0, "uint")
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
       DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", &bin := VarSetCapacity(bin, size), "uint", size, "uint")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
 
       ; Using CryptBinaryToStringA saves about 2MB in memory.
       DllCall("crypt32\CryptBinaryToStringA", "ptr", &bin, "uint", size, "uint", flags, "ptr", 0, "uint*", length:=0)
@@ -2282,6 +2284,7 @@ class ImagePut {
    select_extension(pStream, ByRef extension) {
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
       DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", &signature := VarSetCapacity(signature, 256), "uint", 256, "uint")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
 
       ; This function sniffs the first 256 bytes and matches a known file signature.
       ; 256 bytes is recommended, but images only need 12 bytes.
