@@ -1375,8 +1375,6 @@ class ImagePut {
       DllCall("SelectObject", "ptr", hdc, "ptr", obm)
       DllCall("DeleteObject", "ptr", hbm)
       DllCall("DeleteDC",     "ptr", hdc)
-      DllCall("SelectObject", "ptr", sdc, "ptr", obm)
-      DllCall("DeleteDC",     "ptr", sdc)
 
       return pBitmap
    }
