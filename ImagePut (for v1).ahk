@@ -1681,7 +1681,7 @@ class ImagePut {
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
 
       ; Get Screen width and height with DPI awareness.
-      dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -4, "ptr")
+      dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
       ScreenWidth := A_ScreenWidth
       ScreenHeight := A_ScreenHeight
       DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
@@ -1767,7 +1767,7 @@ class ImagePut {
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
 
       ; Get Screen width and height with DPI awareness.
-      dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -4, "ptr")
+      dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
       ScreenWidth := A_ScreenWidth
       ScreenHeight := A_ScreenHeight
       DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
