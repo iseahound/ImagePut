@@ -2346,6 +2346,7 @@ class ImagePut {
 
       ; An invalid extension is actually part of the filename.
       if !(extension ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$") {
+         ; Avoid appening an extra dot.
          if (extension != "")
             filename .= "." extension
 
