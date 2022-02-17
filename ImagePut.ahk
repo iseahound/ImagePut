@@ -903,8 +903,17 @@ class ImagePut {
       if DllCall("IsIconic", "ptr", image)
          DllCall("ShowWindow", "ptr", image, "int", 4)
 
+      ; Check window DPI awareness.
+      ; PROCESS_DPI_UNAWARE = 0, PROCESS_SYSTEM_DPI_AWARE = 1, PROCESS_PER_MONITOR_DPI_AWARE = 2
+      DPI_AWARENESS := True ; Assume dpi aware if process cannot be opened.
+      DllCall("GetWindowThreadProcessId", "ptr", image, "ptr*", pid:=0, "ptr")
+      if hProcess := DllCall("OpenProcess", "uint", 0x0400, "int", False, "uint", pid, "ptr") {
+         DllCall("Shcore\GetProcessDpiAwareness", "ptr", hProcess, "int*", DPI_AWARENESS)
+         DllCall("CloseHandle", "ptr", hProcess)
+      }
+
       ; Get the width and height of the client window.
-      dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+      dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", DPI_AWARENESS ? -3 : -5, "ptr")
       DllCall("GetClientRect", "ptr", image, "ptr", Rect := Buffer(16)) ; sizeof(RECT) = 16
          , width  := NumGet(Rect, 8, "int")
          , height := NumGet(Rect, 12, "int")
