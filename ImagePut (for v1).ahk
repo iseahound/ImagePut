@@ -2379,7 +2379,7 @@ class ImagePut {
       }
 
       ; Create a numeric sequence of files...
-      else if (filename == 0 or filename == 1) {
+      else if (filename == "0" or filename == "1") {
          filepath := directory "\" filename "." extension
          while FileExist(filepath) ; Check for collisions.
             filepath := directory "\" A_Index "." extension
