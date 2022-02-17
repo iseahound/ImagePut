@@ -134,8 +134,8 @@ ImageEqual(images*) {
 
 class ImagePut {
 
-   static decode := false   ; Forces conversion using a bitmap. The original file encoding will be lost.
-   static validate := false ; Always copies image data into memory instead of passing references.
+   static decode := False   ; Forces conversion using a bitmap. The original file encoding will be lost.
+   static validate := False ; Always copies image data into memory instead of passing references.
 
    ; ImagePut() - Puts an image from anywhere to anywhere.
    ;   cotype     -  Output Type             |  string   ->   Case Insensitive. Read documentation.
@@ -147,8 +147,8 @@ class ImagePut {
 
       ; Extract parameters.
       if IsObject(image) {
-         crop := ObjHasOwnProp(image, "crop") ? image.crop : false
-         scale := ObjHasOwnProp(image, "scale") ? image.scale : false
+         crop := ObjHasOwnProp(image, "crop") ? image.crop : False
+         scale := ObjHasOwnProp(image, "scale") ? image.scale : False
          decode := ObjHasOwnProp(image, "decode") ? image.decode : this.decode
          validate := ObjHasOwnProp(image, "validate") ? image.validate : this.validate
 
@@ -159,7 +159,7 @@ class ImagePut {
             image := image.image
 
       } else {
-         crop := scale := false
+         crop := scale := False
          decode := this.decode
          validate := this.validate
 
@@ -844,7 +844,7 @@ class ImagePut {
 
       ; Allow the stream to be freed while leaving the hData intact.
       ; Please read: https://devblogs.microsoft.com/oldnewthing/20210930-00/?p=105745
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", false, "ptr*", &pStream:=0, "HRESULT")
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", False, "ptr*", &pStream:=0, "HRESULT")
       DllCall("CloseClipboard")
       return pStream
    }
@@ -1098,7 +1098,7 @@ class ImagePut {
       ComCall(IPdfDocument_GetPage := 6, PdfDocument, "uint", index, "ptr*", &PdfPage:=0)
 
       ; Render the page to an output stream.
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "uint", true, "ptr*", &pStreamOut:=0)
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "uint", True, "ptr*", &pStreamOut:=0)
       DllCall("ole32\CLSIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", CLSID := Buffer(16), "HRESULT")
       DllCall("ShCore\CreateRandomAccessStreamOverStream", "ptr", pStreamOut, "uint", BSOS_DEFAULT := 0, "ptr", CLSID, "ptr*", &pRandomAccessStreamOut:=0)
       ComCall(IPdfPage_RenderToStreamAsync := 6, PdfPage, "ptr", pRandomAccessStreamOut, "ptr*", &AsyncInfo:=0)
@@ -1157,7 +1157,7 @@ class ImagePut {
 
    static get_url(image) {
       req := ComObject("WinHttp.WinHttpRequest.5.1")
-      req.Open("GET", image, true)
+      req.Open("GET", image, True)
       req.Send()
       req.WaitForResponse()
       IStream := ComObjQuery(req.ResponseStream, "{0000000C-0000-0000-C000-000000000046}"), ObjAddRef(IStream.ptr)
@@ -1176,7 +1176,7 @@ class ImagePut {
       file.RawRead(pData, file.length)
       DllCall("GlobalUnlock", "ptr", hData)
       file.Close()
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", true, "ptr*", &pStream:=0, "HRESULT")
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", True, "ptr*", &pStream:=0, "HRESULT")
       return pStream
    }
 
@@ -1218,7 +1218,7 @@ class ImagePut {
                , "ptr", StrPtr(image), "uint", 0, "uint", flags, "ptr", pData, "uint*", size, "ptr", 0, "ptr", 0)
 
       DllCall("GlobalUnlock", "ptr", hData)
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", true, "ptr*", &pStream:=0, "HRESULT")
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", True, "ptr*", &pStream:=0, "HRESULT")
 
       return pStream
    }
@@ -1562,7 +1562,7 @@ class ImagePut {
 
       ; Create a Stream whose underlying HGlobal must be referenced or lost forever.
       ; Please read: https://devblogs.microsoft.com/oldnewthing/20210929-00/?p=105742
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", false, "ptr*", &pStream:=0, "HRESULT")
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", False, "ptr*", &pStream:=0, "HRESULT")
       this.select_codec(pBitmap, "png", "", &pCodec, &ep, &ci, &v)
       DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", pStream, "ptr", pCodec, "ptr", IsSet(ep) ? ep : 0)
 
@@ -1768,7 +1768,7 @@ class ImagePut {
       styleEx := (styleEx == "") ? WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_LAYERED : styleEx
 
       ; Prevent the script from exiting early.
-      Persistent(true)
+      Persistent(True)
 
 
       ; Get Bitmap width and height.
@@ -1940,7 +1940,7 @@ class ImagePut {
 
          ; WM_DESTROY
          if (uMsg = 0x2) {
-            return Persistent(false)
+            return Persistent(False)
          }
 
          ; WM_LBUTTONDOWN
@@ -2051,7 +2051,7 @@ class ImagePut {
          ; struct ICONINFO - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-iconinfo
          ii := Buffer(8+3*A_PtrSize)                                ; sizeof(ICONINFO) = 20, 32
          DllCall("GetIconInfo", "ptr", hIcon, "ptr", ii)            ; Fill the ICONINFO structure.
-            NumPut("uint", false, ii, 0)                            ; true/false are icon/cursor respectively.
+            NumPut("uint", False, ii, 0)                            ; True/False are icon/cursor respectively.
             (xHotspot != "") ? NumPut("uint", xHotspot, ii, 4) : {} ; Set the xHotspot value. (Default: center point)
             (yHotspot != "") ? NumPut("uint", yHotspot, ii, 8) : {} ; Set the yHotspot value. (Default: center point)
          DllCall("DestroyIcon", "ptr", hIcon)                       ; Destroy the icon after getting the ICONINFO structure.
@@ -2104,7 +2104,7 @@ class ImagePut {
                ,   "wstr", filepath
                ,   "uint", 0x1001          ; STGM_CREATE | STGM_WRITE
                ,   "uint", 0x80            ; FILE_ATTRIBUTE_NORMAL
-               ,    "int", true            ; fCreate is ignored when STGM_CREATE is set.
+               ,    "int", True            ; fCreate is ignored when STGM_CREATE is set.
                ,    "ptr", 0               ; pstmTemplate (reserved)
                ,   "ptr*", &pFileStream:=0
                ,"HRESULT")
@@ -2232,7 +2232,7 @@ class ImagePut {
       this.select_codec(pBitmap, extension, quality, &pCodec, &ep, &ci, &v)
 
       ; Create a Stream.
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", true, "ptr*", &pStream:=0, "HRESULT")
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", True, "ptr*", &pStream:=0, "HRESULT")
       DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", pStream, "ptr", pCodec, "ptr", IsSet(ep) ? ep : 0)
 
       return pStream
@@ -2506,7 +2506,7 @@ class ImageEqual extends ImagePut {
    static call(images*) {
       ; Returns false is there are no images to be compared.
       if (images.length == 0)
-         return false
+         return False
 
       this.gdiplusStartup()
 
@@ -2555,13 +2555,13 @@ class ImageEqual extends ImagePut {
       Good_Ending: ; After getting isekai'ed you somehow build a prosperous kingdom and rule the land.
       DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap1)
       this.gdiplusShutdown()
-      return true
+      return True
 
       Bad_Ending: ; Turns out your best friend became super jealous of you and killed you in your sleep.
       DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap2)
       DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap1)
       this.gdiplusShutdown()
-      return false
+      return False
    }
 
    static BitmapEqual(SourceBitmap1, SourceBitmap2, PixelFormat := 0x26200A) {
@@ -2575,7 +2575,7 @@ class ImageEqual extends ImagePut {
 
       ; Check if source bitmap pointers are identical.
       if (SourceBitmap1 == SourceBitmap2)
-         return true
+         return True
 
       ; The two bitmaps must be the same size.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", SourceBitmap1, "uint*", &width1:=0)
@@ -2591,7 +2591,7 @@ class ImageEqual extends ImagePut {
 
       ; Dimensions must be equal.
       if (width1 != width2 || height1 != height2)
-         return false
+         return False
 
       ; Create clones of the supplied source bitmaps in their original PixelFormat.
       ; This has the side effect of (1) removing negative stride and solves
@@ -2654,6 +2654,6 @@ class ImageEqual extends ImagePut {
       DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap2)
 
       ; Compare stopped byte.
-      return (byte == size) ? true : false
+      return (byte == size) ? True : False
    }
 } ; End of ImageEqual class.
