@@ -122,6 +122,14 @@ ImageShow(image, title := "", pos := "", style := 0x90000000, styleEx := 0x80088
 ImageDestroy(image) {
    return ImagePut.Destroy(image)
 }
+
+ImageWidth(image) {
+   return ImagePut.Dimensions(image)[1]
+}
+
+ImageHeight(image) {
+   return ImagePut.Dimensions(image)[2]
+}
 /*
 ImagePut(cotype, image, p*) {
    return ImagePut.call(cotype, image, p*)
@@ -2446,6 +2454,20 @@ class ImagePut {
                . "`nAlternatively, use 'obj := ImagePutBuffer()' with 'obj.pBitmap'."
                . "`nYou can copy this message by pressing Ctrl + C.", -3)
       }
+   }
+
+   ; Get the image width and height.
+   static Dimensions(image) {
+      this.gdiplusStartup()
+      try type := this.DontVerifyImageType(&image)
+      catch
+         type := this.ImageType(image)
+      pBitmap := this.ToBitmap(type, image)
+      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
+      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
+      DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
+      this.gdiplusShutdown()
+      return [width, height]
    }
 
    class Destroy extends ImagePut {
