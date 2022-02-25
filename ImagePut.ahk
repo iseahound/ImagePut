@@ -181,7 +181,8 @@ class ImagePut {
          and (!p.Has(1) || p[1] == "") { ; For now, disallow any specification of extensions.
 
          ; Convert via stream intermediate.
-         pStream := this.ToStream(type, image, index)
+         if !(pStream := this.ToStream(type, image, index))
+            throw Error("pStream cannot be zero.")
          coimage := this.StreamToCoimage(cotype, pStream, p*)
 
          ; Prevents the stream object from being freed.
@@ -201,7 +202,8 @@ class ImagePut {
          ; changes to the pixels while bypassing any copy-on-write and copy on LockBits(read) behavior.
 
          ; Convert via GDI+ bitmap intermediate.
-         pBitmap := this.ToBitmap(type, image, index)
+         if !(pBitmap := this.ToBitmap(type, image, index))
+            throw Error("pBitmap cannot be zero.")
          (validate) ? DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmap) : {}
          (crop) ? this.BitmapCrop(&pBitmap, crop) : {}
          (scale) ? this.BitmapScale(&pBitmap, scale) : {}
