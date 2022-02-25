@@ -1637,6 +1637,20 @@ class ImagePut {
       __Delete() {
          ImagePut.gdiplusShutdown("smart_pointer", this.pBitmap)
       }
+
+      width {
+         get {
+            DllCall("gdiplus\GdipGetImageWidth", "ptr", this.pBitmap, "uint*", width:=0)
+            return width
+         }
+      }
+
+      height {
+         get {
+            DllCall("gdiplus\GdipGetImageHeight", "ptr", this.pBitmap, "uint*", height:=0)
+            return height
+         }
+      }
    }
 
    put_screenshot(pBitmap, screenshot := "", alpha := "") {
