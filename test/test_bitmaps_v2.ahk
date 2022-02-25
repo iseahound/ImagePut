@@ -44,3 +44,4 @@ if !WinExist("log ahk_class Notepad")
    Run "notepad log.txt"
 WinWait "log ahk_class Notepad"
 WinActivate "log ahk_class Notepad"
+ExitApp
