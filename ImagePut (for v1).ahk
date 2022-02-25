@@ -1165,7 +1165,10 @@ class ImagePut {
    }
 
    from_file(image) {
-      DllCall("gdiplus\GdipCreateBitmapFromFile", "wstr", image, "ptr*", pBitmap:=0)
+      ; This is faster than GdipCreateBitmapFromFile and does not lock the file.
+      pStream := this.get_file(image)
+      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", pBitmap:=0)
+      ObjRelease(pStream)
       return pBitmap
    }
 
