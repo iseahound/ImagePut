@@ -118,13 +118,13 @@ ImagePutWindow(image, title := "", pos := "", style := 0x82C80000, styleEx := 0x
 ImageShow(image, title := "", pos := "", style := 0x90000000, styleEx := 0x80088, parent := "") {
    return ImagePut("show", image, title, pos, style, styleEx, parent)
 }
+
+ImageDestroy(image) {
+   return ImagePut.Destroy(image)
+}
 /*
 ImagePut(cotype, image, p*) {
    return ImagePut.call(cotype, image, p*)
-}
-
-ImageDestroy(image) {
-   return ImageDestroy.call(image)
 }
 
 ImageEqual(images*) {
@@ -2447,70 +2447,69 @@ class ImagePut {
                . "`nYou can copy this message by pressing Ctrl + C.")
       }
    }
+
+   class Destroy extends ImagePut {
+
+      static call(image) {
+         this.gdiplusStartup()
+         try type := this.DontVerifyImageType(&image)
+         catch
+            type := this.ImageType(image)
+         this.Destroy(type, image)
+         this.gdiplusShutdown()
+         return
+      }
+
+      static Destroy(type, image) {
+         if (type = "clipboard") {
+            if !DllCall("OpenClipboard", "ptr", A_ScriptHwnd)
+               throw Error("Clipboard could not be opened.")
+            return ((_,*)=>_)(DllCall("EmptyClipboard"), DllCall("CloseClipboard"))
+         }
+
+         if (type = "screenshot")
+            return DllCall("InvalidateRect", "ptr", 0, "ptr", 0, "int", 0)
+
+         if (type = "window")
+            return DllCall("DestroyWindow", "ptr", image)
+
+         if (type = "wallpaper")
+            return DllCall("SystemParametersInfo", "uint", SPI_SETDESKWALLPAPER := 0x14, "uint", 0, "ptr", 0, "uint", 2)
+
+         if (type = "cursor")
+            return DllCall("SystemParametersInfo", "uint", SPI_SETCURSORS := 0x57, "uint", 0, "ptr", 0, "uint", 0)
+
+         if (type = "file")
+            FileDelete image
+
+         if (type = "dc") {
+            if (DllCall("GetObjectType", "ptr", image, "uint") == 3) { ; OBJ_DC
+               hwnd := DllCall("WindowFromDC", "ptr", image, "ptr")
+               DllCall("ReleaseDC", "ptr", hwnd, "ptr", image)
+            }
+
+            if (DllCall("GetObjectType", "ptr", image, "uint") == 10) { ; OBJ_MEMDC
+               obm := DllCall("CreateBitmap", "int", 0, "int", 0, "uint", 1, "uint", 1, "ptr", 0, "ptr")
+               hbm := DllCall("SelectObject", "ptr", image, "ptr", obm, "ptr")
+               DllCall("DeleteObject", "ptr", hbm)
+               DllCall("DeleteDC", "ptr", image)
+            }
+         }
+
+         if (type = "hBitmap")
+            return DllCall("DeleteObject", "ptr", image)
+
+         if (type = "hIcon")
+            return DllCall("DestroyIcon", "ptr", image)
+
+         if (type = "bitmap")
+            return !DllCall("gdiplus\GdipDisposeImage", "ptr", image)
+
+         if (type = "RandomAccessStream") or (type = "stream")
+            return !ObjRelease(image)
+      }
+   } ; End of Destroy class.
 } ; End of ImagePut class.
-
-
-class ImageDestroy extends ImagePut {
-
-   static call(image) {
-      this.gdiplusStartup()
-      try type := this.DontVerifyImageType(&image)
-      catch
-         type := this.ImageType(image)
-      this.Destroy(type, image)
-      this.gdiplusShutdown()
-      return
-   }
-
-   static Destroy(type, image) {
-      if (type = "clipboard") {
-         if !DllCall("OpenClipboard", "ptr", A_ScriptHwnd)
-            throw Error("Clipboard could not be opened.")
-         return ((_,*)=>_)(DllCall("EmptyClipboard"), DllCall("CloseClipboard"))
-      }
-
-      if (type = "screenshot")
-         return DllCall("InvalidateRect", "ptr", 0, "ptr", 0, "int", 0)
-
-      if (type = "window")
-         return DllCall("DestroyWindow", "ptr", image)
-
-      if (type = "wallpaper")
-         return DllCall("SystemParametersInfo", "uint", SPI_SETDESKWALLPAPER := 0x14, "uint", 0, "ptr", 0, "uint", 2)
-
-      if (type = "cursor")
-         return DllCall("SystemParametersInfo", "uint", SPI_SETCURSORS := 0x57, "uint", 0, "ptr", 0, "uint", 0)
-
-      if (type = "file")
-         FileDelete image
-
-      if (type = "dc") {
-         if (DllCall("GetObjectType", "ptr", image, "uint") == 3) { ; OBJ_DC
-            hwnd := DllCall("WindowFromDC", "ptr", image, "ptr")
-            DllCall("ReleaseDC", "ptr", hwnd, "ptr", image)
-         }
-
-         if (DllCall("GetObjectType", "ptr", image, "uint") == 10) { ; OBJ_MEMDC
-            obm := DllCall("CreateBitmap", "int", 0, "int", 0, "uint", 1, "uint", 1, "ptr", 0, "ptr")
-            hbm := DllCall("SelectObject", "ptr", image, "ptr", obm, "ptr")
-            DllCall("DeleteObject", "ptr", hbm)
-            DllCall("DeleteDC", "ptr", image)
-         }
-      }
-
-      if (type = "hBitmap")
-         return DllCall("DeleteObject", "ptr", image)
-
-      if (type = "hIcon")
-         return DllCall("DestroyIcon", "ptr", image)
-
-      if (type = "bitmap")
-         return !DllCall("gdiplus\GdipDisposeImage", "ptr", image)
-
-      if (type = "RandomAccessStream") or (type = "stream")
-         return !ObjRelease(image)
-   }
-} ; End of ImageDestroy class.
 
 
 class ImageEqual extends ImagePut {
