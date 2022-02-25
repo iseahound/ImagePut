@@ -526,7 +526,7 @@ class ImagePut {
 
    static BitmapToCoimage(cotype, pBitmap, p1:="", p2:="", p3:="", p4:="", p5:="", p*) {
       ; BitmapToCoimage("clipboard", pBitmap)
-      if (cotype = "clipboard")
+      if (cotype = "clipboard" || cotype = "clipboard_png")
          return this.put_clipboard(pBitmap)
 
       ; BitmapToCoimage("buffer", pBitmap)
