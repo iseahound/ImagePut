@@ -534,6 +534,9 @@ class ImagePut {
       if (type = "RandomAccessStream")
          return this.from_RandomAccessStream(image)
 
+      if (type = "wicBitmap")
+         return this.from_wicBitmap(image)
+
       if (type = "sprite")
          return this.from_sprite(image)
 
@@ -612,6 +615,10 @@ class ImagePut {
       ; BitmapToCoimage("RandomAccessStream", pBitmap, extension, quality)
       if (cotype = "RandomAccessStream")
          return this.put_RandomAccessStream(pBitmap, p1, p2)
+
+      ; BitmapToCoimage("wicBitmap", pBitmap)
+      if (cotype = "wicBitmap")
+         return this.put_wicBitmap(pBitmap)
 
       throw Error("Conversion from bitmap to " cotype " is not supported.")
    }
