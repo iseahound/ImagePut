@@ -450,6 +450,14 @@ class ImagePut {
          ; A "RandomAccessStream" is a pointer to the IRandomAccessStream interface.
          try if ComObjQuery(image, "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}")
             return "RandomAccessStream"
+
+         ; A "wicBitmap" is a pointer to the IWICBitmap interface bitmap.
+         try if ComObjQuery(image, "{00000121-A8F2-4877-BA0A-FD2B6645FB94}")
+            return "wicBitmap"
+
+         ; A "d2dBitmap" is a pointer to the ID2D1Bitmap interface bitmap.
+         try if ComObjQuery(image, "{A2296057-EA42-4099-983B-539FB6505426}")
+            return "d2dBitmap"
       }
 
 
