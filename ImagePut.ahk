@@ -2180,9 +2180,26 @@ class ImagePut {
          extension := "png"
 
       pStream := this.put_stream(pBitmap, extension, quality)
-      base64 := this.set_base64(pStream)
+
+      ; Get a pointer to binary data.
+      DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "ptr*", &hbin:=0, "HRESULT")
+      bin := DllCall("GlobalLock", "ptr", hbin, "ptr")
+      size := DllCall("GlobalSize", "uint", bin, "uptr")
+
+      ; Calculate the length of the base64 string.
+      flags := 0x40000001 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_BASE64
+      length := 4 * Ceil(size/3) + 1 ; An extra byte of padding is required.
+      str := Buffer(length)
+
+      ; Using CryptBinaryToStringA saves about 2MB in memory.
+      DllCall("crypt32\CryptBinaryToStringA", "ptr", bin, "uint", size, "uint", flags, "ptr", str, "uint*", &length)
+
+      ; Release binary data and stream.
+      DllCall("GlobalUnlock", "ptr", hbin)
       ObjRelease(pStream)
-      return base64
+
+      ; Return encoded string length minus 1.
+      return StrGet(str, length, "CP0")
    }
 
    static set_base64(pStream) {
