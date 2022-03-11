@@ -2206,8 +2206,22 @@ class ImagePut {
    }
 
    static set_base64(pStream) {
+      ; For compatibility with SHCreateMemStream do not use GetHGlobalFromStream.
+      DllCall("shlwapi\IStream_Size", "ptr", pStream, "ptr*", &size:=0, "HRESULT")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "HRESULT")
+      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", bin := Buffer(size), "uint", size, "HRESULT")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "HRESULT")
+
+      ; Calculate the length of the base64 string.
       flags := 0x40000001 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_BASE64
-      return this.set_string(pStream, flags)
+      length := 4 * Ceil(size/3) + 1 ; An extra byte of padding is required.
+      str := Buffer(length)
+
+      ; Using CryptBinaryToStringA saves about 2MB in memory.
+      DllCall("crypt32\CryptBinaryToStringA", "ptr", bin, "uint", size, "uint", flags, "ptr", str, "uint*", &length)
+
+      ; Return encoded string length minus 1.
+      return StrGet(str, length, "CP0")
    }
 
    static set_string(pStream, flags) {
