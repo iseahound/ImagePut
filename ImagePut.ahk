@@ -2167,14 +2167,45 @@ class ImagePut {
          extension := "png"
 
       pStream := this.put_stream(pBitmap, extension, quality)
-      hex := this.set_hex(pStream)
+
+      ; Get a pointer to binary data.
+      DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "ptr*", &hbin:=0, "HRESULT")
+      bin := DllCall("GlobalLock", "ptr", hbin, "ptr")
+      size := DllCall("GlobalSize", "uint", bin, "uptr")
+
+      ; Calculate the length of the hexadecimal string.
+      flags := 0x4000000C ; CRYPT_STRING_NOCRLF | CRYPT_STRING_HEXRAW
+      length := 2 * size + 1 ; An extra byte of padding is required.
+      str := Buffer(length)
+
+      ; Using CryptBinaryToStringA saves about 2MB in memory.
+      DllCall("crypt32\CryptBinaryToStringA", "ptr", bin, "uint", size, "uint", flags, "ptr", str, "uint*", &length)
+
+      ; Release binary data and stream.
+      DllCall("GlobalUnlock", "ptr", hbin)
       ObjRelease(pStream)
-      return hex
+
+      ; Return encoded string length minus 1.
+      return StrGet(str, length, "CP0")
    }
 
    static set_hex(pStream) {
+      ; For compatibility with SHCreateMemStream do not use GetHGlobalFromStream.
+      DllCall("shlwapi\IStream_Size", "ptr", pStream, "ptr*", &size:=0, "HRESULT")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "HRESULT")
+      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", bin := Buffer(size), "uint", size, "HRESULT")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "HRESULT")
+
+      ; Calculate the length of the hexadecimal string.
       flags := 0x4000000C ; CRYPT_STRING_NOCRLF | CRYPT_STRING_HEXRAW
-      return this.set_string(pStream, flags)
+      length := 2 * size + 1 ; An extra byte of padding is required.
+      str := Buffer(length)
+
+      ; Using CryptBinaryToStringA saves about 2MB in memory.
+      DllCall("crypt32\CryptBinaryToStringA", "ptr", bin, "uint", size, "uint", flags, "ptr", str, "uint*", &length)
+
+      ; Return encoded string length minus 1.
+      return StrGet(str, length, "CP0")
    }
 
    static put_base64(pBitmap, extension := "", quality := "") {
