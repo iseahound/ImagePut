@@ -2162,6 +2162,8 @@ class ImagePut {
    }
 
    static put_hex(pBitmap, extension := "", quality := "") {
+      ; Thanks noname - https://www.autohotkey.com/boards/viewtopic.php?style=7&p=144247#p144247
+
       ; Default extension is PNG for small sizes!
       if (extension == "")
          extension := "png"
@@ -2209,6 +2211,8 @@ class ImagePut {
    }
 
    static put_base64(pBitmap, extension := "", quality := "") {
+      ; Thanks noname - https://www.autohotkey.com/boards/viewtopic.php?style=7&p=144247#p144247
+
       ; Default extension is PNG for small sizes!
       if (extension == "")
          extension := "png"
@@ -2252,23 +2256,6 @@ class ImagePut {
       DllCall("crypt32\CryptBinaryToStringA", "ptr", bin, "uint", size, "uint", flags, "ptr", str, "uint*", &length)
 
       ; Return encoded string length minus 1.
-      return StrGet(str, length, "CP0")
-   }
-
-   static set_string(pStream, flags) {
-      ; Thanks noname - https://www.autohotkey.com/boards/viewtopic.php?style=7&p=144247#p144247
-
-      ; For compatibility with SHCreateMemStream do not use GetHGlobalFromStream.
-      DllCall("shlwapi\IStream_Size", "ptr", pStream, "ptr*", &size:=0, "HRESULT")
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "HRESULT")
-      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", bin := Buffer(size), "uint", size, "HRESULT")
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "HRESULT")
-
-      ; Using CryptBinaryToStringA saves about 2MB in memory.
-      DllCall("crypt32\CryptBinaryToStringA", "ptr", bin, "uint", size, "uint", flags, "ptr", 0, "uint*", &length:=0)
-      str := Buffer(length)
-      DllCall("crypt32\CryptBinaryToStringA", "ptr", bin, "uint", size, "uint", flags, "ptr", str, "uint*", length)
-
       return StrGet(str, length, "CP0")
    }
 
