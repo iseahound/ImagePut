@@ -1218,7 +1218,8 @@ class ImagePut {
    static get_hex(image) {
       image := Trim(image)
       image := RegExReplace(image, "^(0[xX])")
-      return this.get_string(image, 0xC) ; CRYPT_STRING_HEXRAW
+      flags := 0xC ; CRYPT_STRING_HEXRAW
+      return this.get_string(image, flags)
    }
 
    static from_base64(image) {
@@ -1231,7 +1232,8 @@ class ImagePut {
    static get_base64(image) {
       image := Trim(image)
       image := RegExReplace(image, "^data:image\/[a-z]+;base64,")
-      return this.get_string(image, 0x1) ; CRYPT_STRING_BASE64
+      flags := 0x1 ; CRYPT_STRING_BASE64
+      return this.get_string(image, flags)
    }
 
    static get_string(image, flags) {
@@ -2171,7 +2173,8 @@ class ImagePut {
    }
 
    static set_hex(pStream) {
-      return this.set_string(pStream, 0x4000000C) ; CRYPT_STRING_NOCRLF | CRYPT_STRING_HEXRAW
+      flags := 0x4000000C ; CRYPT_STRING_NOCRLF | CRYPT_STRING_HEXRAW
+      return this.set_string(pStream, flags)
    }
 
    static put_base64(pBitmap, extension := "", quality := "") {
@@ -2203,7 +2206,8 @@ class ImagePut {
    }
 
    static set_base64(pStream) {
-      return this.set_string(pStream, 0x40000001) ; CRYPT_STRING_NOCRLF | CRYPT_STRING_BASE64
+      flags := 0x40000001 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_BASE64
+      return this.set_string(pStream, flags)
    }
 
    static set_string(pStream, flags) {
