@@ -1232,7 +1232,6 @@ class ImagePut {
 
       DllCall("GlobalUnlock", "ptr", hData)
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", True, "ptr*", &pStream:=0, "HRESULT")
-
       return pStream
    }
 
@@ -1261,7 +1260,6 @@ class ImagePut {
 
       DllCall("GlobalUnlock", "ptr", hData)
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", True, "ptr*", &pStream:=0, "HRESULT")
-
       return pStream
    }
 
