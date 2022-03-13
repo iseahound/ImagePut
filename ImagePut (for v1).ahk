@@ -1216,10 +1216,23 @@ class ImagePut {
    }
 
    get_hex(image) {
+      ; Trim whitespace and remove hexadecimal indicator.
       image := Trim(image)
       image := RegExReplace(image, "^(0[xX])")
+
+      ; Retrieve the size of bytes from the length of the base64 string.
       flags := 0xC ; CRYPT_STRING_HEXRAW
-      return this.get_string(image, flags)
+      size := StrLen(image) / 2
+
+      hData := DllCall("GlobalAlloc", "uint", 0x2, "uptr", size, "ptr")
+      pData := DllCall("GlobalLock", "ptr", hData, "ptr")
+
+      DllCall("crypt32\CryptStringToBinary"
+               , "ptr", &image, "uint", 0, "uint", flags, "ptr", pData, "uint*", size, "ptr", 0, "ptr", 0)
+
+      DllCall("GlobalUnlock", "ptr", hData)
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", True, "ptr*", pStream:=0, "uint")
+      return pStream
    }
 
    from_base64(image) {
@@ -1230,16 +1243,14 @@ class ImagePut {
    }
 
    get_base64(image) {
+      ; Trim whitespace and remove mime type.
       image := Trim(image)
-      image := RegExReplace(image, "^data:image\/[a-z]+;base64,")
-      flags := 0x1 ; CRYPT_STRING_BASE64
-      return this.get_string(image, flags)
-   }
+      image := RegExReplace(image, "(?i)^data:image\/[a-z]+;base64,")
 
-   get_string(image, flags) {
-      ; Ask for the size. Then allocate movable memory, copy to the buffer, unlock, and create stream.
-      DllCall("crypt32\CryptStringToBinary"
-               , "ptr", &image, "uint", 0, "uint", flags, "ptr", 0, "uint*", size:=0, "ptr", 0, "ptr", 0)
+      ; Retrieve the size of bytes from the length of the base64 string.
+      flags := 0x1 ; CRYPT_STRING_BASE64
+      padding := (image ~= "==$") ? 2 : (image ~= "=$") ? 1 : 0
+      size := 3 * (StrLen(image) / 4) - padding
 
       hData := DllCall("GlobalAlloc", "uint", 0x2, "uptr", size, "ptr")
       pData := DllCall("GlobalLock", "ptr", hData, "ptr")
@@ -1249,7 +1260,6 @@ class ImagePut {
 
       DllCall("GlobalUnlock", "ptr", hData)
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", True, "ptr*", pStream:=0, "uint")
-
       return pStream
    }
 
