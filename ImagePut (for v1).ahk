@@ -1228,7 +1228,7 @@ class ImagePut {
       pData := DllCall("GlobalLock", "ptr", hData, "ptr")
 
       DllCall("crypt32\CryptStringToBinary"
-               , "ptr", &image, "uint", 0, "uint", flags, "ptr", pData, "uint*", size, "ptr", 0, "ptr", 0)
+               , "str", image, "uint", 0, "uint", flags, "ptr", pData, "uint*", size, "ptr", 0, "ptr", 0)
 
       DllCall("GlobalUnlock", "ptr", hData)
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", True, "ptr*", pStream:=0, "uint")
@@ -1256,7 +1256,7 @@ class ImagePut {
       pData := DllCall("GlobalLock", "ptr", hData, "ptr")
 
       DllCall("crypt32\CryptStringToBinary"
-               , "ptr", &image, "uint", 0, "uint", flags, "ptr", pData, "uint*", size, "ptr", 0, "ptr", 0)
+               , "str", image, "uint", 0, "uint", flags, "ptr", pData, "uint*", size, "ptr", 0, "ptr", 0)
 
       DllCall("GlobalUnlock", "ptr", hData)
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", True, "ptr*", pStream:=0, "uint")
