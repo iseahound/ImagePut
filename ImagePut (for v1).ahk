@@ -1596,10 +1596,10 @@ class ImagePut {
 
       static bin := 0
       if !bin {
-         ; C source code - https://godbolt.org/z/KTYG4x57x
+         ; C source code - https://godbolt.org/z/rvTWqrqv6
          code := (A_PtrSize == 4)
-         ? "VYnlg+wQi0UIiUX8i0UMjRSFAAAAAItFCAHQiUX46xeLRfyLADtFEHUJi0X8xwAAAAAAg0X8BItF/DtF+HLhycM="
-         : "VUiJ5UiD7BBIiU0QiVUYRIlFIEiLRRBIiUX4i0UYSI0UhQAAAABIi0UQSAHQSIlF8OsaSItF+IsAO0UgdQpIi0X4xwAAAAAASINF+ARIi0X4SDtF8HLcSIPEEF3D"
+         ? "VYnli0UIi1UMi00QjRSQOdBzDzkIdQbHAAAAAACDwATr7V3D"
+         : "idJIjQSRSDnBcxFEOQF1BscBAAAAAEiDwQTr6sM="
          padding := (code ~= "==$") ? 2 : (code ~= "=$") ? 1 : 0
          size := 3 * (StrLen(code) / 4) - padding
          bin := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr")
