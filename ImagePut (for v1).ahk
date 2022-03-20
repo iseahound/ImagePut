@@ -145,33 +145,37 @@ class ImagePut {
    static decode := False   ; Forces conversion using a bitmap. The original file encoding will be lost.
    static validate := False ; Always copies image data into memory instead of passing references.
 
-   ; ImagePut() - Puts an image from anywhere to anywhere.
-   ;   cotype     -  Output Type             |  string   ->   Case Insensitive. Read documentation.
-   ;   image      -  Input Image             |  image    ->   Anything. Refer to ImageType().
-   ;   crop       -  Crop Coordinates        |  array    ->   [x,y,w,h] could be negative or percent.
-   ;   scale      -  Scale Factor            |  real     ->   2.0
-   ;   p*         -  Additional Parameters   |  variadic ->   Extra parameters found in BitmapToCoimage().
+   get(name, p*) {
+      return ObjHasKey(this, name) ? this.name : ""
+   }
+
    call(cotype, image, p*) {
 
-      ; Extract parameters.
+      ; Conversion uses an intermediate: source -> intermediate -> destination
+      ; Pass keyword arguments to the source -> intermediate function.
+      ; Pass positional arguments to the intermediate -> destination function.
+
+      ; Define parameters.
       if IsObject(image) {
+
+         ; Save a copy of the keyword arguments.
+         keywords := image
+         keywords.base := {__get: this.get} ; Returns the empty string for unknown properties.
+
          crop := ObjHasKey(image, "crop") ? image.crop : False
          scale := ObjHasKey(image, "scale") ? image.scale : False
          decode := ObjHasKey(image, "decode") ? image.decode : this.decode
          validate := ObjHasKey(image, "validate") ? image.validate : this.validate
-
-         index := ObjHasKey(image, "index") ? image.index : 0
 
          ; Dereference the image unknown.
          if ObjHasKey(image, "image")
             image := image.image
 
       } else {
+         keywords := {base: {__get: this.get}} ; Returns the empty string for unknown properties.
          crop := scale := False
          decode := this.decode
          validate := this.validate
-
-         index := 0
       }
 
       ; Start!
@@ -189,7 +193,7 @@ class ImagePut {
          and (p[1] == "") { ; For now, disallow any specification of extensions.
 
          ; Convert via stream intermediate.
-         if !(pStream := this.ToStream(type, image, index))
+         if !(pStream := this.ToStream(type, image, keywords))
             throw Exception("pStream cannot be zero.")
          coimage := this.StreamToCoimage(cotype, pStream, p*)
 
@@ -210,7 +214,7 @@ class ImagePut {
          ; changes to the pixels while bypassing any copy-on-write and copy on LockBits(read) behavior.
 
          ; Convert via GDI+ bitmap intermediate.
-         if !(pBitmap := this.ToBitmap(type, image, index))
+         if !(pBitmap := this.ToBitmap(type, image, keywords))
             throw Exception("pBitmap cannot be zero.")
          (validate) ? DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmap) : {}
          (crop) ? this.BitmapCrop(pBitmap, crop) : {}
@@ -469,7 +473,7 @@ class ImagePut {
       throw Exception("Image type could not be identified.")
    }
 
-   ToBitmap(type, image, index := 0) {
+   ToBitmap(type, image, k := "") {
 
       if (type = "clipboard_png")
          return this.from_clipboard_png()
@@ -499,7 +503,7 @@ class ImagePut {
          return this.from_cursor()
 
       if (type = "pdf")
-         return this.from_pdf(image, index)
+         return this.from_pdf(image, k.index)
 
       if (type = "url")
          return this.from_url(image)
@@ -623,13 +627,13 @@ class ImagePut {
       throw Exception("Conversion from bitmap to " cotype " is not supported.")
    }
 
-   ToStream(type, image, index := 0) {
+   ToStream(type, image, k := "") {
 
       if (type = "clipboard_png")
          return this.get_clipboard_png()
 
       if (type = "pdf")
-         return this.get_pdf(image, index)
+         return this.get_pdf(image, k.index)
 
       if (type = "url")
          return this.get_url(image)
@@ -1077,15 +1081,16 @@ class ImagePut {
       return pBitmap
    }
 
-   from_pdf(image, index := 0) {
+   from_pdf(image, index := "") {
       pStream := this.get_pdf(image, index)
       DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", pBitmap:=0)
       ObjRelease(pStream)
       return pBitmap
    }
 
-   get_pdf(image, index := 0) {
+   get_pdf(image, index := "") {
       ; Thanks malcev - https://www.autohotkey.com/boards/viewtopic.php?t=80735
+      index := (index != "") ? index : 1
 
       ; Create a stream from either a url or a file.
       pStream := this.is_url(image) ? this.get_url(image) : this.get_file(image)
