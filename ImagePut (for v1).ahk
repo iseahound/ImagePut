@@ -475,6 +475,9 @@ class ImagePut {
 
    ToBitmap(type, image, k := "") {
 
+      ; Sentinel value
+      k := (k != "") ? k : {base: {__get: this.get}} ; Returns the empty string for unknown properties.
+
       if (type = "clipboard_png")
          return this.from_clipboard_png()
 
@@ -628,6 +631,9 @@ class ImagePut {
    }
 
    ToStream(type, image, k := "") {
+
+      ; Sentinel value
+      k := (k != "") ? k : {base: {__get: this.get}} ; Returns the empty string for unknown properties.
 
       if (type = "clipboard_png")
          return this.get_clipboard_png()
