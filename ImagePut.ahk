@@ -1593,7 +1593,7 @@ class ImagePut {
    }
 
    static put_clipboard(pBitmap) {
-      ; Standard Clipboard Formats - https://docs.microsoft.com/en-us/windows/win32/dataxchg/standard-clipboard-formats
+      ; Standard Clipboard Formats - https://www.codeproject.com/Reference/1091137/Windows-Clipboard-Formats
       ; Synthesized Clipboard Formats - https://docs.microsoft.com/en-us/windows/win32/dataxchg/clipboard-formats
 
       ; Open the clipboard with exponential backoff.
@@ -1605,19 +1605,18 @@ class ImagePut {
                Sleep (2**(A_Index-1) * 30)
             else throw Error("Clipboard could not be opened.")
 
-      ; If not opened with a valid window handle EmptyClipboard will crash the next call to OpenClipboard.
+      ; Requires a valid window handle via OpenClipboard or the next call to OpenClipboard will crash.
       DllCall("EmptyClipboard")
 
       ; #1 - Place the image onto the clipboard as a PNG stream.
       ; Thanks Jochen Arndt - https://www.codeproject.com/Answers/1207927/Saving-an-image-to-the-clipboard#answer3
 
       ; Create a Stream whose underlying HGlobal must be referenced or lost forever.
+      ; Rescue the HGlobal after GDI+ has written the PNG to stream and release the stream.
       ; Please read: https://devblogs.microsoft.com/oldnewthing/20210929-00/?p=105742
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", False, "ptr*", &pStream:=0, "HRESULT")
       this.select_codec(pBitmap, "png", "", &pCodec, &ep, &ci, &v)
       DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", pStream, "ptr", pCodec, "ptr", IsSet(ep) ? ep : 0)
-
-      ; Rescue the HGlobal after GDI+ has written the PNG to stream and release the stream.
       DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "uint*", &hData:=0, "HRESULT")
       ObjRelease(pStream)
 
@@ -1650,15 +1649,12 @@ class ImagePut {
       ; Unlock to moveable memory because the clipboard requires it.
       DllCall("GlobalUnlock", "ptr", hdib)
 
-      ; Delete the temporary hBitmap.
-      DllCall("DeleteObject", "ptr", hbm)
-
       ; CF_DIB (8) can be synthesized into CF_BITMAP (2), CF_PALETTE (9), and CF_DIBV5 (17).
       DllCall("SetClipboardData", "uint", 8, "ptr", hdib)
 
-      ; Close the clipboard.
+      ; Cleanup
+      DllCall("DeleteObject", "ptr", hbm)
       DllCall("CloseClipboard")
-
       return ClipboardAll()
    }
 
