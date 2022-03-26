@@ -1,4 +1,4 @@
-#include *i ImagePut%A_TrayMenu%.ahk
+﻿#include *i ImagePut%A_TrayMenu%.ahk
 #include *i ImagePut (for v%true%).ahk
 #singleinstance force
 

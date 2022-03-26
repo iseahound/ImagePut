@@ -1,4 +1,4 @@
-; Script:    ImagePut.ahk
+﻿; Script:    ImagePut.ahk
 ; License:   MIT License
 ; Author:    Edison Hua (iseahound)
 ; Github:    https://github.com/iseahound/ImagePut
@@ -1700,27 +1700,73 @@ class ImagePut {
    }
 
    class BitmapBuffer {
-      __New(pBitmap) {
-         this.pBitmap := pBitmap
+
+      __New(SourceBitmap) {
          ImagePut.gdiplusStartup()
+
+         ;
+
+         DllCall("gdiplus\GdipGetImageWidth", "ptr", SourceBitmap, "uint*", width:=0)
+         DllCall("gdiplus\GdipGetImageHeight", "ptr", SourceBitmap, "uint*", height:=0)
+
+         size := 4 * width * height
+         ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr")
+
+         DllCall("gdiplus\GdipCreateBitmapFromScan0"
+                  , "int", width, "int", height, "int", 4 * width, "int", 0x26200A, "ptr", ptr, "ptr*", pBitmap:=0)
+
+         ; Transfer data from source pBitmap to an hBitmap manually.
+         VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
+            NumPut(  width, Rect,  8,   "uint") ; Width
+            NumPut( height, Rect, 12,   "uint") ; Height
+         VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
+            NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
+            NumPut(       ptr, BitmapData, 16,    "ptr") ; Scan0
+         DllCall("gdiplus\GdipBitmapLockBits"
+                  ,    "ptr", SourceBitmap
+                  ,    "ptr", &Rect
+                  ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
+                  ,    "int", 0x26200A     ; Format32bppArgb
+                  ,    "ptr", &BitmapData) ; Contains the pointer (pBits) to the hbm.
+         DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", SourceBitmap, "ptr", &BitmapData)
+
+         this.width := width
+         this.height := height
+         this.ptr := ptr
+         this.size := size
+         this.pBitmap := pBitmap
       }
 
       __Delete() {
          ImagePut.gdiplusShutdown("smart_pointer", this.pBitmap)
       }
 
-      width {
-         get {
-            DllCall("gdiplus\GdipGetImageWidth", "ptr", this.pBitmap, "uint*", width:=0)
-            return width
-         }
+      __Get(x, y) {
+         return Format("0x{:X}", NumGet(this.ptr + 4*(y*this.width + x), "uint"))
       }
 
-      height {
-         get {
-            DllCall("gdiplus\GdipGetImageHeight", "ptr", this.pBitmap, "uint*", height:=0)
-            return height
+      PixelSearch(color) {
+         static bin := 0
+         if !bin {
+            ; C source code - https://godbolt.org/z/rvTWqrqv6
+            code := (A_PtrSize == 4)
+            ? "VYnlU4tFCItVDI0MkDnIcxCLXRA5GHUEicLrBYPABOvsidBbXcM="
+            : "idJIjQSRSDnBcw9EOQF1BInI6wZIg8EE6+zD"
+            padding := (code ~= "==$") ? 2 : (code ~= "=$") ? 1 : 0
+            size := 3 * (StrLen(code) / 4) - padding
+            bin := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr")
+            DllCall("VirtualProtect", "ptr", bin, "ptr", size, "uint", 0x40, "uint*", old:=0)
+            DllCall("crypt32\CryptStringToBinary", "str", code, "uint", 0, "uint", 0x1, "ptr", bin, "uint*", size, "ptr", 0, "ptr", 0)
          }
+
+         ; Pass the width * height, but the size is returned due to C interpreting Scan0 as a integer pointer.
+         ; So when doing pointer arithmetic, *Scan0 + 1 is actually adding 4 bytes.
+         byte := DllCall(bin, "ptr", this.ptr, "uint", this.width * this.height, "uint", color, "int")
+         if (byte == this.ptr + this.size)
+            throw Exception("pixel not found")
+         x := mod((byte - this.ptr) / 4, this.width)
+         y := ((byte - this.ptr) / 4) // this.width
+         return {x:x, y:y}
       }
    }
 
