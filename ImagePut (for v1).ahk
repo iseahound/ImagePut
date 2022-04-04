@@ -1691,6 +1691,40 @@ class ImagePut {
       return ""
    }
 
+   set_clipboard(pStream) {
+      this.select_extension(pStream, extension:="")
+
+      if !(extension ~= "gif|png") {
+         DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", pBitmap:=0)
+         this.put_clipboard(pBitmap)
+         DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
+         return ""
+      }
+
+      ; Open the clipboard with exponential backoff.
+      loop
+         if DllCall("OpenClipboard", "ptr", A_ScriptHwnd)
+            break
+         else
+            if A_Index < 6
+               Sleep (2**(A_Index-1) * 30)
+            else throw Exception("Clipboard could not be opened.")
+
+      ; Requires a valid window handle via OpenClipboard or the next call to OpenClipboard will crash.
+      DllCall("EmptyClipboard")
+
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", False, "ptr*", pSharedStream:=0, "uint")
+      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uptr*", size:=0, "uint")
+      DllCall("shlwapi\IStream_Copy", "ptr", pStream, "ptr", pSharedStream, "uint", size, "uint")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
+
+      DllCall("ole32\GetHGlobalFromStream", "ptr", pSharedStream, "uint*", hData:=0, "uint")
+      ObjRelease(pSharedStream)
+      DllCall("SetClipboardData", "uint", DllCall("RegisterClipboardFormat", "str", extension, "uint"), "ptr", hData)
+      DllCall("CloseClipboard")
+      return ""
+   }
+
    put_buffer(pBitmap) {
       return new ImagePut.BitmapBuffer(pBitmap)
    }
@@ -2237,7 +2271,8 @@ class ImagePut {
 
    set_file(pStream, filepath := "") {
       extension := "png"
-      this.select_filepath(filepath, extension, pStream)
+      this.select_extension(pStream, extension)
+      this.select_filepath(filepath, extension)
 
       ; For compatibility with SHCreateMemStream do not use GetHGlobalFromStream.
       DllCall("shlwapi\SHCreateStreamOnFileEx"
@@ -2555,7 +2590,7 @@ class ImagePut {
          extension := "bmp"
    }
 
-   select_filepath(ByRef filepath, ByRef extension, pStream := "") {
+   select_filepath(ByRef filepath, ByRef extension) {
       ; Save default extension.
       default := extension
 
@@ -2595,10 +2630,6 @@ class ImagePut {
 
          ; Restore default extension.
          extension := default
-
-         ; Try extracting the filetype from the stream.
-         if (pStream)
-            this.select_extension(pStream, extension)
       }
 
       ; Create a filepath based on the timestamp.

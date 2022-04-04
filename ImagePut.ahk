@@ -2158,7 +2158,8 @@ class ImagePut {
 
    static set_file(pStream, filepath := "") {
       extension := "png"
-      this.select_filepath(&filepath, &extension, pStream)
+      this.select_extension(pStream, &extension)
+      this.select_filepath(&filepath, &extension)
 
       ; For compatibility with SHCreateMemStream do not use GetHGlobalFromStream.
       DllCall("shlwapi\SHCreateStreamOnFileEx"
@@ -2436,7 +2437,7 @@ class ImagePut {
          extension := "bmp"
    }
 
-   static select_filepath(&filepath, &extension, pStream := "") {
+   static select_filepath(&filepath, &extension) {
       ; Save default extension.
       default := extension
 
@@ -2476,10 +2477,6 @@ class ImagePut {
 
          ; Restore default extension.
          extension := default
-
-         ; Try extracting the filetype from the stream.
-         if (pStream)
-            this.select_extension(pStream, &extension)
       }
 
       ; Create a filepath based on the timestamp.
