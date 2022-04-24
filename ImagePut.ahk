@@ -1546,47 +1546,48 @@ class ImagePut {
    }
 
    static from_sprite(image) {
-      ; Create a source pBitmap and extract the width and height.
-      if DllCall("gdiplus\GdipCreateBitmapFromFile", "wstr", image, "ptr*", &sBitmap:=0)
-         if !(sBitmap := this.from_url(image))
+      ; Create a source pBitmap.
+      if !(pBitmap := this.from_file(image))
+         if !(pBitmap := this.from_url(image))
             throw Error("Could not be loaded from a valid file path or URL.")
 
       ; Get Bitmap width and height.
-      DllCall("gdiplus\GdipGetImageWidth", "ptr", sBitmap, "uint*", &width:=0)
-      DllCall("gdiplus\GdipGetImageHeight", "ptr", sBitmap, "uint*", &height:=0)
+      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
+      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
 
-      ; Create a destination pBitmap in 32-bit ARGB and get its device context though GDI+.
-      ; Note that a device context from a graphics context can only be drawn on, not read.
-      ; Also note that using a graphics context and blitting does not create a pixel perfect image.
-      ; Using a DIB and LockBits is about 5% faster.
-      DllCall("gdiplus\GdipCreateBitmapFromScan0"
-               , "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", &dBitmap:=0)
-      DllCall("gdiplus\GdipGetImageGraphicsContext", "ptr", dBitmap, "ptr*", &dGraphics:=0)
-      DllCall("gdiplus\GdipGetDC", "ptr", dGraphics, "ptr*", &ddc:=0)
+      ; Create a read write pixel buffer.
+      Rect := Buffer(16, 0)                  ; sizeof(Rect) = 16
+         NumPut(  "uint",   width, Rect,  8) ; Width
+         NumPut(  "uint",  height, Rect, 12) ; Height
+      BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
+      DllCall("gdiplus\GdipBitmapLockBits"
+               ,    "ptr", pBitmap
+               ,    "ptr", Rect
+               ,   "uint", 3            ; ImageLockMode.ReadWrite
+               ,    "int", 0x26200A     ; Format32bppArgb
+               ,    "ptr", BitmapData)  ; Contains the pointer (pBits) to the hbm.
+      Scan0 := NumGet(BitmapData, 16, "ptr")
 
-      ; Keep any existing transparency for whatever reason.
-      hBitmap := this.put_hBitmap(sBitmap) ; Could copy this code here for even more speed.
+      ; Generate machine code.
+      static bin := 0
+      if !bin {
+         ; C source code - https://godbolt.org/z/rvTWqrqv6
+         code := (A_PtrSize == 4)
+         ? "VYnli0UIi1UMi00QjRSQOdBzDzkIdQbHAAAAAACDwATr7V3D"
+         : "idJIjQSRSDnBcxFEOQF1BscBAAAAAEiDwQTr6sM="
+         size := StrLen(RTrim(code, "=")) * 3 // 4
+         bin := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr")
+         DllCall("VirtualProtect", "ptr", bin, "ptr", size, "uint", 0x40, "uint*", &old:=0)
+         DllCall("crypt32\CryptStringToBinary", "str", code, "uint", 0, "uint", 0x1, "ptr", bin, "uint*", size, "ptr", 0, "ptr", 0)
+      }
 
-      ; Create a source device context and associate the source hBitmap.
-      sdc := DllCall("CreateCompatibleDC", "ptr", ddc, "ptr")
-      obm := DllCall("SelectObject", "ptr", sdc, "ptr", hBitmap, "ptr")
+      ; Call colorkey.
+      DllCall(bin, "ptr", Scan0, "uint", width * height, "uint", NumGet(Scan0+0, "uint"))
 
-      ; Copy the image making the top-left pixel the color key.
-      DllCall("msimg32\TransparentBlt"
-               , "ptr", ddc, "int", 0, "int", 0, "int", width, "int", height  ; destination
-               , "ptr", sdc, "int", 0, "int", 0, "int", width, "int", height  ; source
-               , "uint", DllCall("GetPixel", "ptr", sdc, "int", 0, "int", 0)) ; RGB pixel.
+      ; Replace bitmap.
+      DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
 
-      ; Cleanup the hBitmap and device contexts.
-      DllCall("SelectObject", "ptr", sdc, "ptr", obm)
-      DllCall("DeleteObject", "ptr", hBitmap)
-      DllCall("DeleteDC",     "ptr", sdc)
-
-      ; Release the graphics context and delete.
-      DllCall("gdiplus\GdipReleaseDC", "ptr", dGraphics, "ptr", ddc)
-      DllCall("gdiplus\GdipDeleteGraphics", "ptr", dGraphics)
-
-      return dBitmap
+      return pBitmap
    }
 
    static put_clipboard(pBitmap) {

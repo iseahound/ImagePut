@@ -1578,7 +1578,7 @@ class ImagePut {
    }
 
    from_sprite(image) {
-      ; Create a source pBitmap and extract the width and height.
+      ; Create a source pBitmap.
       if !(pBitmap := this.from_file(image))
          if !(pBitmap := this.from_url(image))
             throw Exception("Could not be loaded from a valid file path or URL.")
@@ -1587,7 +1587,7 @@ class ImagePut {
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
 
-      ; Transfer data from source pBitmap to an hBitmap manually.
+      ; Create a read write pixel buffer.
       VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
          NumPut(  width, Rect,  8,   "uint") ; Width
          NumPut( height, Rect, 12,   "uint") ; Height
@@ -1598,10 +1598,9 @@ class ImagePut {
                ,   "uint", 3            ; ImageLockMode.ReadWrite
                ,    "int", 0x26200A     ; Format32bppArgb
                ,    "ptr", &BitmapData) ; Contains the pointer (pBits) to the hbm.
-
-      stride := NumGet(BitmapData, 8, "int")
       Scan0 := NumGet(BitmapData, 16, "ptr")
 
+      ; Generate machine code.
       static bin := 0
       if !bin {
          ; C source code - https://godbolt.org/z/rvTWqrqv6
@@ -1614,8 +1613,10 @@ class ImagePut {
          DllCall("crypt32\CryptStringToBinary", "str", code, "uint", 0, "uint", 0x1, "ptr", bin, "uint*", size, "ptr", 0, "ptr", 0)
       }
 
+      ; Call colorkey.
       DllCall(bin, "ptr", Scan0, "uint", width * height, "uint", NumGet(Scan0+0, "uint"))
 
+      ; Replace bitmap.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
 
       return pBitmap
