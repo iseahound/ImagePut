@@ -372,11 +372,11 @@ class ImagePut {
          try if ComObjQuery(image, "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}")
             return "RandomAccessStream", ObjRelease(image)
 
-         ; A "wicBitmap" is a pointer to the IWICBitmap interface bitmap.
-         try if ComObjQuery(image, "{00000121-A8F2-4877-BA0A-FD2B6645FB94}")
+         ; A "wicBitmap" is a pointer to a IWICBitmapSource.
+         try if ComObjQuery(image, "{00000120-A8F2-4877-BA0A-FD2B6645FB94}")
             return "wicBitmap", ObjRelease(image)
 
-         ; A "d2dBitmap" is a pointer to the ID2D1Bitmap interface bitmap.
+         ; A "d2dBitmap" is a pointer to a ID2D1Bitmap.
          try if ComObjQuery(image, "{A2296057-EA42-4099-983B-539FB6505426}")
             return "d2dBitmap", ObjRelease(image)
       }
@@ -1463,14 +1463,14 @@ class ImagePut {
    }
 
    from_wicBitmap(image) {
-      ; IWICBitmap::GetSize - https://github.com/tpn/winsdk-10/blob/9b69fd26ac0c7d0b83d378dba01080e93349c2ed/Include/10.0.16299.0/um/wincodec.h#L2207
+      ; IWICBitmapSource::GetSize - https://github.com/tpn/winsdk-10/blob/9b69fd26ac0c7d0b83d378dba01080e93349c2ed/Include/10.0.16299.0/um/wincodec.h#L1304
       DllCall(NumGet(NumGet(image + 0) + A_PtrSize*3), "ptr", image, "uint*", width:=0, "uint*", height:=0)
 
-      ; This is the 32-bit ARGB pBitmap (different from an hBitmap) that will receive the final converted pixels.
+      ; Intialize an empty pBitmap using managed memory.
       DllCall("gdiplus\GdipCreateBitmapFromScan0"
                , "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
 
-      ; Transfer data from source pBitmap to an hBitmap manually.
+      ; Create a pixel buffer.
       VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
          NumPut(  width, Rect,  8,   "uint") ; Width
          NumPut( height, Rect, 12,   "uint") ; Height
@@ -1480,15 +1480,14 @@ class ImagePut {
                ,    "ptr", &Rect
                ,   "uint", 2            ; ImageLockMode.WriteOnly
                ,    "int", 0x26200A     ; Format32bppArgb
-               ,    "ptr", &BitmapData) ; Contains the pointer (pBits) to the hbm.
-
-      stride := NumGet(BitmapData, 8, "int")
+               ,    "ptr", &BitmapData)
       Scan0 := NumGet(BitmapData, 16, "ptr")
+      stride := NumGet(BitmapData, 8, "int")
 
-      ; IWICBitmap::CopyPixels - https://github.com/tpn/winsdk-10/blob/9b69fd26ac0c7d0b83d378dba01080e93349c2ed/Include/10.0.16299.0/um/wincodec.h#L2225
+      ; IWICBitmapSource::CopyPixels - https://github.com/tpn/winsdk-10/blob/9b69fd26ac0c7d0b83d378dba01080e93349c2ed/Include/10.0.16299.0/um/wincodec.h#L1322
       DllCall(NumGet(NumGet(image + 0) + A_PtrSize*7), "ptr", image, "ptr", &Rect, "uint", stride, "uint", stride * height, "ptr", Scan0)
 
-      ; Unlock
+      ; Write pixels to bitmap.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
 
       return pBitmap
@@ -1504,7 +1503,7 @@ class ImagePut {
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
 
-      ; Create a read write pixel buffer.
+      ; Create a pixel buffer.
       VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
          NumPut(  width, Rect,  8,   "uint") ; Width
          NumPut( height, Rect, 12,   "uint") ; Height
