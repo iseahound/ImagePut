@@ -145,10 +145,6 @@ class ImagePut {
    static decode := False   ; Forces conversion using a bitmap. The original file encoding will be lost.
    static validate := False ; Always copies image data into memory instead of passing references.
 
-   get(name, p*) {
-      return ObjHasKey(this, name) ? this.name : ""
-   }
-
    call(cotype, image, p*) {
 
       ; Conversion uses an intermediate: source -> intermediate -> destination
@@ -156,7 +152,7 @@ class ImagePut {
       ; Pass positional arguments to the intermediate -> destination function.
 
       ; Define parameters.
-      if IsObject(image) {
+      if this.IsImageObject(image) {
 
          ; Save a copy of the keyword arguments.
          keywords := image
@@ -232,126 +228,62 @@ class ImagePut {
       return coimage
    }
 
+   get(name, p*) {
+      return ObjHasKey(this, name) ? this.name : ""
+   }
+
+   static ImageTypes :=
+      ( Join
+      [
+      "clipboard_png",
+      "clipboard",
+      "object",
+      "buffer",
+      "screenshot",
+      "window",
+      "desktop",
+      "wallpaper",
+      "cursor",
+      "pdf",
+      "url",
+      "file",
+      "hex",
+      "base64",
+      "monitor",
+      "dc",
+      "hBitmap",
+      "hIcon",
+      "bitmap",
+      "stream",
+      "RandomAccessStream",
+      "wicBitmap",
+      "d2dBitmap",
+      "sprite"
+      ]
+      )
+
+   IsImageObject(image) {
+      if IsObject(image)
+         for i, prop in image
+            for j, type in this.ImageTypes
+               if prop = type
+                  return True
+      return False
+   }
+
    DontVerifyImageType(ByRef image) {
 
       if !IsObject(image)
          throw Exception("Must be an object.")
 
-      ; Check for image type declarations.
-      ; Assumes that the user is telling the truth.
-
-      if ObjHasKey(image, "clipboard_png") {
-         image := image.clipboard_png
-         return "clipboard_png"
-      }
-
-      if ObjHasKey(image, "clipboard") {
-         image := image.clipboard
-         return "clipboard"
-      }
-
-      if ObjHasKey(image, "object") {
-         image := image.object
-         return "object"
-      }
-
-      if ObjHasKey(image, "buffer") {
-         image := image.buffer
-         return "buffer"
-      }
-
-      if ObjHasKey(image, "screenshot") {
-         image := image.screenshot
-         return "screenshot"
-      }
-
-      if ObjHasKey(image, "window") {
-         image := image.window
-         return "window"
-      }
-
-      if ObjHasKey(image, "desktop") {
-         image := image.desktop
-         return "desktop"
-      }
-
-      if ObjHasKey(image, "wallpaper") {
-         image := image.wallpaper
-         return "wallpaper"
-      }
-
-      if ObjHasKey(image, "cursor") {
-         image := image.cursor
-         return "cursor"
-      }
-
-      if ObjHasKey(image, "pdf") {
-         image := image.pdf
-         return "pdf"
-      }
-
-      if ObjHasKey(image, "url") {
-         image := image.url
-         return "url"
-      }
-
-      if ObjHasKey(image, "file") {
-         image := image.file
-         return "file"
-      }
-
-      if ObjHasKey(image, "hex") {
-         image := image.hex
-         return "hex"
-      }
-
-      if ObjHasKey(image, "base64") {
-         image := image.base64
-         return "base64"
-      }
-
-      if ObjHasKey(image, "monitor") {
-         image := image.monitor
-         return "monitor"
-      }
-
-      if ObjHasKey(image, "dc") {
-         image := image.dc
-         return "dc"
-      }
-
-      if ObjHasKey(image, "hBitmap") {
-         image := image.hBitmap
-         return "hBitmap"
-      }
-
-      if ObjHasKey(image, "hIcon") {
-         image := image.hIcon
-         return "hIcon"
-      }
-
-      if ObjHasKey(image, "bitmap") {
-         image := image.bitmap
-         return "bitmap"
-      }
-
-      if ObjHasKey(image, "stream") {
-         image := image.stream
-         return "stream"
-      }
-
-      if ObjHasKey(image, "RandomAccessStream") {
-         image := image.RandomAccessStream
-         return "RandomAccessStream"
-      }
-
-      if ObjHasKey(image, "sprite") {
-         image := image.sprite
-         return "sprite"
-      }
+      for i, type in this.ImageTypes
+         if ObjHasKey(image, type)
+            if image := image[type]
+               return type
 
       throw Exception("Invalid type.")
    }
+
 
    ImageType(image) {
       ; Throw if the image is an empty string.
