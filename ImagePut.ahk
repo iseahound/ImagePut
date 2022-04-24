@@ -261,6 +261,7 @@ class ImagePut {
 
 
 
+
    static IsImageObject(image) {
       if IsObject(image)
          for prop in image.OwnProps()
