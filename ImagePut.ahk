@@ -1259,8 +1259,7 @@ class ImagePut {
 
       ; Retrieve the size of bytes from the length of the base64 string.
       flags := 0x1 ; CRYPT_STRING_BASE64
-      padding := (image ~= "==$") ? 2 : (image ~= "=$") ? 1 : 0
-      size := 3 * (StrLen(image) / 4) - padding
+      size := StrLen(RTrim(image, "=")) * 3 // 4
 
       hData := DllCall("GlobalAlloc", "uint", 0x2, "uptr", size, "ptr")
       pData := DllCall("GlobalLock", "ptr", hData, "ptr")

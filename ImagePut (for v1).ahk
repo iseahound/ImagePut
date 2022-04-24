@@ -1259,8 +1259,7 @@ class ImagePut {
 
       ; Retrieve the size of bytes from the length of the base64 string.
       flags := 0x1 ; CRYPT_STRING_BASE64
-      padding := (image ~= "==$") ? 2 : (image ~= "=$") ? 1 : 0
-      size := 3 * (StrLen(image) / 4) - padding
+      size := StrLen(RTrim(image, "=")) * 3 // 4
 
       hData := DllCall("GlobalAlloc", "uint", 0x2, "uptr", size, "ptr")
       pData := DllCall("GlobalLock", "ptr", hData, "ptr")
@@ -1609,8 +1608,7 @@ class ImagePut {
          code := (A_PtrSize == 4)
          ? "VYnli0UIi1UMi00QjRSQOdBzDzkIdQbHAAAAAACDwATr7V3D"
          : "idJIjQSRSDnBcxFEOQF1BscBAAAAAEiDwQTr6sM="
-         padding := (code ~= "==$") ? 2 : (code ~= "=$") ? 1 : 0
-         size := 3 * (StrLen(code) / 4) - padding
+         size := StrLen(RTrim(code, "=")) * 3 // 4
          bin := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr")
          DllCall("VirtualProtect", "ptr", bin, "ptr", size, "uint", 0x40, "uint*", old:=0)
          DllCall("crypt32\CryptStringToBinary", "str", code, "uint", 0, "uint", 0x1, "ptr", bin, "uint*", size, "ptr", 0, "ptr", 0)
