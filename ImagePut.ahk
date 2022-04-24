@@ -398,7 +398,7 @@ class ImagePut {
       ; For more helpful error messages: Catch file names without extensions!
       for extension in ["bmp","dib","rle","jpg","jpeg","jpe","jfif","gif","tif","tiff","png","ico","exe","dll"]
          if FileExist(image "." extension)
-            throw Error("A ." extension " file extension is required!")
+            throw Error("A ." extension " file extension is required!", -3)
 
       throw Error("Image type could not be identified.")
    }
