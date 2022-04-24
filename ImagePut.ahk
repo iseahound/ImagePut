@@ -1582,7 +1582,7 @@ class ImagePut {
       }
 
       ; Call colorkey.
-      DllCall(bin, "ptr", Scan0, "uint", width * height, "uint", NumGet(Scan0+0, "uint"))
+      DllCall(bin, "ptr", Scan0, "uint", width * height, "uint", NumGet(Scan0, "uint"))
 
       ; Replace bitmap.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
