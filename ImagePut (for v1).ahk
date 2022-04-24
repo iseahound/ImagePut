@@ -147,40 +147,18 @@ class ImagePut {
 
    call(cotype, image, p*) {
 
-      ; Conversion uses an intermediate: source -> intermediate -> destination
-      ; Pass keyword arguments to the source -> intermediate function.
-      ; Pass positional arguments to the intermediate -> destination function.
-
-      ; Define parameters.
-      if this.IsImageObject(image) {
-
-         ; Save a copy of the keyword arguments.
-         keywords := image
-         keywords.base := {__get: this.get} ; Returns the empty string for unknown properties.
-
-         crop := ObjHasKey(image, "crop") ? image.crop : False
-         scale := ObjHasKey(image, "scale") ? image.scale : False
-         decode := ObjHasKey(image, "decode") ? image.decode : this.decode
-         validate := ObjHasKey(image, "validate") ? image.validate : this.validate
-
-         ; Dereference the image unknown.
-         if ObjHasKey(image, "image")
-            image := image.image
-
-      } else {
-         keywords := {base: {__get: this.get}} ; Returns the empty string for unknown properties.
-         crop := scale := False
-         decode := this.decode
-         validate := this.validate
-      }
-
       ; Start!
       this.gdiplusStartup()
 
       ; Take a guess as to what the image might be. (>95% accuracy!)
-      try type := this.DontVerifyImageType(image)
+      try type := this.DontVerifyImageType(image, keywords)
       catch
          type := this.ImageType(image)
+
+      crop := keywords.crop
+      scale := keywords.scale
+      decode := keywords.decode ? keywords.decode : this.decode
+      validate := keywords.validate ? keywords.validate : this.validate
 
       ; #1 - Stream intermediate.
       if not decode and not crop and not scale
@@ -262,25 +240,33 @@ class ImagePut {
       ]
       )
 
-   IsImageObject(image) {
-      if IsObject(image)
-         for i, prop in image
-            for j, type in this.ImageTypes
-               if prop = type
-                  return True
-      return False
-   }
+   DontVerifyImageType(ByRef image, ByRef keywords := "") {
 
-   DontVerifyImageType(ByRef image) {
+      ; Sentinel value: Returns the empty string for unknown properties.
+      keywords := {base: {__get: this.get}}
 
+      ; Try ImageType.
       if !IsObject(image)
          throw Exception("Must be an object.")
 
-      for i, type in this.ImageTypes
-         if ObjHasKey(image, type)
-            if image := image[type]
-               return type
+      ; Goto ImageType.
+      if ObjHasKey(image, "image") {
+         keywords := image
+         keywords.base := {__get: this.get}
+         image := image.image
+         throw Exception("Must catch this error with ImageType.")
+      }
 
+      ; Skip ImageType.
+      for i, type in this.ImageTypes
+         if ObjHasKey(image, type) {
+            keywords := image
+            keywords.base := {__get: this.get}
+            image := image[type]
+            return type
+         }
+
+      ; Continue ImageType.
       throw Exception("Invalid type.")
    }
 
