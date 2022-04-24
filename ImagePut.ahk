@@ -1604,6 +1604,41 @@ class ImagePut {
       return ClipboardAll()
    }
 
+   set_clipboard(pStream) { ; Not yet implemented.
+      this.select_extension(pStream, &extension:="")
+
+      if !(extension ~= "gif|png") {
+         DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
+         this.put_clipboard(pBitmap)
+         DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
+         return ClipboardAll()
+      }
+
+      ; Open the clipboard with exponential backoff.
+      loop
+         if DllCall("OpenClipboard", "ptr", A_ScriptHwnd)
+            break
+         else
+            if A_Index < 6
+               Sleep (2**(A_Index-1) * 30)
+            else throw Error("Clipboard could not be opened.")
+
+      ; Requires a valid window handle via OpenClipboard or the next call to OpenClipboard will crash.
+      DllCall("EmptyClipboard")
+
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", False, "ptr*", &pSharedStream:=0, "uint")
+      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "uint")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
+      DllCall("shlwapi\IStream_Copy", "ptr", pStream, "ptr", pSharedStream, "uint", size, "uint")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
+
+      DllCall("ole32\GetHGlobalFromStream", "ptr", pSharedStream, "uint*", &hData:=0, "uint")
+      ObjRelease(pSharedStream)
+      DllCall("SetClipboardData", "uint", DllCall("RegisterClipboardFormat", "str", extension, "uint"), "ptr", hData)
+      DllCall("CloseClipboard")
+      return ClipboardAll()
+   }
+
    static put_buffer(pBitmap) {
       return ImagePut.BitmapBuffer(pBitmap)
    }

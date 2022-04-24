@@ -1604,7 +1604,7 @@ class ImagePut {
       return ""
    }
 
-   set_clipboard(pStream) {
+   set_clipboard(pStream) { ; Not yet implemented.
       this.select_extension(pStream, extension:="")
 
       if !(extension ~= "gif|png") {
