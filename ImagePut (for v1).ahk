@@ -1711,7 +1711,7 @@ class ImagePut {
       DllCall("EmptyClipboard")
 
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", False, "ptr*", pSharedStream:=0, "uint")
-      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uptr*", size:=0, "uint")
+      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", size:=0, "uint")
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
       DllCall("shlwapi\IStream_Copy", "ptr", pStream, "ptr", pSharedStream, "uint", size, "uint")
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
@@ -2281,7 +2281,7 @@ class ImagePut {
                ,    "ptr", 0               ; pstmTemplate (reserved)
                ,   "ptr*", pFileStream:=0
                ,   "uint")
-      DllCall("shlwapi\IStream_Size", "ptr", pStream, "ptr*", size:=0, "uint")
+      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", size:=0, "uint")
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
       DllCall("shlwapi\IStream_Copy", "ptr", pStream, "ptr", pFileStream, "uint", size, "uint")
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
@@ -2302,7 +2302,7 @@ class ImagePut {
       ; Get a pointer to binary data.
       DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "ptr*", hbin:=0, "uint")
       bin := DllCall("GlobalLock", "ptr", hbin, "ptr")
-      size := DllCall("GlobalSize", "uint", bin, "uptr")
+      size := DllCall("GlobalSize", "ptr", bin, "uptr")
 
       ; Calculate the length of the hexadecimal string.
       flags := 0x4000000C ; CRYPT_STRING_NOCRLF | CRYPT_STRING_HEXRAW
@@ -2322,7 +2322,7 @@ class ImagePut {
 
    set_hex(pStream) {
       ; For compatibility with SHCreateMemStream do not use GetHGlobalFromStream.
-      DllCall("shlwapi\IStream_Size", "ptr", pStream, "ptr*", size:=0, "uint")
+      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", size:=0, "uint")
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
       DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", &bin := VarSetCapacity(bin, size), "uint", size, "uint")
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
@@ -2351,7 +2351,7 @@ class ImagePut {
       ; Get a pointer to binary data.
       DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "ptr*", hbin:=0, "uint")
       bin := DllCall("GlobalLock", "ptr", hbin, "ptr")
-      size := DllCall("GlobalSize", "uint", bin, "uptr")
+      size := DllCall("GlobalSize", "ptr", bin, "uptr")
 
       ; Calculate the length of the base64 string.
       flags := 0x40000001 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_BASE64
@@ -2371,7 +2371,7 @@ class ImagePut {
 
    set_base64(pStream) {
       ; For compatibility with SHCreateMemStream do not use GetHGlobalFromStream.
-      DllCall("shlwapi\IStream_Size", "ptr", pStream, "ptr*", size:=0, "uint")
+      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", size:=0, "uint")
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
       DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", &bin := VarSetCapacity(bin, size), "uint", size, "uint")
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")

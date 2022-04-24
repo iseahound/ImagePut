@@ -2168,7 +2168,7 @@ class ImagePut {
                ,    "ptr", 0               ; pstmTemplate (reserved)
                ,   "ptr*", &pFileStream:=0
                ,"HRESULT")
-      DllCall("shlwapi\IStream_Size", "ptr", pStream, "ptr*", &size:=0, "HRESULT")
+      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "HRESULT")
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "HRESULT")
       DllCall("shlwapi\IStream_Copy", "ptr", pStream, "ptr", pFileStream, "uint", size, "HRESULT")
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "HRESULT")
@@ -2189,7 +2189,7 @@ class ImagePut {
       ; Get a pointer to binary data.
       DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "ptr*", &hbin:=0, "HRESULT")
       bin := DllCall("GlobalLock", "ptr", hbin, "ptr")
-      size := DllCall("GlobalSize", "uint", bin, "uptr")
+      size := DllCall("GlobalSize", "ptr", bin, "uptr")
 
       ; Calculate the length of the hexadecimal string.
       flags := 0x4000000C ; CRYPT_STRING_NOCRLF | CRYPT_STRING_HEXRAW
@@ -2209,7 +2209,7 @@ class ImagePut {
 
    static set_hex(pStream) {
       ; For compatibility with SHCreateMemStream do not use GetHGlobalFromStream.
-      DllCall("shlwapi\IStream_Size", "ptr", pStream, "ptr*", &size:=0, "HRESULT")
+      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "HRESULT")
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "HRESULT")
       DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", bin := Buffer(size), "uint", size, "HRESULT")
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "HRESULT")
@@ -2238,7 +2238,7 @@ class ImagePut {
       ; Get a pointer to binary data.
       DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "ptr*", &hbin:=0, "HRESULT")
       bin := DllCall("GlobalLock", "ptr", hbin, "ptr")
-      size := DllCall("GlobalSize", "uint", bin, "uptr")
+      size := DllCall("GlobalSize", "ptr", bin, "uptr")
 
       ; Calculate the length of the base64 string.
       flags := 0x40000001 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_BASE64
@@ -2258,7 +2258,7 @@ class ImagePut {
 
    static set_base64(pStream) {
       ; For compatibility with SHCreateMemStream do not use GetHGlobalFromStream.
-      DllCall("shlwapi\IStream_Size", "ptr", pStream, "ptr*", &size:=0, "HRESULT")
+      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "HRESULT")
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "HRESULT")
       DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", bin := Buffer(size), "uint", size, "HRESULT")
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "HRESULT")
