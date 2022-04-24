@@ -1713,6 +1713,7 @@ class ImagePut {
 
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", False, "ptr*", pSharedStream:=0, "uint")
       DllCall("shlwapi\IStream_Size", "ptr", pStream, "uptr*", size:=0, "uint")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
       DllCall("shlwapi\IStream_Copy", "ptr", pStream, "ptr", pSharedStream, "uint", size, "uint")
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
 
