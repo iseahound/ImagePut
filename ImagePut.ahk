@@ -2589,7 +2589,7 @@ class ImageEqual extends ImagePut {
       }
 
       ; If there are multiple images, compare each subsequent image to the first.
-      for i, image in images {
+      for image in images {
          if (A_Index != 1) {
 
             ; Guess the type of the image.
