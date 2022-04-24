@@ -142,45 +142,23 @@ ImageEqual(images*) {
 
 class ImagePut {
 
-   static decode := False   ; Forces conversion using a bitmap. The original file encoding will be lost.
-   static validate := False ; Always copies image data into memory instead of passing references.
+   static decode := False  ; Forces conversion using a bitmap. The original file encoding will be lost.
+   static validate := False  ; Always copies image data into memory instead of passing references.
 
    static call(cotype, image, p*) {
-
-      ; Conversion uses an intermediate: source -> intermediate -> destination
-      ; Pass keyword arguments to the source -> intermediate function.
-      ; Pass positional arguments to the intermediate -> destination function.
-
-      ; Define parameters.
-      if this.IsImageObject(image) {
-
-         ; Save a copy of the keyword arguments.
-         keywords := image
-         keywords.base := {__get: this.get} ; Returns the empty string for unknown properties.
-
-         crop := ObjHasOwnProp(image, "crop") ? image.crop : False
-         scale := ObjHasOwnProp(image, "scale") ? image.scale : False
-         decode := ObjHasOwnProp(image, "decode") ? image.decode : this.decode
-         validate := ObjHasOwnProp(image, "validate") ? image.validate : this.validate
-
-         ; Dereference the image unknown.
-         if ObjHasOwnProp(image, "image")
-            image := image.image
-
-      } else {
-         keywords := {base: {__get: this.get}} ; Returns the empty string for unknown properties.
-         crop := scale := False
-         decode := this.decode
-         validate := this.validate
-      }
 
       ; Start!
       this.gdiplusStartup()
 
       ; Take a guess as to what the image might be. (>95% accuracy!)
-      try type := this.DontVerifyImageType(&image)
+      try type := this.DontVerifyImageType(&image, &keywords)
       catch
          type := this.ImageType(image)
+
+      crop := keywords.crop
+      scale := keywords.scale
+      decode := keywords.decode ? keywords.decode : this.decode
+      validate := keywords.validate ? keywords.validate : this.validate
 
       ; #1 - Stream intermediate.
       if not decode and not crop and not scale
@@ -262,25 +240,33 @@ class ImagePut {
 
 
 
-   static IsImageObject(image) {
-      if IsObject(image)
-         for prop in image.OwnProps()
-            for type in this.ImageTypes
-               if prop = type
-                  return True
-      return False
-   }
+   static DontVerifyImageType(&image, &keywords := "") {
 
-   static DontVerifyImageType(&image) {
+      ; Sentinel value: Returns the empty string for unknown properties.
+      keywords := {base: {__get: this.get}}
 
+      ; Try ImageType.
       if !IsObject(image)
          throw Error("Must be an object.")
 
-      for type in this.ImageTypes
-         if ObjHasOwnProp(image, type)
-            if image := image.%type%
-               return type
+      ; Goto ImageType.
+      if ObjHasOwnProp(image, "image") {
+         keywords := image
+         keywords.base := {__get: this.get}
+         image := image.image
+         throw Error("Must catch this error with ImageType.")
+      }
 
+      ; Skip ImageType.
+      for type in this.ImageTypes
+         if ObjHasOwnProp(image, type) {
+            keywords := image
+            keywords.base := {__get: this.get}
+            image := image.%type%
+            return type
+         }
+
+      ; Continue ImageType.
       throw Error("Invalid type.")
    }
 
