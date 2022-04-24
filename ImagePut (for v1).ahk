@@ -284,7 +284,6 @@ class ImagePut {
       throw Exception("Invalid type.")
    }
 
-
    ImageType(image) {
       ; Throw if the image is an empty string.
       if (image == "") {
