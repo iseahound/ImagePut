@@ -398,7 +398,7 @@ class ImagePut {
 
 
       ; For more helpful error messages: Catch file names without extensions!
-      for extension in ["bmp","dib","rle","jpg","jpeg","jpe","jfif","gif","tif","tiff","png","ico","exe","dll"]
+      for i, extension in ["bmp","dib","rle","jpg","jpeg","jpe","jfif","gif","tif","tiff","png","ico","exe","dll"]
          if FileExist(image "." extension)
             throw Exception("A ." extension " file extension is required!")
 
