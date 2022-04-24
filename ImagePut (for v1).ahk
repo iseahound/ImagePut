@@ -99,6 +99,11 @@ ImagePutWallpaper(image) {
    return ImagePut("wallpaper", image)
 }
 
+; Puts the image into a WICBitmap and returns the pointer to the interface.
+ImagePutWICBitmap(image) {
+   return ImagePut("wicBitmap", image)
+}
+
 ; Puts the image in a window and returns a handle to a window.
 ;   title      -  Window Title            |  string   ->   MyTitle
 ;   pos        -  Window Coordinates      |  array    ->   [x,y,w,h] or [0,0]
