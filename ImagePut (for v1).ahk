@@ -1648,18 +1648,19 @@ class ImagePut {
       __New(SourceBitmap) {
          ImagePut.gdiplusStartup()
 
-         ;
-
+         ; Get Bitmap width and height.
          DllCall("gdiplus\GdipGetImageWidth", "ptr", SourceBitmap, "uint*", width:=0)
          DllCall("gdiplus\GdipGetImageHeight", "ptr", SourceBitmap, "uint*", height:=0)
 
+         ; Allocate global memory.
          size := 4 * width * height
          ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr")
 
+         ; Create a pBitmap on saved memory.
          DllCall("gdiplus\GdipCreateBitmapFromScan0"
                   , "int", width, "int", height, "int", 4 * width, "int", 0x26200A, "ptr", ptr, "ptr*", pBitmap:=0)
 
-         ; Transfer data from source pBitmap to an hBitmap manually.
+         ; Create a pixel buffer.
          VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
             NumPut(  width, Rect,  8,   "uint") ; Width
             NumPut( height, Rect, 12,   "uint") ; Height
@@ -1671,7 +1672,9 @@ class ImagePut {
                   ,    "ptr", &Rect
                   ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
                   ,    "int", 0x26200A     ; Format32bppArgb
-                  ,    "ptr", &BitmapData) ; Contains the pointer (pBits) to the hbm.
+                  ,    "ptr", &BitmapData)
+
+         ; Write pixels to bitmap.
          DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", SourceBitmap, "ptr", &BitmapData)
 
          this.width := width
@@ -1683,34 +1686,37 @@ class ImagePut {
 
       __Delete() {
          ImagePut.gdiplusShutdown("smart_pointer", this.pBitmap)
+         DllCall("GlobalFree", "ptr", this.ptr)
       }
 
       __Get(x, y) {
          return Format("0x{:X}", NumGet(this.ptr + 4*(y*this.width + x), "uint"))
       }
 
-      PixelSearch(color) {
-         static bin := 0
-         if !bin {
-            ; C source code - https://godbolt.org/z/rvTWqrqv6
-            code := (A_PtrSize == 4)
-            ? "VYnlU4tFCItVDI0MkDnIcxCLXRA5GHUEicLrBYPABOvsidBbXcM="
-            : "idJIjQSRSDnBcw9EOQF1BInI6wZIg8EE6+zD"
-            padding := (code ~= "==$") ? 2 : (code ~= "=$") ? 1 : 0
-            size := 3 * (StrLen(code) / 4) - padding
-            bin := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr")
-            DllCall("VirtualProtect", "ptr", bin, "ptr", size, "uint", 0x40, "uint*", old:=0)
-            DllCall("crypt32\CryptStringToBinary", "str", code, "uint", 0, "uint", 0x1, "ptr", bin, "uint*", size, "ptr", 0, "ptr", 0)
-         }
+      Base64Put(code) {
+         size := StrLen(RTrim(code, "=")) * 3 // 4
+         bin := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr")
+         DllCall("VirtualProtect", "ptr", bin, "ptr", size, "uint", 0x40, "uint*", old:=0)
+         DllCall("crypt32\CryptStringToBinary", "str", code, "uint", 0, "uint", 0x1, "ptr", bin, "uint*", size, "ptr", 0, "ptr", 0)
+         return bin
+      }
 
-         ; Pass the width * height, but the size is returned due to C interpreting Scan0 as a integer pointer.
-         ; So when doing pointer arithmetic, *Scan0 + 1 is actually adding 4 bytes.
-         byte := DllCall(bin, "ptr", this.ptr, "uint", this.width * this.height, "uint", color, "int")
+      PixelSearch(color) {
+         ; C source code - https://godbolt.org/z/9v7vzf5az
+         static bin := 0, code := (A_PtrSize == 4)
+            ? "VYnli1UMi00Qi0UIOdBzCTkIdAeDwATr84nQXcM="
+            : "SInISDnQcwtEOQB0CUiDwATr8EiJ0MM="
+         (!bin && bin := this.Base64Put(code))
+
+         ; Lift color to 32-bits if first 8 bits are zero.
+         (!(color >> 24) && color |= 0xFF000000)
+
+         ; When doing pointer arithmetic, *Scan0 + 1 is actually adding 4 bytes.
+         byte := DllCall(bin, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "int")
          if (byte == this.ptr + this.size)
-            throw Exception("pixel not found")
-         x := mod((byte - this.ptr) / 4, this.width)
-         y := ((byte - this.ptr) / 4) // this.width
-         return {x:x, y:y}
+            return False
+         offset := (byte - this.ptr) // 4
+         return {x: mod(offset, this.width), y: offset // this.width}
       }
    }
 

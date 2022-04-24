@@ -1644,27 +1644,78 @@ class ImagePut {
    }
 
    class BitmapBuffer {
-      __New(pBitmap) {
-         this.pBitmap := pBitmap
+      __New(SourceBitmap) {
          ImagePut.gdiplusStartup()
+
+         ; Get Bitmap width and height.
+         DllCall("gdiplus\GdipGetImageWidth", "ptr", SourceBitmap, "uint*", &width:=0)
+         DllCall("gdiplus\GdipGetImageHeight", "ptr", SourceBitmap, "uint*", &height:=0)
+
+         ; Allocate global memory.
+         size := 4 * width * height
+         ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr")
+
+         ; Create a pBitmap on saved memory.
+         DllCall("gdiplus\GdipCreateBitmapFromScan0"
+                  , "int", width, "int", height, "int", 4 * width, "int", 0x26200A, "ptr", ptr, "ptr*", &pBitmap:=0)
+
+         ; Fill a pixel buffer.
+         Rect := Buffer(16, 0)                  ; sizeof(Rect) = 16
+            NumPut(  "uint",   width, Rect,  8) ; Width
+            NumPut(  "uint",  height, Rect, 12) ; Height
+         BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
+            NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
+            NumPut(   "ptr",        ptr, BitmapData, 16) ; Scan0
+         DllCall("gdiplus\GdipBitmapLockBits"
+                  ,    "ptr", SourceBitmap
+                  ,    "ptr", Rect
+                  ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
+                  ,    "int", 0x26200A     ; Format32bppArgb
+                  ,    "ptr", BitmapData)
+
+         ; Write pixels to bitmap.
+         DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", SourceBitmap, "ptr", BitmapData)
+
+         this.width := width
+         this.height := height
+         this.ptr := ptr
+         this.size := size
+         this.pBitmap := pBitmap
       }
 
       __Delete() {
          ImagePut.gdiplusShutdown("smart_pointer", this.pBitmap)
+         DllCall("GlobalFree", "ptr", this.ptr)
       }
 
-      width {
-         get {
-            DllCall("gdiplus\GdipGetImageWidth", "ptr", this.pBitmap, "uint*", &width:=0)
-            return width
-         }
+      __Get(x, y) {
+         return Format("0x{:X}", NumGet(this.ptr + 4*(y*this.width + x), "uint"))
       }
 
-      height {
-         get {
-            DllCall("gdiplus\GdipGetImageHeight", "ptr", this.pBitmap, "uint*", &height:=0)
-            return height
-         }
+      Base64Put(code) {
+         size := StrLen(RTrim(code, "=")) * 3 // 4
+         bin := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr")
+         DllCall("VirtualProtect", "ptr", bin, "ptr", size, "uint", 0x40, "uint*", &old:=0)
+         DllCall("crypt32\CryptStringToBinary", "str", code, "uint", 0, "uint", 0x1, "ptr", bin, "uint*", size, "ptr", 0, "ptr", 0)
+         return bin
+      }
+
+      PixelSearch(color) {
+         ; C source code - https://godbolt.org/z/9v7vzf5az
+         static bin := 0, code := (A_PtrSize == 4)
+            ? "VYnli1UMi00Qi0UIOdBzCTkIdAeDwATr84nQXcM="
+            : "SInISDnQcwtEOQB0CUiDwATr8EiJ0MM="
+         (!bin && bin := this.Base64Put(code))
+
+         ; Lift color to 32-bits if first 8 bits are zero.
+         (!(color >> 24) && color |= 0xFF000000)
+
+         ; When doing pointer arithmetic, *Scan0 + 1 is actually adding 4 bytes.
+         byte := DllCall(bin, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "int")
+         if (byte == this.ptr + this.size)
+            return False
+         offset := (byte - this.ptr) // 4
+         return {x: mod(offset, this.width), y: offset // this.width}
       }
    }
 
