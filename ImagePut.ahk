@@ -145,10 +145,6 @@ class ImagePut {
    static decode := False   ; Forces conversion using a bitmap. The original file encoding will be lost.
    static validate := False ; Always copies image data into memory instead of passing references.
 
-   static get(name, p*) {
-      return ObjHasOwnProp(this, name) ? this.name : ""
-   }
-
    static call(cotype, image, p*) {
 
       ; Conversion uses an intermediate: source -> intermediate -> destination
@@ -156,7 +152,7 @@ class ImagePut {
       ; Pass positional arguments to the intermediate -> destination function.
 
       ; Define parameters.
-      if IsObject(image) {
+      if this.IsImageObject(image) {
 
          ; Save a copy of the keyword arguments.
          keywords := image
@@ -232,123 +228,57 @@ class ImagePut {
       return coimage
    }
 
+   static get(name, p*) {
+      return ObjHasOwnProp(this, name) ? this.name : ""
+   }
+
+   static ImageTypes := [
+      "clipboard_png",
+      "clipboard",
+      "object",
+      "buffer",
+      "screenshot",
+      "window",
+      "desktop",
+      "wallpaper",
+      "cursor",
+      "pdf",
+      "url",
+      "file",
+      "hex",
+      "base64",
+      "monitor",
+      "dc",
+      "hBitmap",
+      "hIcon",
+      "bitmap",
+      "stream",
+      "RandomAccessStream",
+      "wicBitmap",
+      "d2dBitmap",
+      "sprite"
+   ]
+
+
+
+   static IsImageObject(image) {
+      if IsObject(image)
+         for prop in image.OwnProps()
+            for type in this.ImageTypes
+               if prop = type
+                  return True
+      return False
+   }
+
    static DontVerifyImageType(&image) {
 
       if !IsObject(image)
          throw Error("Must be an object.")
 
-      ; Check for image type declarations.
-      ; Assumes that the user is telling the truth.
-
-      if ObjHasOwnProp(image, "clipboard_png") {
-         image := image.clipboard_png
-         return "clipboard_png"
-      }
-
-      if ObjHasOwnProp(image, "clipboard") {
-         image := image.clipboard
-         return "clipboard"
-      }
-
-      if ObjHasOwnProp(image, "object") {
-         image := image.object
-         return "object"
-      }
-
-      if ObjHasOwnProp(image, "buffer") {
-         image := image.buffer
-         return "buffer"
-      }
-
-      if ObjHasOwnProp(image, "screenshot") {
-         image := image.screenshot
-         return "screenshot"
-      }
-
-      if ObjHasOwnProp(image, "window") {
-         image := image.window
-         return "window"
-      }
-
-      if ObjHasOwnProp(image, "desktop") {
-         image := image.desktop
-         return "desktop"
-      }
-
-      if ObjHasOwnProp(image, "wallpaper") {
-         image := image.wallpaper
-         return "wallpaper"
-      }
-
-      if ObjHasOwnProp(image, "cursor") {
-         image := image.cursor
-         return "cursor"
-      }
-
-      if ObjHasOwnProp(image, "pdf") {
-         image := image.pdf
-         return "pdf"
-      }
-
-      if ObjHasOwnProp(image, "url") {
-         image := image.url
-         return "url"
-      }
-
-      if ObjHasOwnProp(image, "file") {
-         image := image.file
-         return "file"
-      }
-
-      if ObjHasOwnProp(image, "hex") {
-         image := image.hex
-         return "hex"
-      }
-
-      if ObjHasOwnProp(image, "base64") {
-         image := image.base64
-         return "base64"
-      }
-
-      if ObjHasOwnProp(image, "monitor") {
-         image := image.monitor
-         return "monitor"
-      }
-
-      if ObjHasOwnProp(image, "dc") {
-         image := image.dc
-         return "dc"
-      }
-
-      if ObjHasOwnProp(image, "hBitmap") {
-         image := image.hBitmap
-         return "hBitmap"
-      }
-
-      if ObjHasOwnProp(image, "hIcon") {
-         image := image.hIcon
-         return "hIcon"
-      }
-
-      if ObjHasOwnProp(image, "bitmap") {
-         image := image.bitmap
-         return "bitmap"
-      }
-
-      if ObjHasOwnProp(image, "stream") {
-         image := image.stream
-         return "stream"
-      }
-
-      if ObjHasOwnProp(image, "RandomAccessStream") {
-         image := image.RandomAccessStream
-         return "RandomAccessStream"
-      }
-
-      if ObjHasOwnProp(image, "sprite") {
-         image := image.sprite
-         return "sprite"
-      }
+      for type in this.ImageTypes
+         if ObjHasOwnProp(image, type)
+            if image := image.%type%
+               return type
 
       throw Error("Invalid type.")
    }
