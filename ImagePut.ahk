@@ -99,6 +99,11 @@ ImagePutWallpaper(image) {
    return ImagePut("wallpaper", image)
 }
 
+; Puts the image into a WICBitmap and returns the pointer to the interface.
+ImagePutWICBitmap(image) {
+   return ImagePut("wicBitmap", image)
+}
+
 ; Puts the image in a window and returns a handle to a window.
 ;   title      -  Window Title            |  string   ->   MyTitle
 ;   pos        -  Window Coordinates      |  array    ->   [x,y,w,h] or [0,0]
@@ -1644,6 +1649,7 @@ class ImagePut {
    }
 
    class BitmapBuffer {
+
       __New(SourceBitmap) {
          ImagePut.gdiplusStartup()
 
@@ -2400,6 +2406,46 @@ class ImagePut {
                ,   "ptr*", &pRandomAccessStream:=0
                ,"HRESULT")
       return pRandomAccessStream
+   }
+
+   static put_wicBitmap(pBitmap) {
+      ; Get Bitmap width and height.
+      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
+      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
+
+      ; Initialize Windows Imaging Component.
+      IWICImagingFactory := ComObject(CLSID_WICImagingFactory := "{CACAF262-9370-4615-A13B-9F5539DA4C0A}", IID_IWICImagingFactory := "{EC5EC8A9-C395-4314-9C77-54D7A935FF70}")
+
+      ; WICBitmapNoCache  must be 1!
+      ; IWICImagingFactory::CreateBitmap - https://github.com/tpn/winsdk-10/blob/9b69fd26ac0c7d0b83d378dba01080e93349c2ed/Include/10.0.16299.0/um/wincodec.h#L6447
+      DllCall("ole32\CLSIDFromString", "wstr", GUID_WICPixelFormat32bppBGRA := "{6fddc324-4e03-4bfe-b185-3d77768dc90f}", "ptr", CLSID := Buffer(16), "HRESULT")
+      ComCall(17, IWICImagingFactory, "uint", width, "uint", height, "ptr", CLSID, "int", 1, "ptr*", &wicBitmap:=0)
+
+      Rect := Buffer(16, 0)                  ; sizeof(Rect) = 16
+         NumPut(  "uint",   width, Rect,  8) ; Width
+         NumPut(  "uint",  height, Rect, 12) ; Height
+
+      ; IWICBitmap::Lock - https://github.com/tpn/winsdk-10/blob/9b69fd26ac0c7d0b83d378dba01080e93349c2ed/Include/10.0.16299.0/um/wincodec.h#L2232
+      ComCall(8, wicBitmap, "Ptr", Rect, "uint", 0x1, "ptr*", &Lock:=0)
+
+      ; IWICBitmapLock::GetDataPointer - https://github.com/tpn/winsdk-10/blob/9b69fd26ac0c7d0b83d378dba01080e93349c2ed/Include/10.0.16299.0/um/wincodec.h#L2104
+      ComCall(5, Lock, "uint*", &size:=0, "ptr*", &Scan0:=0)
+
+      BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
+         NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
+         NumPut(   "ptr",      Scan0, BitmapData, 16) ; Scan0
+      DllCall("gdiplus\GdipBitmapLockBits"
+               ,    "ptr", pBitmap
+               ,    "ptr", Rect
+               ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
+               ,    "int", 0x26200A     ; Format32bppArgb
+               ,    "ptr", BitmapData)  ; Contains the pointer (Scan0) to the WICBitmap.
+      DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
+
+      ObjRelease(Lock)
+      IWICImagingFactory := ""
+
+      return wicBitmap
    }
 
    static select_codec(pBitmap, extension, quality, &pCodec, &ep, &ci, &v) {
