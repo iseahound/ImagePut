@@ -1597,7 +1597,7 @@ class ImagePut {
                ,    "ptr", &Rect
                ,   "uint", 3            ; ImageLockMode.ReadWrite
                ,    "int", 0x26200A     ; Format32bppArgb
-               ,    "ptr", &BitmapData) ; Contains the pointer (pBits) to the hbm.
+               ,    "ptr", &BitmapData)
       Scan0 := NumGet(BitmapData, 16, "ptr")
 
       ; Generate machine code.
@@ -1616,7 +1616,7 @@ class ImagePut {
       ; Call colorkey.
       DllCall(bin, "ptr", Scan0, "uint", width * height, "uint", NumGet(Scan0+0, "uint"))
 
-      ; Replace bitmap.
+      ; Write pixels to bitmap.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
 
       return pBitmap
