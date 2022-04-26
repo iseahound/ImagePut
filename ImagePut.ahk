@@ -1730,10 +1730,10 @@ class ImagePut {
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
 
-      x := (IsObject(screenshot) && screenshot[1] != "") ? screenshot[1] : 0
-      y := (IsObject(screenshot) && screenshot[2] != "") ? screenshot[2] : 0
-      w := (IsObject(screenshot) && screenshot[3] != "") ? screenshot[3] : width
-      h := (IsObject(screenshot) && screenshot[4] != "") ? screenshot[4] : height
+      x := IsObject(screenshot) && screenshot.Has(1) ? screenshot[1] : 0
+      y := IsObject(screenshot) && screenshot.Has(2) ? screenshot[2] : 0
+      w := IsObject(screenshot) && screenshot.Has(3) ? screenshot[3] : width
+      h := IsObject(screenshot) && screenshot.Has(4) ? screenshot[4] : height
 
       ; Convert the Bitmap to a hBitmap and associate a device context for blitting.
       hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
