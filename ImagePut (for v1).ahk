@@ -2146,13 +2146,13 @@ class ImagePut {
       DllCall("gdiplus\GdipCreateHICONFromBitmap", "ptr", pBitmap, "ptr*", hIcon:=0)
 
       ; Sets the hotspot of the cursor by changing the icon into a cursor.
-      if (xHotspot != "" || yHotspot != "") {
+      if (xHotspot ~= "^\d+$" || yHotspot ~= "^\d+$") {
          ; struct ICONINFO - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-iconinfo
          VarSetCapacity(ii, 8+3*A_PtrSize)                          ; sizeof(ICONINFO) = 20, 32
          DllCall("GetIconInfo", "ptr", hIcon, "ptr", &ii)           ; Fill the ICONINFO structure.
-            NumPut(False, ii, 0, "uint")                            ; True/false are icon/cursor respectively.
-            (xHotspot != "") ? NumPut(xHotspot, ii, 4, "uint") : {} ; Set the xHotspot value. (Default: center point)
-            (yHotspot != "") ? NumPut(yHotspot, ii, 8, "uint") : {} ; Set the yHotspot value. (Default: center point)
+            NumPut(False, ii, 0, "uint")                            ; True/False are icon/cursor respectively.
+            (xHotspot ~= "^\d+$") ? NumPut(xHotspot, ii, 4, "uint") : {} ; Set the xHotspot value. Default: center point
+            (yHotspot ~= "^\d+$") ? NumPut(yHotspot, ii, 8, "uint") : {} ; Set the yHotspot value. Default: center point
          DllCall("DestroyIcon", "ptr", hIcon)                       ; Destroy the icon after getting the ICONINFO structure.
          hIcon := DllCall("CreateIconIndirect", "ptr", &ii, "ptr")  ; Create a new cursor using ICONINFO.
 
