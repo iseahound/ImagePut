@@ -397,8 +397,8 @@ class ImagePut {
 
    static ToBitmap(type, image, k := "") {
 
-      ; Sentinel value
-      k := (k != "") ? k : {base: {__get: this.get}} ; Returns the empty string for unknown properties.
+      ; Sentinel value: Returns the empty string for unknown properties.
+      (!k) && k := {base: {__get: this.get}}
 
       if (type = "clipboard_png")
          return this.from_clipboard_png()
@@ -554,8 +554,8 @@ class ImagePut {
 
    static ToStream(type, image, k := "") {
 
-      ; Sentinel value
-      k := (k != "") ? k : {base: {__get: this.get}} ; Returns the empty string for unknown properties.
+      ; Sentinel value: Returns the empty string for unknown properties.
+      (!k) && k := {base: {__get: this.get}}
 
       if (type = "clipboard_png")
          return this.get_clipboard_png()
@@ -1711,10 +1711,10 @@ class ImagePut {
          static bin := 0, code := (A_PtrSize == 4)
             ? "VYnli1UMi00Qi0UIOdBzCTkIdAeDwATr84nQXcM="
             : "SInISDnQcwtEOQB0CUiDwATr8EiJ0MM="
-         (!bin && bin := this.Base64Put(code))
+         (!bin) && bin := this.Base64Put(code)
 
          ; Lift color to 32-bits if first 8 bits are zero.
-         (!(color >> 24) && color |= 0xFF000000)
+         (!(color >> 24)) && color |= 0xFF000000
 
          ; When doing pointer arithmetic, *Scan0 + 1 is actually adding 4 bytes.
          byte := DllCall(bin, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "int")
