@@ -1706,6 +1706,54 @@ class ImagePut {
          return bin
       }
 
+      CPUID() {
+         ; C source code - https://godbolt.org/z/9v7vzf5az
+         static bin := 0, code := (A_PtrSize == 4)
+            ? "VYnlV4t9EFaLdQhTiw+LBg+iiQaLRQyJGItFFIkPiRBbXl9dww=="
+            : "U4sBSYnKSYnTQYsID6JBiQJBiRtBiQhBiRFbww=="
+         (!bin) && bin := this.Base64Put(code)
+
+         ; When doing pointer arithmetic, *Scan0 + 1 is actually adding 4 bytes.
+         byte := DllCall(bin, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color:=0, "int")
+         if (byte == this.ptr + this.size)
+            return False
+         offset := (byte - this.ptr) // 4
+         return {x: mod(offset, this.width), y: offset // this.width}
+      }
+
+      ColorKey(key := 0xFFFFFFFF, value := 0x00000000) {
+         ; C source code - https://godbolt.org/z/eaG9fax9v
+         static bin := 0, code := (A_PtrSize == 4)
+            ? "VYnli0UIi1UQi00UO0UMcws5EHUCiQiDwATr8F3D"
+            : "SDnRcw5EOQF1A0SJCUiDwQTr7cM="
+         (!bin) && bin := this.Base64Put(code)
+
+         ; Replaces one ARGB color with another.
+         DllCall(bin, "ptr", this.ptr, "uint", this.ptr + this.size, "uint", key, "uint", value)
+      }
+
+      SetAlpha(alpha := 0xFF) {
+         ; C source code - https://godbolt.org/z/6e1oYqxnW
+         static bin := 0, code := (A_PtrSize == 4)
+            ? "VYnli0UIilUQO0UMcwiIUAODwATr813D"
+            : "SDnRcwpEiEEDSIPBBOvxww=="
+         (!bin) && bin := this.Base64Put(code)
+
+         ; Sets the transparency of the entire bitmap.
+         DllCall(bin, "ptr", this.ptr, "ptr", this.ptr + this.size, "uchar", alpha)
+      }
+
+      TransColor(color := 0xFFFFFF, alpha := 0x00) {
+         ; C source code - https://godbolt.org/z/6Wfd61qYE
+         static bin := 0, code := (A_PtrSize == 4)
+            ? "VYnli0UIilUUO0UMcxWLTRAzCIHh////AHUDiFADg8AE6+Zdww=="
+            : "SDnRcxaLAUQxwKn///8AdQREiEkDSIPBBOvlww=="
+         (!bin) && bin := this.Base64Put(code)
+
+         ; Sets the alpha value of a specified RGB color.
+         DllCall(bin, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "uchar", alpha)
+      }
+
       PixelSearch(color) {
          ; C source code - https://godbolt.org/z/9v7vzf5az
          static bin := 0, code := (A_PtrSize == 4)
@@ -1718,6 +1766,30 @@ class ImagePut {
 
          ; When doing pointer arithmetic, *Scan0 + 1 is actually adding 4 bytes.
          byte := DllCall(bin, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "int")
+         if (byte == this.ptr + this.size)
+            return False
+         offset := (byte - this.ptr) // 4
+         return {x: mod(offset, this.width), y: offset // this.width}
+      }
+
+      ImageSearch(image) {
+         ; C source code - https://godbolt.org/z/q1rxvx38Y
+         static bin := 0, code := (A_PtrSize == 4)
+            ? "VYnlV1ZTg+wUi1UYi3UUi0UQi30MjTSWi00MiXXoi3UcjRyFAAAAACnXK0UcD6/LA00IiX3kweYCiUXgiXXsiU3wi00IO03wc0yL"
+            . "RRSLADkBdT6JyCtFCDHSwfgC93UMOVXkfiw5ReB+J4tFFInKMf87fRx0IztF6HMOizI5MHUQg8IEg8AE6+0B2gNF7Efr4IPBBOuv"
+            . "i03wg8QUichbXl9dww=="
+            : "QVdBVkFVQVRVV1ZTi0QkaIt0JHBIifdIweYCSYnLidFEicNBD6/QQYnNSMHjAk2J2kEpxUEp+EmNLJOJwk2NJJFJOepzVkGLAUE5"
+            . "AnVITInQMdJMKdhIwfgC9/FBOdV+NUE5wH4wTInSTInIRTH2QTn+dCtMOeBzEkSLOkQ5OHUVSIPCBEiDwATr6UgB2kgB8EH/xuvZ"
+            . "SYPCBOulSYnqTInQW15fXUFcQV1BXkFfww=="
+         (!bin) && bin := this.Base64Put(code)
+
+         if ImagePut.ImageType(image) != "buffer"
+            image := ImagePutBuffer(image)
+
+         ; When doing pointer arithmetic, *Scan0 + 1 is actually adding 4 bytes.
+         byte := DllCall(bin, "ptr", this.ptr, "uint", this.width, "uint", this.height
+                           , "ptr", image.ptr, "uint", image.width, "uint", image.height, "int")
+
          if (byte == this.ptr + this.size)
             return False
          offset := (byte - this.ptr) // 4
