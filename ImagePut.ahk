@@ -1718,7 +1718,7 @@ class ImagePut {
          if (byte == this.ptr + this.size)
             return False
          offset := (byte - this.ptr) // 4
-         return {x: mod(offset, this.width), y: offset // this.width}
+         return [mod(offset, this.width), offset // this.width]
       }
 
       ColorKey(key := 0xFFFFFFFF, value := 0x00000000) {
@@ -1769,7 +1769,7 @@ class ImagePut {
          if (byte == this.ptr + this.size)
             return False
          offset := (byte - this.ptr) // 4
-         return {x: mod(offset, this.width), y: offset // this.width}
+         return [mod(offset, this.width), offset // this.width]
       }
 
       ImageSearch(image) {
@@ -1793,7 +1793,7 @@ class ImagePut {
          if (byte == this.ptr + this.size)
             return False
          offset := (byte - this.ptr) // 4
-         return {x: mod(offset, this.width), y: offset // this.width}
+         return [mod(offset, this.width), offset // this.width]
       }
    }
 
