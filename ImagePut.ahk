@@ -2428,9 +2428,10 @@ class ImagePut {
                ,   "ptr*", &MimeType:=0  ; ppwzMimeOut
                ,   "uint", 0             ; dwReserved
                ,"HRESULT")
+      MimeType := StrGet(MimeType, "UTF-16")
+      DllCall("ole32\CoTaskMemFree", "ptr", MimeOut)
 
-      ; The output is a pointer, that is dereferenced to a Mime string.
-      return "data:" StrGet(MimeType, "UTF-16") ";base64," this.set_base64(pStream)
+      return "data:" MimeType ";base64," this.set_base64(pStream)
    }
 
    static put_dc(pBitmap, alpha := "") {
@@ -2617,9 +2618,8 @@ class ImagePut {
                ,   "ptr*", &MimeType:=0  ; ppwzMimeOut
                ,   "uint", 0             ; dwReserved
                ,"HRESULT")
-
-      ; The output is a pointer, that is dereferenced to a Mime string.
       MimeType := StrGet(MimeType, "UTF-16")
+      DllCall("ole32\CoTaskMemFree", "ptr", MimeOut)
 
       if (MimeType ~= "gif")
          extension := "gif"
