@@ -1340,7 +1340,7 @@ class ImagePut {
          DllCall("gdi32\BitBlt"
                   , "ptr", hdc, "int", 0, "int", 0, "int", width, "int", height
                   , "ptr", sdc, "int", 0, "int", 0, "uint", 0x00CC0020) ; SRCCOPY
-      else
+      else ; If already selected onto a device context...
          DllCall("GetDIBits", "ptr", hdc, "ptr", image, "uint", 0, "uint", height, "ptr", pBits, "ptr", &bi, "uint", 0)
 
       ; The stock bitmap (obm) can never be leaked.
