@@ -2425,7 +2425,7 @@ class ImagePut {
                ,   "uint", 256           ; cbSize
                ,    "ptr", 0             ; pwzMimeProposed
                ,   "uint", 0x20          ; dwMimeFlags
-               ,   "ptr*", MimeOut:=0   ; ppwzMimeOut
+               ,   "ptr*", MimeOut:=0    ; ppwzMimeOut
                ,   "uint", 0             ; dwReserved
                ,   "uint")
       MimeType := StrGet(MimeType, "UTF-16")
@@ -2615,7 +2615,7 @@ class ImagePut {
                ,   "uint", 256           ; cbSize
                ,    "ptr", 0             ; pwzMimeProposed
                ,   "uint", 0x20          ; dwMimeFlags
-               ,   "ptr*", MimeType:=0   ; ppwzMimeOut
+               ,   "ptr*", MimeOut:=0    ; ppwzMimeOut
                ,   "uint", 0             ; dwReserved
                ,   "uint")
       MimeType := StrGet(MimeType, "UTF-16")
