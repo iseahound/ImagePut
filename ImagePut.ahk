@@ -94,6 +94,13 @@ ImagePutStream(image, extension := "", quality := "") {
    return ImagePut("stream", image, extension, quality)
 }
 
+; Puts the image into a file format and returns a URI string.
+;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
+;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
+ImagePutURI(image, extension := "", quality := "") {
+   return ImagePut("uri", image, extension, quality)
+}
+
 ; Puts the image as the desktop wallpaper and returns the string "wallpaper".
 ImagePutWallpaper(image) {
    return ImagePut("wallpaper", image)
@@ -168,7 +175,7 @@ class ImagePut {
       ; #1 - Stream intermediate.
       if not decode and not crop and not scale
          and (type ~= "^(?i:clipboard_png|pdf|url|file|stream|RandomAccessStream|hex|base64)$")
-         and (cotype ~= "^(?i:file|stream|RandomAccessStream|hex|base64)$")
+         and (cotype ~= "^(?i:file|stream|RandomAccessStream|hex|base64|uri)$")
          and (!p.Has(1) || p[1] == "") { ; For now, disallow any specification of extensions.
 
          ; Convert via stream intermediate.
@@ -521,6 +528,10 @@ class ImagePut {
       if (cotype = "base64")
          return this.put_base64(pBitmap, p1, p2)
 
+      ; BitmapToCoimage("uri", pBitmap, extension, quality)
+      if (cotype = "uri")
+         return this.put_uri(pBitmap, p1, p2)
+
       ; BitmapToCoimage("dc", pBitmap, alpha)
       if (cotype = "dc")
          return this.put_dc(pBitmap, p1)
@@ -596,6 +607,10 @@ class ImagePut {
       ; StreamToCoimage("base64", pStream)
       if (cotype = "base64")
          return this.set_base64(pStream)
+
+      ; StreamToCoimage("uri", pStream)
+      if (cotype = "uri")
+         return this.set_uri(pStream)
 
       ; StreamToCoimage("stream", pStream)
       if (cotype = "stream")
@@ -2387,6 +2402,37 @@ class ImagePut {
       return StrGet(str, length, "CP0")
    }
 
+   static put_uri(pBitmap, extension := "", quality := "") {
+      static dict := Map("bmp", "bmp", "dib", "bmp", "rle", "bmp", "jpg", "jpeg", "jpeg", "jpeg", "jpe", "jpeg"
+                     , "jfif", "jpeg", "gif", "gif", "tif", "tiff", "tiff", "tiff", "png", "png")
+
+      extension := RegExReplace(extension, "^\*?\.?")
+      return "data:image/" dict[StrLower(extension)] ";base64," this.put_base64(pBitmap, extension, quality)
+   }
+
+   static set_uri(pStream) {
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "HRESULT")
+      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", signature := Buffer(256), "uint", 256, "HRESULT")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "HRESULT")
+
+      ; This function sniffs the first 256 bytes and matches a known file signature.
+      ; 256 bytes is recommended, but images only need 12 bytes.
+      ; See: https://en.wikipedia.org/wiki/List_of_file_signatures
+      DllCall("urlmon\FindMimeFromData"
+               ,    "ptr", 0             ; pBC
+               ,    "ptr", 0             ; pwzUrl
+               ,    "ptr", signature     ; pBuffer
+               ,   "uint", 256           ; cbSize
+               ,    "ptr", 0             ; pwzMimeProposed
+               ,   "uint", 0x20          ; dwMimeFlags
+               ,   "ptr*", &MimeType:=0  ; ppwzMimeOut
+               ,   "uint", 0             ; dwReserved
+               ,"HRESULT")
+
+      ; The output is a pointer, that is dereferenced to a Mime string.
+      return "data:" StrGet(MimeType, "UTF-16") ";base64," this.set_base64(pStream)
+   }
+
    static put_dc(pBitmap, alpha := "") {
       ; This may seem strange, but the hBitmap is selected onto the device context,
       ; and therefore cannot be deleted. In addition, the stock bitmap can never be leaked.
@@ -2572,7 +2618,7 @@ class ImagePut {
                ,   "uint", 0             ; dwReserved
                ,"HRESULT")
 
-      ; The output is a pointer to a Mime string. It must be dereferenced.
+      ; The output is a pointer, that is dereferenced to a Mime string.
       MimeType := StrGet(MimeType, "UTF-16")
 
       if (MimeType ~= "gif")
@@ -2591,11 +2637,10 @@ class ImagePut {
       ; Save default extension.
       default := extension
 
-      ; Convert forward style slashes into Windows style backslashes.
+      ; Split the filepath, convert forward slashes, strip invalid chars.
       filepath := RegExReplace(filepath, "/", "\")
-
-      ; Split the filepath.
-      SplitPath Trim(filepath),, &directory, &extension, &filename
+      filepath := RegExReplace(filepath, "[:*?\x22<>|\x00-\x1F]")
+      SplitPath filepath,, &directory, &extension, &filename
 
       ; Check if the entire filepath is a directory.
       if DirExist(filepath)                ; If the filepath refers to a directory,
@@ -2633,14 +2678,14 @@ class ImagePut {
       if (filename == "") {
          filename := FormatTime(, "yyyy-MM-dd HH?mm?ss")
          filepath := directory "\" filename "." extension
-         while FileExist(filepath) ; Check for collisions.
+         while FileExist(filepath)
             filepath := directory "\" filename " (" A_Index ")." extension
       }
 
       ; Create a numeric sequence of files...
       else if (filename == "0" or filename == "1") {
          filepath := directory "\" filename "." extension
-         while FileExist(filepath) ; Check for collisions.
+         while FileExist(filepath)
             filepath := directory "\" A_Index "." extension
       }
 
