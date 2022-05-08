@@ -2323,7 +2323,7 @@ class ImagePut {
       length := 2 * size + 1 ; An extra byte of padding is required.
       VarSetCapacity(str, length)
 
-      ; Using CryptBinaryToStringA saves about 2MB in memory.
+      ; Using CryptBinaryToStringA is faster and saves about 2MB in memory.
       DllCall("crypt32\CryptBinaryToStringA", "ptr", bin, "uint", size, "uint", flags, "ptr", &str, "uint*", length)
 
       ; Release binary data and stream.
@@ -2346,7 +2346,7 @@ class ImagePut {
       length := 2 * size + 1 ; An extra byte of padding is required.
       VarSetCapacity(str, length)
 
-      ; Using CryptBinaryToStringA saves about 2MB in memory.
+      ; Using CryptBinaryToStringA is faster and saves about 2MB in memory.
       DllCall("crypt32\CryptBinaryToStringA", "ptr", &bin, "uint", size, "uint", flags, "ptr", &str, "uint*", length)
 
       ; Return encoded string length minus 1.
@@ -2372,7 +2372,7 @@ class ImagePut {
       length := 4 * Ceil(size/3) + 1 ; An extra byte of padding is required.
       VarSetCapacity(str, length)
 
-      ; Using CryptBinaryToStringA saves about 2MB in memory.
+      ; Using CryptBinaryToStringA is faster and saves about 2MB in memory.
       DllCall("crypt32\CryptBinaryToStringA", "ptr", bin, "uint", size, "uint", flags, "ptr", &str, "uint*", length)
 
       ; Release binary data and stream.
@@ -2395,7 +2395,7 @@ class ImagePut {
       length := 4 * Ceil(size/3) + 1 ; An extra byte of padding is required.
       VarSetCapacity(str, length)
 
-      ; Using CryptBinaryToStringA saves about 2MB in memory.
+      ; Using CryptBinaryToStringA is faster and saves about 2MB in memory.
       DllCall("crypt32\CryptBinaryToStringA", "ptr", &bin, "uint", size, "uint", flags, "ptr", &str, "uint*", length)
 
       ; Return encoded string length minus 1.
