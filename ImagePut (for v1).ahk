@@ -2820,6 +2820,9 @@ class ImagePut {
 
          if (type = "RandomAccessStream") or (type = "stream")
             return !ObjRelease(image)
+
+         if (type = "wicBitmap")
+            return ObjRelease(image)
       }
    } ; End of Destroy class.
 } ; End of ImagePut class.
