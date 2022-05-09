@@ -69,7 +69,12 @@ Finally, there are several advanced features. The first is the ability to specif
 
 ## Design Philosophy
 
-ImagePut is designed to be fast. However, because of the nature of ImagePut, it has been designed to be as fast as possible for many to many, one to many, and many to one operations. If you find that your script relies on a single conversion of one input type to one output type, then you are advised to look at the source code and see what you need. Single conversions can be optimized in ImagePut by declaring an input type as shown above. If you copy and paste my source code, you may get an additional small gain. For certain operations on Windows that involve specific conversions from one specific file format & input type to another, such as a PNG file in memory to hIcon, there do exist even faster operations that I have not implemented because they are extremely specific and rely on little known behavior. 
+* ImagePut is designed to be fast.
+* Only functions to and from streams, bitmaps are considered.
+* Functions like PNG to hIcon are not considered.
+* ImagePut should serve as a reference implementation.
+* Therefore users should be able to copy and paste individual functions.
+* If you need help extracting a function please ask!
 
 ## Help and Support
 
