@@ -2319,18 +2319,31 @@ class ImagePut {
       size := DllCall("GlobalSize", "ptr", bin, "uptr")
 
       ; Calculate the length of the hexadecimal string.
-      flags := 0x4000000C ; CRYPT_STRING_NOCRLF | CRYPT_STRING_HEXRAW
-      length := 2 * size + 1 ; An extra byte of padding is required.
+      length := 2 * size ; No zero terminator needed.
       VarSetCapacity(str, length)
 
-      ; Using CryptBinaryToStringA is faster and saves about 2MB in memory.
-      DllCall("crypt32\CryptBinaryToStringA", "ptr", bin, "uint", size, "uint", flags, "ptr", &str, "uint*", length)
+      ; C source code - https://godbolt.org/z/EqfK7fvr5
+      static code := 0
+      if !code {
+         code_str := (A_PtrSize == 4)
+            ? "VYnlVotFDIt1EFOLTRSLXQgBxjnwcyCKEIPBAkDA6gQPttKKFBOIUf6KUP+D4g+KFBOIUf/r3FteXcM="
+            : "SQHQTDnCcyWKAkmDwQJI/8LA6AQPtsCKBAFBiEH+ikL/g+APigQBQYhB/+vWww=="
+         code_size := StrLen(RTrim(code_str, "=")) * 3 // 4
+         code := DllCall("GlobalAlloc", "uint", 0, "uptr", code_size, "ptr")
+         DllCall("VirtualProtect", "ptr", code, "ptr", code_size, "uint", 0x40, "uint*", code_old:=0)
+         DllCall("crypt32\CryptStringToBinary", "str", code_str, "uint", 0, "uint", 0x1, "ptr", code, "uint*", code_size, "ptr", 0, "ptr", 0)
+      }
+
+      ; Default to lowercase hex values. Or capitalize the string below.
+      VarSetCapacity(hex, 16)
+      StrPut("0123456789abcdef", &hex, "CP0")
+      DllCall(code, "ptr", &hex, "ptr", &bin, "uptr", size, "ptr", &str, "uptr", length)
 
       ; Release binary data and stream.
       DllCall("GlobalUnlock", "ptr", hbin)
       ObjRelease(pStream)
 
-      ; Return encoded string length minus 1.
+      ; Return encoded string from ANSI.
       return StrGet(&str, length, "CP0")
    }
 
@@ -2342,14 +2355,27 @@ class ImagePut {
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
 
       ; Calculate the length of the hexadecimal string.
-      flags := 0x4000000C ; CRYPT_STRING_NOCRLF | CRYPT_STRING_HEXRAW
-      length := 2 * size + 1 ; An extra byte of padding is required.
+      length := 2 * size ; No zero terminator needed.
       VarSetCapacity(str, length)
 
-      ; Using CryptBinaryToStringA is faster and saves about 2MB in memory.
-      DllCall("crypt32\CryptBinaryToStringA", "ptr", &bin, "uint", size, "uint", flags, "ptr", &str, "uint*", length)
+      ; C source code - https://godbolt.org/z/EqfK7fvr5
+      static code := 0
+      if !code {
+         code_str := (A_PtrSize == 4)
+            ? "VYnlVotFDIt1EFOLTRSLXQgBxjnwcyCKEIPBAkDA6gQPttKKFBOIUf6KUP+D4g+KFBOIUf/r3FteXcM="
+            : "SQHQTDnCcyWKAkmDwQJI/8LA6AQPtsCKBAFBiEH+ikL/g+APigQBQYhB/+vWww=="
+         code_size := StrLen(RTrim(code_str, "=")) * 3 // 4
+         code := DllCall("GlobalAlloc", "uint", 0, "uptr", code_size, "ptr")
+         DllCall("VirtualProtect", "ptr", code, "ptr", code_size, "uint", 0x40, "uint*", code_old:=0)
+         DllCall("crypt32\CryptStringToBinary", "str", code_str, "uint", 0, "uint", 0x1, "ptr", code, "uint*", code_size, "ptr", 0, "ptr", 0)
+      }
 
-      ; Return encoded string length minus 1.
+      ; Default to lowercase hex values. Or capitalize the string below.
+      VarSetCapacity(hex, 16)
+      StrPut("0123456789abcdef", &hex, "CP0")
+      DllCall(code, "ptr", &hex, "ptr", &bin, "uptr", size, "ptr", &str, "uptr", length)
+
+      ; Return encoded string from ANSI.
       return StrGet(&str, length, "CP0")
    }
 
