@@ -1713,6 +1713,11 @@ class ImagePut {
          return Format("0x{:X}", NumGet(this.ptr + 4*(y*this.width + x), "uint"))
       }
 
+      __Set(x, y, color) {
+         NumPut(color, this.ptr + 4*(y*this.width + x), "uint")
+         return color
+      }
+
       Crop(x, y, w, h) {
          DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", this.pBitmap, "int*", format:=0)
          DllCall("gdiplus\GdipCloneBitmapAreaI", "int", x, "int", y, "int", w, "int", h, "int", format, "ptr", this.pBitmap, "ptr*", pBitmap:=0)
