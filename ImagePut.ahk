@@ -1713,6 +1713,16 @@ class ImagePut {
          return Format("0x{:X}", NumGet(this.ptr + 4*(y*this.width + x), "uint"))
       }
 
+      Crop(x, y, w, h) {
+         DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", this.pBitmap, "int*", &format:=0)
+         DllCall("gdiplus\GdipCloneBitmapAreaI", "int", x, "int", y, "int", w, "int", h, "int", format, "ptr", this.pBitmap, "ptr*", &pBitmap:=0)
+         return ImagePut.BitmapBuffer(pBitmap)
+      }
+
+      Show(title := "", pos := "", style := 0x90000000, styleEx := 0x80088, parent := "") {
+         return ImagePut.show(this.pBitmap, title, pos, style, styleEx, parent)
+      }
+
       Base64Put(code) {
          size := StrLen(RTrim(code, "=")) * 3 // 4
          bin := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr")
