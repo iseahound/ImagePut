@@ -1714,6 +1714,7 @@ class ImagePut {
       }
 
       __Set(x, y, color) {
+         (!(color >> 24)) && color |= 0xFF000000
          NumPut(color, this.ptr + 4*(y*this.width + x), "uint")
          return color
       }
