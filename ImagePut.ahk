@@ -1725,8 +1725,10 @@ class ImagePut {
          return ImagePut.BitmapBuffer(pBitmap)
       }
 
-      Show(title := "", pos := "", style := 0x90000000, styleEx := 0x80088, parent := "") {
-         return ImagePut.show(this.pBitmap, title, pos, style, styleEx, parent)
+      Show(window := False, title := "", pos := "", style := "", styleEx := "", parent := "") {
+         return (window)
+            ? ImagePut.put_window(this.pBitmap, title, pos, style, styleEx, parent)
+            : ImagePut.show(this.pBitmap, title, pos, style, styleEx, parent)
       }
 
       Base64Put(code) {
