@@ -1711,9 +1711,10 @@ class ImagePut {
 
       __Item[x, y] {
          get => Format("0x{:X}", NumGet(this.ptr + 4*(y*this.width + x), "uint"))
-         set => (NumPut("uint", value, this.ptr + 4*(y*this.width + x)), value)
+         set => ((!(value >> 24)) && value |= 0xFF000000,
+                  NumPut("uint", value, this.ptr + 4*(y*this.width + x)),
+                  value)
       }
-
 
 
 
