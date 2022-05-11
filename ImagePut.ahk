@@ -1709,9 +1709,14 @@ class ImagePut {
          DllCall("GlobalFree", "ptr", this.ptr)
       }
 
-      __Get(x, y) {
-         return Format("0x{:X}", NumGet(this.ptr + 4*(y*this.width + x), "uint"))
+      __Item[x, y] {
+         get => Format("0x{:X}", NumGet(this.ptr + 4*(y*this.width + x), "uint"))
+         set => (NumPut("uint", value, this.ptr + 4*(y*this.width + x)), value)
       }
+
+
+
+
 
       Crop(x, y, w, h) {
          DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", this.pBitmap, "int*", &format:=0)
