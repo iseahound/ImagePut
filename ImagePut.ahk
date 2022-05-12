@@ -1758,7 +1758,7 @@ class ImagePut {
             DllCall(bin, "uint*", &a := 1, "uint*", &b := 0, "uint*", &c := 0, "uint*", &d := 0)
 
             ; To check for SSE2 use the following code example:
-            ; if image.cpuid().edx[26] == True
+            ; if cpuid().edx[26] == True
             eax := Map(0, a & 1)
             ebx := Map(0, b & 1)
             ecx := Map(0, c & 1)
