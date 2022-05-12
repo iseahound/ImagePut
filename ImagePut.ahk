@@ -1740,18 +1740,39 @@ class ImagePut {
       }
 
       CPUID() {
-         ; C source code - https://godbolt.org/z/9v7vzf5az
-         static bin := 0, code := (A_PtrSize == 4)
-            ? "VYnlV4t9EFaLdQhTiw+LBg+iiQaLRQyJGItFFIkPiRBbXl9dww=="
-            : "U4sBSYnKSYnTQYsID6JBiQJBiRtBiQhBiRFbww=="
-         (!bin) && bin := this.Base64Put(code)
+         static cpuid := 0
 
-         ; When doing pointer arithmetic, *Scan0 + 1 is actually adding 4 bytes.
-         byte := DllCall(bin, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color:=0, "int")
-         if (byte == this.ptr + this.size)
-            return False
-         offset := (byte - this.ptr) // 4
-         return [mod(offset, this.width), offset // this.width]
+         if not cpuid {
+            ; C source code - https://godbolt.org/z/1YPd6jz61
+            code := (A_PtrSize == 4)
+               ? "VYnlV4t9EFaLdQhTiw+LBg+iiQaLRQyJGItFFIkPiRBbXl9dww=="
+               : "U4sBSYnKSYnTQYsID6JBiQJBiRtBiQhBiRFbww=="
+            size := StrLen(RTrim(code, "=")) * 3 // 4
+            bin := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr")
+            DllCall("VirtualProtect", "ptr", bin, "ptr", size, "uint", 0x40, "uint*", &old:=0)
+            DllCall("crypt32\CryptStringToBinary", "str", code, "uint", 0, "uint", 0x1, "ptr", bin, "uint*", size, "ptr", 0, "ptr", 0)
+
+            ; Set eax flag to 1 to retrieve supported CPU features.
+            ; See this for CPU features: https://wiki.osdev.org/CPUID
+            ; Also see page 591: https://www.amd.com/system/files/TechDocs/24594.pdf
+            DllCall(bin, "uint*", &a := 1, "uint*", &b := 0, "uint*", &c := 0, "uint*", &d := 0)
+
+            ; To check for SSE2 use the following code example:
+            ; if image.cpuid().edx[26] == True
+            eax := Map(0, a & 1)
+            ebx := Map(0, b & 1)
+            ecx := Map(0, c & 1)
+            edx := Map(0, d & 1)
+            loop 32 {
+               eax[A_Index] := !!(1 << A_Index & a)
+               ebx[A_Index] := !!(1 << A_Index & b)
+               ecx[A_Index] := !!(1 << A_Index & c)
+               edx[A_Index] := !!(1 << A_Index & d)
+            }
+            cpuid := {eax: eax, ebx: ebx, ecx: ecx, edx: edx}
+         }
+
+         return cpuid
       }
 
       ColorKey(key := 0xFFFFFFFF, value := 0x00000000) {
