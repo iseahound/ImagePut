@@ -1757,13 +1757,16 @@ class ImagePut {
             ; Also see page 591: https://www.amd.com/system/files/TechDocs/24594.pdf
             DllCall(bin, "uint*", a := 1, "uint*", b := 0, "uint*", c := 0, "uint*", d := 0)
 
+            ; Free memory.
+            DllCall("GlobalFree", "ptr", bin)
+
             ; To check for SSE2 use the following code example:
             ; if cpuid().edx[26] == True
             eax := {0: a & 1}
             ebx := {0: b & 1}
             ecx := {0: c & 1}
             edx := {0: d & 1}
-            loop 32 {
+            loop 31 {
                eax[A_Index] := !!(1 << A_Index & a)
                ebx[A_Index] := !!(1 << A_Index & b)
                ecx[A_Index] := !!(1 << A_Index & c)
