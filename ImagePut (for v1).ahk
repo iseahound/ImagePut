@@ -1790,7 +1790,7 @@ class ImagePut {
       }
 
       SetAlpha(alpha := 0xFF) {
-         ; C source code - https://godbolt.org/z/6e1oYqxnW
+         ; C source code - https://godbolt.org/z/aWf73jTqc
          static bin := 0, code := (A_PtrSize == 4)
             ? "VYnli0UIilUQO0UMcwiIUAODwATr813D"
             : "SDnRcwpEiEEDSIPBBOvxww=="
@@ -1801,7 +1801,7 @@ class ImagePut {
       }
 
       TransColor(color := 0xFFFFFF, alpha := 0x00) {
-         ; C source code - https://godbolt.org/z/6Wfd61qYE
+         ; C source code - https://godbolt.org/z/z3a8WcM5M
          static bin := 0, code := (A_PtrSize == 4)
             ? "VYnli0UIilUUO0UMcxWLTRAzCIHh////AHUDiFADg8AE6+Zdww=="
             : "SDnRcxaLAUQxwKn///8AdQREiEkDSIPBBOvlww=="
@@ -1812,7 +1812,7 @@ class ImagePut {
       }
 
       PixelSearch(color) {
-         ; C source code - https://godbolt.org/z/9v7vzf5az
+         ; C source code - https://godbolt.org/z/o7EPo8xPr
          static bin := 0, code := (A_PtrSize == 4)
             ? "VYnli1UMi00Qi0UIOdBzCTkIdAeDwATr84nQXcM="
             : "SInISDnQcwtEOQB0CUiDwATr8EiJ0MM="
@@ -1821,10 +1821,45 @@ class ImagePut {
          ; Lift color to 32-bits if first 8 bits are zero.
          (!(color >> 24)) && color |= 0xFF000000
 
-         ; When doing pointer arithmetic, *Scan0 + 1 is actually adding 4 bytes.
-         byte := DllCall(bin, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "int")
+         ; Get the address of the first matching pixel.
+         byte := DllCall(bin, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "ptr")
+
+         ; Compare the address to the out-of-bounds limit.
          if (byte == this.ptr + this.size)
             return False
+
+         ; Return an [x, y] array.
+         offset := (byte - this.ptr) // 4
+         return [mod(offset, this.width), offset // this.width]
+      }
+
+      PixelSearch2(color, variation := 3) {
+         ; C source code - https://godbolt.org/z/oocoPndE8
+         static bin := 0, code := (A_PtrSize == 4)
+            ? "VYnlVlNRikUQilUcik0gil0ki3UIiEX3ikUUiEX2ikUYiEX1O3UMcyiKRgI6Rfd3GzpF9nIWikYBOkX1dw440HIKigY4yHcEONhzCIPGBOvTi3UMWonwW15dww=="
+            : "VlNEilQkOESKXCRAilwkSECKdCRQSInISDnQcyuKSAJEOMF3HUQ4yXIYikgBRDjRdxBEONlyC4oIONl3BUA48XMJSIPABOvQSInQW17D"
+         (!bin) && bin := this.Base64Put(code)
+
+         v := variation
+         r := ((color & 0xFF0000) >> 16)
+         g := ((color & 0xFF00) >> 8)
+         b := ((color & 0xFF))
+
+         ; When doing pointer arithmetic, *Scan0 + 1 is actually adding 4 bytes.
+         byte := DllCall(bin, "ptr", this.ptr, "ptr", this.ptr + this.size
+                  , "uchar", Min(r+v, 255)
+                  , "uchar", Max(r-v, 0)
+                  , "uchar", Min(g+v, 255)
+                  , "uchar", Max(g-v, 0)
+                  , "uchar", Min(b+v, 255)
+                  , "uchar", Max(b-v, 0)
+                  , "ptr")
+
+         ; Compare the address to the out-of-bounds limit.
+         if (byte == this.ptr + this.size)
+            return False
+
+         ; Return an [x, y] array.
          offset := (byte - this.ptr) // 4
          return [mod(offset, this.width), offset // this.width]
       }
@@ -1843,12 +1878,15 @@ class ImagePut {
          if ImagePut.ImageType(image) != "buffer"
             image := ImagePutBuffer(image)
 
-         ; When doing pointer arithmetic, *Scan0 + 1 is actually adding 4 bytes.
+         ; Search for the address of the first matching image.
          byte := DllCall(bin, "ptr", this.ptr, "uint", this.width, "uint", this.height
-                           , "ptr", image.ptr, "uint", image.width, "uint", image.height, "int")
+                           , "ptr", image.ptr, "uint", image.width, "uint", image.height, "ptr")
 
+         ; Compare the address to the out-of-bounds limit.
          if (byte == this.ptr + this.size)
             return False
+
+         ; Return an [x, y] array.
          offset := (byte - this.ptr) // 4
          return [mod(offset, this.width), offset // this.width]
       }
