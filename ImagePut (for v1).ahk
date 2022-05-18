@@ -2745,7 +2745,7 @@ class ImagePut {
 
       ; Split the filepath, convert forward slashes, strip invalid chars.
       filepath := RegExReplace(filepath, "/", "\")
-      filepath := RegExReplace(filepath, "[:*?\x22<>|\x00-\x1F]")
+      filepath := RegExReplace(filepath, "[*?\x22<>|\x00-\x1F]")
       SplitPath % filepath,, directory, extension, filename
 
       ; Check if the entire filepath is a directory.
