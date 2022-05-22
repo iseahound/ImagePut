@@ -202,9 +202,9 @@ class ImagePut {
          ; Convert via GDI+ bitmap intermediate.
          if !(pBitmap := this.ToBitmap(type, image, keywords))
             throw Error("pBitmap cannot be zero.")
-         (validate) ? DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmap) : {}
-         (crop) ? this.BitmapCrop(&pBitmap, crop) : {}
-         (scale) ? this.BitmapScale(&pBitmap, scale) : {}
+         (validate) && DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmap)
+         (crop) && this.BitmapCrop(&pBitmap, crop)
+         (scale) && this.BitmapScale(&pBitmap, scale)
          coimage := this.BitmapToCoimage(cotype, pBitmap, p*)
 
          ; Clean up the pBitmap copy. Export raw pointers if requested.
@@ -639,10 +639,10 @@ class ImagePut {
       ; Now, real values have been resolved, and abstract values depend on reals.
 
       ; Are the numbers percentages?
-      crop[1] := (crop[1] ~= "%$") ? SubStr(crop[1], 1, -1) * 0.01 *  width : crop[1]
-      crop[2] := (crop[2] ~= "%$") ? SubStr(crop[2], 1, -1) * 0.01 * height : crop[2]
-      crop[3] := (crop[3] ~= "%$") ? SubStr(crop[3], 1, -1) * 0.01 *  width : crop[3]
-      crop[4] := (crop[4] ~= "%$") ? SubStr(crop[4], 1, -1) * 0.01 * height : crop[4]
+      (crop[1] ~= "%$") && crop[1] := SubStr(crop[1], 1, -1) * 0.01 *  width
+      (crop[2] ~= "%$") && crop[2] := SubStr(crop[2], 1, -1) * 0.01 * height
+      (crop[3] ~= "%$") && crop[3] := SubStr(crop[3], 1, -1) * 0.01 *  width
+      (crop[4] ~= "%$") && crop[4] := SubStr(crop[4], 1, -1) * 0.01 * height
 
       ; If numbers are negative, subtract the values from the edge.
       crop[1] := Abs(crop[1])
@@ -1033,7 +1033,7 @@ class ImagePut {
 
    static get_pdf(image, index := "") {
       ; Thanks malcev - https://www.autohotkey.com/boards/viewtopic.php?t=80735
-      index := (index != "") ? index : 1
+      (index == "") && index := 1
 
       ; Create a stream from either a url or a file.
       pStream := this.is_url(image) ? this.get_url(image) : this.get_file(image)
@@ -1725,8 +1725,8 @@ class ImagePut {
          return ImagePut.BitmapBuffer(pBitmap)
       }
 
-      Show(window := False, title := "", pos := "", style := "", styleEx := "", parent := "") {
-         return (window)
+      Show(window_border := False, title := "", pos := "", style := "", styleEx := "", parent := "") {
+         return (window_border)
             ? ImagePut.put_window(this.pBitmap, title, pos, style, styleEx, parent)
             : ImagePut.show(this.pBitmap, title, pos, style, styleEx, parent)
       }
@@ -1947,9 +1947,9 @@ class ImagePut {
       WS_VISIBLE                := 0x10000000   ; Show on creation.
       WS_EX_LAYERED             :=    0x80000   ; For UpdateLayeredWindow.
 
-      ; Set default styles if null.
-      style := (style == "") ? WS_POPUP | WS_CLIPCHILDREN | WS_CAPTION | WS_SYSMENU : style
-      styleEx := (styleEx == "") ? WS_EX_TOPMOST | WS_EX_DLGMODALFRAME : styleEx
+      ; Default styles can be overwritten by previous functions.
+      (style == "") && style := WS_POPUP | WS_CLIPCHILDREN | WS_CAPTION | WS_SYSMENU
+      (styleEx == "") && styleEx := WS_EX_TOPMOST | WS_EX_DLGMODALFRAME
 
       ; Get Bitmap width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
@@ -2029,9 +2029,9 @@ class ImagePut {
       WS_EX_TOOLWINDOW          :=       0x80   ; Hides from Alt+Tab menu. Removes small icon.
       WS_EX_LAYERED             :=    0x80000   ; For UpdateLayeredWindow.
 
-      ; Set default styles if null.
-      style := (style == "") ? WS_POPUP | WS_VISIBLE : style
-      styleEx := (styleEx == "") ? WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_LAYERED : styleEx
+      ; Default styles can be overwritten by previous functions.
+      (style == "") && style := WS_POPUP | WS_VISIBLE
+      (styleEx == "") && styleEx := WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_LAYERED
 
       ; Prevent the script from exiting early.
       Persistent(True)
@@ -2315,13 +2315,13 @@ class ImagePut {
       ; Sets the hotspot of the cursor by changing the icon into a cursor.
       if (xHotspot ~= "^\d+$" || yHotspot ~= "^\d+$") {
          ; struct ICONINFO - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-iconinfo
-         ii := Buffer(8+3*A_PtrSize)                                ; sizeof(ICONINFO) = 20, 32
-         DllCall("GetIconInfo", "ptr", hIcon, "ptr", ii)            ; Fill the ICONINFO structure.
-            NumPut("uint", False, ii, 0)                            ; True/False are icon/cursor respectively.
-            (xHotspot ~= "^\d+$") ? NumPut("uint", xHotspot, ii, 4) : {} ; Set the xHotspot value. Default: center point
-            (yHotspot ~= "^\d+$") ? NumPut("uint", yHotspot, ii, 8) : {} ; Set the yHotspot value. Default: center point
-         DllCall("DestroyIcon", "ptr", hIcon)                       ; Destroy the icon after getting the ICONINFO structure.
-         hIcon := DllCall("CreateIconIndirect", "ptr", ii, "ptr")   ; Create a new cursor using ICONINFO.
+         ii := Buffer(8+3*A_PtrSize)                                 ; sizeof(ICONINFO) = 20, 32
+         DllCall("GetIconInfo", "ptr", hIcon, "ptr", ii)             ; Fill the ICONINFO structure.
+            NumPut("uint", False, ii, 0)                             ; True/False are icon/cursor respectively.
+            (xHotspot ~= "^\d+$") && NumPut("uint", xHotspot, ii, 4) ; Set the xHotspot value. Default: center point
+            (yHotspot ~= "^\d+$") && NumPut("uint", yHotspot, ii, 8) ; Set the yHotspot value. Default: center point
+         DllCall("DestroyIcon", "ptr", hIcon)                        ; Destroy the icon after getting the ICONINFO structure.
+         hIcon := DllCall("CreateIconIndirect", "ptr", ii, "ptr")    ; Create a new cursor using ICONINFO.
 
          ; Clean up hbmMask and hbmColor created as a result of GetIconInfo.
          DllCall("DeleteObject", "ptr", NumGet(ii, 8+A_PtrSize, "ptr"))   ; hbmMask
@@ -2764,7 +2764,7 @@ class ImagePut {
          DirCreate(directory)
 
       ; Default directory is a dot.
-      directory := (directory != "") ? directory : "."
+      (directory == "") && directory := "."
 
       ; Check if the filename is actually the extension.
       if (extension == "" && filename ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$")
