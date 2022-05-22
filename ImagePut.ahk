@@ -2534,7 +2534,7 @@ class ImagePut {
                ,   "ptr*", &MimeOut:=0   ; ppwzMimeOut
                ,   "uint", 0             ; dwReserved
                ,"HRESULT")
-      MimeType := StrGet(MimeType, "UTF-16")
+      MimeType := StrGet(MimeOut, "UTF-16")
       DllCall("ole32\CoTaskMemFree", "ptr", MimeOut)
 
       return "data:" MimeType ";base64," this.set_base64(pStream)
@@ -2724,7 +2724,7 @@ class ImagePut {
                ,   "ptr*", &MimeOut:=0   ; ppwzMimeOut
                ,   "uint", 0             ; dwReserved
                ,"HRESULT")
-      MimeType := StrGet(MimeType, "UTF-16")
+      MimeType := StrGet(MimeOut, "UTF-16")
       DllCall("ole32\CoTaskMemFree", "ptr", MimeOut)
 
       if (MimeType ~= "gif")
