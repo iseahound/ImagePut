@@ -2819,7 +2819,7 @@ class ImagePut {
       }
    }
 
-   gdiplusShutdown(cotype := "", pBitmap := "") {
+   gdiplusShutdown(cotype := "") {
       ImagePut.gdiplus--
 
       ; Check for unpaired calls of gdiplusShutdown.
