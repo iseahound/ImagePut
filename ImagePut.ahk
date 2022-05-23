@@ -2844,7 +2844,7 @@ class ImagePut {
          if (cotype = "bitmap")
             throw Error("Bitmap is out of scope. `n`nIf you wish to handle raw pointers to GDI+ bitmaps, add the line"
                . "`n`n`t`t" this.prototype.__class ".gdiplusStartup()`n`nor 'pToken := Gdip_Startup()' to the top of your script."
-               . "`nAlternatively, use 'obj := ImagePutBuffer()' with 'obj.pBitmap'."
+               . "`nAlternatively, use 'pic := ImagePutBuffer()' with 'pic.pBitmap'."
                . "`nYou can copy this message by pressing Ctrl + C.", -3)
       }
    }
