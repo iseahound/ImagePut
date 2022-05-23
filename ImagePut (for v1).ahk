@@ -2417,7 +2417,7 @@ class ImagePut {
       ; Default to lowercase hex values. Or capitalize the string below.
       VarSetCapacity(hex, 16)
       StrPut("0123456789abcdef", &hex, "CP0")
-      DllCall(code, "ptr", &hex, "ptr", &bin, "uptr", size, "ptr", &str, "uptr", length)
+      DllCall(code, "ptr", &hex, "ptr", bin, "uptr", size, "ptr", &str, "uptr", length)
 
       ; Release binary data and stream.
       DllCall("GlobalUnlock", "ptr", hbin)
