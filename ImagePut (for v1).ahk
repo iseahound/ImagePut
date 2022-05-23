@@ -1705,8 +1705,9 @@ class ImagePut {
       }
 
       __Delete() {
-         ImagePut.gdiplusShutdown("smart_pointer", this.pBitmap)
+         DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap)
          DllCall("GlobalFree", "ptr", this.ptr)
+         ImagePut.gdiplusShutdown()
       }
 
       __Get(x, y) {
@@ -2820,11 +2821,6 @@ class ImagePut {
 
    gdiplusShutdown(cotype := "", pBitmap := "") {
       ImagePut.gdiplus--
-
-      ; When a buffer object is deleted a bitmap is sent here for disposal.
-      if (cotype == "smart_pointer")
-         if DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
-            throw Exception("The bitmap of this buffer object has already been deleted.")
 
       ; Check for unpaired calls of gdiplusShutdown.
       if (ImagePut.gdiplus < 0)
