@@ -2346,8 +2346,6 @@ class ImagePut {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
       extension := "png"
       this.select_filepath(&filepath, &extension)
-
-      ; Select the proper codec based on the extension of the file.
       this.select_codec(pBitmap, extension, quality, &pCodec, &ep, &ci, &v)
 
       ; Write the file to disk using the specified encoder and encoding parameters with exponential backoff.
@@ -2605,7 +2603,6 @@ class ImagePut {
       if (extension == "")
          extension := "tif"
 
-      ; Select the proper codec based on the extension of the file.
       this.select_codec(pBitmap, extension, quality, &pCodec, &ep, &ci, &v)
 
       ; Create a Stream.
