@@ -1544,8 +1544,7 @@ class ImagePut {
          ? "VYnli0UIi1UMi00QjRSQOdBzDzkIdQbHAAAAAACDwATr7V3D"
          : "idJIjQSRSDnBcxFEOQF1BscBAAAAAEiDwQTr6sM="
          size := StrLen(RTrim(code, "=")) * 3 // 4
-         bin := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr")
-         DllCall("VirtualProtect", "ptr", bin, "ptr", size, "uint", 0x40, "uint*", old:=0)
+         bin := DllCall("VirtualAlloc", "ptr", 0, "uptr", size, "uint", 0x00003000, "uint", 0x40)
          DllCall("crypt32\CryptStringToBinary", "str", code, "uint", 0, "uint", 0x1, "ptr", bin, "uint*", size, "ptr", 0, "ptr", 0)
       }
 
@@ -2346,8 +2345,6 @@ class ImagePut {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
       extension := "png"
       this.select_filepath(filepath, extension)
-
-      ; Select the proper codec based on the extension of the file.
       this.select_codec(pBitmap, extension, quality, pCodec, ep, ci, v)
 
       ; Write the file to disk using the specified encoder and encoding parameters with exponential backoff.
@@ -2605,7 +2602,6 @@ class ImagePut {
       if (extension == "")
          extension := "tif"
 
-      ; Select the proper codec based on the extension of the file.
       this.select_codec(pBitmap, extension, quality, pCodec, ep, ci, v)
 
       ; Create a Stream.
