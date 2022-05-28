@@ -2203,6 +2203,7 @@ class ImagePut {
    }
       ; Define window behavior.
       WindowProc(uMsg, wParam, lParam) {
+         Critical ; Thread must never be interrupted.
          hwnd := this
          ; WM_DESTROY
          if (uMsg = 0x2) {
