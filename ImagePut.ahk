@@ -3032,7 +3032,7 @@ class ImageEqual extends ImagePut {
                      ,    "int", height%A_Index%
                      ,    "int", format%A_Index%
                      ,    "ptr", SourceBitmap%A_Index%
-                     ,   "ptr*", &pBitmap%A_Index%:=0)
+                     ,   "ptr*", &pBitmap%A_Index%)
             throw Error("Cloning Bitmap" A_Index " failed.")
 
       ; struct RECT - https://referencesource.microsoft.com/#System.Drawing/commonui/System/Drawing/Rectangle.cs,32
