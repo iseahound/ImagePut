@@ -921,7 +921,7 @@ class ImagePut {
       if (windows == 0)
          throw Exception("The hidden desktop window has not been initalized. Call ImagePutDesktop() first.")
 
-      Loop % windows
+      loop % windows
          hwnd := windows%A_Index%
       until DllCall("FindWindowEx", "ptr", hwnd, "ptr", 0, "str", "SHELLDLL_DefView", "ptr", 0)
 
@@ -2244,7 +2244,7 @@ class ImagePut {
 
       ; Find the child window.
       WinGet windows, List, ahk_class WorkerW
-      Loop % windows
+      loop % windows
          hwnd := windows%A_Index%
       until DllCall("FindWindowEx", "ptr", hwnd, "ptr", 0, "str", "SHELLDLL_DefView", "ptr", 0)
 
@@ -2951,7 +2951,7 @@ class ImageEqual extends ImagePut {
             throw Exception("Validation failed. Unable to access and clone the bitmap.")
 
          DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmapClone)
-         Goto Good_Ending
+         goto Good_Ending
       }
 
       ; If there are multiple images, compare each subsequent image to the first.
@@ -2968,7 +2968,7 @@ class ImageEqual extends ImagePut {
 
             ; Compare the two images.
             if !this.BitmapEqual(pBitmap1, pBitmap2)
-               Goto Bad_Ending ; Exit the loop if the comparison failed.
+               goto Bad_Ending ; Exit the loop if the comparison failed.
 
             ; Cleanup the bitmap.
             DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap2)
@@ -3023,7 +3023,7 @@ class ImageEqual extends ImagePut {
       ; I assume that instead of locking the stream, the clones lock the originals.
 
       pBitmap1 := pBitmap2 := 0
-      Loop 2
+      loop 2
          if DllCall("gdiplus\GdipCloneBitmapAreaI"
                      ,    "int", 0
                      ,    "int", 0
@@ -3044,7 +3044,7 @@ class ImageEqual extends ImagePut {
       VarSetCapacity(BitmapData2, 16+2*A_PtrSize) ; sizeof(BitmapData) = 24, 32
 
       ; Transfer the pixels to a read-only buffer. The user can declare a PixelFormat.
-      Loop 2
+      loop 2
          DllCall("gdiplus\GdipBitmapLockBits"
                   ,    "ptr", pBitmap%A_Index%
                   ,    "ptr", &Rect
