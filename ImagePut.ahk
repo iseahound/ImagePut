@@ -189,8 +189,6 @@ class ImagePut {
 
          ; Free the temporary stream object.
          ObjRelease(pStream)
-
-         return coimage
       }
 
       ; #2 - Fallback to GDI+ bitmap as the intermediate.
