@@ -2802,10 +2802,9 @@ class ImagePut {
    static gdiplusStartup() {
       ImagePut.gdiplus++
 
-      ; Startup gdiplus when counter goes from 0 -> 1.
+      ; Startup gdiplus when counter rises from 0 -> 1.
       if (ImagePut.gdiplus == 1) {
 
-         ; Startup gdiplus.
          DllCall("LoadLibrary", "str", "gdiplus")
          si := Buffer(A_PtrSize = 4 ? 16:24, 0) ; sizeof(GdiplusStartupInput) = 16, 24
             NumPut("uint", 0x1, si)
@@ -2822,11 +2821,10 @@ class ImagePut {
       if (ImagePut.gdiplus < 0)
          throw Error("Missing ImagePut.gdiplusStartup().")
 
-      ; Shutdown gdiplus when counter goes from 1 -> 0.
+      ; Shutdown gdiplus when counter falls from 1 -> 0.
       if (ImagePut.gdiplus == 0) {
          pToken := ImagePut.pToken
 
-         ; Shutdown gdiplus.
          DllCall("gdiplus\GdiplusShutdown", "ptr", pToken)
          DllCall("FreeLibrary", "ptr", DllCall("GetModuleHandle", "str", "gdiplus", "ptr"))
 
