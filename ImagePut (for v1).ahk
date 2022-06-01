@@ -2980,7 +2980,7 @@ class ImageEqual extends ImagePut {
       this.gdiplusShutdown()
       return True
 
-      Bad_Ending: ; Turns out your best friend became super jealous of you and killed you in your sleep.
+      Bad_Ending: ; Things didn't turn out the way you expected yet everyone seems to be fine despite that.
       DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap2)
       DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap1)
       this.gdiplusShutdown()
