@@ -2875,7 +2875,8 @@ class ImagePut {
          if (type = "clipboard") {
             if !DllCall("OpenClipboard", "ptr", A_ScriptHwnd)
                throw Error("Clipboard could not be opened.")
-            return ((_,*)=>_)(DllCall("EmptyClipboard"), DllCall("CloseClipboard"))
+            try return DllCall("EmptyClipboard")
+            finally DllCall("CloseClipboard")
          }
 
          if (type = "screenshot")
