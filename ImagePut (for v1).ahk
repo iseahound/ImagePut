@@ -1113,9 +1113,8 @@ class ImagePut {
             DllCall(IClosable_Close := NumGet(NumGet(Close+0)+6*A_PtrSize), "ptr", Close)
             ObjRelease(Close)
          }
-         refcount := ObjRelease(Object)
-         Object := ""
-         return refcount
+         try return ObjRelease(Object)
+         finally Object := ""
       }
    }
 

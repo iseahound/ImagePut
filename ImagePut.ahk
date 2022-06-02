@@ -1113,9 +1113,8 @@ class ImagePut {
             ComCall(IClosable_Close := 6, Close)
             Close := ""
          }
-         refcount := ObjRelease(Object)
-         Object := ""
-         return refcount
+         try return ObjRelease(Object)
+         finally Object := ""
       }
    }
 
@@ -2873,7 +2872,7 @@ class ImagePut {
          switch type {
          case "clipboard":
             if !DllCall("OpenClipboard", "ptr", A_ScriptHwnd)
-               throw Exception("Clipboard could not be opened.")
+               throw Error("Clipboard could not be opened.")
             DllCall("EmptyClipboard")
             DllCall("CloseClipboard")
 
