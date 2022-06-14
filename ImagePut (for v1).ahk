@@ -2154,6 +2154,15 @@ class ImagePut {
       DllCall("DeleteObject", "ptr", hbm)
       DllCall("DeleteDC",     "ptr", hdc)
 
+      ; For multiple frames, send WM_APP to WindowProc to render GIFs.
+      DllCall("Gdiplus\GdipImageGetFrameDimensionsCount", "ptr", pBitmap, "uint*", dims:=0)
+      DllCall("Gdiplus\GdipImageGetFrameDimensionsList", "ptr", pBitmap, "ptr", &dimIDs := VarSetCapacity(dimIDs, 16*dims), "uint", dims)
+      DllCall("Gdiplus\GdipImageGetFrameCount", "ptr", pBitmap, "ptr", &dimIDs, "uint*", frames:=0)
+      if (frames > 1) {
+         DllCall("gdiplus\GdipCloneImage", "ptr", pBitmap, "ptr*", pBitmapClone:=0)
+         DllCall("PostMessage", "ptr", hwnd, "uint", 0x8000, "uptr", -1, "ptr", pBitmapClone)
+      }
+
       return hwnd
    }
 
@@ -2196,7 +2205,6 @@ class ImagePut {
    }
       ; Define window behavior.
       WindowProc(uMsg, wParam, lParam) {
-         Critical ; Thread must never be interrupted.
          hwnd := this
          ; Prevent the script from exiting early.
          static void := ObjBindMethod({}, {})
@@ -2222,6 +2230,59 @@ class ImagePut {
             hwnd := (parent != A_ScriptHwnd && parent != 0) ? parent : hwnd
             DllCall("DestroyWindow", "ptr", hwnd)
             return 0
+         }
+
+         ; WM_APP - Animate GIFs
+         if (uMsg = 0x8000) {
+            Critical ; Thread must never be interrupted.
+            pBitmap := lParam
+            frame := wParam + 1
+
+            ; If the window is destroyed, dispose the held bitmap.
+            if not DllCall("IsWindow", "ptr", hwnd)
+               return DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
+
+            ; Get the next frame and delay.
+            DllCall("gdiplus\GdipGetPropertyItemSize", "ptr", pBitmap, "uint", 0x5100, "uint*", ItemSize:=0) ; PropertyTagFrameDelay
+            DllCall("gdiplus\GdipGetPropertyItem"    , "ptr", pBitmap, "uint", 0x5100, "uint", ItemSize, "ptr", &Item := VarSetCapacity(Item, ItemSize))
+            frames := NumGet(Item, 4, "uint") // 4                   ; Max frames
+            delays := NumGet(Item, 8 + A_PtrSize, "ptr")             ; Array of delays
+            frame := mod(frame, frames)                              ; Loop to first frame
+            delay := Max(10 * NumGet(delays+0, frame*4, "uint"), 10) ; Minimum delay is 10ms
+            (delay == 10) && delay := 100 ; Emulate behavior of browser setting 10 ms to 100 ms.
+
+            ; Async the next frame as soon as possible to prevent rendering lag.
+            pWndProc := RegisterCallback(ImagePut.WindowProc,,, &ImagePut)
+            next_frame := Func("DllCall").bind(pWndProc, "ptr", hwnd, "uint", uMsg, "uptr", frame, "ptr", pBitmap)
+            SetTimer % next_frame, % -1 * delay
+
+            ; Select frame to show.
+            DllCall("Gdiplus\GdipImageGetFrameDimensionsCount", "ptr", pBitmap, "uint*", dims:=0)
+            DllCall("Gdiplus\GdipImageGetFrameDimensionsList", "ptr", pBitmap, "ptr", &dimIDs := VarSetCapacity(dimIDs, 16*dims), "uint", dims)
+            DllCall("gdiplus\GdipImageSelectActiveFrame", "ptr", pBitmap, "ptr", &dimIDs, "uint", frame)
+
+            ; Get Bitmap width and height.
+            DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
+            DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
+
+            ; Render to window. Using put_dc shortens the code.
+            hdc := ImagePut.put_dc(pBitmap)
+            DllCall("UpdateLayeredWindow"
+                     ,    "ptr", hwnd                     ; hWnd
+                     ,    "ptr", 0                        ; hdcDst
+                     ,    "ptr", 0                        ; *pptDst
+                     ,"uint64*", width | height << 32     ; *psize
+                     ,    "ptr", hdc                      ; hdcSrc
+                     , "int64*", 0                        ; *pptSrc
+                     ,   "uint", 0                        ; crKey
+                     ,  "uint*", 0xFF << 16 | 0x01 << 24  ; *pblend
+                     ,   "uint", 2)                       ; dwFlags
+
+            ; Cleanup the hBitmap and device contexts.
+            obm := DllCall("CreateBitmap", "int", 0, "int", 0, "uint", 1, "uint", 1, "ptr", 0, "ptr")
+            hbm := DllCall("SelectObject", "ptr", hdc, "ptr", obm, "ptr")
+            DllCall("DeleteObject", "ptr", hbm)
+            DllCall("DeleteDC",     "ptr", hdc)
          }
 
          ; Must return
