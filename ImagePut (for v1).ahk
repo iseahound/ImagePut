@@ -2030,10 +2030,6 @@ class ImagePut {
       (style == "") && style := WS_POPUP | WS_VISIBLE
       (styleEx == "") && styleEx := WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_LAYERED
 
-      ; Prevent the script from exiting early.
-      void := ObjBindMethod({}, {})
-      Hotkey % "^+F12", % void, On
-
       ; Get Bitmap width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
@@ -2202,10 +2198,16 @@ class ImagePut {
       WindowProc(uMsg, wParam, lParam) {
          Critical ; Thread must never be interrupted.
          hwnd := this
+         ; Prevent the script from exiting early.
+         static void := ObjBindMethod({}, {})
+
+         ; WM_CREATE
+         if (uMsg = 0x1)
+            Hotkey % "^+F12", % void, On
+
          ; WM_DESTROY
-         if (uMsg = 0x2) {
-            Hotkey % "^+F12", Off
-         }
+         if (uMsg = 0x2)
+            Hotkey % "^+F12", % void, Off ; Cannot disable, does nothing
 
          ; WM_LBUTTONDOWN
          if (uMsg = 0x201) {
