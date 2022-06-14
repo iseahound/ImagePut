@@ -2012,6 +2012,7 @@ class ImagePut {
       ; A layered child window is only available on Windows 8+.
       this.show(pBitmap, title, [0, 0, w, h], WS_CHILD | WS_VISIBLE, WS_EX_LAYERED, hwnd)
 
+      ; Prevent empty windows from showing.
       DllCall("ShowWindow", "ptr", hwnd, "int", 1)
 
       return hwnd
