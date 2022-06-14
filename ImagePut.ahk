@@ -2031,10 +2031,6 @@ class ImagePut {
       (style == "") && style := WS_POPUP | WS_VISIBLE
       (styleEx == "") && styleEx := WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_LAYERED
 
-      ; Prevent the script from exiting early.
-      Persistent(True)
-
-
       ; Get Bitmap width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
@@ -2203,10 +2199,16 @@ class ImagePut {
       WindowProc(hwnd, uMsg, wParam, lParam) {
          Critical ; Thread must never be interrupted.
 
+         ; Prevent the script from exiting early.
+         static active_windows := Persistent()
+
+         ; WM_CREATE
+         if (uMsg = 0x1)
+            return Persistent(++active_windows)
+
          ; WM_DESTROY
-         if (uMsg = 0x2) {
-            return Persistent(False)
-         }
+         if (uMsg = 0x2)
+            return Persistent(--active_windows)
 
          ; WM_LBUTTONDOWN
          if (uMsg = 0x201) {
