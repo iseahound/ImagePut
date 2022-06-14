@@ -2221,7 +2221,8 @@ class ImagePut {
          if (uMsg = 0x205) {
             parent := DllCall("GetParent", "ptr", hwnd, "ptr")
             hwnd := (parent != A_ScriptHwnd && parent != 0) ? parent : hwnd
-            return DllCall("DestroyWindow", "ptr", hwnd)
+            DllCall("DestroyWindow", "ptr", hwnd)
+            return 0
          }
 
          return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
