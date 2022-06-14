@@ -2235,6 +2235,8 @@ class ImagePut {
 
          ; WM_APP - Animate GIFs
          if (uMsg = 0x8000) {
+            ; Thanks Teadrinker - https://www.autohotkey.com/boards/viewtopic.php?f=76&t=83358
+
             Critical ; Thread must never be interrupted.
             pBitmap := lParam
             frame := wParam + 1
