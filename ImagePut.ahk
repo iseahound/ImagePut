@@ -2542,11 +2542,45 @@ class ImagePut {
    }
 
    static put_dc(pBitmap, alpha := "") {
+      ; Revert to built in functionality if a replacement color is declared.
+      if (alpha != "") { ; This built-in version is about 25% slower and also preserves transparency.
+         DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "ptr", pBitmap, "ptr*", &hbm:=0, "uint", alpha)
+         return hbm
+      }
+
+      ; Get Bitmap width and height.
+      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
+      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
+
+      ; Convert the source pBitmap into a hBitmap manually.
+      ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
+      hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
+      bi := Buffer(40, 0)                    ; sizeof(bi) = 40
+         NumPut(  "uint",        40, bi,  0) ; Size
+         NumPut(   "int",     width, bi,  4) ; Width
+         NumPut(   "int",   -height, bi,  8) ; Height - Negative so (0, 0) is top-left.
+         NumPut("ushort",         1, bi, 12) ; Planes
+         NumPut("ushort",        32, bi, 14) ; BitCount / BitsPerPixel
+      hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", bi, "uint", 0, "ptr*", &pBits:=0, "ptr", 0, "uint", 0, "ptr")
+      obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
+
+      ; Transfer data from source pBitmap to an hBitmap manually.
+      Rect := Buffer(16, 0)                  ; sizeof(Rect) = 16
+         NumPut(  "uint",   width, Rect,  8) ; Width
+         NumPut(  "uint",  height, Rect, 12) ; Height
+      BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
+         NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
+         NumPut(   "ptr",      pBits, BitmapData, 16) ; Scan0
+      DllCall("gdiplus\GdipBitmapLockBits"
+               ,    "ptr", pBitmap
+               ,    "ptr", Rect
+               ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
+               ,    "int", 0xE200B      ; Format32bppPArgb
+               ,    "ptr", BitmapData)  ; Contains the pointer (pBits) to the hbm.
+      DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
+
       ; This may seem strange, but the hBitmap is selected onto the device context,
       ; and therefore cannot be deleted. In addition, the stock bitmap can never be leaked.
-      hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
-      hbm := this.put_hBitmap(pBitmap, alpha)
-      obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
       return hdc
    }
 
