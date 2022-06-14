@@ -127,7 +127,7 @@ ImagePutWindow(image, title := "", pos := "", style := 0x82C80000, styleEx := 0x
 ;   style      -  Window Style            |  uint     ->   WS_VISIBLE
 ;   styleEx    -  Window Extended Style   |  uint     ->   WS_EX_LAYERED
 ;   parent     -  Window Parent           |  ptr      ->   hwnd
-ImageShow(image, title := "", pos := "", style := 0x90000000, styleEx := 0x80088, parent := "") {
+ImageShow(image, title := "", pos := "", style := 0x90000000, styleEx := 0x8080088, parent := "") {
    return ImagePut("show", image, title, pos, style, styleEx, parent)
 }
 
@@ -2016,7 +2016,7 @@ class ImagePut {
       return hwnd
    }
 
-   show(pBitmap, title := "", pos := "", style := 0x90000000, styleEx := 0x80088, parent := "") {
+   show(pBitmap, title := "", pos := "", style := 0x90000000, styleEx := 0x8080088, parent := "") {
       ; Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
       WS_POPUP                  := 0x80000000   ; Allow small windows.
       WS_VISIBLE                := 0x10000000   ; Show on creation.
@@ -2025,6 +2025,7 @@ class ImagePut {
       WS_EX_TOPMOST             :=        0x8   ; Always on top.
       WS_EX_TOOLWINDOW          :=       0x80   ; Hides from Alt+Tab menu. Removes small icon.
       WS_EX_LAYERED             :=    0x80000   ; For UpdateLayeredWindow.
+      WS_EX_NOACTIVATE          :=  0x8000000   ; Prevent taskbar overlay.
 
       ; Default styles can be overwritten by previous functions.
       (style == "") && style := WS_POPUP | WS_VISIBLE
