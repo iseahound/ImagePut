@@ -2251,7 +2251,9 @@ class ImagePut {
             delays := NumGet(Item, 8 + A_PtrSize, "ptr")             ; Array of delays
             frame := mod(frame, frames)                              ; Loop to first frame
             delay := Max(10 * NumGet(delays, frame*4, "uint"), 10)   ; Minimum delay is 10ms
-            (delay == 10) && delay := 100 ; Emulate behavior of browser setting 10 ms to 100 ms.
+
+            ; Emulate behavior of setting 10 ms to 100 ms.
+            (delay == 10) && delay := 100 ; See: https://www.biphelps.com/blog/The-Fastest-GIF-Does-Not-Exist
 
             ; Async the next frame as soon as possible to prevent rendering lag.
             SetTimer WindowProc.bind(hwnd, uMsg, frame, pBitmap), -1 * delay
