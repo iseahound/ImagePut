@@ -2153,11 +2153,20 @@ class ImagePut {
       DllCall("DeleteObject", "ptr", hbm)
       DllCall("DeleteDC",     "ptr", hdc)
 
-      ; For multiple frames, send WM_APP to WindowProc to render GIFs.
+      ; Check for multiple frames.
       DllCall("Gdiplus\GdipImageGetFrameDimensionsCount", "ptr", pBitmap, "uint*", dims:=0)
       DllCall("Gdiplus\GdipImageGetFrameDimensionsList", "ptr", pBitmap, "ptr", &dimIDs := VarSetCapacity(dimIDs, 16*dims), "uint", dims)
       DllCall("Gdiplus\GdipImageGetFrameCount", "ptr", pBitmap, "ptr", &dimIDs, "uint*", frames:=0)
+
+      ; For multiple frames, send WM_APP to WindowProc to render GIFs.
       if (frames > 1) {
+         ; Save frame delays inside GWLP_USERDATA because they are quite slow enough to impact timing.
+         DllCall("gdiplus\GdipGetPropertyItemSize", "ptr", pBitmap, "uint", 0x5100, "uint*", ItemSize:=0) ; PropertyTagFrameDelay
+         Item := DllCall("GlobalAlloc", "uint", 0, "uptr", ItemSize, "ptr")
+         DllCall("gdiplus\GdipGetPropertyItem", "ptr", pBitmap, "uint", 0x5100, "uint", ItemSize, "ptr", Item)
+         DllCall("SetWindowLongPtr", "ptr", hwnd, "int", GWLP_USERDATA := -21, "ptr", Item)
+
+         ; Clone bitmap to avoid disposal, and initiate animation via PostMessage.
          DllCall("gdiplus\GdipCloneImage", "ptr", pBitmap, "ptr*", pBitmapClone:=0)
          DllCall("PostMessage", "ptr", hwnd, "uint", 0x8000, "uptr", -1, "ptr", pBitmapClone)
       }
@@ -2233,35 +2242,67 @@ class ImagePut {
 
          ; WM_APP - Animate GIFs
          if (uMsg = 0x8000) {
-            ; Thanks Teadrinker - https://www.autohotkey.com/boards/viewtopic.php?f=76&t=83358
-
-            Critical ; Thread must never be interrupted.
+            Critical ; Thanks Teadrinker - https://www.autohotkey.com/boards/viewtopic.php?f=76&t=83358
             pBitmap := lParam
             frame := wParam + 1
+            Item := DllCall("GetWindowLongPtr", "ptr", hwnd, "int", GWLP_USERDATA := -21, "ptr")
 
             ; If the window is destroyed, dispose the held bitmap.
-            if not DllCall("IsWindow", "ptr", hwnd)
-               return DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
+            if not DllCall("IsWindow", "ptr", hwnd) {
+               DllCall("GlobalFree", "ptr", Item)
+               DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
+               return
+            }
 
             ; Get the next frame and delay.
-            DllCall("gdiplus\GdipGetPropertyItemSize", "ptr", pBitmap, "uint", 0x5100, "uint*", ItemSize:=0) ; PropertyTagFrameDelay
-            DllCall("gdiplus\GdipGetPropertyItem"    , "ptr", pBitmap, "uint", 0x5100, "uint", ItemSize, "ptr", &Item := VarSetCapacity(Item, ItemSize))
-            frames := NumGet(Item, 4, "uint") // 4                   ; Max frames
-            delays := NumGet(Item, 8 + A_PtrSize, "ptr")             ; Array of delays
+            frames := NumGet(Item+0, 4, "uint") // 4                 ; Max frames
+            delays := NumGet(Item+0, 8 + A_PtrSize, "ptr")           ; Array of delays
             frame := mod(frame, frames)                              ; Loop to first frame
             delay := Max(10 * NumGet(delays+0, frame*4, "uint"), 10) ; Minimum delay is 10ms
 
             ; Emulate behavior of setting 10 ms to 100 ms.
             (delay == 10) && delay := 100 ; See: https://www.biphelps.com/blog/The-Fastest-GIF-Does-Not-Exist
 
-            ; Async the next frame as soon as possible to prevent rendering lag.
-            pWndProc := RegisterCallback(ImagePut.WindowProc,,, &ImagePut)
-            next_frame := Func("DllCall").bind(pWndProc, "ptr", hwnd, "uint", uMsg, "uptr", frame, "ptr", pBitmap)
-            SetTimer % next_frame, % -1 * delay
+            ; Randomize the delay in intervals of 15.6
+            resolution := 15.6
+            Random rand, 1, 100000
+            percentage := mod(delay, resolution) / resolution
+            percentage *= 0.957 ; Higher is faster, lower is slower
 
+            ; Randomized multiples of resolution
+            if ((rand := rand / 100000) > percentage)
+               res := Floor(delay / resolution) * resolution
+            else
+               res := Ceil(delay / resolution) * resolution
+
+            ; Async the next frame as soon as possible to prevent rendering lag.
+            static pWndProc := RegisterCallback(ImagePut.WindowProc,,, &ImagePut)
+            next_frame := Func("DllCall").bind(pWndProc, "ptr", hwnd, "uint", uMsg, "uptr", frame, "ptr", pBitmap)
+            SetTimer % next_frame, % -1 * res
+            /*
+            ; Debug code
+            static start := 0, sum := 0, count := 0, sum2 := 0, count2 := 0
+            DllCall("QueryPerformanceFrequency", "int64*", frequency:=0)
+            DllCall("QueryPerformanceCounter", "int64*", now:=0)
+            time := (now - start) / frequency * 1000
+            if (time < 10000) {
+               sum += time
+               count++
+               average := sum / count
+               sum2 += res
+               count2++
+               Tooltip % "Current Tick:`t" Round(time, 4)
+                     . "`nAverage FPS:`t" Round(average, 4)
+                     . "`nQueued FPS:`t" Round(sum2 / count2, 4)
+                     . "`nTarget FPS:`t" delay
+                     . "`nPercentage:`t" percentage ", " rand
+                     . "`nFloor and Ceiling:`t" Floor(delay / 15.6) * 15.6 ", " Ceil(delay / 15.6) * 15.6
+            }
+            start := now
+            */
             ; Select frame to show.
-            DllCall("Gdiplus\GdipImageGetFrameDimensionsCount", "ptr", pBitmap, "uint*", dims:=0)
-            DllCall("Gdiplus\GdipImageGetFrameDimensionsList", "ptr", pBitmap, "ptr", &dimIDs := VarSetCapacity(dimIDs, 16*dims), "uint", dims)
+            DllCall("gdiplus\GdipImageGetFrameDimensionsCount", "ptr", pBitmap, "uint*", dims:=0)
+            DllCall("gdiplus\GdipImageGetFrameDimensionsList", "ptr", pBitmap, "ptr", &dimIDs := VarSetCapacity(dimIDs, 16*dims), "uint", dims)
             DllCall("gdiplus\GdipImageSelectActiveFrame", "ptr", pBitmap, "ptr", &dimIDs, "uint", frame)
 
             ; Get Bitmap width and height.
