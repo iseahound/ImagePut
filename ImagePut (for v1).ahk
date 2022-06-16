@@ -2327,6 +2327,7 @@ class ImagePut {
             hbm := DllCall("SelectObject", "ptr", hdc, "ptr", obm, "ptr")
             DllCall("DeleteObject", "ptr", hbm)
             DllCall("DeleteDC",     "ptr", hdc)
+            return
          }
 
          ; Must return
