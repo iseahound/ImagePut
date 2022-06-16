@@ -2154,9 +2154,9 @@ class ImagePut {
       DllCall("DeleteDC",     "ptr", hdc)
 
       ; Check for multiple frames.
-      DllCall("Gdiplus\GdipImageGetFrameDimensionsCount", "ptr", pBitmap, "uint*", dims:=0)
-      DllCall("Gdiplus\GdipImageGetFrameDimensionsList", "ptr", pBitmap, "ptr", &dimIDs := VarSetCapacity(dimIDs, 16*dims), "uint", dims)
-      DllCall("Gdiplus\GdipImageGetFrameCount", "ptr", pBitmap, "ptr", &dimIDs, "uint*", frames:=0)
+      DllCall("gdiplus\GdipImageGetFrameDimensionsCount", "ptr", pBitmap, "uint*", dims:=0)
+      DllCall("gdiplus\GdipImageGetFrameDimensionsList", "ptr", pBitmap, "ptr", &dimIDs := VarSetCapacity(dimIDs, 16*dims), "uint", dims)
+      DllCall("gdiplus\GdipImageGetFrameCount", "ptr", pBitmap, "ptr", &dimIDs, "uint*", frames:=0)
 
       ; For multiple frames, send WM_APP to WindowProc to render GIFs.
       if (frames > 1) {
@@ -2168,6 +2168,7 @@ class ImagePut {
 
          ; Clone bitmap to avoid disposal, and initiate animation via PostMessage.
          DllCall("gdiplus\GdipCloneImage", "ptr", pBitmap, "ptr*", pBitmapClone:=0)
+         DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmap)
          DllCall("PostMessage", "ptr", hwnd, "uint", 0x8000, "uptr", -1, "ptr", pBitmapClone)
          
          ; Preserve GDI+ scope.
