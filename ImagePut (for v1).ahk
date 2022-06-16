@@ -2169,6 +2169,9 @@ class ImagePut {
          ; Clone bitmap to avoid disposal, and initiate animation via PostMessage.
          DllCall("gdiplus\GdipCloneImage", "ptr", pBitmap, "ptr*", pBitmapClone:=0)
          DllCall("PostMessage", "ptr", hwnd, "uint", 0x8000, "uptr", -1, "ptr", pBitmapClone)
+         
+         ; Preserve GDI+ scope.
+         ImagePut.gdiplusStartup()
       }
 
       return hwnd
@@ -2251,6 +2254,7 @@ class ImagePut {
             if not DllCall("IsWindow", "ptr", hwnd) {
                DllCall("GlobalFree", "ptr", Item)
                DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
+               ImagePut.gdiplusShutdown()
                return
             }
 
