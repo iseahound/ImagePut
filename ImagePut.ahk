@@ -2939,51 +2939,59 @@ class ImagePut {
       else filepath := directory "\" filename "." extension
    }
 
-   ; All references to gdiplus and pToken must be absolute!
-   static gdiplus := 0, pToken := 0
-
    static gdiplusStartup() {
-      ImagePut.gdiplus++
+      return this.gdiplus(1)
+   }
+
+   static gdiplusShutdown(cotype := "") {
+      return this.gdiplus(-1, cotype)
+   }
+
+   static gdiplus(vary := 0, cotype := "") {
+      static pToken := 0 ; Takes advantage of the fact that objects contain identical methods.
+      static instances := 0 ; And therefore static variables can share data across instances.
 
       ; Startup gdiplus when counter rises from 0 -> 1.
-      if (ImagePut.gdiplus == 1) {
+      if (instances = 0 && vary = 1) {
 
          DllCall("LoadLibrary", "str", "gdiplus")
          si := Buffer(A_PtrSize = 4 ? 16:24, 0) ; sizeof(GdiplusStartupInput) = 16, 24
             NumPut("uint", 0x1, si)
          DllCall("gdiplus\GdiplusStartup", "ptr*", &pToken:=0, "ptr", si, "ptr", 0)
 
-         ImagePut.pToken := pToken
       }
-   }
-
-   static gdiplusShutdown(cotype := "") {
-      ImagePut.gdiplus--
-
-      ; Check for unpaired calls of gdiplusShutdown.
-      if (ImagePut.gdiplus < 0)
-         throw Error("Missing ImagePut.gdiplusStartup().")
 
       ; Shutdown gdiplus when counter falls from 1 -> 0.
-      if (ImagePut.gdiplus == 0) {
-         pToken := ImagePut.pToken
+      if (instances = 1 && vary = -1) {
 
          DllCall("gdiplus\GdiplusShutdown", "ptr", pToken)
          DllCall("FreeLibrary", "ptr", DllCall("GetModuleHandle", "str", "gdiplus", "ptr"))
 
-         ; Exit if GDI+ is still loaded. GdiplusNotInitialized = 18
-         if (18 != DllCall("gdiplus\GdipCreateImageAttributes", "ptr*", &ImageAttr:=0)) {
-            DllCall("gdiplus\GdipDisposeImageAttributes", "ptr", ImageAttr)
-            return
-         }
-
          ; Otherwise GDI+ has been truly unloaded from the script and objects are out of scope.
-         if (cotype = "bitmap")
-            throw Error("Bitmap is out of scope. `n`nIf you wish to handle raw pointers to GDI+ bitmaps, add the line"
-               . "`n`n`t`t" this.prototype.__class ".gdiplusStartup()`n`nor 'pToken := Gdip_Startup()' to the top of your script."
-               . "`nAlternatively, use 'pic := ImagePutBuffer()' with 'pic.pBitmap'."
-               . "`nYou can copy this message by pressing Ctrl + C.", -3)
+         if (cotype = "bitmap") {
+
+            ; Check if GDI+ is still loaded. GdiplusNotInitialized = 18
+            assert := (18 != DllCall("gdiplus\GdipCreateImageAttributes", "ptr*", &ImageAttr:=0))
+               DllCall("gdiplus\GdipDisposeImageAttributes", "ptr", ImageAttr)
+
+            if not assert
+               throw Error("Bitmap is out of scope. `n`nIf you wish to handle raw pointers to GDI+ bitmaps, add the line"
+                  . "`n`n`t`t" this.prototype.__class ".gdiplusStartup()"
+                  . "`n`nto the top of your script. If using Gdip_All.ahk use pToken := Gdip_Startup()."
+                  . "`nAlternatively, use pic := ImagePutBuffer() and pic.pBitmap instead."
+                  . "`nYou can copy this message by pressing Ctrl + C.", -4)
+         }
       }
+
+      ; Increment or decrement the number of available instances.
+      instances += vary
+
+      ; Check for unpaired calls of gdiplusShutdown.
+      if (instances < 0)
+         throw Error("Missing gdiplusStartup().")
+
+      ; When vary is 0, just return the number of active instances!
+      return instances
    }
 
    ; Get the image width and height.
