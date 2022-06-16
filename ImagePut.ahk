@@ -3233,3 +3233,17 @@ class ImageEqual extends ImagePut {
       return (byte == size) ? True : False
    }
 } ; End of ImageEqual class.
+
+
+; Drag and drop files directly onto this script file.
+if (A_LineFile == A_ScriptFullPath) {
+   filepath := ""
+   for each, arg in A_Args {
+      filepath .= arg . A_Space
+      if FileExist(Trim(filepath)) {
+         SplitPath filepath, &filename
+         ImagePutWindow({file: filepath}, filename)
+         filepath := ""
+      }
+   }
+}
