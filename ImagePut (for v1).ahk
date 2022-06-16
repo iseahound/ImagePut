@@ -2164,12 +2164,12 @@ class ImagePut {
          DllCall("gdiplus\GdipGetPropertyItemSize", "ptr", pBitmap, "uint", 0x5100, "uint*", ItemSize:=0) ; PropertyTagFrameDelay
          Item := DllCall("GlobalAlloc", "uint", 0, "uptr", ItemSize, "ptr")
          DllCall("gdiplus\GdipGetPropertyItem", "ptr", pBitmap, "uint", 0x5100, "uint", ItemSize, "ptr", Item)
-         DllCall("SetWindowLongPtr", "ptr", hwnd, "int", GWLP_USERDATA := -21, "ptr", Item)
 
          ; Clone bitmap to avoid disposal, and initiate animation via PostMessage.
          DllCall("gdiplus\GdipCloneImage", "ptr", pBitmap, "ptr*", pBitmapClone:=0)
-         DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmap)
-         DllCall("PostMessage", "ptr", hwnd, "uint", 0x8000, "uptr", -1, "ptr", pBitmapClone)
+         DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmapClone)
+         DllCall("SetWindowLongPtr", "ptr", hwnd, "int", GWLP_USERDATA := -21, "ptr", pBitmapClone)
+         DllCall("PostMessage", "ptr", hwnd, "uint", 0x8000, "uptr", -1, "ptr", Item)
          
          ; Preserve GDI+ scope.
          ImagePut.gdiplusStartup()
@@ -2226,8 +2226,14 @@ class ImagePut {
             Hotkey % "^+F12", % void, On
 
          ; WM_DESTROY
-         if (uMsg = 0x2)
+         if (uMsg = 0x2) {
+            if pBitmap := DllCall("GetWindowLongPtr", "ptr", hwnd, "int", GWLP_USERDATA := -21, "ptr") {
+               DllCall("SetWindowLongPtr", "ptr", hwnd, "int", GWLP_USERDATA := -21, "ptr", 0)
+               DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
+               IsObject(ImagePut) && ImagePut.gdiplusShutdown()
+            }
             Hotkey % "^+F12", % void, Off ; Cannot disable, does nothing
+         }
 
          ; WM_LBUTTONDOWN
          if (uMsg = 0x201) {
@@ -2247,17 +2253,13 @@ class ImagePut {
          ; WM_APP - Animate GIFs
          if (uMsg = 0x8000) {
             Critical ; Thanks Teadrinker - https://www.autohotkey.com/boards/viewtopic.php?f=76&t=83358
-            pBitmap := lParam
-            frame := wParam + 1
-            Item := DllCall("GetWindowLongPtr", "ptr", hwnd, "int", GWLP_USERDATA := -21, "ptr")
 
-            ; If the window is destroyed, dispose the held bitmap.
-            if not DllCall("IsWindow", "ptr", hwnd) {
-               DllCall("GlobalFree", "ptr", Item)
-               DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
-               ImagePut.gdiplusShutdown()
-               return
-            }
+            frame := wParam + 1
+            Item := lParam
+
+            ; If the window is destroyed...
+            if !(pBitmap := DllCall("GetWindowLongPtr", "ptr", hwnd, "int", GWLP_USERDATA := -21, "ptr"))
+               return DllCall("GlobalFree", "ptr", Item) ; Sometimes works.
 
             ; Get the next frame and delay.
             frames := NumGet(Item+0, 4, "uint") // 4                 ; Max frames
@@ -2282,7 +2284,7 @@ class ImagePut {
 
             ; Async the next frame as soon as possible to prevent rendering lag.
             static pWndProc := RegisterCallback(ImagePut.WindowProc,,, &ImagePut)
-            next_frame := Func("DllCall").bind(pWndProc, "ptr", hwnd, "uint", uMsg, "uptr", frame, "ptr", pBitmap)
+            next_frame := Func("DllCall").bind(pWndProc, "ptr", hwnd, "uint", uMsg, "uptr", frame, "ptr", Item)
             SetTimer % next_frame, % -1 * res
             /*
             ; Debug code
