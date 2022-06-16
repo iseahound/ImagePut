@@ -2220,11 +2220,11 @@ class ImagePut {
 
          ; WM_CREATE
          if (uMsg = 0x1)
-            return Persistent(++active_windows)
+            Persistent(++active_windows)
 
          ; WM_DESTROY
          if (uMsg = 0x2)
-            return Persistent(--active_windows)
+            Persistent(--active_windows)
 
          ; WM_LBUTTONDOWN
          if (uMsg = 0x201) {
