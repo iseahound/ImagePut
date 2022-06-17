@@ -2,11 +2,11 @@
 #include *i ImagePut (for v%true%).ahk
 #singleinstance force
 
-; This script runs on both AutoHotkey v1 and v2.
-hwnd := ImagePutWindow("https://picsum.photos/500", "Thank you for trying ImagePut ?")
+; Show image in window.
+hwnd := ImagePutWindow("https://picsum.photos/1000/200", "Thank you for trying ImagePut ?")
 
-; Save the image as a file.
-ImagePutFile(hwnd)
+; Save image to file.
+filepath := ImagePutFile("https://i.imgur.com/cCyb8bq.gif")
 
-; Copy the window handle to the clipboard.
-ImagePutClipboard(hwnd)
+; Display images without borders. Right click image to close.
+ImageShow(filepath)
