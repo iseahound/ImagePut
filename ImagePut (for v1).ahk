@@ -3244,7 +3244,7 @@ if (A_LineFile == A_ScriptFullPath) {
       filepath .= arg . A_Space
       if FileExist(Trim(filepath)) {
          SplitPath % filepath, filename
-         ImagePutWindow({file: filepath}, filename)
+         ImageShow({file: filepath}, filename)
          filepath := ""
       }
    }
