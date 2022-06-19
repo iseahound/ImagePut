@@ -2798,7 +2798,7 @@ class ImagePut {
          NumPut(  "uint",  height, Rect, 12) ; Height
 
       ; IWICBitmap::Lock - https://github.com/iseahound/winsdk-10/blob/master/Include/10.0.16299.0/um/wincodec.h#L2232
-      ComCall(8, wicBitmap, "Ptr", Rect, "uint", 0x1, "ptr*", &Lock:=0)
+      ComCall(8, wicBitmap, "ptr", Rect, "uint", 0x1, "ptr*", &Lock:=0)
 
       ; IWICBitmapLock::GetDataPointer - https://github.com/iseahound/winsdk-10/blob/master/Include/10.0.16299.0/um/wincodec.h#L2104
       ComCall(5, Lock, "uint*", &size:=0, "ptr*", &Scan0:=0)
