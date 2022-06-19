@@ -2304,7 +2304,7 @@ class ImagePut {
                      . "`nQueued FPS:`t" Round(sum2 / count2, 4)
                      . "`nTarget FPS:`t" delay
                      . "`nPercentage:`t" percentage ", " rand
-                     . "`nFloor and Ceiling:`t" Floor(delay / 15.6) * 15.6 ", " Ceil(delay / 15.6) * 15.6
+                     . "`nFloor and Ceiling:`t" Floor(delay / resolution) * resolution ", " Ceil(delay / resolution) * resolution
             }
             start := now
             */
@@ -3239,7 +3239,7 @@ class ImageEqual extends ImagePut {
 
 
 ; Drag and drop files directly onto this script file.
-if (A_LineFile == A_ScriptFullPath) {
+if (A_Args.length > 0 and A_LineFile == A_ScriptFullPath) {
    filepath := ""
    for each, arg in A_Args {
       filepath .= arg . A_Space
