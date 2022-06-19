@@ -2312,7 +2312,7 @@ class ImagePut {
             SetTimer WindowProc.bind(hwnd, uMsg, frame, 0), -1 * res
 
 
-
+            /*
             ; Debug code
             static start := 0, sum := 0, count := 0, sum2 := 0, count2 := 0
             DllCall("QueryPerformanceFrequency", "int64*", &frequency:=0)
@@ -2332,7 +2332,7 @@ class ImagePut {
                      . "`nFloor and Ceiling:`t" Floor(delay / resolution) * resolution ", " Ceil(delay / resolution) * resolution
             }
             start := now
-
+            */
             ; Select frame to show.
             DllCall("gdiplus\GdipImageGetFrameDimensionsCount", "ptr", pBitmap, "uint*", &dims:=0)
             DllCall("gdiplus\GdipImageGetFrameDimensionsList", "ptr", pBitmap, "ptr", dimIDs := Buffer(16*dims), "uint", dims)
