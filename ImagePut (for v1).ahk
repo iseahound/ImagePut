@@ -1480,7 +1480,7 @@ class ImagePut {
    }
 
    from_wicBitmap(image) {
-      ; IWICBitmapSource::GetSize - https://github.com/tpn/winsdk-10/blob/9b69fd26ac0c7d0b83d378dba01080e93349c2ed/Include/10.0.16299.0/um/wincodec.h#L1304
+      ; IWICBitmapSource::GetSize - https://github.com/iseahound/winsdk-10/blob/master/Include/10.0.16299.0/um/wincodec.h#L1304
       DllCall(NumGet(NumGet(image + 0) + A_PtrSize*3), "ptr", image, "uint*", width:=0, "uint*", height:=0)
 
       ; Intialize an empty pBitmap using managed memory.
@@ -1501,7 +1501,7 @@ class ImagePut {
       Scan0 := NumGet(BitmapData, 16, "ptr")
       stride := NumGet(BitmapData, 8, "int")
 
-      ; IWICBitmapSource::CopyPixels - https://github.com/tpn/winsdk-10/blob/9b69fd26ac0c7d0b83d378dba01080e93349c2ed/Include/10.0.16299.0/um/wincodec.h#L1322
+      ; IWICBitmapSource::CopyPixels - https://github.com/iseahound/winsdk-10/blob/master/Include/10.0.16299.0/um/wincodec.h#L1322
       DllCall(NumGet(NumGet(image + 0) + A_PtrSize*7), "ptr", image, "ptr", &Rect, "uint", stride, "uint", stride * height, "ptr", Scan0)
 
       ; Write pixels to bitmap.
@@ -2788,7 +2788,7 @@ class ImagePut {
       IWICImagingFactory := ComObjCreate(CLSID_WICImagingFactory := "{CACAF262-9370-4615-A13B-9F5539DA4C0A}", IID_IWICImagingFactory := "{EC5EC8A9-C395-4314-9C77-54D7A935FF70}")
 
       ; WICBitmapNoCache  must be 1!
-      ; IWICImagingFactory::CreateBitmap - https://github.com/tpn/winsdk-10/blob/9b69fd26ac0c7d0b83d378dba01080e93349c2ed/Include/10.0.16299.0/um/wincodec.h#L6447
+      ; IWICImagingFactory::CreateBitmap - https://github.com/iseahound/winsdk-10/blob/master/Include/10.0.16299.0/um/wincodec.h#L6447
       DllCall("ole32\CLSIDFromString", "wstr", GUID_WICPixelFormat32bppBGRA := "{6fddc324-4e03-4bfe-b185-3d77768dc90f}", "ptr", &CLSID := VarSetCapacity(CLSID, 16), "uint")
       DllCall(NumGet(NumGet(IWICImagingFactory + 0) + A_PtrSize*17), "ptr", IWICImagingFactory, "uint", width, "uint", height, "ptr", &CLSID, "int", 1, "ptr*", wicBitmap:=0)
 
@@ -2796,10 +2796,10 @@ class ImagePut {
          NumPut(  width, Rect,  8,   "uint") ; Width
          NumPut( height, Rect, 12,   "uint") ; Height
 
-      ; IWICBitmap::Lock - https://github.com/tpn/winsdk-10/blob/9b69fd26ac0c7d0b83d378dba01080e93349c2ed/Include/10.0.16299.0/um/wincodec.h#L2232
+      ; IWICBitmap::Lock - https://github.com/iseahound/winsdk-10/blob/master/Include/10.0.16299.0/um/wincodec.h#L2232
       DllCall(NumGet(NumGet(wicBitmap + 0) + A_PtrSize*8), "Ptr", wicBitmap, "Ptr", &Rect, "uint", 0x1, "ptr*", Lock:=0)
 
-      ; IWICBitmapLock::GetDataPointer - https://github.com/tpn/winsdk-10/blob/9b69fd26ac0c7d0b83d378dba01080e93349c2ed/Include/10.0.16299.0/um/wincodec.h#L2104
+      ; IWICBitmapLock::GetDataPointer - https://github.com/iseahound/winsdk-10/blob/master/Include/10.0.16299.0/um/wincodec.h#L2104
       DllCall(NumGet(NumGet(Lock + 0) + A_PtrSize*5), "Ptr", Lock, "uint*", size:=0, "ptr*", Scan0:=0)
 
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
