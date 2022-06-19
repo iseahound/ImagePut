@@ -2797,10 +2797,10 @@ class ImagePut {
          NumPut( height, Rect, 12,   "uint") ; Height
 
       ; IWICBitmap::Lock - https://github.com/iseahound/winsdk-10/blob/master/Include/10.0.16299.0/um/wincodec.h#L2232
-      DllCall(NumGet(NumGet(wicBitmap + 0) + A_PtrSize*8), "Ptr", wicBitmap, "Ptr", &Rect, "uint", 0x1, "ptr*", Lock:=0)
+      DllCall(NumGet(NumGet(wicBitmap + 0) + A_PtrSize*8), "ptr", wicBitmap, "ptr", &Rect, "uint", 0x1, "ptr*", Lock:=0)
 
       ; IWICBitmapLock::GetDataPointer - https://github.com/iseahound/winsdk-10/blob/master/Include/10.0.16299.0/um/wincodec.h#L2104
-      DllCall(NumGet(NumGet(Lock + 0) + A_PtrSize*5), "Ptr", Lock, "uint*", size:=0, "ptr*", Scan0:=0)
+      DllCall(NumGet(NumGet(Lock + 0) + A_PtrSize*5), "ptr", Lock, "uint*", size:=0, "ptr*", Scan0:=0)
 
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
          NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
