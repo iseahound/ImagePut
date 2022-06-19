@@ -2148,11 +2148,6 @@ class ImagePut {
                ,  "uint*", 0xFF << 16 | 0x01 << 24  ; *pblend
                ,   "uint", 2)                       ; dwFlags
 
-      ; Cleanup the hBitmap and device contexts.
-      DllCall("SelectObject", "ptr", hdc, "ptr", obm)
-      DllCall("DeleteObject", "ptr", hbm)
-      DllCall("DeleteDC",     "ptr", hdc)
-
       ; Check for multiple frames.
       DllCall("gdiplus\GdipImageGetFrameDimensionsCount", "ptr", pBitmap, "uint*", dims:=0)
       DllCall("gdiplus\GdipImageGetFrameDimensionsList", "ptr", pBitmap, "ptr", &dimIDs := VarSetCapacity(dimIDs, 16*dims), "uint", dims)
@@ -2171,12 +2166,22 @@ class ImagePut {
 
          ; Store data inside window.
          DllCall("SetWindowLongPtr", "ptr", hwnd, "int", 0, "ptr", pBitmapClone)
+         DllCall("SetWindowLongPtr", "ptr", hwnd, "int", A_PtrSize, "ptr", hdc)
          DllCall("SetWindowLongPtr", "ptr", hwnd, "int", 2*A_PtrSize, "ptr", Item)
-         
+         DllCall("SetWindowLongPtr", "ptr", hwnd, "int", 3*A_PtrSize, "ptr", pBits)
+
          ; Preserve GDI+ scope and initiate animation via PostMessage.
          ImagePut.gdiplusStartup()
          DllCall("PostMessage", "ptr", hwnd, "uint", 0x8000, "uptr", -1, "ptr", 0)
+
+         ; Avoid disposing the device context.
+         return hwnd
       }
+
+      ; Cleanup the hBitmap and device contexts.
+      DllCall("SelectObject", "ptr", hdc, "ptr", obm)
+      DllCall("DeleteObject", "ptr", hbm)
+      DllCall("DeleteDC",     "ptr", hdc)
 
       return hwnd
    }
@@ -2231,9 +2236,21 @@ class ImagePut {
          ; WM_DESTROY
          if (uMsg = 0x2) {
             if pBitmap := DllCall("GetWindowLongPtr", "ptr", hwnd, "int", 0, "ptr") {
+               hdc := DllCall("GetWindowLongPtr", "ptr", hwnd, "int", A_PtrSize, "ptr")
+               Item := DllCall("GetWindowLongPtr", "ptr", hwnd, "int", 2*A_PtrSize, "ptr")
+
+               ; Exit loop.
                DllCall("SetWindowLongPtr", "ptr", hwnd, "int", 0, "ptr", 0) ; Exit loop.
+
+               ; Dispose of all data stored in the window class.
                DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
-               DllCall("GlobalFree", "ptr", DllCall("GetWindowLongPtr", "ptr", hwnd, "int", 2*A_PtrSize, "ptr"))
+               obm := DllCall("CreateBitmap", "int", 0, "int", 0, "uint", 1, "uint", 1, "ptr", 0, "ptr")
+               hbm := DllCall("SelectObject", "ptr", hdc, "ptr", obm, "ptr")
+               DllCall("DeleteObject", "ptr", hbm)
+               DllCall("DeleteDC", "ptr", hdc)
+               DllCall("GlobalFree", "ptr", Item)
+
+               ; Exit GDI+ conditionally due to the ImagePut class being destroyed first.
                IsObject(ImagePut) && ImagePut.gdiplusShutdown()
             }
             Hotkey % "^+F12", % void, Off ; Cannot disable, does nothing
@@ -2256,12 +2273,15 @@ class ImagePut {
 
          ; WM_APP - Animate GIFs
          if (uMsg = 0x8000) {
-            Critical ; Thanks Teadrinker - https://www.autohotkey.com/boards/viewtopic.php?f=76&t=83358
+            ; Thanks tmplinshi, Teadrinker - https://www.autohotkey.com/boards/viewtopic.php?f=76&t=83358
+            Critical
 
             ; Exit Gif loop or get variables.
             if !(pBitmap := DllCall("GetWindowLongPtr", "ptr", hwnd, "int", 0, "ptr"))
                return
+            hdc := DllCall("GetWindowLongPtr", "ptr", hwnd, "int", A_PtrSize, "ptr")
             Item := DllCall("GetWindowLongPtr", "ptr", hwnd, "int", 2*A_PtrSize, "ptr")
+            pBits := DllCall("GetWindowLongPtr", "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
             frame := wParam + 1
 
             ; Get the next frame and delay.
@@ -2289,7 +2309,7 @@ class ImagePut {
             static pWndProc := RegisterCallback(ImagePut.WindowProc,,, &ImagePut)
             next_frame := Func("DllCall").bind(pWndProc, "ptr", hwnd, "uint", uMsg, "uptr", frame, "ptr", 0)
             SetTimer % next_frame, % -1 * res
-            
+
             ; Debug code
             static start := 0, sum := 0, count := 0, sum2 := 0, count2 := 0
             DllCall("QueryPerformanceFrequency", "int64*", frequency:=0)
@@ -2309,7 +2329,7 @@ class ImagePut {
                      . "`nFloor and Ceiling:`t" Floor(delay / resolution) * resolution ", " Ceil(delay / resolution) * resolution
             }
             start := now
-            
+
             ; Select frame to show.
             DllCall("gdiplus\GdipImageGetFrameDimensionsCount", "ptr", pBitmap, "uint*", dims:=0)
             DllCall("gdiplus\GdipImageGetFrameDimensionsList", "ptr", pBitmap, "ptr", &dimIDs := VarSetCapacity(dimIDs, 16*dims), "uint", dims)
@@ -2319,8 +2339,22 @@ class ImagePut {
             DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
             DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
 
-            ; Render to window. Using put_dc shortens the code.
-            hdc := ImagePut.put_dc(pBitmap)
+            ; Transfer data from source pBitmap to an hBitmap manually.
+            VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
+               NumPut(  width, Rect,  8,   "uint") ; Width
+               NumPut( height, Rect, 12,   "uint") ; Height
+            VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
+               NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
+               NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
+            DllCall("gdiplus\GdipBitmapLockBits"
+                     ,    "ptr", pBitmap
+                     ,    "ptr", &Rect
+                     ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
+                     ,    "int", 0xE200B      ; Format32bppPArgb
+                     ,    "ptr", &BitmapData) ; Contains the pointer (pBits) to the hbm.
+            DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
+
+            ; Render to window.
             DllCall("UpdateLayeredWindow"
                      ,    "ptr", hwnd                     ; hWnd
                      ,    "ptr", 0                        ; hdcDst
@@ -2331,12 +2365,6 @@ class ImagePut {
                      ,   "uint", 0                        ; crKey
                      ,  "uint*", 0xFF << 16 | 0x01 << 24  ; *pblend
                      ,   "uint", 2)                       ; dwFlags
-
-            ; Cleanup the hBitmap and device contexts.
-            obm := DllCall("CreateBitmap", "int", 0, "int", 0, "uint", 1, "uint", 1, "ptr", 0, "ptr")
-            hbm := DllCall("SelectObject", "ptr", hdc, "ptr", obm, "ptr")
-            DllCall("DeleteObject", "ptr", hbm)
-            DllCall("DeleteDC",     "ptr", hdc)
             return
          }
 
