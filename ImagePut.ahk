@@ -2161,19 +2161,22 @@ class ImagePut {
 
       ; For multiple frames, send WM_APP to WindowProc to render GIFs.
       if (frames > 1) {
-         ; Save frame delays inside GWLP_USERDATA because they are quite slow enough to impact timing.
+         ; Save frame delays because they are slow enough to impact timing.
          DllCall("gdiplus\GdipGetPropertyItemSize", "ptr", pBitmap, "uint", 0x5100, "uint*", &ItemSize:=0) ; PropertyTagFrameDelay
          Item := DllCall("GlobalAlloc", "uint", 0, "uptr", ItemSize, "ptr")
          DllCall("gdiplus\GdipGetPropertyItem", "ptr", pBitmap, "uint", 0x5100, "uint", ItemSize, "ptr", Item)
 
-         ; Clone bitmap to avoid disposal, and initiate animation via PostMessage.
+         ; Clone bitmap to avoid disposal.
          DllCall("gdiplus\GdipCloneImage", "ptr", pBitmap, "ptr*", &pBitmapClone:=0)
          DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmapClone)
-         DllCall("SetWindowLongPtr", "ptr", hwnd, "int", GWLP_USERDATA := -21, "ptr", pBitmapClone)
-         DllCall("PostMessage", "ptr", hwnd, "uint", 0x8000, "uptr", -1, "ptr", Item)
 
-         ; Preserve GDI+ scope.
+         ; Store data inside window.
+         DllCall("SetWindowLongPtr", "ptr", hwnd, "int", 0, "ptr", pBitmapClone)
+         DllCall("SetWindowLongPtr", "ptr", hwnd, "int", 2*A_PtrSize, "ptr", Item)
+
+         ; Preserve GDI+ scope and initiate animation via PostMessage.
          ImagePut.gdiplusStartup()
+         DllCall("PostMessage", "ptr", hwnd, "uint", 0x8000, "uptr", -1, "ptr", 0)
       }
 
       return hwnd
@@ -2201,7 +2204,7 @@ class ImagePut {
          NumPut(  "uint",         0x8, wc,         4) ; style
          NumPut(   "ptr",    pWndProc, wc,         8) ; lpfnWndProc
          NumPut(   "int",           0, wc, _ ? 12:16) ; cbClsExtra
-         NumPut(   "int",           0, wc, _ ? 16:20) ; cbWndExtra
+         NumPut(   "int",          40, wc, _ ? 16:20) ; cbWndExtra
          NumPut(   "ptr",           0, wc, _ ? 20:24) ; hInstance
          NumPut(   "ptr",           0, wc, _ ? 24:32) ; hIcon
          NumPut(   "ptr",     hCursor, wc, _ ? 28:40) ; hCursor
@@ -2228,9 +2231,10 @@ class ImagePut {
 
          ; WM_DESTROY
          if (uMsg = 0x2) {
-            if pBitmap := DllCall("GetWindowLongPtr", "ptr", hwnd, "int", GWLP_USERDATA := -21, "ptr") {
-               DllCall("SetWindowLongPtr", "ptr", hwnd, "int", GWLP_USERDATA := -21, "ptr", 0)
+            if pBitmap := DllCall("GetWindowLongPtr", "ptr", hwnd, "int", 0, "ptr") {
+               DllCall("SetWindowLongPtr", "ptr", hwnd, "int", 0, "ptr", 0)
                DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
+               DllCall("GlobalFree", "ptr", DllCall("GetWindowLongPtr", "ptr", hwnd, "int", 2*A_PtrSize, "ptr"))
                IsObject(ImagePut) && ImagePut.gdiplusShutdown()
             }
             Persistent(--active_windows)
@@ -2255,12 +2259,11 @@ class ImagePut {
          if (uMsg = 0x8000) {
             Critical ; Thanks Teadrinker - https://www.autohotkey.com/boards/viewtopic.php?f=76&t=83358
             
+            ; Exit Gif loop or get variables.
+            if !(pBitmap := DllCall("GetWindowLongPtr", "ptr", hwnd, "int", 0, "ptr"))
+               return
+            Item := DllCall("GetWindowLongPtr", "ptr", hwnd, "int", 2*A_PtrSize, "ptr")
             frame := wParam + 1
-            Item := lParam
-
-            ; If the window is destroyed...
-            if !(pBitmap := DllCall("GetWindowLongPtr", "ptr", hwnd, "int", GWLP_USERDATA := -21, "ptr"))
-               return DllCall("GlobalFree", "ptr", Item) ; Sometimes works.
 
             ; Get the next frame and delay.
             frames := NumGet(Item, 4, "uint") // 4                   ; Max frames
@@ -2284,10 +2287,10 @@ class ImagePut {
                res := Ceil(delay / resolution) * resolution
 
             ; Async the next frame as soon as possible to prevent rendering lag.
-            SetTimer WindowProc.bind(hwnd, uMsg, frame, Item), -1 * res
+            SetTimer WindowProc.bind(hwnd, uMsg, frame, 0), -1 * res
 
 
-            /*
+            
             ; Debug code
             static start := 0, sum := 0, count := 0, sum2 := 0, count2 := 0
             DllCall("QueryPerformanceFrequency", "int64*", &frequency:=0)
@@ -2307,7 +2310,7 @@ class ImagePut {
                      . "`nFloor and Ceiling:`t" Floor(delay / resolution) * resolution ", " Ceil(delay / resolution) * resolution
             }
             start := now
-            */
+            
             ; Select frame to show.
             DllCall("gdiplus\GdipImageGetFrameDimensionsCount", "ptr", pBitmap, "uint*", &dims:=0)
             DllCall("gdiplus\GdipImageGetFrameDimensionsList", "ptr", pBitmap, "ptr", dimIDs := Buffer(16*dims), "uint", dims)
