@@ -2165,14 +2165,16 @@ class ImagePut {
          DllCall("gdiplus\GdipCloneImage", "ptr", pBitmap, "ptr*", &pBitmapClone:=0)
          DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmapClone)
 
-         ; Store data inside window.
+         ; Store data inside window class extra bits (cbWndExtra).
          DllCall("SetWindowLongPtr", "ptr", hwnd, "int", 0, "ptr", pBitmapClone)
          DllCall("SetWindowLongPtr", "ptr", hwnd, "int", A_PtrSize, "ptr", hdc)
          DllCall("SetWindowLongPtr", "ptr", hwnd, "int", 2*A_PtrSize, "ptr", Item)
          DllCall("SetWindowLongPtr", "ptr", hwnd, "int", 3*A_PtrSize, "ptr", pBits)
 
-         ; Preserve GDI+ scope and initiate animation via PostMessage.
+         ; Preserve GDI+ scope.
          ImagePut.gdiplusStartup()
+
+         ; Goto WindowProc() and initiate animation via PostMessage.
          DllCall("PostMessage", "ptr", hwnd, "uint", 0x8000, "uptr", -1, "ptr", 0)
 
          ; Avoid disposing the device context.
