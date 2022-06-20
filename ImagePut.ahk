@@ -1809,57 +1809,62 @@ class ImagePut {
          DllCall(code, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "uchar", alpha)
       }
 
-      PixelSearch(color) {
+      PixelSearch(color, variation := 0) {
          ; C source code - https://godbolt.org/z/o7EPo8xPr
-         static code := 0
-         (!code) && code := this.Base64Put((A_PtrSize == 4)
+         static PixelSearch := 0
+         (!PixelSearch) && PixelSearch := this.Base64Put((A_PtrSize == 4)
             ? "VYnli1UMi00Qi0UIOdBzCTkIdAeDwATr84nQXcM="
             : "SInISDnQcwtEOQB0CUiDwATr8EiJ0MM=")
+
+         ; C source code - https://godbolt.org/z/oocoPndE8
+         static PixelSearch2 := 0
+         (!PixelSearch2) && PixelSearch2 := this.Base64Put((A_PtrSize == 4)
+            ? "VYnlVlNRikUQilUcik0gil0ki3UIiEX3ikUUiEX2ikUYiEX1O3UMcyiKRgI6Rfd3GzpF9nIWikYBOkX1dw440HIKigY4yHcEONhzCIPGBOvTi3UMWonwW15dww=="
+            : "VlNEilQkOESKXCRAilwkSECKdCRQSInISDnQcyuKSAJEOMF3HUQ4yXIYikgBRDjRdxBEONlyC4oIONl3BUA48XMJSIPABOvQSInQW17D")
 
          ; Lift color to 32-bits if first 8 bits are zero.
          (!(color >> 24)) && color |= 0xFF000000
 
-         ; Get the address of the first matching pixel.
-         byte := DllCall(code, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "ptr")
+         ; PixelSearch, no variation, no range
+         if (variation <= 0) {
 
-         ; Compare the address to the out-of-bounds limit.
-         if (byte == this.ptr + this.size)
-            return False
+            ; Get the address of the first matching pixel.
+            byte := DllCall(PixelSearch, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "ptr")
 
-         ; Return an [x, y] array.
-         offset := (byte - this.ptr) // 4
-         return [mod(offset, this.width), offset // this.width]
-      }
+            ; Compare the address to the out-of-bounds limit.
+            if (byte == this.ptr + this.size)
+               return False
 
-      PixelSearch2(color, variation := 3) {
-         ; C source code - https://godbolt.org/z/oocoPndE8
-         static code := 0
-         (!code) && code := this.Base64Put((A_PtrSize == 4)
-            ? "VYnlVlNRikUQilUcik0gil0ki3UIiEX3ikUUiEX2ikUYiEX1O3UMcyiKRgI6Rfd3GzpF9nIWikYBOkX1dw440HIKigY4yHcEONhzCIPGBOvTi3UMWonwW15dww=="
-            : "VlNEilQkOESKXCRAilwkSECKdCRQSInISDnQcyuKSAJEOMF3HUQ4yXIYikgBRDjRdxBEONlyC4oIONl3BUA48XMJSIPABOvQSInQW17D")
+            ; Return an [x, y] array.
+            offset := (byte - this.ptr) // 4
+            return [mod(offset, this.width), offset // this.width]
+         } 
 
-         v := variation
-         r := ((color & 0xFF0000) >> 16)
-         g := ((color & 0xFF00) >> 8)
-         b := ((color & 0xFF))
+         ; PixelSearch with variation
+         else {
+            v := variation
+            r := ((color & 0xFF0000) >> 16)
+            g := ((color & 0xFF00) >> 8)
+            b := ((color & 0xFF))
 
-         ; When doing pointer arithmetic, *Scan0 + 1 is actually adding 4 bytes.
-         byte := DllCall(code, "ptr", this.ptr, "ptr", this.ptr + this.size
-                  , "uchar", Min(r+v, 255)
-                  , "uchar", Max(r-v, 0)
-                  , "uchar", Min(g+v, 255)
-                  , "uchar", Max(g-v, 0)
-                  , "uchar", Min(b+v, 255)
-                  , "uchar", Max(b-v, 0)
-                  , "ptr")
+            ; When doing pointer arithmetic, *Scan0 + 1 is actually adding 4 bytes.
+            byte := DllCall(PixelSearch2, "ptr", this.ptr, "ptr", this.ptr + this.size
+                     , "uchar", Min(r+v, 255)
+                     , "uchar", Max(r-v, 0)
+                     , "uchar", Min(g+v, 255)
+                     , "uchar", Max(g-v, 0)
+                     , "uchar", Min(b+v, 255)
+                     , "uchar", Max(b-v, 0)
+                     , "ptr")
 
-         ; Compare the address to the out-of-bounds limit.
-         if (byte == this.ptr + this.size)
-            return False
+            ; Compare the address to the out-of-bounds limit.
+            if (byte == this.ptr + this.size)
+               return False
 
-         ; Return an [x, y] array.
-         offset := (byte - this.ptr) // 4
-         return [mod(offset, this.width), offset // this.width]
+            ; Return an [x, y] array.
+            offset := (byte - this.ptr) // 4
+            return [mod(offset, this.width), offset // this.width]
+         }
       }
 
       ImageSearch(image) {
