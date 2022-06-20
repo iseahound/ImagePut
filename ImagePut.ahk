@@ -1778,49 +1778,49 @@ class ImagePut {
 
       ColorKey(key := 0xFFFFFFFF, value := 0x00000000) {
          ; C source code - https://godbolt.org/z/eaG9fax9v
-         static bin := 0, code := (A_PtrSize == 4)
+         static code := 0
+         (!code) && code := this.Base64Put((A_PtrSize == 4)
             ? "VYnli0UIi1UQi00UO0UMcws5EHUCiQiDwATr8F3D"
-            : "SDnRcw5EOQF1A0SJCUiDwQTr7cM="
-         (!bin) && bin := this.Base64Put(code)
+            : "SDnRcw5EOQF1A0SJCUiDwQTr7cM=")
 
          ; Replaces one ARGB color with another.
-         DllCall(bin, "ptr", this.ptr, "uint", this.ptr + this.size, "uint", key, "uint", value)
+         DllCall(code, "ptr", this.ptr, "uint", this.ptr + this.size, "uint", key, "uint", value)
       }
 
       SetAlpha(alpha := 0xFF) {
          ; C source code - https://godbolt.org/z/aWf73jTqc
-         static bin := 0, code := (A_PtrSize == 4)
+         static code := 0
+         (!code) && code := this.Base64Put((A_PtrSize == 4)
             ? "VYnli0UIilUQO0UMcwiIUAODwATr813D"
-            : "SDnRcwpEiEEDSIPBBOvxww=="
-         (!bin) && bin := this.Base64Put(code)
+            : "SDnRcwpEiEEDSIPBBOvxww==")
 
          ; Sets the transparency of the entire bitmap.
-         DllCall(bin, "ptr", this.ptr, "ptr", this.ptr + this.size, "uchar", alpha)
+         DllCall(code, "ptr", this.ptr, "ptr", this.ptr + this.size, "uchar", alpha)
       }
 
       TransColor(color := 0xFFFFFF, alpha := 0x00) {
          ; C source code - https://godbolt.org/z/z3a8WcM5M
-         static bin := 0, code := (A_PtrSize == 4)
+         static code := 0
+         (!code) && code := this.Base64Put((A_PtrSize == 4)
             ? "VYnli0UIilUUO0UMcxWLTRAzCIHh////AHUDiFADg8AE6+Zdww=="
-            : "SDnRcxaLAUQxwKn///8AdQREiEkDSIPBBOvlww=="
-         (!bin) && bin := this.Base64Put(code)
+            : "SDnRcxaLAUQxwKn///8AdQREiEkDSIPBBOvlww==")
 
          ; Sets the alpha value of a specified RGB color.
-         DllCall(bin, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "uchar", alpha)
+         DllCall(code, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "uchar", alpha)
       }
 
       PixelSearch(color) {
          ; C source code - https://godbolt.org/z/o7EPo8xPr
-         static bin := 0, code := (A_PtrSize == 4)
+         static code := 0
+         (!code) && code := this.Base64Put((A_PtrSize == 4)
             ? "VYnli1UMi00Qi0UIOdBzCTkIdAeDwATr84nQXcM="
-            : "SInISDnQcwtEOQB0CUiDwATr8EiJ0MM="
-         (!bin) && bin := this.Base64Put(code)
+            : "SInISDnQcwtEOQB0CUiDwATr8EiJ0MM=")
 
          ; Lift color to 32-bits if first 8 bits are zero.
          (!(color >> 24)) && color |= 0xFF000000
 
          ; Get the address of the first matching pixel.
-         byte := DllCall(bin, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "ptr")
+         byte := DllCall(code, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "ptr")
 
          ; Compare the address to the out-of-bounds limit.
          if (byte == this.ptr + this.size)
@@ -1833,10 +1833,10 @@ class ImagePut {
 
       PixelSearch2(color, variation := 3) {
          ; C source code - https://godbolt.org/z/oocoPndE8
-         static bin := 0, code := (A_PtrSize == 4)
+         static code := 0
+         (!code) && code := this.Base64Put((A_PtrSize == 4)
             ? "VYnlVlNRikUQilUcik0gil0ki3UIiEX3ikUUiEX2ikUYiEX1O3UMcyiKRgI6Rfd3GzpF9nIWikYBOkX1dw440HIKigY4yHcEONhzCIPGBOvTi3UMWonwW15dww=="
-            : "VlNEilQkOESKXCRAilwkSECKdCRQSInISDnQcyuKSAJEOMF3HUQ4yXIYikgBRDjRdxBEONlyC4oIONl3BUA48XMJSIPABOvQSInQW17D"
-         (!bin) && bin := this.Base64Put(code)
+            : "VlNEilQkOESKXCRAilwkSECKdCRQSInISDnQcyuKSAJEOMF3HUQ4yXIYikgBRDjRdxBEONlyC4oIONl3BUA48XMJSIPABOvQSInQW17D")
 
          v := variation
          r := ((color & 0xFF0000) >> 16)
@@ -1844,7 +1844,7 @@ class ImagePut {
          b := ((color & 0xFF))
 
          ; When doing pointer arithmetic, *Scan0 + 1 is actually adding 4 bytes.
-         byte := DllCall(bin, "ptr", this.ptr, "ptr", this.ptr + this.size
+         byte := DllCall(code, "ptr", this.ptr, "ptr", this.ptr + this.size
                   , "uchar", Min(r+v, 255)
                   , "uchar", Max(r-v, 0)
                   , "uchar", Min(g+v, 255)
@@ -1864,20 +1864,20 @@ class ImagePut {
 
       ImageSearch(image) {
          ; C source code - https://godbolt.org/z/q1rxvx38Y
-         static bin := 0, code := (A_PtrSize == 4)
+         static code := 0
+         (!code) && code := this.Base64Put((A_PtrSize == 4)
             ? "VYnlV1ZTg+wUi1UYi3UUi0UQi30MjTSWi00MiXXoi3UcjRyFAAAAACnXK0UcD6/LA00IiX3kweYCiUXgiXXsiU3wi00IO03wc0yL"
             . "RRSLADkBdT6JyCtFCDHSwfgC93UMOVXkfiw5ReB+J4tFFInKMf87fRx0IztF6HMOizI5MHUQg8IEg8AE6+0B2gNF7Efr4IPBBOuv"
             . "i03wg8QUichbXl9dww=="
             : "QVdBVkFVQVRVV1ZTi0QkaIt0JHBIifdIweYCSYnLidFEicNBD6/QQYnNSMHjAk2J2kEpxUEp+EmNLJOJwk2NJJFJOepzVkGLAUE5"
             . "AnVITInQMdJMKdhIwfgC9/FBOdV+NUE5wH4wTInSTInIRTH2QTn+dCtMOeBzEkSLOkQ5OHUVSIPCBEiDwATr6UgB2kgB8EH/xuvZ"
-            . "SYPCBOulSYnqTInQW15fXUFcQV1BXkFfww=="
-         (!bin) && bin := this.Base64Put(code)
+            . "SYPCBOulSYnqTInQW15fXUFcQV1BXkFfww==")
 
          if ImagePut.ImageType(image) != "buffer"
             image := ImagePutBuffer(image)
 
          ; Search for the address of the first matching image.
-         byte := DllCall(bin, "ptr", this.ptr, "uint", this.width, "uint", this.height
+         byte := DllCall(code, "ptr", this.ptr, "uint", this.width, "uint", this.height
                            , "ptr", image.ptr, "uint", image.width, "uint", image.height, "ptr")
 
          ; Compare the address to the out-of-bounds limit.
