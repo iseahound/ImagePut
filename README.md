@@ -1,9 +1,9 @@
 # ImagePut
 
-* Accepts many [inputs](https://github.com/iseahound/ImagePut/wiki/Input-Types-&-Output-Functions#input-types). 
 * Standalone library.
-* Easily understandable syntax. 
-* Fast conversions.
+* Easily understandable syntax.
+* Accepts all [images](https://github.com/iseahound/ImagePut/wiki/Input-Types-&-Output-Functions#input-types), useful for debugging.
+* Fast [pixelsearch](https://github.com/iseahound/ImagePut/wiki/PixelSearch-and-ImageSearch#pixelsearch) and imagesearch.
 * Highly robust code that has undergone extensive testing. 
 
 ## Documentation
@@ -16,7 +16,7 @@
 
 Projects using ImagePut:
 
-* [PaddleOCR-AutoHotkey](https://github.com/telppa/PaddleOCR-AutoHotkey)
+* [PaddleOCR-AutoHotkey](https://github.com/telppa/PaddleOCR-AutoHotkey) - Image to text
 
 If you like this and want to see my other AutoHotkey libraries:
 
@@ -78,8 +78,7 @@ Finally, there are several advanced features. The first is the ability to specif
 
 ## Help and Support
 
-Come visit the forum for any help, questions, suggestions, etc.
+Feel free to ask for any help, questions, or post suggestions, etc.
 
 * v1 forum: https://www.autohotkey.com/boards/viewtopic.php?t=76301
 * v2 forum: https://www.autohotkey.com/boards/viewtopic.php?t=76633
-
