@@ -1711,7 +1711,7 @@ class ImagePut {
       }
 
       __Set(x, y, color) {
-         (!(color >> 24)) && color |= 0xFF000000
+         (color >> 24) || color |= 0xFF000000
          NumPut(color, this.ptr + 4*(y*this.width + x), "uint")
          return color
       }
@@ -1778,7 +1778,7 @@ class ImagePut {
       ColorKey(key := 0xFFFFFFFF, value := 0x00000000) {
          ; C source code - https://godbolt.org/z/eaG9fax9v
          static code := 0
-         (!code) && code := this.Base64Put((A_PtrSize == 4)
+         (code) || code := this.Base64Put((A_PtrSize == 4)
             ? "VYnli0UIi1UQi00UO0UMcws5EHUCiQiDwATr8F3D"
             : "SDnRcw5EOQF1A0SJCUiDwQTr7cM=")
 
@@ -1789,7 +1789,7 @@ class ImagePut {
       SetAlpha(alpha := 0xFF) {
          ; C source code - https://godbolt.org/z/aWf73jTqc
          static code := 0
-         (!code) && code := this.Base64Put((A_PtrSize == 4)
+         (code) || code := this.Base64Put((A_PtrSize == 4)
             ? "VYnli0UIilUQO0UMcwiIUAODwATr813D"
             : "SDnRcwpEiEEDSIPBBOvxww==")
 
@@ -1800,7 +1800,7 @@ class ImagePut {
       TransColor(color := 0xFFFFFF, alpha := 0x00) {
          ; C source code - https://godbolt.org/z/z3a8WcM5M
          static code := 0
-         (!code) && code := this.Base64Put((A_PtrSize == 4)
+         (code) || code := this.Base64Put((A_PtrSize == 4)
             ? "VYnli0UIilUUO0UMcxWLTRAzCIHh////AHUDiFADg8AE6+Zdww=="
             : "SDnRcxaLAUQxwKn///8AdQREiEkDSIPBBOvlww==")
 
@@ -1811,18 +1811,18 @@ class ImagePut {
       PixelSearch(color, variation := 0) {
          ; C source code - https://godbolt.org/z/o7EPo8xPr
          static PixelSearch := 0
-         (!PixelSearch) && PixelSearch := this.Base64Put((A_PtrSize == 4)
+         (PixelSearch) || PixelSearch := this.Base64Put((A_PtrSize == 4)
             ? "VYnli1UMi00Qi0UIOdBzCTkIdAeDwATr84nQXcM="
             : "SInISDnQcwtEOQB0CUiDwATr8EiJ0MM=")
 
          ; C source code - https://godbolt.org/z/oocoPndE8
          static PixelSearch2 := 0
-         (!PixelSearch2) && PixelSearch2 := this.Base64Put((A_PtrSize == 4)
+         (PixelSearch2) || PixelSearch2 := this.Base64Put((A_PtrSize == 4)
             ? "VYnlVlNRikUQilUcik0gil0ki3UIiEX3ikUUiEX2ikUYiEX1O3UMcyiKRgI6Rfd3GzpF9nIWikYBOkX1dw440HIKigY4yHcEONhzCIPGBOvTi3UMWonwW15dww=="
             : "VlNEilQkOESKXCRAilwkSECKdCRQSInISDnQcyuKSAJEOMF3HUQ4yXIYikgBRDjRdxBEONlyC4oIONl3BUA48XMJSIPABOvQSInQW17D")
 
          ; Lift color to 32-bits if first 8 bits are zero.
-         (!(color >> 24)) && color |= 0xFF000000
+         (color >> 24) || color |= 0xFF000000
 
          ; PixelSearch, no variation, no range
          if (variation <= 0) {
@@ -1869,7 +1869,7 @@ class ImagePut {
       ImageSearch(image) {
          ; C source code - https://godbolt.org/z/q1rxvx38Y
          static code := 0
-         (!code) && code := this.Base64Put((A_PtrSize == 4)
+         (code) || code := this.Base64Put((A_PtrSize == 4)
             ? "VYnlV1ZTg+wUi1UYi3UUi0UQi30MjTSWi00MiXXoi3UcjRyFAAAAACnXK0UcD6/LA00IiX3kweYCiUXgiXXsiU3wi00IO03wc0yL"
             . "RRSLADkBdT6JyCtFCDHSwfgC93UMOVXkfiw5ReB+J4tFFInKMf87fRx0IztF6HMOizI5MHUQg8IEg8AE6+0B2gNF7Efr4IPBBOuv"
             . "i03wg8QUichbXl9dww=="
