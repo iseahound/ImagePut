@@ -169,8 +169,8 @@ class ImagePut {
 
       crop := keywords.crop
       scale := keywords.scale
-      decode := keywords.decode ? keywords.decode : this.decode
-      validate := keywords.validate ? keywords.validate : this.validate
+      decode := (keywords.decode != "") ? keywords.decode : this.decode
+      validate := (keywords.validate != "") ? keywords.validate : this.validate
 
       ; #1 - Stream intermediate.
       if not decode and not crop and not scale
