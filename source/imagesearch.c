@@ -42,5 +42,5 @@ unsigned int * imagesearch(unsigned int * Scan0, unsigned int width, unsigned in
         next:
         start++;
     }
-    return end;
+    return start; // start == end if no match.
 }
