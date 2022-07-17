@@ -8,5 +8,5 @@ unsigned int * pixelsearch2(unsigned int * start, unsigned int * end, unsigned c
             return start;
         start++;
     }
-    return end;
+    return start; // start == end if no match.
 }
