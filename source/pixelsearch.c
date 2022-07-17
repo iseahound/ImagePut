@@ -4,5 +4,5 @@ unsigned int * pixelsearch(unsigned int * start, unsigned int * end, unsigned in
             return start;
         start++;
     }
-    return end;
+    return start; // start == end if no match.
 }
