@@ -8,6 +8,7 @@
 
 ## Documentation
 
+* [Quick Start](https://github.com/iseahound/ImagePut/wiki/Quick-Start)
 * [Input Types & Output Functions](https://github.com/iseahound/ImagePut/wiki/Input-Types-&-Output-Functions)
 * [Crop, Scale, & Other Flags](https://github.com/iseahound/ImagePut/wiki/Crop,-Scale,-&-Other-Flags)
 * [PixelSearch & ImageSearch](https://github.com/iseahound/ImagePut/wiki/PixelSearch-and-ImageSearch)
