@@ -19,10 +19,6 @@ Projects using ImagePut:
 
 * [PaddleOCR-AutoHotkey](https://github.com/telppa/PaddleOCR-AutoHotkey) - Image to text
 
-If you like this and want to see my other AutoHotkey libraries:
-
-* [TextRender & ImageRender](https://github.com/iseahound/TextRender)
-
 ## So you want to convert an image?
 
 But you don't know how. That's okay because you can just do this:
