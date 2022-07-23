@@ -2042,12 +2042,12 @@ class ImagePut {
          ; PixelSearch, range of colors, and variation.
          if IsObject(variation) {
             byte := DllCall(PixelSearch2, "ptr", this.ptr, "ptr", this.ptr + this.size
-                     , "uchar", max(variation[1], variation[2])
-                     , "uchar", min(variation[1], variation[2])
-                     , "uchar", max(variation[3], variation[4])
-                     , "uchar", min(variation[3], variation[4])
-                     , "uchar", max(variation[5], variation[6])
-                     , "uchar", min(variation[5], variation[6])
+                     , "uchar", min(max(variation[1], variation[2]), 255)
+                     , "uchar", max(min(variation[1], variation[2]), 0)
+                     , "uchar", min(max(variation[3], variation[4]), 255)
+                     , "uchar", max(min(variation[3], variation[4]), 0)
+                     , "uchar", min(max(variation[5], variation[6]), 255)
+                     , "uchar", max(min(variation[5], variation[6]), 0)
                      , "ptr")
          }
 
