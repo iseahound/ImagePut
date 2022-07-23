@@ -2042,12 +2042,12 @@ class ImagePut {
          ; PixelSearch, range of colors, and variation.
          if IsObject(variation) {
             byte := DllCall(PixelSearch2, "ptr", this.ptr, "ptr", this.ptr + this.size
-                     , "uchar", Max(variation[1], variation[2])
-                     , "uchar", Min(variation[1], variation[2])
-                     , "uchar", Max(variation[3], variation[4])
-                     , "uchar", Min(variation[3], variation[4])
-                     , "uchar", Max(variation[5], variation[6])
-                     , "uchar", Min(variation[5], variation[6])
+                     , "uchar", max(variation[1], variation[2])
+                     , "uchar", min(variation[1], variation[2])
+                     , "uchar", max(variation[3], variation[4])
+                     , "uchar", min(variation[3], variation[4])
+                     , "uchar", max(variation[5], variation[6])
+                     , "uchar", min(variation[5], variation[6])
                      , "ptr")
          }
 
@@ -2066,12 +2066,12 @@ class ImagePut {
 
             ; When doing pointer arithmetic, *Scan0 + 1 is actually adding 4 bytes.
             byte := DllCall(PixelSearch2, "ptr", this.ptr, "ptr", this.ptr + this.size
-                     , "uchar", Min(r+v, 255)
-                     , "uchar", Max(r-v, 0)
-                     , "uchar", Min(g+v, 255)
-                     , "uchar", Max(g-v, 0)
-                     , "uchar", Min(b+v, 255)
-                     , "uchar", Max(b-v, 0)
+                     , "uchar", min(r+v, 255)
+                     , "uchar", max(r-v, 0)
+                     , "uchar", min(g+v, 255)
+                     , "uchar", max(g-v, 0)
+                     , "uchar", min(b+v, 255)
+                     , "uchar", max(b-v, 0)
                      , "ptr")
          }
 
@@ -2513,7 +2513,7 @@ class ImagePut {
             frames := NumGet(Item, 4, "uint") // 4                   ; Max frames
             delays := NumGet(Item, 8 + A_PtrSize, "ptr")             ; Array of delays
             frame := mod(frame, frames)                              ; Loop to first frame
-            delay := Max(10 * NumGet(delays, frame*4, "uint"), 10)   ; Minimum delay is 10ms
+            delay := max(10 * NumGet(delays, frame*4, "uint"), 10)   ; Minimum delay is 10ms
 
             ; Emulate behavior of setting 10 ms to 100 ms.
             (delay == 10) && delay := 100 ; See: https://www.biphelps.com/blog/The-Fastest-GIF-Does-Not-Exist
