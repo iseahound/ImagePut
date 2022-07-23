@@ -220,7 +220,7 @@ class ImagePut {
       return ObjHasKey(this, name) ? this.name : ""
    }
 
-   static ImageTypes :=
+   static inputs :=
       ( Join
       [
       "clipboard_png",
@@ -268,7 +268,7 @@ class ImagePut {
       }
 
       ; Skip ImageType.
-      for i, type in this.ImageTypes
+      for i, type in this.inputs
          if ObjHasKey(image, type) {
             keywords := image
             keywords.base := {__get: this.get}
