@@ -2030,11 +2030,11 @@ class ImagePut {
             ? "VYnli1UMi00Qi0UIOdBzCTkIdAeDwATr84nQXcM="
             : "SInISDnQcwtEOQB0CUiDwATr8EiJ0MM=")
 
-         ; C source code - https://godbolt.org/z/oocoPndE8
+         ; C source code - https://godbolt.org/z/4K38sq8hY
          static PixelSearch2 := 0
          (PixelSearch2) || PixelSearch2 := this.Base64Put((A_PtrSize == 4)
-            ? "VYnlVlNRikUQilUcik0gil0ki3UIiEX3ikUUiEX2ikUYiEX1O3UMcyiKRgI6Rfd3GzpF9nIWikYBOkX1dw440HIKigY4yHcEONhzCIPGBOvTi3UMWonwW15dww=="
-            : "VlNEilQkOESKXCRAilwkSECKdCRQSInISDnQcyuKSAJEOMF3HUQ4yXIYikgBRDjRdxBEONlyC4oIONl3BUA48XMJSIPABOvQSInQW17D")
+            ? "VYnlVlNRikUQilUcik0gil0ki3UIiEX3ikUUiEX2ikUYiEX1O3UMcyiKRgI4RfdyGzpF9nIWikYBOEX1cg440HIKigY4wXIEONhzBYPGBOvTWonwW15dww=="
+            : "VlNEilQkOESKXCRAilwkSECKdCRQSInISDnQcyuKSAJBOMhyHUQ4yXIYikgBQTjKchBEONlyC4oIOMtyBUA48XMGSIPABOvQW17D")
 
          ; Lift color to 32-bits if first 8 bits are zero.
          (color >> 24) || color |= 0xFF000000
