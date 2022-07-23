@@ -2039,24 +2039,27 @@ class ImagePut {
          ; Lift color to 32-bits if first 8 bits are zero.
          (color >> 24) || color |= 0xFF000000
 
-         ; PixelSearch, no variation, no range
-         if (variation <= 0) {
+         ; PixelSearch, range of colors, and variation.
+         if IsObject(variation) {
+            byte := DllCall(PixelSearch2, "ptr", this.ptr, "ptr", this.ptr + this.size
+                     , "uchar", variation[1]
+                     , "uchar", variation[2]
+                     , "uchar", variation[3]
+                     , "uchar", variation[4]
+                     , "uchar", variation[5]
+                     , "uchar", variation[6]
+                     , "ptr")
+         }
 
+         ; PixelSearch, single color, no variation
+         else if (variation == 0) {
             ; Get the address of the first matching pixel.
             byte := DllCall(PixelSearch, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "ptr")
-
-            ; Compare the address to the out-of-bounds limit.
-            if (byte == this.ptr + this.size)
-               return False
-
-            ; Return an [x, y] array.
-            offset := (byte - this.ptr) // 4
-            return [mod(offset, this.width), offset // this.width]
          } 
 
-         ; PixelSearch with variation
+         ; PixelSearch, single color, and variation
          else {
-            v := variation
+            v := abs(variation)
             r := ((color & 0xFF0000) >> 16)
             g := ((color & 0xFF00) >> 8)
             b := ((color & 0xFF))
@@ -2070,15 +2073,15 @@ class ImagePut {
                      , "uchar", Min(b+v, 255)
                      , "uchar", Max(b-v, 0)
                      , "ptr")
-
-            ; Compare the address to the out-of-bounds limit.
-            if (byte == this.ptr + this.size)
-               return False
-
-            ; Return an [x, y] array.
-            offset := (byte - this.ptr) // 4
-            return [mod(offset, this.width), offset // this.width]
          }
+
+         ; Compare the address to the out-of-bounds limit.
+         if (byte == this.ptr + this.size)
+            return False
+
+         ; Return an [x, y] array.
+         offset := (byte - this.ptr) // 4
+         return [mod(offset, this.width), offset // this.width]
       }
 
       ImageSearch(image) {
