@@ -220,7 +220,7 @@ class ImagePut {
       return ObjHasOwnProp(this, name) ? this.name : ""
    }
 
-   static ImageTypes := [
+   static inputs := [
       "clipboard_png",
       "clipboard",
       "object",
@@ -268,7 +268,7 @@ class ImagePut {
       }
 
       ; Skip ImageType.
-      for type in this.ImageTypes
+      for type in this.inputs
          if ObjHasOwnProp(image, type) {
             keywords := image
             keywords.base := {__get: this.get}
