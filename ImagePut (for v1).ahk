@@ -1533,20 +1533,20 @@ class ImagePut {
                ,    "ptr", &BitmapData)
       Scan0 := NumGet(BitmapData, 16, "ptr")
 
-      ; Generate machine code.
-      static bin := 0
-      if !bin {
-         ; C source code - https://godbolt.org/z/rvTWqrqv6
-         code := (A_PtrSize == 4)
-         ? "VYnli0UIi1UMi00QjRSQOdBzDzkIdQbHAAAAAACDwATr7V3D"
-         : "idJIjQSRSDnBcxFEOQF1BscBAAAAAEiDwQTr6sM="
-         size := StrLen(RTrim(code, "=")) * 3 // 4
-         bin := DllCall("VirtualAlloc", "ptr", 0, "uptr", size, "uint", 0x00003000, "uint", 0x40)
-         DllCall("crypt32\CryptStringToBinary", "str", code, "uint", 0, "uint", 0x1, "ptr", bin, "uint*", size, "ptr", 0, "ptr", 0)
+      ; C source code - https://godbolt.org/z/nrv5Yr3Y3
+      static code := 0
+      if !code {
+         b64 := (A_PtrSize == 4)
+            ? "VYnli0UIi1UMi00QOdBzDzkIdQbHAAAAAACDwATr7V3D"
+            : "SDnRcw9EOQF1BDHAiQFIg8EE6+zD"
+         s64 := StrLen(RTrim(b64, "=")) * 3 // 4
+         code := DllCall("GlobalAlloc", "uint", 0, "uptr", s64, "ptr")
+         DllCall("crypt32\CryptStringToBinary", "str", b64, "uint", 0, "uint", 0x1, "ptr", code, "uint*", s64, "ptr", 0, "ptr", 0)
+         DllCall("VirtualProtect", "ptr", code, "ptr", s64, "uint", 0x40, "uint*", op:=0)
       }
 
-      ; Call colorkey.
-      DllCall(bin, "ptr", Scan0, "uint", width * height, "uint", NumGet(Scan0+0, "uint"))
+      ; Sample the top-left pixel and set all matching pixels to be transparent.
+      DllCall(code, "ptr", Scan0, "ptr", Scan0 + 4*width*height, "uint", NumGet(Scan0+0, "uint"))
 
       ; Write pixels to bitmap.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
@@ -1728,12 +1728,12 @@ class ImagePut {
             : ImagePut.show(this.pBitmap, title, pos, style, styleEx, parent)
       }
 
-      Base64Put(code) {
-         size := StrLen(RTrim(code, "=")) * 3 // 4
-         bin := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr")
-         DllCall("VirtualProtect", "ptr", bin, "ptr", size, "uint", 0x40, "uint*", old:=0)
-         DllCall("crypt32\CryptStringToBinary", "str", code, "uint", 0, "uint", 0x1, "ptr", bin, "uint*", size, "ptr", 0, "ptr", 0)
-         return bin
+      Base64Put(b64) {
+         s64 := StrLen(RTrim(b64, "=")) * 3 // 4
+         code := DllCall("GlobalAlloc", "uint", 0, "uptr", s64, "ptr")
+         DllCall("crypt32\CryptStringToBinary", "str", b64, "uint", 0, "uint", 0x1, "ptr", code, "uint*", s64, "ptr", 0, "ptr", 0)
+         DllCall("VirtualProtect", "ptr", code, "ptr", s64, "uint", 0x40, "uint*", op:=0)
+         return code
       }
 
       CPUID() {
@@ -1741,21 +1741,21 @@ class ImagePut {
 
          if not cpuid {
             ; C source code - https://godbolt.org/z/1YPd6jz61
-            code := (A_PtrSize == 4)
+            b64 := (A_PtrSize == 4)
                ? "VYnlV4t9EFaLdQhTiw+LBg+iiQaLRQyJGItFFIkPiRBbXl9dww=="
                : "U4sBSYnKSYnTQYsID6JBiQJBiRtBiQhBiRFbww=="
-            size := StrLen(RTrim(code, "=")) * 3 // 4
-            bin := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr")
-            DllCall("VirtualProtect", "ptr", bin, "ptr", size, "uint", 0x40, "uint*", old:=0)
-            DllCall("crypt32\CryptStringToBinary", "str", code, "uint", 0, "uint", 0x1, "ptr", bin, "uint*", size, "ptr", 0, "ptr", 0)
+            s64 := StrLen(RTrim(b64, "=")) * 3 // 4
+            code := DllCall("GlobalAlloc", "uint", 0, "uptr", s64, "ptr")
+            DllCall("crypt32\CryptStringToBinary", "str", b64, "uint", 0, "uint", 0x1, "ptr", code, "uint*", s64, "ptr", 0, "ptr", 0)
+            DllCall("VirtualProtect", "ptr", code, "ptr", s64, "uint", 0x40, "uint*", op:=0)
 
             ; Set eax flag to 1 to retrieve supported CPU features.
             ; See this for CPU features: https://wiki.osdev.org/CPUID
             ; Also see page 591: https://www.amd.com/system/files/TechDocs/24594.pdf
-            DllCall(bin, "uint*", a := 1, "uint*", b := 0, "uint*", c := 0, "uint*", d := 0)
+            DllCall(code, "uint*", a := 1, "uint*", b := 0, "uint*", c := 0, "uint*", d := 0)
 
             ; Free memory.
-            DllCall("GlobalFree", "ptr", bin)
+            DllCall("GlobalFree", "ptr", code)
 
             ; To check for SSE2 use the following code example:
             ; if cpuid().edx[26] == True
@@ -2559,13 +2559,13 @@ class ImagePut {
       ; C source code - https://godbolt.org/z/EqfK7fvr5
       static code := 0
       if !code {
-         code_str := (A_PtrSize == 4)
+         b64 := (A_PtrSize == 4)
             ? "VYnlVotFDIt1EFOLTRSLXQgBxjnwcyCKEIPBAkDA6gQPttKKFBOIUf6KUP+D4g+KFBOIUf/r3FteXcM="
             : "SQHQTDnCcyWKAkmDwQJI/8LA6AQPtsCKBAFBiEH+ikL/g+APigQBQYhB/+vWww=="
-         code_size := StrLen(RTrim(code_str, "=")) * 3 // 4
-         code := DllCall("GlobalAlloc", "uint", 0, "uptr", code_size, "ptr")
-         DllCall("VirtualProtect", "ptr", code, "ptr", code_size, "uint", 0x40, "uint*", code_old:=0)
-         DllCall("crypt32\CryptStringToBinary", "str", code_str, "uint", 0, "uint", 0x1, "ptr", code, "uint*", code_size, "ptr", 0, "ptr", 0)
+         s64 := StrLen(RTrim(b64, "=")) * 3 // 4
+         code := DllCall("GlobalAlloc", "uint", 0, "uptr", s64, "ptr")
+         DllCall("crypt32\CryptStringToBinary", "str", b64, "uint", 0, "uint", 0x1, "ptr", code, "uint*", s64, "ptr", 0, "ptr", 0)
+         DllCall("VirtualProtect", "ptr", code, "ptr", s64, "uint", 0x40, "uint*", op:=0)
       }
 
       ; Default to lowercase hex values. Or capitalize the string below.
@@ -2595,13 +2595,13 @@ class ImagePut {
       ; C source code - https://godbolt.org/z/EqfK7fvr5
       static code := 0
       if !code {
-         code_str := (A_PtrSize == 4)
+         b64 := (A_PtrSize == 4)
             ? "VYnlVotFDIt1EFOLTRSLXQgBxjnwcyCKEIPBAkDA6gQPttKKFBOIUf6KUP+D4g+KFBOIUf/r3FteXcM="
             : "SQHQTDnCcyWKAkmDwQJI/8LA6AQPtsCKBAFBiEH+ikL/g+APigQBQYhB/+vWww=="
-         code_size := StrLen(RTrim(code_str, "=")) * 3 // 4
-         code := DllCall("GlobalAlloc", "uint", 0, "uptr", code_size, "ptr")
-         DllCall("VirtualProtect", "ptr", code, "ptr", code_size, "uint", 0x40, "uint*", code_old:=0)
-         DllCall("crypt32\CryptStringToBinary", "str", code_str, "uint", 0, "uint", 0x1, "ptr", code, "uint*", code_size, "ptr", 0, "ptr", 0)
+         s64 := StrLen(RTrim(b64, "=")) * 3 // 4
+         code := DllCall("GlobalAlloc", "uint", 0, "uptr", s64, "ptr")
+         DllCall("crypt32\CryptStringToBinary", "str", b64, "uint", 0, "uint", 0x1, "ptr", code, "uint*", s64, "ptr", 0, "ptr", 0)
+         DllCall("VirtualProtect", "ptr", code, "ptr", s64, "uint", 0x40, "uint*", op:=0)
       }
 
       ; Default to lowercase hex values. Or capitalize the string below.
