@@ -1870,53 +1870,58 @@ class ImagePut {
    }
 
    put_buffer(pBitmap) {
-      return new ImagePut.BitmapBuffer(pBitmap)
+      ; Get Bitmap width and height.
+      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
+      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
+
+      ; Allocate global memory.
+      size := 4 * width * height
+      ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr")
+
+      ; Create a pixel buffer.
+      VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
+         NumPut(  width, Rect,  8,   "uint") ; Width
+         NumPut( height, Rect, 12,   "uint") ; Height
+      VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
+         NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
+         NumPut(       ptr, BitmapData, 16,    "ptr") ; Scan0
+      DllCall("gdiplus\GdipBitmapLockBits"
+               ,    "ptr", pBitmap
+               ,    "ptr", &Rect
+               ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
+               ,    "int", 0x26200A     ; Format32bppArgb
+               ,    "ptr", &BitmapData)
+
+      ; Write pixels to global memory.
+      DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
+
+      ; Free the pixels later.
+      free := Func("MsgBox").bind("hello world") ; Func("DllCall").bind("GlobalFree", "ptr", ptr)
+
+      return new ImagePut.BitmapBuffer(ptr, size, width, height, free)
    }
 
    class BitmapBuffer {
 
-      __New(SourceBitmap) {
+      __New(ptr, size, width, height, free:="") {
          ImagePut.gdiplusStartup()
-
-         ; Get Bitmap width and height.
-         DllCall("gdiplus\GdipGetImageWidth", "ptr", SourceBitmap, "uint*", width:=0)
-         DllCall("gdiplus\GdipGetImageHeight", "ptr", SourceBitmap, "uint*", height:=0)
-
-         ; Allocate global memory.
-         size := 4 * width * height
-         ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr")
 
          ; Create a pBitmap on saved memory.
          DllCall("gdiplus\GdipCreateBitmapFromScan0"
-                  , "int", width, "int", height, "int", 4 * width, "int", 0x26200A, "ptr", ptr, "ptr*", pBitmap:=0)
+                  , "int", width, "int", height, "int", size // height, "int", 0x26200A, "ptr", ptr, "ptr*", pBitmap:=0)
 
-         ; Create a pixel buffer.
-         VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
-            NumPut(  width, Rect,  8,   "uint") ; Width
-            NumPut( height, Rect, 12,   "uint") ; Height
-         VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
-            NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
-            NumPut(       ptr, BitmapData, 16,    "ptr") ; Scan0
-         DllCall("gdiplus\GdipBitmapLockBits"
-                  ,    "ptr", SourceBitmap
-                  ,    "ptr", &Rect
-                  ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
-                  ,    "int", 0x26200A     ; Format32bppArgb
-                  ,    "ptr", &BitmapData)
-
-         ; Write pixels to bitmap.
-         DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", SourceBitmap, "ptr", &BitmapData)
-
-         this.width := width
-         this.height := height
+         ; Wrap the pointer without copying the data.
          this.ptr := ptr
          this.size := size
+         this.width := width
+         this.height := height
+         this.free := free
          this.pBitmap := pBitmap
       }
 
       __Delete() {
          DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap)
-         DllCall("GlobalFree", "ptr", this.ptr)
+         IsObject(this.free) && this.free.call()
          IsObject(ImagePut) && ImagePut.gdiplusShutdown()
       }
 
