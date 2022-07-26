@@ -1896,7 +1896,7 @@ class ImagePut {
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
 
       ; Free the pixels later.
-      free := Func("MsgBox").bind("hello world") ; Func("DllCall").bind("GlobalFree", "ptr", ptr)
+      free := Func("DllCall").bind("GlobalFree", "ptr", ptr)
 
       return new ImagePut.BitmapBuffer(ptr, size, width, height, free)
    }
@@ -1921,7 +1921,7 @@ class ImagePut {
 
       __Delete() {
          DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap)
-         IsObject(this.free) && this.free.call()
+         IsObject(ImagePut) && IsFunc(this.free.call) && this.free.call()
          IsObject(ImagePut) && ImagePut.gdiplusShutdown()
       }
 

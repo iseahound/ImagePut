@@ -1921,7 +1921,7 @@ class ImagePut {
 
       __Delete() {
          DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap)
-         IsObject(this.free) && this.free()
+         IsObject(ImagePut) && HasMethod(this.free) && this.free()
          IsObject(ImagePut) && ImagePut.gdiplusShutdown()
       }
 
