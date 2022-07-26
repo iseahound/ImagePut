@@ -1947,6 +1947,60 @@ class ImagePut {
             : ImagePut.show(this.pBitmap, title, pos, style, styleEx, parent)
       }
 
+      Save(filepath := "", quality := "")  {
+
+         ; Process filepath and set extension.
+         extension := "bmp"
+         ImagePut.select_filepath(&filepath, &extension)
+
+         ; If extension is not .bmp, use put_file routine.
+         if (extension != "bmp")
+            return ImagePut.put_file(this.pBitmap, filepath, quality)
+
+         ; Save header info.
+         static bm := CreateBitmapHeader()
+         CreateBitmapHeader() {
+            bm := Buffer(54)
+
+            StrPut("BM", bm, "CP0")                ; identifier
+            NumPut(  "uint", 54+this.size, bm,  2) ; file size
+            NumPut(  "uint",            0, bm,  6) ; reserved
+            NumPut(  "uint",           54, bm, 10) ; bitmap data offset
+
+            ; BITMAPINFOHEADER struct
+            NumPut(  "uint",           40, bm, 14) ; Size
+            NumPut(  "uint",   this.width, bm, 18) ; Width
+            NumPut(   "int", -this.height, bm, 22) ; Height - Negative so (0, 0) is top-left.
+            NumPut("ushort",            1, bm, 26) ; Planes
+            NumPut("ushort",           32, bm, 28) ; BitCount / BitsPerPixel
+
+            NumPut(  "uint",            0, bm, 30) ; biCompression
+            NumPut(  "uint",    this.size, bm, 34) ; biSizeImage
+            NumPut(   "int",            0, bm, 38) ; biXPelsPerMeter
+            NumPut(   "int",            0, bm, 42) ; biYPelsPerMeter
+            NumPut(  "uint",            0, bm, 46) ; biClrUsed
+            NumPut(  "uint",            0, bm, 50) ; biClrImportant
+
+            return bm
+         }
+
+         loop
+            try
+               if file := FileOpen(filepath, "w")
+                  break
+               else throw
+            catch
+               if A_Index < 6
+                  Sleep (2**(A_Index-1) * 30)
+               else throw
+
+         file.RawWrite(bm)                    ; Writes 54 bytes of bitmap file header.
+         file.RawWrite(this)                  ; Writes raw 32-bit ARGB pixel data.
+         file.Close()
+
+         return filepath
+      }
+
       Base64Put(b64) {
          s64 := StrLen(RTrim(b64, "=")) * 3 // 4
          code := DllCall("GlobalAlloc", "uint", 0, "uptr", s64, "ptr")
