@@ -2153,7 +2153,8 @@ class ImagePut {
             . "AnVITInQMdJMKdhIwfgC9/FBOdV+NUE5wH4wTInSTInIRTH2QTn+dCtMOeBzEkSLOkQ5OHUVSIPCBEiDwATr6UgB2kgB8EH/xuvZ"
             . "SYPCBOulSYnqTInQW15fXUFcQV1BXkFfww==")
 
-         if ImagePut.ImageType(image) != "buffer"
+         ; Check for a .pBitmap property
+         if !(IsObject(image) && ObjHasKey(image, "pBitmap"))
             image := ImagePutBuffer(image)
 
          ; Search for the address of the first matching image.
