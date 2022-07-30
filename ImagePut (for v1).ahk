@@ -206,7 +206,7 @@ class ImagePut {
          coimage := this.BitmapToCoimage(cotype, pBitmap, p*)
 
          ; Clean up the pBitmap copy. Export raw pointers if requested.
-         if !(cotype = "bitmap" || cotype = "buffer")
+         if !(cotype = "bitmap")
             DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
       }
 
