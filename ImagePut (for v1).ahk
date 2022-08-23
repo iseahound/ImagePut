@@ -3555,7 +3555,10 @@ class ImageEqual extends ImagePut {
 
 
 ; Drag and drop files directly onto this script file.
-if (A_Args.length() > 0 and A_LineFile == A_ScriptFullPath) {
+if (A_Args.length() > 0 and A_LineFile == A_ScriptFullPath)
+   ImagePut_dropfiles()
+
+ImagePut_dropfiles() {
    filepath := ""
    for each, arg in A_Args {
       filepath .= arg . A_Space
