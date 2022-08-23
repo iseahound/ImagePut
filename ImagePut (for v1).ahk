@@ -287,6 +287,8 @@ class ImagePut {
 
 
 
+
+
             ; A "clipboard_png" is a pointer to a PNG stream saved as the "png" clipboard format.
             if DllCall("IsClipboardFormatAvailable", "uint", DllCall("RegisterClipboardFormat", "str", "png", "uint"))
                return "clipboard_png"
