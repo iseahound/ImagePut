@@ -3554,9 +3554,6 @@ class ImageEqual extends ImagePut {
 } ; End of ImageEqual class.
 
 
-; Drag and drop files directly onto this script file.
-if (A_Args.length() > 0 and A_LineFile == A_ScriptFullPath)
-   ImagePut_dropfiles()
 
 ImagePut_dropfiles() {
    filepath := ""
@@ -3569,3 +3566,7 @@ ImagePut_dropfiles() {
       }
    }
 }
+
+; Drag and drop files directly onto this script file.
+if (A_Args.length() > 0 and A_LineFile == A_ScriptFullPath)
+   ImagePut_dropfiles()
