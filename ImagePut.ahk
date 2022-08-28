@@ -1696,7 +1696,7 @@ class ImagePut {
    }
 
    static from_wicBitmap(image) {
-      ; IWICBitmapSource::GetSize - https://github.com/iseahound/winsdk-10/blob/master/Include/10.0.16299.0/um/wincodec.h#L1304
+      ; IWICBitmapSource::GetSize - https://github.com/iseahound/10/blob/win/10.0.16299.0/um/wincodec.h#L1304
       ComCall(3, image, "uint*", &width:=0, "uint*", &height:=0)
 
       ; Intialize an empty pBitmap using managed memory.
@@ -1717,7 +1717,7 @@ class ImagePut {
       Scan0 := NumGet(BitmapData, 16, "ptr")
       stride := NumGet(BitmapData, 8, "int")
 
-      ; IWICBitmapSource::CopyPixels - https://github.com/iseahound/winsdk-10/blob/master/Include/10.0.16299.0/um/wincodec.h#L1322
+      ; IWICBitmapSource::CopyPixels - https://github.com/iseahound/10/blob/win/10.0.16299.0/um/wincodec.h#L1322
       ComCall(7, image, "ptr", Rect, "uint", stride, "uint", stride * height, "ptr", Scan0)
 
       ; Write pixels to bitmap.
@@ -3105,7 +3105,7 @@ class ImagePut {
       IWICImagingFactory := ComObject(CLSID_WICImagingFactory := "{CACAF262-9370-4615-A13B-9F5539DA4C0A}", IID_IWICImagingFactory := "{EC5EC8A9-C395-4314-9C77-54D7A935FF70}")
 
       ; WICBitmapNoCache  must be 1!
-      ; IWICImagingFactory::CreateBitmap - https://github.com/iseahound/winsdk-10/blob/master/Include/10.0.16299.0/um/wincodec.h#L6447
+      ; IWICImagingFactory::CreateBitmap - https://github.com/iseahound/10/blob/win/10.0.16299.0/um/wincodec.h#L6447
       DllCall("ole32\CLSIDFromString", "wstr", GUID_WICPixelFormat32bppBGRA := "{6fddc324-4e03-4bfe-b185-3d77768dc90f}", "ptr", CLSID := Buffer(16), "HRESULT")
       ComCall(17, IWICImagingFactory, "uint", width, "uint", height, "ptr", CLSID, "int", 1, "ptr*", &wicBitmap:=0)
 
@@ -3113,10 +3113,10 @@ class ImagePut {
          NumPut(  "uint",   width, Rect,  8) ; Width
          NumPut(  "uint",  height, Rect, 12) ; Height
 
-      ; IWICBitmap::Lock - https://github.com/iseahound/winsdk-10/blob/master/Include/10.0.16299.0/um/wincodec.h#L2232
+      ; IWICBitmap::Lock - https://github.com/iseahound/10/blob/win/10.0.16299.0/um/wincodec.h#L2232
       ComCall(8, wicBitmap, "ptr", Rect, "uint", 0x1, "ptr*", &Lock:=0)
 
-      ; IWICBitmapLock::GetDataPointer - https://github.com/iseahound/winsdk-10/blob/master/Include/10.0.16299.0/um/wincodec.h#L2104
+      ; IWICBitmapLock::GetDataPointer - https://github.com/iseahound/10/blob/win/10.0.16299.0/um/wincodec.h#L2104
       ComCall(5, Lock, "uint*", &size:=0, "ptr*", &Scan0:=0)
 
       BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
