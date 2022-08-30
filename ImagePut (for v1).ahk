@@ -313,7 +313,7 @@ class ImagePut {
             return "screenshot"
 
          ; A "window" is an object with an hwnd property.
-         if image.HasOwnProp("hwnd")
+         if image.HasKey("hwnd")
             return "window"
       }
          ; A "desktop" is a hidden window behind the desktop icons created by ImagePutDesktop.
