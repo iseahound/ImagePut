@@ -48,6 +48,11 @@ ImagePutDesktop(image) {
    return ImagePut("desktop", image)
 }
 
+; Puts the image into the most recently active explorer window.
+ImagePutExplorer(image, default := "") {
+   return ImagePut("explorer", image, default)
+}
+
 ; Puts the image into a file and returns its filepath.
 ;   filepath   -  Filepath + Extension    |  string   ->   *.bmp, *.gif, *.jpg, *.png, *.tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
@@ -175,7 +180,7 @@ class ImagePut {
       ; #1 - Stream intermediate.
       if not decode and not crop and not scale
          and (type ~= "^(?i:clipboard_png|pdf|url|file|stream|RandomAccessStream|hex|base64)$")
-         and (cotype ~= "^(?i:file|stream|RandomAccessStream|hex|base64|uri)$")
+         and (cotype ~= "^(?i:file|stream|RandomAccessStream|hex|base64|uri|explorer)$")
          and (!p.Has(1) || p[1] == "") { ; For now, disallow any specification of extensions.
 
          ; Convert via stream intermediate.
@@ -564,6 +569,10 @@ class ImagePut {
       if (cotype = "wicBitmap")
          return this.put_wicBitmap(pBitmap)
 
+      ; BitmapToCoimage("explorer", pBitmap, default)
+      if (cotype = "explorer")
+         return this.put_explorer(pBitmap, p1)
+
       throw Error("Conversion from bitmap to " cotype " is not supported.")
    }
 
@@ -623,6 +632,10 @@ class ImagePut {
       ; StreamToCoimage("RandomAccessStream", pStream)
       if (cotype = "RandomAccessStream")
          return this.set_RandomAccessStream(pStream)
+
+      ; StreamToCoimage("explorer", pStream, default)
+      if (cotype = "explorer")
+         return this.set_explorer(pStream, p1)
 
       throw Error("Conversion from stream to " cotype " is not supported.")
    }
@@ -2775,6 +2788,56 @@ class ImagePut {
 
       ; Returns the string A_Cursor to avoid evaluation.
       return "A_Cursor"
+   }
+
+   static put_explorer(pBitmap, default := "") {
+
+      ; Default directory to desktop.
+      (default == "") && default := A_Desktop
+
+      ; Check if the mouse is pointing to the desktop.
+      MouseGetPos ,, &hwnd
+      
+      if WinGetClass("ahk_id" hwnd) ~= "(?i)Progman|WorkerW"
+         directory := A_Desktop
+
+      ; Get path of active window.
+      else if (hwnd := WinExist("ahk_class ExploreWClass")) || (hwnd := WinExist("ahk_class CabinetWClass")) {
+         for window in ComObject("Shell.Application").Windows {
+            if (window.hwnd == hwnd) {
+               try directory := window.Document.Folder.Self.Path
+            }
+         }
+      }
+      else
+         directory := default
+
+      return this.put_file(pBitmap, directory)
+   }
+
+   static set_explorer(pStream, default := "") {
+
+      ; Default directory to desktop.
+      (default == "") && default := A_Desktop
+
+      ; Check if the mouse is pointing to the desktop.
+      MouseGetPos ,, &hwnd
+      
+      if WinGetClass("ahk_id" hwnd) ~= "(?i)Progman|WorkerW"
+         directory := A_Desktop
+
+      ; Get path of active window.
+      else if (hwnd := WinExist("ahk_class ExploreWClass")) || (hwnd := WinExist("ahk_class CabinetWClass")) {
+         for window in ComObject("Shell.Application").Windows {
+            if (window.hwnd == hwnd) {
+               try directory := window.Document.Folder.Self.Path
+            }
+         }
+      }
+      else
+         directory := default
+
+      return this.set_file(pStream, directory)
    }
 
    static put_file(pBitmap, filepath := "", quality := "") {
