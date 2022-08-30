@@ -311,11 +311,11 @@ class ImagePut {
          ; A "screenshot" is an array of 4 numbers.
          if (image[1] ~= "^-?\d+$" && image[2] ~= "^-?\d+$" && image[3] ~= "^-?\d+$" && image[4] ~= "^-?\d+$")
             return "screenshot"
-      }
-         ; A "window" is anything considered a Window Title including ahk_class and "A".
-         if WinExist(image) || DllCall("IsWindow", "ptr", image)
-            return "window"
 
+         ; A "window" is an object with an hwnd property.
+         if image.HasOwnProp("hwnd")
+            return "window"
+      }
          ; A "desktop" is a hidden window behind the desktop icons created by ImagePutDesktop.
          if (image = "desktop")
             return "desktop"
@@ -340,6 +340,10 @@ class ImagePut {
          ; A "file" is stored on the disk or network.
          if FileExist(image)
             return "file"
+
+         ; A "window" is anything considered a Window Title including ahk_class and "A".
+         if WinExist(image) || DllCall("IsWindow", "ptr", image)
+            return "window"
 
          ; A "hex" string is binary image data encoded into text using hexadecimal.
          if (StrLen(image) >= 48) && (image ~= "^\s*(?:[A-Fa-f0-9]{2})*+\s*$")
