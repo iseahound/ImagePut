@@ -316,6 +316,10 @@ class ImagePut {
          if image.HasOwnProp("hwnd")
             return "window"
       }
+         ; A non-zero "monitor" number identifies each display uniquely; and 0 refers to the entire virtual screen.
+         if (image ~= "^\d+$" && image >= 0 && image <= MonitorGetCount())
+            return "monitor"
+
          ; A "desktop" is a hidden window behind the desktop icons created by ImagePutDesktop.
          if (image = "desktop")
             return "desktop"
@@ -355,10 +359,6 @@ class ImagePut {
             return "base64"
 
       if (image ~= "^-?\d+$") {
-         ; A non-zero "monitor" number identifies each display uniquely; and 0 refers to the entire virtual screen.
-         if (image >= 0 && image <= MonitorGetCount())
-            return "monitor"
-
          ; A "dc" is a handle to a GDI device context.
          if (DllCall("GetObjectType", "ptr", image, "uint") == 3 || DllCall("GetObjectType", "ptr", image, "uint") == 10)
             return "dc"
