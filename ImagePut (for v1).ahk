@@ -85,6 +85,13 @@ ImagePutRandomAccessStream(image, extension := "", quality := "") {
    return ImagePut("RandomAccessStream", image, extension, quality)
 }
 
+; Puts the image into a file format and returns a SafeArray COM Object.
+;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
+;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
+ImagePutSafeArray(image, extension := "", quality := "") {
+   return ImagePut("safeArray", image, extension, quality)
+}
+
 ; Puts the image on the shared screen device context and returns an array of coordinates.
 ;   screenshot -  Screen Coordinates      |  array    ->   [x,y,w,h] or [0,0]
 ;   alpha      -  Alpha Replacement Color |  RGB      ->   0xFFFFFF
@@ -180,7 +187,7 @@ class ImagePut {
       ; #1 - Stream intermediate.
       if not decode and not crop and not scale
          and (type ~= "^(?i:clipboard_png|pdf|url|file|stream|RandomAccessStream|hex|base64)$")
-         and (cotype ~= "^(?i:file|stream|RandomAccessStream|hex|base64|uri|explorer)$")
+         and (cotype ~= "^(?i:file|stream|RandomAccessStream|hex|base64|uri|explorer|safeArray)$")
          and (p[1] == "") { ; For now, disallow any specification of extensions.
 
          ; Convert via stream intermediate.
@@ -573,6 +580,10 @@ class ImagePut {
       if (cotype = "explorer")
          return this.put_explorer(pBitmap, default)
 
+      ; BitmapToCoimage("safeArray", pBitmap, extension, quality)
+      if (cotype = "safeArray")
+         return this.put_safeArray(pBitmap, p1, p2)
+
       throw Exception("Conversion from bitmap to " cotype " is not supported.")
    }
 
@@ -636,6 +647,10 @@ class ImagePut {
       ; StreamToCoimage("explorer", pStream, default)
       if (cotype = "explorer")
          return this.set_explorer(pStream, p1)
+
+      ; StreamToCoimage("safeArray", pStream)
+      if (cotype = "safeArray")
+         return this.set_safeArray(pStream)
       
       throw Exception("Conversion from stream to " cotype " is not supported.")
    }
@@ -3201,6 +3216,50 @@ class ImagePut {
       ObjRelease(IWICImagingFactory)
 
       return wicBitmap
+   }
+
+   set_safeArray(pStream) {
+      ; Allocate a one-dimensional SAFEARRAY based on the size of the stream.
+      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", size:=0, "uint")
+      safeArray := ComObjArray(0x11, size) ; VT_ARRAY | VT_UI1
+      pvData := NumGet(ComObjValue(safeArray), 8 + A_PtrSize, "ptr")
+
+      ; Copy the stream to the SAFEARRAY.
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
+      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", pvData, "uint", size, "uint")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
+
+      return safeArray
+   }
+
+   put_safeArray(pBitmap, extension := "", quality := "") {
+      ; Thanks tmplinshi - https://www.autohotkey.com/boards/viewtopic.php?p=354007#p354007
+
+      ; Create an IStream backed with movable memory.
+      hData := DllCall("GlobalAlloc", "uint", 0x2, "uptr", 0, "ptr")
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", True, "ptr*", pStream:=0, "uint")
+
+      ; Default extension is PNG for small sizes!
+      (extension == "") && extension := "png"
+
+      ; Save pBitmap to the IStream.
+      this.select_codec(pBitmap, extension, quality, pCodec, ep, ci, v)
+      DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", pStream, "ptr", pCodec, "ptr", (ep) ? &ep : 0)
+
+      ; Get the pointer and size of the IStream's movable memory.
+      pData := DllCall("GlobalLock", "ptr", hData, "ptr")
+      size := DllCall("GlobalSize", "ptr", pData, "uptr")
+
+      ; Copy the encoded image to a SAFEARRAY.
+      safeArray := ComObjArray(0x11, size) ; VT_ARRAY | VT_UI1
+      pvData := NumGet(ComObjValue(safeArray), 8 + A_PtrSize, "ptr")
+      DllCall("RtlMoveMemory", "ptr", pvData, "ptr", pData, "uptr", size)
+
+      ; Release the IStream and call GlobalFree.
+      DllCall("GlobalUnlock", "ptr", hData)
+      ObjRelease(pStream)
+
+      return safeArray
    }
 
    select_codec(pBitmap, extension, quality, ByRef pCodec, ByRef ep, ByRef ci, ByRef v) {
