@@ -60,6 +60,12 @@ ImagePutFile(image, filepath := "", quality := "") {
    return ImagePut("file", image, filepath, quality)
 }
 
+; Puts the image into a multipart/form-data in binary and returns a SafeArray COM Object.
+;   content    -  Content-Type            |  string   ->   multipart/form-data; boundary=something
+ImagePutFormData(image, content) { ; NOT IMPLEMENTED
+   return ImagePut("formdata", image, content)
+}
+
 ; Puts the image into a device independent bitmap and returns the handle.
 ;   alpha      -  Alpha Replacement Color |  RGB      ->   0xFFFFFF
 ImagePutHBitmap(image, alpha := "") {
