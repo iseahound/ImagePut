@@ -68,7 +68,7 @@ Finally, there are several advanced features. The first is the ability to specif
 
 * ImagePut is designed to be fast.
 * Only functions to and from streams, bitmaps are considered.
-* Functions like PNG to hIcon are not considered.
+* Specific functions between formats like PNG to hIcon are not considered.
 * ImagePut should serve as a reference implementation.
 * Therefore users should be able to copy and paste individual functions.
 * If you need help extracting a function please ask!
