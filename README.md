@@ -1,10 +1,13 @@
 # ImagePut
 
-* Standalone library.
-* Easily understandable syntax.
-* Accepts all [images](https://github.com/iseahound/ImagePut/wiki/Input-Types-&-Output-Functions#input-types), useful for debugging.
-* Fast [pixelsearch](https://github.com/iseahound/ImagePut/wiki/PixelSearch-and-ImageSearch#pixelsearch) and imagesearch.
-* Highly robust code that has undergone extensive testing. 
+#### A core library for images in AutoHotkey
+
+* Screen capture with fast [PixelSearch](https://github.com/iseahound/ImagePut/wiki/PixelSearch-and-ImageSearch#pixelsearch) and ImageSearch
+* Decipher over [20+ image types](https://github.com/iseahound/ImagePut/wiki/Quick-Start#accepts)
+* Convert from one image format to another
+* View and debug your image functions with `ImagePutWindow(image)`
+* The magical `image` parameter supports [all image types](https://github.com/iseahound/ImagePut/wiki/Input-Types-&-Output-Functions#input-types) through type inference
+* Highly robust code that has undergone extensive testing
 
 ## Documentation
 
