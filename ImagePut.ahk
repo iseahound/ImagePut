@@ -61,9 +61,9 @@ ImagePutFile(image, filepath := "", quality := "") {
 }
 
 ; Puts the image into a multipart/form-data in binary and returns a SafeArray COM Object.
-;   content    -  Content-Type            |  string   ->   multipart/form-data; boundary=something
-ImagePutFormData(image, content) { ; NOT IMPLEMENTED
-   return ImagePut("formdata", image, content)
+;   boundary   -  Content-Type            |  string   ->   multipart/form-data; boundary=something
+ImagePutFormData(image, boundary := "ImagePut-abcdef") {
+   return ImagePut("formdata", image, boundary)
 }
 
 ; Puts the image into a device independent bitmap and returns the handle.
@@ -193,7 +193,7 @@ class ImagePut {
       ; #1 - Stream intermediate.
       if not decode and not crop and not scale
          and (type ~= "^(?i:clipboard_png|pdf|url|file|stream|RandomAccessStream|hex|base64)$")
-         and (cotype ~= "^(?i:file|stream|RandomAccessStream|hex|base64|uri|explorer|safeArray)$")
+         and (cotype ~= "^(?i:file|stream|RandomAccessStream|hex|base64|uri|explorer|safeArray|formData)$")
          and (!p.Has(1) || p[1] == "") { ; For now, disallow any specification of extensions.
 
          ; Convert via stream intermediate.
@@ -590,6 +590,10 @@ class ImagePut {
       if (cotype = "safeArray")
          return this.put_safeArray(pBitmap, p1, p2)
 
+      ; BitmapToCoimage("formData", pBitmap, boundary, extension, quality)
+      if (cotype = "formData")
+         return this.put_formData(pBitmap, p1, p2, p3)
+
       throw Error("Conversion from bitmap to " cotype " is not supported.")
    }
 
@@ -657,6 +661,10 @@ class ImagePut {
       ; StreamToCoimage("safeArray", pStream)
       if (cotype = "safeArray")
          return this.set_safeArray(pStream)
+
+      ; StreamToCoimage("formData", pStream, boundary)
+      if (cotype = "formData")
+         return this.set_formData(pStream, p1)
 
       throw Error("Conversion from stream to " cotype " is not supported.")
    }
