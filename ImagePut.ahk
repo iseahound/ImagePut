@@ -1980,8 +1980,115 @@ class ImagePut {
                   value)
       }
 
+      __Enum(n) {
 
+         start := 0
+         end := this.size
+         
+         switch n {
+         case 1:
+            enum1(&c) {
+               
+               if start == end
+                  return False
 
+               ; yield statements
+               c := Format("0x{:X}", NumGet(this, start, "uint"))
+      
+               ; do block
+               start += 4
+
+               ; continue?
+               return start <= end
+            }
+            return enum1
+
+         case 2:
+            enum2(&i, &c) {
+
+               if start == end
+                  return False
+
+               ; yield statements
+               i := start // 4
+               c := Format("0x{:X}", NumGet(this, start, "uint"))
+      
+               ; do block
+               start += 4
+
+               ; continue?
+               return start <= end
+            }
+            return enum2
+         
+         case 3:
+            enum3(&x, &y, &c) {
+
+               if start == end
+                  return False
+
+               ; yield statements
+               i := start // 4
+               x := mod(i, this.width)
+               y := i // this.width
+               c := Format("0x{:X}", NumGet(this, start, "uint"))
+
+               ; do block
+               start += 4
+
+               ; continue?
+               return start <= end
+            }
+            return enum3
+
+         case 6:
+            enum6(&x, &y, &c, &r, &g, &b) {
+
+               if start == end
+                  return False
+
+               ; yield statements
+               i := start // 4
+               x := mod(i, this.width)
+               y := i // this.width
+               c := Format("0x{:X}", NumGet(this, start, "uint"))
+               r := c >> 16 & 0xFF
+               g := c >>  8 & 0xFF
+               b := c       & 0xFF
+
+               ; do block
+               start += 4
+
+               ; continue?
+               return start <= end
+            }
+            return enum6
+
+         case 7:
+            enum7(&x, &y, &c, &r, &g, &b, &a) {
+
+               if start == end
+                  return False
+
+               ; yield statements
+               i := start // 4
+               x := mod(i, this.width)
+               y := i // this.width
+               c := Format("0x{:X}", NumGet(this, start, "uint"))
+               r := c >> 16 & 0xFF
+               g := c >>  8 & 0xFF
+               b := c       & 0xFF
+               a := c >> 24 & 0xFF
+
+               ; do block
+               start += 4
+
+               ; continue?
+               return start <= end
+            }
+            return enum7
+         }
+      }
 
       Crop(x, y, w, h) {
          DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", this.pBitmap, "int*", &format:=0)
