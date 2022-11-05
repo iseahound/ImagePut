@@ -2298,15 +2298,15 @@ class ImagePut {
       }
 
       ImageSearch(image) {
-         ; C source code - https://godbolt.org/z/7b4b734dW
+         ; C source code - https://godbolt.org/z/qPodGdP1d
          static code := 0
          (code) || code := this.Base64Put((A_PtrSize == 4)
-            ? "VYnlV1ZTg+wUi0UMi1UYi00IjTyFAAAAAItFECtFHA+vxwNFCIlF6ItFDCnQiUXkjQSVAAAAAIlF7ItF6DnBc1iLRRSLADkBdUqJ"
-            . "yCtFCDHSwfgC93UMOVXkfDgx0otFFInLiVXwi3XwO3UcdCuLVeyJ3gHCiVXgi1XgOdBzDosWORB1D4PABIPGBOvr/0XwAfvr0oPB"
-            . "BOuhg8QUichbXl9dww=="
-            : "QVZBVUFUVVdWU4tcJGiLRCRgQSnYiddJictBidJED6/CKcdKjTSBTI0EhQAAAABIOfFzVUGLATkBdUhIicgx0kwp2EjB+AJB9/I5"
-            . "13w1TInIMe0x0jnadDBBiexOjSwATo0koUw56HMTRYs0JEQ5MHURSIPABEmDxATr6P/CRAHV69JIg8EE66ZIichbXl9dQVxBXUFe"
-            . "ww==")
+            ? "VYnlV1ZTg+wUi0UMi1UYi00IjTyFAAAAAItFECtFHA+vxwNFCIlF6ItFDCnQiUXkjQSVAAAAAIlF7ItF6DnBc2eLRRSLADkBdAmL"
+            . "RRSAeAMAdVCJyCtFCDHSwfgC93UMOVXkfD4x0otFFInLiVXwi3XwO3UcdDyLVeyJ3gHCiVXgi1XgOdBzFIB4AwB0BosWORB1D4PA"
+            . "BIPGBOvl/0XwAfvrzIPBBOuSi0UQD6/HA0UIicGDxBSJyFteX13D"
+            : "QVdBVkFVQVRVV1ZTi1wkcItEJGhIjSyFAAAAAEGJ0kSJwkmJyynaRInXQQ+v0inHSI00kUg58XNjQYsBOQF0B0GAeQMAdU9Iicgx"
+            . "0kwp2EjB+AJB9/I513w8TInIRTHkMdI52nQ+RYnlTI00KE6NLKlMOfBzGYB4AwB0CUWLfQBEOTh1EUiDwARJg8UE6+L/wkUB1OvM"
+            . "SIPBBOuYRQ+vwkuNDINIichbXl9dQVxBXUFeQV/D")
 
          ; Check for a .pBitmap property
          if !(IsObject(image) && ObjHasOwnProp(image, "pBitmap"))
