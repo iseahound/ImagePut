@@ -17,7 +17,7 @@ unsigned int * imagesearch(unsigned int * start, unsigned int width, unsigned in
     while (current < end) {
 
         // Check if the current pixel matches the first pixel of subimage.
-        if (*current == *s) {
+        if (*current == *s || *((unsigned char *) s + 3) == 0) { // just continue if search image is transparent
 
             // Convert current pointer to (x, y).
             offset = current - start;
@@ -34,8 +34,10 @@ unsigned int * imagesearch(unsigned int * start, unsigned int width, unsigned in
                 p = current + width * i;
                 e = c + w;
                 while (c < e) {
-                    if (*c != *p)
-                        goto next;
+                    if (*((unsigned char *) c + 3)) { // skip transparent pixels in search image
+                        if (*c != *p)
+                            goto next;
+                    }
                     c++; // Here simply incrementing will interate the entire image
                     p++; // Will be reset each run
                 }
@@ -45,5 +47,5 @@ unsigned int * imagesearch(unsigned int * start, unsigned int width, unsigned in
         next:
         current++;
     }
-    return current; // current == end
+    return start + width * height; // real end
 }
