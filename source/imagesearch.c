@@ -1,46 +1,49 @@
-unsigned int * imagesearch(unsigned int * Scan0, unsigned int width, unsigned int height, unsigned int * image, unsigned int w, unsigned int h) {
-    unsigned int * start = Scan0;
-    unsigned int * end = Scan0 + width * height;
+unsigned int * imagesearch(unsigned int * start, unsigned int width, unsigned int height, unsigned int * s, unsigned int w, unsigned int h) {
+    // width, height, start, current, end refer to the haystack (main image)
+    // x, y, w, h, s, c, e refer to the needle (search image)
+
+    unsigned int * current = start;
+    unsigned int * end = start + width * (height - h); // Remaining area must be greater than search height
+
+    int range_x = width - w;
+    int range_y = height - h; // optimized away
+
+    int x, y, offset;
+    unsigned int * c;
+    unsigned int * e;
+    unsigned int * p;
 
     // Start off searching with pointers.
-    while (start < end) {
+    while (current < end) {
 
-        int x, y, offset;
-        int max_w = width - w;
-        int max_h = height - h;
-        unsigned int * s;
-        unsigned int * e;
-        unsigned int * current;
+        // Check if the current pixel matches the first pixel of subimage.
+        if (*current == *s) {
 
-        // Dereference pointers to check first pixel of subimage.
-        if (*start == *image) {
-            // Convert pointer to (x, y).
-            offset = start - Scan0;
+            // Convert current pointer to (x, y).
+            offset = current - start;
             x = offset % width;
-            y = offset / width;
-
-            // Subimage loop.
-            current = start;
-            s = image;
-            e = image + w;
+            y = offset / width; // optimized away
 
             // Check if (x, y) exceeds bounds.
-            if (x < max_w && y < max_h) {
-                for (int i = 0; i < h; i++) {
-                    while (s < e) {
-                        if (*s != *current)
-                            goto next;
-                        current++;
-                        s++;
-                    }
-                    current += height;
-                    s += h;
+            if (x > range_x) // range_y check is done above
+                goto next;
+
+            // Subimage loop.
+            c = s;
+            for (int i = 0; i < h; i++) {
+                p = current + width * i;
+                e = c + w;
+                while (c < e) {
+                    if (*c != *p)
+                        goto next;
+                    c++; // Here simply incrementing will interate the entire image
+                    p++; // Will be reset each run
                 }
-                return start;
             }
+            return current;
         }
         next:
-        start++;
+        current++;
     }
-    return start; // start == end if no match.
+    return current; // current == end
 }
