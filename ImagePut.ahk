@@ -2113,8 +2113,8 @@ class ImagePut {
             return ImagePut.put_file(this.pBitmap, filepath, quality)
 
          ; Save header info.
-         static bm := CreateBitmapHeader()
-         CreateBitmapHeader() {
+         static bm := 0
+         if !bm {
             bm := Buffer(54)
 
             StrPut("BM", bm, "CP0")                ; identifier
@@ -2135,8 +2135,6 @@ class ImagePut {
             NumPut(   "int",            0, bm, 42) ; biYPelsPerMeter
             NumPut(  "uint",            0, bm, 46) ; biClrUsed
             NumPut(  "uint",            0, bm, 50) ; biClrImportant
-
-            return bm
          }
 
          loop

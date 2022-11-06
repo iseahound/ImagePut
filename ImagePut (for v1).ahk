@@ -2135,8 +2135,6 @@ class ImagePut {
             NumPut(           0, bm, 42,    "int") ; biYPelsPerMeter
             NumPut(           0, bm, 46,   "uint") ; biClrUsed
             NumPut(           0, bm, 50,   "uint") ; biClrImportant
-
-
          }
 
          loop
