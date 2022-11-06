@@ -2,8 +2,8 @@
 ; License:   MIT License
 ; Author:    Edison Hua (iseahound)
 ; Github:    https://github.com/iseahound/ImagePut
-; Date:      2022-06-17
-; Version:   1.8.1
+; Date:      2022-11-06
+; Version:   1.9
 
 #Requires AutoHotkey v1.1.33+
 
