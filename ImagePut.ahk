@@ -2295,6 +2295,42 @@ class ImagePut {
          return [mod(offset, this.width), offset // this.width]
       }
 
+      PixelSearchAll(color) {
+         ; C source code - https://godbolt.org/z/zPY1qMvYe
+         static PixelSearch3 := 0
+         (PixelSearch3) || PixelSearch3 := this.Base64Put((A_PtrSize == 4)
+            ? "VYnli1UMi00Qi0UIOdBzCTkIdAeDwATr84nQXcM="
+            : "McBEi1QkKE05yHMYRTkQdQ050HMHQYnDTokE2f/ASYPABOvjww==")
+
+         ; Lift color to 32-bits if first 8 bits are zero.
+         (color >> 24) || color |= 0xFF000000
+
+         ; PixelSearchAll, single color, no variation
+         capacity := 256
+         result := Buffer(A_PtrSize * capacity)
+         count := DllCall(PixelSearch3, "ptr", result, "uint", capacity, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "uint")
+
+         ; If the default 256 results is exceeded, run the function again.
+         if (count > capacity) {
+            result.size := A_PtrSize * count
+            count := DllCall(PixelSearch3, "ptr", result, "uint", count, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "uint")
+         }
+
+         ; Check if color is found.
+         if (count = 0)
+            return False
+
+         ; Create an array of [x, y] coordinates.
+         xys := []
+         loop count {
+            byte := NumGet(result, A_Index-1, "ptr")
+            offset := (byte - this.ptr) // 4
+            xy := [mod(offset, this.width), offset // this.width]
+            xys.push(xy)
+         }
+         return xys
+      }
+
       ImageSearch(image) {
          ; C source code - https://godbolt.org/z/qPodGdP1d
          static code := 0
