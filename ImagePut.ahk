@@ -2316,14 +2316,14 @@ class ImagePut {
             count := DllCall(PixelSearch3, "ptr", result, "uint", count, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "uint")
          }
 
-         ; Check if color is found.
+         ; Check if any matches are found.
          if (count = 0)
             return False
 
          ; Create an array of [x, y] coordinates.
          xys := []
          loop count {
-            byte := NumGet(result, A_Index-1, "ptr")
+            byte := NumGet(result, A_PtrSize*(A_Index-1), "ptr")
             offset := (byte - this.ptr) // 4
             xy := [mod(offset, this.width), offset // this.width]
             xys.push(xy)
@@ -2357,6 +2357,46 @@ class ImagePut {
          ; Return an [x, y] array.
          offset := (byte - this.ptr) // 4
          return [mod(offset, this.width), offset // this.width]
+      }
+
+      ImageSearchAll(image) {
+         ; C source code - https://godbolt.org/z/qPodGdP1d
+         static code := 0
+         (code) || code := this.Base64Put((A_PtrSize == 4)
+            ? "VYnlV1ZTg+wUi0UMi1UYi00IjTyFAAAAAItFECtFHA+vxwNFCIlF6ItFDCnQiUXkjQSVAAAAAIlF7ItF6DnBc2eLRRSLADkBdAmL"
+            . "RRSAeAMAdVCJyCtFCDHSwfgC93UMOVXkfD4x0otFFInLiVXwi3XwO3UcdDyLVeyJ3gHCiVXgi1XgOdBzFIB4AwB0BosWORB1D4PA"
+            . "BIPGBOvl/0XwAfvrzIPBBOuSi0UQD6/HA0UIicGDxBSJyFteX13D"
+            : "QVdBVkFVQVRVV1ZTSIPsGEUx20SLpCSYAAAAi4QkgAAAAESLlCSQAAAASIu8JIgAAABEKeBBD6/BSInLidZMicFNjSyARInIRCnQiUQkDEqNBJUAAAAASIkEJEw56XN0iwc5AXQGgH8DAHViSInIMdJMKcBIwfgCQffxOVQkDHxNSIn4Me0x0kQ54nQyTIs8JEGJ7k6NNLFJAcdMOfhzGIB4AwB0CEWLFkQ5EHUgSIPABEmDxgTr4//CRAHN68lBOfNzB0SJ2EiJDMNB/8NIg8EE64dEidhIg8QYW15fXUFcQV1BXkFfww=="
+)
+
+         ; Search for the address of the first matching image.
+         capacity := 256
+         result := Buffer(A_PtrSize * capacity)
+         count := DllCall(code, "ptr", result, "uint", capacity
+                           , "ptr", this.ptr, "uint", this.width, "uint", this.height
+                           , "ptr", image.ptr, "uint", image.width, "uint", image.height, "uint")
+
+         ; If more than 256 results, run the function with the true capacity.
+         if (count > capacity) {
+            result.size := A_PtrSize * count
+            count := DllCall(code, "ptr", result, "uint", capacity
+                           , "ptr", this.ptr, "uint", this.width, "uint", this.height
+                           , "ptr", image.ptr, "uint", image.width, "uint", image.height, "uint")
+         }
+
+         ; Check if any matches are found.
+         if (count = 0)
+            return False
+
+         ; Create an array of [x, y] coordinates.
+         xys := []
+         loop count {
+            byte := NumGet(result, A_PtrSize*(A_Index-1), "ptr")
+            offset := (byte - this.ptr) // 4
+            xy := [mod(offset, this.width), offset // this.width]
+            xys.push(xy)
+         }
+         return xys
       }
    }
 
