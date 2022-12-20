@@ -2305,7 +2305,7 @@ class ImagePut {
          ; C source code - https://godbolt.org/z/zPY1qMvYe
          static PixelSearch3 := 0
          (PixelSearch3) || PixelSearch3 := this.Base64Put((A_PtrSize == 4)
-            ? "VYnli1UMi00Qi0UIOdBzCTkIdAeDwATr84nQXcM="
+            ? "VTHAieVTi1UQi00UOcpzGItdGDkadQw7RQxzBotdCIkUg0CDwgTr5Ftdww=="
             : "McBEi1QkKE05yHMYRTkQdQ050HMHQYnDTokE2f/ASYPABOvjww==")
 
          ; Lift color to 32-bits if first 8 bits are zero.
