@@ -2209,7 +2209,7 @@ class ImagePut {
             : "SDnRcw5EOQF1A0SJCUiDwQTr7cM=")
 
          ; Select top-left pixel as default.
-         key == "sentinel" && key := NumGet(this.ptr, "uint")
+         (key == "sentinel") && key := NumGet(this.ptr, "uint")
 
          ; Replaces one ARGB color with another.
          DllCall(code, "ptr", this.ptr, "uint", this.ptr + this.size, "uint", key, "uint", value)
@@ -2234,7 +2234,7 @@ class ImagePut {
             : "SDnRcxaLAUQxwKn///8AdQREiEkDSIPBBOvlww==")
 
          ; Select top-left pixel as default.
-         color == "sentinel" && color := NumGet(this.ptr, "uint")
+         (color == "sentinel") && color := NumGet(this.ptr, "uint")
 
          ; Sets the alpha value of a specified RGB color.
          DllCall(code, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "uchar", alpha)
@@ -2299,6 +2299,42 @@ class ImagePut {
          ; Return an [x, y] array.
          offset := (byte - this.ptr) // 4
          return [mod(offset, this.width), offset // this.width]
+      }
+
+      PixelSearchAll(color) {
+         ; C source code - https://godbolt.org/z/zPY1qMvYe
+         static PixelSearch3 := 0
+         (PixelSearch3) || PixelSearch3 := this.Base64Put((A_PtrSize == 4)
+            ? "VYnli1UMi00Qi0UIOdBzCTkIdAeDwATr84nQXcM="
+            : "McBEi1QkKE05yHMYRTkQdQ050HMHQYnDTokE2f/ASYPABOvjww==")
+
+         ; Lift color to 32-bits if first 8 bits are zero.
+         (color >> 24) || color |= 0xFF000000
+
+         ; PixelSearchAll, single color, no variation
+         capacity := 256
+         VarSetCapacity(result, A_PtrSize * capacity)
+         count := DllCall(PixelSearch3, "ptr", &result, "uint", capacity, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "uint")
+
+         ; If the default 256 results is exceeded, run the function again.
+         if (count > capacity) {
+            VarSetCapacity(result, A_PtrSize * count)
+            count := DllCall(PixelSearch3, "ptr", &result, "uint", count, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "uint")
+         }
+
+         ; Check if any matches are found.
+         if (count = 0)
+            return False
+
+         ; Create an array of [x, y] coordinates.
+         xys := []
+         loop % count {
+            byte := NumGet(result, A_PtrSize*(A_Index-1), "ptr")
+            offset := (byte - this.ptr) // 4
+            xy := [mod(offset, this.width), offset // this.width]
+            xys.push(xy)
+         }
+         return xys
       }
 
       ImageSearch(image) {

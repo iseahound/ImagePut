@@ -2209,7 +2209,7 @@ class ImagePut {
             : "SDnRcw5EOQF1A0SJCUiDwQTr7cM=")
 
          ; Select top-left pixel as default.
-         key == "sentinel" && key := NumGet(this.ptr, "uint")
+         (key == "sentinel") && key := NumGet(this.ptr, "uint")
 
          ; Replaces one ARGB color with another.
          DllCall(code, "ptr", this.ptr, "uint", this.ptr + this.size, "uint", key, "uint", value)
@@ -2234,7 +2234,7 @@ class ImagePut {
             : "SDnRcxaLAUQxwKn///8AdQREiEkDSIPBBOvlww==")
 
          ; Select top-left pixel as default.
-         color == "sentinel" && color := NumGet(this.ptr, "uint")
+         (color == "sentinel") && color := NumGet(this.ptr, "uint")
 
          ; Sets the alpha value of a specified RGB color.
          DllCall(code, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "uchar", alpha)
