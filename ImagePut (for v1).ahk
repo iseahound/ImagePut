@@ -2208,7 +2208,7 @@ class ImagePut {
             ? "VYnli0UIi1UQi00UO0UMcws5EHUCiQiDwATr8F3D"
             : "SDnRcw5EOQF1A0SJCUiDwQTr7cM=")
 
-         ; Use top-left pixel as default.
+         ; Select top-left pixel as default.
          key == "sentinel" && key := NumGet(this.ptr, "uint")
 
          ; Replaces one ARGB color with another.
@@ -2233,7 +2233,7 @@ class ImagePut {
             ? "VYnli0UIilUUO0UMcxWLTRAzCIHh////AHUDiFADg8AE6+Zdww=="
             : "SDnRcxaLAUQxwKn///8AdQREiEkDSIPBBOvlww==")
 
-         ; Use top-left pixel as default.
+         ; Select top-left pixel as default.
          color == "sentinel" && color := NumGet(this.ptr, "uint")
 
          ; Sets the alpha value of a specified RGB color.
