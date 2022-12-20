@@ -2,7 +2,7 @@
 
 #### A core library for images in AutoHotkey
 
-* Screen capture with fast [PixelSearch](https://github.com/iseahound/ImagePut/wiki/PixelSearch-and-ImageSearch#pixelsearch) and ImageSearch
+* Screen capture with fast [PixelSearch](https://github.com/iseahound/ImagePut/wiki/PixelSearch-and-ImageSearch#pixelsearch) and [ImageSearch](https://github.com/iseahound/ImagePut/wiki/PixelSearch-and-ImageSearch#imagesearch)
 * Decipher over [20+ image types](https://github.com/iseahound/ImagePut/wiki/Quick-Start#accepts)
 * Convert from one image format to another
 * View and debug your image functions with `ImagePutWindow(image)`
