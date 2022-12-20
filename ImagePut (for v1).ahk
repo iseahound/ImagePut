@@ -2201,12 +2201,15 @@ class ImagePut {
          return cpuid
       }
 
-      ColorKey(key := 0xFFFFFFFF, value := 0x00000000) {
+      ColorKey(key := "sentinel", value := 0x00000000) {
          ; C source code - https://godbolt.org/z/eaG9fax9v
          static code := 0
          (code) || code := this.Base64Put((A_PtrSize == 4)
             ? "VYnli0UIi1UQi00UO0UMcws5EHUCiQiDwATr8F3D"
             : "SDnRcw5EOQF1A0SJCUiDwQTr7cM=")
+
+         ; Use top-left pixel as default.
+         key == "sentinel" && key := NumGet(this.ptr, "uint")
 
          ; Replaces one ARGB color with another.
          DllCall(code, "ptr", this.ptr, "uint", this.ptr + this.size, "uint", key, "uint", value)
