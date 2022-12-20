@@ -2223,12 +2223,15 @@ class ImagePut {
          DllCall(code, "ptr", this.ptr, "ptr", this.ptr + this.size, "uchar", alpha)
       }
 
-      TransColor(color := 0xFFFFFF, alpha := 0x00) {
+      TransColor(color := "sentinel", alpha := 0x00) {
          ; C source code - https://godbolt.org/z/z3a8WcM5M
          static code := 0
          (code) || code := this.Base64Put((A_PtrSize == 4)
             ? "VYnli0UIilUUO0UMcxWLTRAzCIHh////AHUDiFADg8AE6+Zdww=="
             : "SDnRcxaLAUQxwKn///8AdQREiEkDSIPBBOvlww==")
+
+         ; Use top-left pixel as default.
+         color == "sentinel" && color := NumGet(this.ptr, "uint")
 
          ; Sets the alpha value of a specified RGB color.
          DllCall(code, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "uchar", alpha)
