@@ -2348,8 +2348,8 @@ class ImagePut {
             . "0kwp2EjB+AJB9/I513w8TInIRTHkMdI52nQ+RYnlTI00KE6NLKlMOfBzGYB4AwB0CUWLfQBEOTh1EUiDwARJg8UE6+L/wkUB1OvM"
             . "SIPBBOuYRQ+vwkuNDINIichbXl9dQVxBXUFeQV/D")
 
-         ; Check for a .pBitmap property
-         if !(IsObject(image) && ObjHasOwnProp(image, "pBitmap"))
+         ; Convert image to a buffer object.
+         if !(IsObject(image) && ObjHasOwnProp(image, "ptr") && ObjHasOwnProp(image, "size"))
             image := ImagePutBuffer(image)
 
          ; Search for the address of the first matching image.
@@ -2372,8 +2372,14 @@ class ImagePut {
             ? "VYnlV1ZTg+wUi0UMi1UYi00IjTyFAAAAAItFECtFHA+vxwNFCIlF6ItFDCnQiUXkjQSVAAAAAIlF7ItF6DnBc2eLRRSLADkBdAmL"
             . "RRSAeAMAdVCJyCtFCDHSwfgC93UMOVXkfD4x0otFFInLiVXwi3XwO3UcdDyLVeyJ3gHCiVXgi1XgOdBzFIB4AwB0BosWORB1D4PA"
             . "BIPGBOvl/0XwAfvrzIPBBOuSi0UQD6/HA0UIicGDxBSJyFteX13D"
-            : "QVdBVkFVQVRVV1ZTSIPsGEUx20SLpCSYAAAAi4QkgAAAAESLlCSQAAAASIu8JIgAAABEKeBBD6/BSInLidZMicFNjSyARInIRCnQiUQkDEqNBJUAAAAASIkEJEw56XN0iwc5AXQGgH8DAHViSInIMdJMKcBIwfgCQffxOVQkDHxNSIn4Me0x0kQ54nQyTIs8JEGJ7k6NNLFJAcdMOfhzGIB4AwB0CEWLFkQ5EHUgSIPABEmDxgTr4//CRAHN68lBOfNzB0SJ2EiJDMNB/8NIg8EE64dEidhIg8QYW15fXUFcQV1BXkFfww=="
-)
+            : "QVdBVkFVQVRVV1ZTSIPsGEUx20SLpCSYAAAAi4QkgAAAAESLlCSQAAAASIu8JIgAAABEKeBBD6/BSInLidZMicFNjSyARInIRCnQ"
+            . "iUQkDEqNBJUAAAAASIkEJEw56XN0iwc5AXQGgH8DAHViSInIMdJMKcBIwfgCQffxOVQkDHxNSIn4Me0x0kQ54nQyTIs8JEGJ7k6N"
+            . "NLFJAcdMOfhzGIB4AwB0CEWLFkQ5EHUgSIPABEmDxgTr4//CRAHN68lBOfNzB0SJ2EiJDMNB/8NIg8EE64dEidhIg8QYW15fXUFc"
+            . "QV1BXkFfww==")
+
+         ; Convert image to a buffer object.
+         if !(IsObject(image) && ObjHasOwnProp(image, "ptr") && ObjHasOwnProp(image, "size"))
+            image := ImagePutBuffer(image)
 
          ; Search for the address of the first matching image.
          capacity := 256
