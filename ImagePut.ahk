@@ -2410,6 +2410,12 @@ class ImagePut {
          }
          return xys
       }
+
+      ; Statistics
+
+      Frequency(c*) {
+         return 1
+      }
    }
 
    static put_screenshot(pBitmap, screenshot := "", alpha := "") {
