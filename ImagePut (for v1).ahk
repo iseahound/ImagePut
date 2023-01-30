@@ -2090,6 +2090,26 @@ class ImagePut {
 
 
 
+      Frequency() {
+         if this.HasKey(map)
+            return
+         this.map := {}
+         loop % this.width * this.height
+            if c := NumGet(this.ptr + 4*(A_Index-1), "uint")
+               this.map[c] := this.map.haskey(c) ? this.map[c] + 1 : 1
+      }
+
+      Count(c*) {
+         this.Frequency()
+         acc := 0
+         for each, color in c {
+            ; Lift color to 32-bits if first 8 bits are zero.
+            (color >> 24) || color |= 0xFF000000
+            acc += this.map[color]
+         }
+         return acc
+      }
+      
       Crop(x, y, w, h) {
          DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", this.pBitmap, "int*", format:=0)
          DllCall("gdiplus\GdipCloneBitmapAreaI", "int", x, "int", y, "int", w, "int", h, "int", format, "ptr", this.pBitmap, "ptr*", pBitmap:=0)

@@ -2090,6 +2090,26 @@ class ImagePut {
          }
       }
 
+      Frequency() {
+         if this.HasProp(map)
+            return
+         this.map := Map()
+         loop this.width * this.height
+            if c := NumGet(this.ptr + 4*(A_Index-1), "uint")
+               this.map[c] := this.map.has(c) ? this.map[c] + 1 : 1
+      }
+
+      Count(c*) {
+         this.Frequency()
+         acc := 0
+         for each, color in c {
+            ; Lift color to 32-bits if first 8 bits are zero.
+            (color >> 24) || color |= 0xFF000000
+            acc += this.map.get(color, 0)
+         }
+         return acc
+      }
+
       Crop(x, y, w, h) {
          DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", this.pBitmap, "int*", &format:=0)
          DllCall("gdiplus\GdipCloneBitmapAreaI", "int", x, "int", y, "int", w, "int", h, "int", format, "ptr", this.pBitmap, "ptr*", &pBitmap:=0)
@@ -2409,12 +2429,6 @@ class ImagePut {
             xys.push(xy)
          }
          return xys
-      }
-
-      ; Statistics
-
-      Frequency(c*) {
-         return 1
       }
    }
 
