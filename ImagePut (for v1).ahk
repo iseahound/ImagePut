@@ -2110,6 +2110,13 @@ class ImagePut {
          return acc
       }
       
+      Clone() {
+         ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", this.size, "ptr")
+         DllCall("RtlMoveMemory", "ptr", ptr, "ptr", this.ptr, "uptr", this.size)
+         free := Func("DllCall").bind("GlobalFree", "ptr", ptr)
+         return new ImagePut.BitmapBuffer(ptr, this.size, this.width, this.height, free)
+      }
+
       Crop(x, y, w, h) {
          DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", this.pBitmap, "int*", format:=0)
          DllCall("gdiplus\GdipCloneBitmapAreaI", "int", x, "int", y, "int", w, "int", h, "int", format, "ptr", this.pBitmap, "ptr*", pBitmap:=0)
