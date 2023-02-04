@@ -3924,6 +3924,8 @@ ImagePut_dropfiles() {
          filepath := ""
       }
    }
+
+
 }
 
 ; Drag and drop files directly onto this script file.
