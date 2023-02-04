@@ -5,7 +5,7 @@
 ; Date:      2022-11-06
 ; Version:   1.9
 
-#Requires AutoHotkey v2.0-beta.3+
+#Requires AutoHotkey v2.0-beta.13+
 
 
 ; Puts the image into a file format and returns a base64 encoded string.
@@ -1969,8 +1969,8 @@ class ImagePut {
 
       __Delete() {
          DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap)
-         IsObject(ImagePut) && HasMethod(this.free) && this.free.call()
-         IsObject(ImagePut) && ImagePut.gdiplusShutdown()
+         this.free.call()
+         ImagePut.gdiplusShutdown()
       }
 
       __Item[x, y] {
@@ -2803,7 +2803,7 @@ class ImagePut {
                DllCall("GlobalFree", "ptr", Item)
 
                ; Exit GDI+ conditionally due to the ImagePut class being destroyed first.
-               IsObject(ImagePut) && ImagePut.gdiplusShutdown()
+               ImagePut.gdiplusShutdown()
             }
             Persistent(--active_windows)
          }
