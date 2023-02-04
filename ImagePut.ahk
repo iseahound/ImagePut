@@ -2139,30 +2139,26 @@ class ImagePut {
          if (extension != "bmp")
             return ImagePut.put_file(this.pBitmap, filepath, quality)
 
-         ; Save header info.
-         static bm := 0
-         if !bm {
-            bm := Buffer(54)
+         bm := Buffer(54)
 
-            StrPut("BM", bm, "CP0")                ; identifier
-            NumPut(  "uint", 54+this.size, bm,  2) ; file size
-            NumPut(  "uint",            0, bm,  6) ; reserved
-            NumPut(  "uint",           54, bm, 10) ; bitmap data offset
+         StrPut("BM", bm, "CP0")                ; identifier
+         NumPut(  "uint", 54+this.size, bm,  2) ; file size
+         NumPut(  "uint",            0, bm,  6) ; reserved
+         NumPut(  "uint",           54, bm, 10) ; bitmap data offset
 
-            ; BITMAPINFOHEADER struct
-            NumPut(  "uint",           40, bm, 14) ; Size
-            NumPut(  "uint",   this.width, bm, 18) ; Width
-            NumPut(   "int", -this.height, bm, 22) ; Height - Negative so (0, 0) is top-left.
-            NumPut("ushort",            1, bm, 26) ; Planes
-            NumPut("ushort",           32, bm, 28) ; BitCount / BitsPerPixel
+         ; BITMAPINFOHEADER struct
+         NumPut(  "uint",           40, bm, 14) ; Size
+         NumPut(  "uint",   this.width, bm, 18) ; Width
+         NumPut(   "int", -this.height, bm, 22) ; Height - Negative so (0, 0) is top-left.
+         NumPut("ushort",            1, bm, 26) ; Planes
+         NumPut("ushort",           32, bm, 28) ; BitCount / BitsPerPixel
 
-            NumPut(  "uint",            0, bm, 30) ; biCompression
-            NumPut(  "uint",    this.size, bm, 34) ; biSizeImage
-            NumPut(   "int",            0, bm, 38) ; biXPelsPerMeter
-            NumPut(   "int",            0, bm, 42) ; biYPelsPerMeter
-            NumPut(  "uint",            0, bm, 46) ; biClrUsed
-            NumPut(  "uint",            0, bm, 50) ; biClrImportant
-         }
+         NumPut(  "uint",            0, bm, 30) ; biCompression
+         NumPut(  "uint",    this.size, bm, 34) ; biSizeImage
+         NumPut(   "int",            0, bm, 38) ; biXPelsPerMeter
+         NumPut(   "int",            0, bm, 42) ; biYPelsPerMeter
+         NumPut(  "uint",            0, bm, 46) ; biClrUsed
+         NumPut(  "uint",            0, bm, 50) ; biClrImportant
 
          loop
             try
