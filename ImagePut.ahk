@@ -3634,6 +3634,10 @@ class ImagePut {
       static pToken := 0 ; Takes advantage of the fact that objects contain identical methods.
       static instances := 0 ; And therefore static variables can share data across instances.
 
+      ; Guard against __Delete() errors.
+      if not IsSet(pToken) || not IsSet(instances)
+         return
+
       ; Startup gdiplus when counter rises from 0 -> 1.
       if (instances = 0 && vary = 1) {
 
