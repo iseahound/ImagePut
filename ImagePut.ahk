@@ -3924,6 +3924,8 @@ ImagePut_dropfiles() {
          filepath := ""
       }
    }
+   ; Avoid SingleInstance checks. Only seems to be necessary on v2.
+   WinSetTitle WinGetTitle(A_ScriptHwnd) . A_ScriptHwnd, A_ScriptHwnd
 }
 
 ; Drag and drop files directly onto this script file.
