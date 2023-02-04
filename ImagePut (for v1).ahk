@@ -584,7 +584,7 @@ class ImagePut {
 
       ; BitmapToCoimage("explorer", pBitmap, default)
       if (cotype = "explorer")
-         return this.put_explorer(pBitmap, default)
+         return this.put_explorer(pBitmap, p1)
 
       ; BitmapToCoimage("safeArray", pBitmap, extension, quality)
       if (cotype = "safeArray")
