@@ -3632,6 +3632,7 @@ class ImagePut {
 
 
 
+      
 
       ; Startup gdiplus when counter rises from 0 -> 1.
       if (instances = 0 && vary = 1) {
