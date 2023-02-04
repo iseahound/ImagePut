@@ -2139,30 +2139,26 @@ class ImagePut {
          if (extension != "bmp")
             return ImagePut.put_file(this.pBitmap, filepath, quality)
 
-         ; Save header info.
-         static bm := 0
-         if !bm {
-            VarSetCapacity(bm, 54)
+         VarSetCapacity(bm, 54)
 
-            StrPut("BM", &bm, "CP0")               ; identifier
-            NumPut(54+this.size, bm,  2,   "uint") ; file size
-            NumPut(           0, bm,  6,   "uint") ; reserved
-            NumPut(          54, bm, 10,   "uint") ; bitmap data offset
+         StrPut("BM", &bm, "CP0")               ; identifier
+         NumPut(54+this.size, bm,  2,   "uint") ; file size
+         NumPut(           0, bm,  6,   "uint") ; reserved
+         NumPut(          54, bm, 10,   "uint") ; bitmap data offset
 
-            ; BITMAPINFOHEADER struct
-            NumPut(          40, bm, 14,   "uint") ; Size
-            NumPut(  this.width, bm, 18,   "uint") ; Width
-            NumPut(-this.height, bm, 22,    "int") ; Height - Negative so (0, 0) is top-left.
-            NumPut(           1, bm, 26, "ushort") ; Planes
-            NumPut(          32, bm, 28, "ushort") ; BitCount / BitsPerPixel
+         ; BITMAPINFOHEADER struct
+         NumPut(          40, bm, 14,   "uint") ; Size
+         NumPut(  this.width, bm, 18,   "uint") ; Width
+         NumPut(-this.height, bm, 22,    "int") ; Height - Negative so (0, 0) is top-left.
+         NumPut(           1, bm, 26, "ushort") ; Planes
+         NumPut(          32, bm, 28, "ushort") ; BitCount / BitsPerPixel
 
-            NumPut(           0, bm, 30,   "uint") ; biCompression
-            NumPut(   this.size, bm, 34,   "uint") ; biSizeImage
-            NumPut(           0, bm, 38,    "int") ; biXPelsPerMeter
-            NumPut(           0, bm, 42,    "int") ; biYPelsPerMeter
-            NumPut(           0, bm, 46,   "uint") ; biClrUsed
-            NumPut(           0, bm, 50,   "uint") ; biClrImportant
-         }
+         NumPut(           0, bm, 30,   "uint") ; biCompression
+         NumPut(   this.size, bm, 34,   "uint") ; biSizeImage
+         NumPut(           0, bm, 38,    "int") ; biXPelsPerMeter
+         NumPut(           0, bm, 42,    "int") ; biYPelsPerMeter
+         NumPut(           0, bm, 46,   "uint") ; biClrUsed
+         NumPut(           0, bm, 50,   "uint") ; biClrImportant
 
          loop
             try
