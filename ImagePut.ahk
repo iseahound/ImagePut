@@ -862,7 +862,7 @@ class ImagePut {
 
       ; Allow the stream to be freed while leaving the hData intact.
       ; Please read: https://devblogs.microsoft.com/oldnewthing/20210930-00/?p=105745
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", False, "ptr*", &pStream:=0, "HRESULT")
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", False, "ptr*", &pStream:=0, "hresult")
       DllCall("CloseClipboard")
       return pStream
    }
@@ -890,8 +890,8 @@ class ImagePut {
             DllCall("LoadLibrary", "str", "DXGI")
          if !DllCall("GetModuleHandle", "str", "D3D11")
             DllCall("LoadLibrary", "str", "D3D11")
-         DllCall("ole32\CLSIDFromString", "wstr", "{7b7166ec-21c7-44ae-b21a-c9ae321ae369}", "ptr", riid := Buffer(16, 0), "HRESULT")
-         DllCall("DXGI\CreateDXGIFactory1", "ptr", riid, "ptr*", &ppFactory:=0, "HRESULT")
+         DllCall("ole32\CLSIDFromString", "wstr", "{7b7166ec-21c7-44ae-b21a-c9ae321ae369}", "ptr", riid := Buffer(16, 0), "hresult")
+         DllCall("DXGI\CreateDXGIFactory1", "ptr", riid, "ptr*", &ppFactory:=0, "hresult")
          return ppFactory
       }
 
@@ -930,7 +930,7 @@ class ImagePut {
                ,   "ptr*", &d3d_device:=0               ; ppDevice
                ,   "ptr*", 0                            ; pFeatureLevel
                ,   "ptr*", &d3d_context:=0              ; ppImmediateContext
-               ,"HRESULT")
+               ,"hresult")
 
       ; Retrieve the desktop duplication API
       IDXGIOutput1 := ComObjQuery(IDXGIOutput, "{00cddea8-939b-4b83-a340-a685226666cc}")
@@ -1299,20 +1299,20 @@ class ImagePut {
       pStream := this.is_url(image) ? this.get_url(image) : this.get_file(image)
 
       ; Compare the signature of the file with the PDF magic string "%PDF".
-      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", signature := Buffer(4), "uint", 4, "HRESULT")
+      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", signature := Buffer(4), "uint", 4, "hresult")
       StrPut("%PDF", magic := Buffer(4), "CP0")
       if 4 > DllCall("ntdll\RtlCompareMemory", "ptr", signature, "ptr", magic, "uptr", 4, "uptr")
          throw Error("Invalid PDF.")
 
       ; Create a RandomAccessStream with BSOS_PREFERDESTINATIONSTREAM.
-      DllCall("ole32\CLSIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", CLSID := Buffer(16), "HRESULT")
-      DllCall("ShCore\CreateRandomAccessStreamOverStream", "ptr", pStream, "uint", 1, "ptr", CLSID, "ptr*", &pRandomAccessStream:=0, "HRESULT")
+      DllCall("ole32\CLSIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", CLSID := Buffer(16), "hresult")
+      DllCall("ShCore\CreateRandomAccessStreamOverStream", "ptr", pStream, "uint", 1, "ptr", CLSID, "ptr*", &pRandomAccessStream:=0, "hresult")
 
       ; Create the "Windows.Data.Pdf.PdfDocument" class using IPdfDocumentStatics.
-      DllCall("combase\WindowsCreateString", "wstr", "Windows.Data.Pdf.PdfDocument", "uint", 28, "ptr*", &hString:=0, "HRESULT")
-      DllCall("ole32\CLSIDFromString", "wstr", "{433A0B5F-C007-4788-90F2-08143D922599}", "ptr", CLSID := Buffer(16), "HRESULT")
-      DllCall("combase\RoGetActivationFactory", "ptr", hString, "ptr", CLSID, "ptr*", &PdfDocumentStatics:=0, "HRESULT")
-      DllCall("combase\WindowsDeleteString", "ptr", hString, "HRESULT")
+      DllCall("combase\WindowsCreateString", "wstr", "Windows.Data.Pdf.PdfDocument", "uint", 28, "ptr*", &hString:=0, "hresult")
+      DllCall("ole32\CLSIDFromString", "wstr", "{433A0B5F-C007-4788-90F2-08143D922599}", "ptr", CLSID := Buffer(16), "hresult")
+      DllCall("combase\RoGetActivationFactory", "ptr", hString, "ptr", CLSID, "ptr*", &PdfDocumentStatics:=0, "hresult")
+      DllCall("combase\WindowsDeleteString", "ptr", hString, "hresult")
 
       ; Create the PDF document.
       ComCall(IPdfDocumentStatics_LoadFromStreamAsync := 8, PdfDocumentStatics, "ptr", pRandomAccessStream, "ptr*", &PdfDocument:=0)
@@ -1332,7 +1332,7 @@ class ImagePut {
 
       ; Render the page to an output stream.
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "uint", True, "ptr*", &pStreamOut:=0)
-      DllCall("ole32\CLSIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", CLSID := Buffer(16), "HRESULT")
+      DllCall("ole32\CLSIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", CLSID := Buffer(16), "hresult")
       DllCall("ShCore\CreateRandomAccessStreamOverStream", "ptr", pStreamOut, "uint", BSOS_DEFAULT := 0, "ptr", CLSID, "ptr*", &pRandomAccessStreamOut:=0)
       ComCall(IPdfPage_RenderToStreamAsync := 6, PdfPage, "ptr", pRandomAccessStreamOut, "ptr*", &AsyncInfo:=0)
       this.WaitForAsync(&AsyncInfo)
@@ -1411,7 +1411,7 @@ class ImagePut {
       file.RawRead(pData, file.length)
       DllCall("GlobalUnlock", "ptr", hData)
       file.Close()
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", True, "ptr*", &pStream:=0, "HRESULT")
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", True, "ptr*", &pStream:=0, "hresult")
       return pStream
    }
 
@@ -1437,7 +1437,7 @@ class ImagePut {
       DllCall("crypt32\CryptStringToBinary", "str", image, "uint", 0, "uint", flags, "ptr", pData, "uint*", size, "ptr", 0, "ptr", 0)
 
       DllCall("GlobalUnlock", "ptr", hData)
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", True, "ptr*", &pStream:=0, "HRESULT")
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", True, "ptr*", &pStream:=0, "hresult")
       return pStream
    }
 
@@ -1463,7 +1463,7 @@ class ImagePut {
       DllCall("crypt32\CryptStringToBinary", "str", image, "uint", 0, "uint", flags, "ptr", pData, "uint*", size, "ptr", 0, "ptr", 0)
 
       DllCall("GlobalUnlock", "ptr", hData)
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", True, "ptr*", &pStream:=0, "HRESULT")
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", True, "ptr*", &pStream:=0, "hresult")
       return pStream
    }
 
@@ -1736,8 +1736,8 @@ class ImagePut {
 
    static get_RandomAccessStream(image) {
       ; Note that the returned stream shares a reference count with the original RandomAccessStream's internal stream.
-      DllCall("ole32\CLSIDFromString", "wstr", "{0000000C-0000-0000-C000-000000000046}", "ptr", CLSID := Buffer(16), "HRESULT")
-      DllCall("ShCore\CreateStreamOverRandomAccessStream", "ptr", image, "ptr", CLSID, "ptr*", &pStream:=0, "HRESULT")
+      DllCall("ole32\CLSIDFromString", "wstr", "{0000000C-0000-0000-C000-000000000046}", "ptr", CLSID := Buffer(16), "hresult")
+      DllCall("ShCore\CreateStreamOverRandomAccessStream", "ptr", image, "ptr", CLSID, "ptr*", &pStream:=0, "hresult")
       return pStream
    }
 
@@ -1838,10 +1838,10 @@ class ImagePut {
       ; Create a Stream whose underlying HGlobal must be referenced or lost forever.
       ; Rescue the HGlobal after GDI+ has written the PNG to stream and release the stream.
       ; Please read: https://devblogs.microsoft.com/oldnewthing/20210929-00/?p=105742
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", False, "ptr*", &pStream:=0, "HRESULT")
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", False, "ptr*", &pStream:=0, "hresult")
       this.select_codec(pBitmap, "png", "", &pCodec, &ep, &ci, &v)
       DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", pStream, "ptr", pCodec, "ptr", IsSet(ep) ? ep : 0)
-      DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "uint*", &hData:=0, "HRESULT")
+      DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "uint*", &hData:=0, "hresult")
       ObjRelease(pStream)
 
       ; Set the rescued HGlobal to the clipboard as a shared object.
@@ -3120,11 +3120,11 @@ class ImagePut {
                ,    "int", True            ; fCreate is ignored when STGM_CREATE is set.
                ,    "ptr", 0               ; pstmTemplate (reserved)
                ,   "ptr*", &pFileStream:=0
-               ,"HRESULT")
-      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "HRESULT")
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "HRESULT")
-      DllCall("shlwapi\IStream_Copy", "ptr", pStream, "ptr", pFileStream, "uint", size, "HRESULT")
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "HRESULT")
+               ,"hresult")
+      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
+      DllCall("shlwapi\IStream_Copy", "ptr", pStream, "ptr", pFileStream, "uint", size, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
       ObjRelease(pFileStream)
 
       return filepath
@@ -3140,7 +3140,7 @@ class ImagePut {
       pStream := this.put_stream(pBitmap, extension, quality)
 
       ; Get a pointer to binary data.
-      DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "ptr*", &hbin:=0, "HRESULT")
+      DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "ptr*", &hbin:=0, "hresult")
       bin := DllCall("GlobalLock", "ptr", hbin, "ptr")
       size := DllCall("GlobalSize", "ptr", bin, "uptr")
 
@@ -3175,10 +3175,10 @@ class ImagePut {
 
    static set_hex(pStream) {
       ; For compatibility with SHCreateMemStream do not use GetHGlobalFromStream.
-      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "HRESULT")
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "HRESULT")
-      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", bin := Buffer(size), "uint", size, "HRESULT")
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "HRESULT")
+      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
+      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", bin := Buffer(size), "uint", size, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
 
       ; Calculate the length of the hexadecimal string.
       length := 2 * size ; No zero terminator needed.
@@ -3215,7 +3215,7 @@ class ImagePut {
       pStream := this.put_stream(pBitmap, extension, quality)
 
       ; Get a pointer to binary data.
-      DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "ptr*", &hbin:=0, "HRESULT")
+      DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "ptr*", &hbin:=0, "hresult")
       bin := DllCall("GlobalLock", "ptr", hbin, "ptr")
       size := DllCall("GlobalSize", "ptr", bin, "uptr")
 
@@ -3237,10 +3237,10 @@ class ImagePut {
 
    static set_base64(pStream) {
       ; For compatibility with SHCreateMemStream do not use GetHGlobalFromStream.
-      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "HRESULT")
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "HRESULT")
-      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", bin := Buffer(size), "uint", size, "HRESULT")
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "HRESULT")
+      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
+      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", bin := Buffer(size), "uint", size, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
 
       ; Calculate the length of the base64 string.
       flags := 0x40000001 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_BASE64
@@ -3263,9 +3263,9 @@ class ImagePut {
    }
 
    static set_uri(pStream) {
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "HRESULT")
-      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", signature := Buffer(256), "uint", 256, "HRESULT")
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "HRESULT")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
+      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", signature := Buffer(256), "uint", 256, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
 
       ; This function sniffs the first 256 bytes and matches a known file signature.
       ; 256 bytes is recommended, but images only need 12 bytes.
@@ -3279,7 +3279,7 @@ class ImagePut {
                ,   "uint", 0x20          ; dwMimeFlags
                ,   "ptr*", &MimeOut:=0   ; ppwzMimeOut
                ,   "uint", 0             ; dwReserved
-               ,"HRESULT")
+               ,"hresult")
       MimeType := StrGet(MimeOut, "UTF-16")
       DllCall("ole32\CoTaskMemFree", "ptr", MimeOut)
 
@@ -3387,7 +3387,7 @@ class ImagePut {
       this.select_codec(pBitmap, extension, quality, &pCodec, &ep, &ci, &v)
 
       ; Create a Stream.
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", True, "ptr*", &pStream:=0, "HRESULT")
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", True, "ptr*", &pStream:=0, "hresult")
       DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", pStream, "ptr", pCodec, "ptr", IsSet(ep) ? ep : 0)
 
       return pStream
@@ -3402,13 +3402,13 @@ class ImagePut {
 
    static set_RandomAccessStream(pStream) {
       ; Thanks teadrinker - https://www.autohotkey.com/boards/viewtopic.php?f=6&t=72674
-      DllCall("ole32\CLSIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", CLSID := Buffer(16), "HRESULT")
+      DllCall("ole32\CLSIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", CLSID := Buffer(16), "hresult")
       DllCall("ShCore\CreateRandomAccessStreamOverStream"
                ,    "ptr", pStream
                ,   "uint", BSOS_PREFERDESTINATIONSTREAM := 1
                ,    "ptr", CLSID
                ,   "ptr*", &pRandomAccessStream:=0
-               ,"HRESULT")
+               ,"hresult")
       return pRandomAccessStream
    }
 
@@ -3422,7 +3422,7 @@ class ImagePut {
 
       ; WICBitmapNoCache  must be 1!
       ; IWICImagingFactory::CreateBitmap - https://github.com/iseahound/10/blob/win/10.0.16299.0/um/wincodec.h#L6447
-      DllCall("ole32\CLSIDFromString", "wstr", GUID_WICPixelFormat32bppBGRA := "{6fddc324-4e03-4bfe-b185-3d77768dc90f}", "ptr", CLSID := Buffer(16), "HRESULT")
+      DllCall("ole32\CLSIDFromString", "wstr", GUID_WICPixelFormat32bppBGRA := "{6fddc324-4e03-4bfe-b185-3d77768dc90f}", "ptr", CLSID := Buffer(16), "hresult")
       ComCall(17, IWICImagingFactory, "uint", width, "uint", height, "ptr", CLSID, "int", 1, "ptr*", &wicBitmap:=0)
 
       Rect := Buffer(16, 0)                  ; sizeof(Rect) = 16
@@ -3454,14 +3454,14 @@ class ImagePut {
 
    static set_safeArray(pStream) {
       ; Allocate a one-dimensional SAFEARRAY based on the size of the stream.
-      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "HRESULT")
+      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "hresult")
       safeArray := ComObjArray(0x11, size) ; VT_ARRAY | VT_UI1
       pvData := NumGet(ComObjValue(safeArray), 8 + A_PtrSize, "ptr")
 
       ; Copy the stream to the SAFEARRAY.
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "HRESULT")
-      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", pvData, "uint", size, "HRESULT")
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "HRESULT")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
+      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", pvData, "uint", size, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
 
       return safeArray
    }
@@ -3471,7 +3471,7 @@ class ImagePut {
 
       ; Create an IStream backed with movable memory.
       hData := DllCall("GlobalAlloc", "uint", 0x2, "uptr", 0, "ptr")
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", True, "ptr*", &pStream:=0, "HRESULT")
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", True, "ptr*", &pStream:=0, "hresult")
 
       ; Default extension is PNG for small sizes!
       (extension == "") && extension := "png"
@@ -3522,7 +3522,7 @@ class ImagePut {
          ; clsid Image Encoder Constants - http://www.jose.it-berater.org/gdiplus/reference/constants/gdipimageencoderconstants.htm
          ep := Buffer(24+2*A_PtrSize)                  ; sizeof(EncoderParameter) = ptr + n*(28, 32)
             NumPut(  "uptr",     1, ep,            0)  ; Count
-            DllCall("ole32\CLSIDFromString", "wstr", "{1D5BE4B5-FA4A-452D-9CDD-5DB35105E7EB}", "ptr", ep.ptr+A_PtrSize, "HRESULT")
+            DllCall("ole32\CLSIDFromString", "wstr", "{1D5BE4B5-FA4A-452D-9CDD-5DB35105E7EB}", "ptr", ep.ptr+A_PtrSize, "hresult")
             NumPut(  "uint",     1, ep, 16+A_PtrSize)  ; Number of Values
             NumPut(  "uint",     4, ep, 20+A_PtrSize)  ; Type
             NumPut(   "ptr", v.ptr, ep, 24+A_PtrSize)  ; Value
@@ -3530,9 +3530,9 @@ class ImagePut {
    }
 
    static select_extension(pStream, &extension) {
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "HRESULT")
-      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", signature := Buffer(256), "uint", 256, "HRESULT")
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "HRESULT")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
+      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", signature := Buffer(256), "uint", 256, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
 
       ; This function sniffs the first 256 bytes and matches a known file signature.
       ; 256 bytes is recommended, but images only need 12 bytes.
@@ -3546,7 +3546,7 @@ class ImagePut {
                ,   "uint", 0x20          ; dwMimeFlags
                ,   "ptr*", &MimeOut:=0   ; ppwzMimeOut
                ,   "uint", 0             ; dwReserved
-               ,"HRESULT")
+               ,"hresult")
       MimeType := StrGet(MimeOut, "UTF-16")
       DllCall("ole32\CoTaskMemFree", "ptr", MimeOut)
 
