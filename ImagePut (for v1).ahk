@@ -661,7 +661,7 @@ class ImagePut {
       ; StreamToCoimage("safeArray", pStream)
       if (cotype = "safeArray")
          return this.set_safeArray(pStream)
-      
+
       ; StreamToCoimage("formData", pStream, boundary)
       if (cotype = "formData")
          return this.set_formData(pStream, p1)
@@ -2109,7 +2109,7 @@ class ImagePut {
          }
          return acc
       }
-      
+
       Clone() {
          ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", this.size, "ptr")
          DllCall("RtlMoveMemory", "ptr", ptr, "ptr", this.ptr, "uptr", this.size)
@@ -2299,7 +2299,7 @@ class ImagePut {
          else if (variation == 0) {
             ; Get the address of the first matching pixel.
             byte := DllCall(PixelSearch, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "ptr")
-         } 
+         }
 
          ; PixelSearch, single color, and variation
          else {
@@ -3048,7 +3048,7 @@ class ImagePut {
       MouseGetPos,,, hwnd
       WinGetClass class, ahk_id %hwnd%
       if (class ~= "(?i)Progman|WorkerW")
-         directory := A_Desktop  
+         directory := A_Desktop
 
       ; Get path of active window.
       else if (hwnd := WinExist("ahk_class ExploreWClass")) || (hwnd := WinExist("ahk_class CabinetWClass")) {

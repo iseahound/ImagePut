@@ -882,7 +882,7 @@ class ImagePut {
             throw ValueError(message, -1, statement)
       }
 
-      ; Load DirectX 
+      ; Load DirectX
       assert IDXGIFactory := CreateDXGIFactory(), "Create IDXGIFactory failed."
 
       CreateDXGIFactory() {
@@ -1984,17 +1984,17 @@ class ImagePut {
 
          start := 0
          end := this.size
-         
+
          switch n {
          case 1:
             enum1(&c) {
-               
+
                if start == end
                   return False
 
                ; yield statements
                c := Format("0x{:X}", NumGet(this, start, "uint"))
-      
+
                ; do block
                start += 4
 
@@ -2012,7 +2012,7 @@ class ImagePut {
                ; yield statements
                i := start // 4
                c := Format("0x{:X}", NumGet(this, start, "uint"))
-      
+
                ; do block
                start += 4
 
@@ -2020,7 +2020,7 @@ class ImagePut {
                return start <= end
             }
             return enum2
-         
+
          case 3:
             enum3(&x, &y, &c) {
 
@@ -2299,7 +2299,7 @@ class ImagePut {
          else if (variation == 0) {
             ; Get the address of the first matching pixel.
             byte := DllCall(PixelSearch, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "ptr")
-         } 
+         }
 
          ; PixelSearch, single color, and variation
          else {
@@ -3046,7 +3046,7 @@ class ImagePut {
 
       ; Check if the mouse is pointing to the desktop.
       MouseGetPos ,, &hwnd
-      
+
       if WinGetClass("ahk_id" hwnd) ~= "(?i)Progman|WorkerW"
          directory := A_Desktop
 
@@ -3071,7 +3071,7 @@ class ImagePut {
 
       ; Check if the mouse is pointing to the desktop.
       MouseGetPos ,, &hwnd
-      
+
       if WinGetClass("ahk_id" hwnd) ~= "(?i)Progman|WorkerW"
          directory := A_Desktop
 
