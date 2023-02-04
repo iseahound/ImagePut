@@ -1969,8 +1969,8 @@ class ImagePut {
 
       __Delete() {
          DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap)
-         IsObject(ImagePut) && this.free && this.free.call()
-         IsObject(ImagePut) && ImagePut.gdiplusShutdown()
+         this.free.call()
+         ImagePut.gdiplusShutdown()
       }
 
       __Get(x, y) {
@@ -2803,7 +2803,7 @@ class ImagePut {
                DllCall("GlobalFree", "ptr", Item)
 
                ; Exit GDI+ conditionally due to the ImagePut class being destroyed first.
-               IsObject(ImagePut) && ImagePut.gdiplusShutdown()
+               ImagePut.gdiplusShutdown()
             }
             Hotkey % "^+F12", % void, Off ; Cannot disable, does nothing
          }
@@ -3635,7 +3635,7 @@ class ImagePut {
       static instances := 0 ; And therefore static variables can share data across instances.
 
 
-      
+
 
       ; Startup gdiplus when counter rises from 0 -> 1.
       if (instances = 0 && vary = 1) {
