@@ -2833,10 +2833,10 @@ class ImagePut {
             frame := wParam + 1
 
             ; Get the next frame and delay.
-            frames := NumGet(Item, 4, "uint") // 4                   ; Max frames
-            delays := NumGet(Item, 8 + A_PtrSize, "ptr")             ; Array of delays
-            frame := mod(frame, frames)                              ; Loop to first frame
-            delay := max(10 * NumGet(delays, frame*4, "uint"), 10)   ; Minimum delay is 10ms
+            frames := NumGet(Item + 4, "uint") // 4                 ; Max frames
+            delays := NumGet(Item + 8 + A_PtrSize, "ptr")           ; Array of delays
+            frame := mod(frame, frames)                             ; Loop to first frame
+            delay := max(10 * NumGet(delays + frame*4, "uint"), 10) ; Minimum delay is 10ms
 
             ; Emulate behavior of setting 10 ms to 100 ms.
             (delay == 10) && delay := 100 ; See: https://www.biphelps.com/blog/The-Fastest-GIF-Does-Not-Exist
