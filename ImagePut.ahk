@@ -3630,7 +3630,7 @@ class ImagePut {
       static pToken := 0 ; Takes advantage of the fact that objects contain identical methods.
       static instances := 0 ; And therefore static variables can share data across instances.
 
-      ; Guard against __Delete() errors.
+      ; Guard against __Delete() errors when WindowProc is running an animated GIF.
       if not IsSet(pToken) || not IsSet(instances)
          return
 
