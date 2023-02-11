@@ -2329,6 +2329,8 @@ class ImagePut {
                      , "ptr")
          }
 
+         else throw Exception("Invalid variation parameter.")
+
          ; Compare the address to the out-of-bounds limit.
          if (byte == this.ptr + this.size)
             return False
