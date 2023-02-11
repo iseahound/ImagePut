@@ -2279,30 +2279,16 @@ class ImagePut {
          ; Lift color to 32-bits if first 8 bits are zero.
          (color >> 24) || color |= 0xFF000000
 
-         ; PixelSearch, range of colors, and variation.
-         if IsObject(variation) {
-            byte := DllCall(PixelSearch2, "ptr", this.ptr, "ptr", this.ptr + this.size
-                     , "uchar", min(max(variation[1], variation[2]), 255)
-                     , "uchar", max(min(variation[1], variation[2]), 0)
-                     , "uchar", min(max(variation[3], variation[4]), 255)
-                     , "uchar", max(min(variation[3], variation[4]), 0)
-                     , "uchar", min(max(variation[5], variation[6]), 255)
-                     , "uchar", max(min(variation[5], variation[6]), 0)
-                     , "ptr")
-         }
-
          ; PixelSearch, single color, no variation
-         else if (variation == 0) {
-            ; Get the address of the first matching pixel.
+         if !IsObject(variation) && (variation == 0)
             byte := DllCall(PixelSearch, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "ptr")
-         }
 
          ; PixelSearch, single color, and variation
-         else {
-            v := abs(variation)
+         else if !IsObject(variation) && (variation != 0) {
             r := ((color & 0xFF0000) >> 16)
             g := ((color & 0xFF00) >> 8)
             b := ((color & 0xFF))
+            v := abs(variation)
 
             ; When doing pointer arithmetic, *Scan0 + 1 is actually adding 4 bytes.
             byte := DllCall(PixelSearch2, "ptr", this.ptr, "ptr", this.ptr + this.size
@@ -2312,6 +2298,34 @@ class ImagePut {
                      , "uchar", max(g-v, 0)
                      , "uchar", min(b+v, 255)
                      , "uchar", max(b-v, 0)
+                     , "ptr")
+         }
+
+         ; PixelSearch, range of colors, and variation.
+         else if IsObject(variation) && (variation.length() == 3) {
+            r := ((color & 0xFF0000) >> 16)
+            g := ((color & 0xFF00) >> 8)
+            b := ((color & 0xFF))
+
+            byte := DllCall(PixelSearch2, "ptr", this.ptr, "ptr", this.ptr + this.size
+                     , "uchar", min(r + variation[1], 255)
+                     , "uchar", max(r - variation[1], 0)
+                     , "uchar", min(g + variation[2], 255)
+                     , "uchar", max(g - variation[2], 0)
+                     , "uchar", min(b + variation[3], 255)
+                     , "uchar", max(b - variation[3], 0)
+                     , "ptr")
+         }
+
+         ; PixelSearch, range of colors, and variation.
+         else if IsObject(variation) && (variation.length() == 6) {
+            byte := DllCall(PixelSearch2, "ptr", this.ptr, "ptr", this.ptr + this.size
+                     , "uchar", min(max(variation[1], variation[2]), 255)
+                     , "uchar", max(min(variation[1], variation[2]), 0)
+                     , "uchar", min(max(variation[3], variation[4]), 255)
+                     , "uchar", max(min(variation[3], variation[4]), 0)
+                     , "uchar", min(max(variation[5], variation[6]), 255)
+                     , "uchar", max(min(variation[5], variation[6]), 0)
                      , "ptr")
          }
 
