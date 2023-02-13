@@ -2842,23 +2842,28 @@ class ImagePut {
             ; Thanks tmplinshi, Teadrinker - https://www.autohotkey.com/boards/viewtopic.php?f=76&t=83358
             Critical
 
-            ; Exit Gif loop or get variables.
+            ; Get variables.
             __32 := A_PtrSize = 8 ? "Ptr" : "" ; Fixes 32-bit windows
-            if !(pBitmap := DllCall("GetWindowLong" __32, "ptr", hwnd, "int", 0, "ptr"))
-               return
+            pBitmap := DllCall("GetWindowLong" __32, "ptr", hwnd, "int", 0, "ptr")
             hdc := DllCall("GetWindowLong" __32, "ptr", hwnd, "int", A_PtrSize, "ptr")
             Item := DllCall("GetWindowLong" __32, "ptr", hwnd, "int", 2*A_PtrSize, "ptr")
             pBits := DllCall("GetWindowLong" __32, "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
-            frame := wParam + 1
 
-            ; Get the next frame and delay.
+            ; Exit loop.
+            if !pBitmap
+               return
+            
+            ; Get next frame.
             frames := NumGet(Item + 4, "uint") // 4                 ; Max frames
-            delays := NumGet(Item + 8 + A_PtrSize, "ptr")           ; Array of delays
-            frame := mod(frame, frames)                             ; Loop to first frame
-            delay := max(10 * NumGet(delays + frame*4, "uint"), 10) ; Minimum delay is 10ms
+            frame := wParam + 1                                     ; Next frame
+            frame := mod(frame, frames)                             ; Loop back to first frame
 
-            ; Emulate behavior of setting 10 ms to 100 ms.
-            (delay == 10) && delay := 100 ; See: https://www.biphelps.com/blog/The-Fastest-GIF-Does-Not-Exist
+            ; Get delay.
+            delays := NumGet(Item + 8 + A_PtrSize, "ptr")           ; Array of delays
+            delay := 10 * NumGet(delays + 4*frame, "uint")          ; Delay of next frame
+            delay := max(delay, 10)                                 ; Minimum delay is 10ms
+            (delay == 10) && delay := 100                           ; 10 ms is actually 100 ms
+            ; See: https://www.biphelps.com/blog/The-Fastest-GIF-Does-Not-Exist
 
             ; Randomize the delay in intervals of 15.6
             resolution := 15.6
