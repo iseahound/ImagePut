@@ -2570,8 +2570,15 @@ class ImagePut {
       DllCall("SetWindowLong", "ptr", hwnd, "int", -20, "int", styleEx | WS_EX_LAYERED)
       DllCall("SetLayeredWindowAttributes", "ptr", hwnd, "uint", 0xF0F0F0, "uchar", 0, "int", 1)
 
+      ; Set itself as the *internal* top level window.
+      __32 := A_PtrSize = 8 ? "Ptr" : "" ; Fixes 32-bit windows
+      DllCall("SetWindowLong" __32, "ptr", hwnd, "int", 0, "ptr", hwnd)
+
       ; A layered child window is only available on Windows 8+.
-      this.show(pBitmap, title, [0, 0, w, h], WS_CHILD | WS_VISIBLE, WS_EX_LAYERED, hwnd)
+      hwnd_child := this.show(pBitmap, title, [0, 0, w, h], WS_CHILD | WS_VISIBLE, WS_EX_LAYERED, hwnd)
+
+      ; Override the child's internal hwnd with the parent's hwnd.
+      DllCall("SetWindowLong" __32, "ptr", hwnd_child, "int", 0, "ptr", hwnd)
 
       ; Prevent empty windows from showing.
       DllCall("ShowWindow", "ptr", hwnd, "int", 1)
@@ -2710,6 +2717,10 @@ class ImagePut {
                ,  "uint*", 0xFF << 16 | 0x01 << 24  ; *pblend
                ,   "uint", 2)                       ; dwFlags
 
+      ; Set itself as the *internal* top level window.
+      __32 := A_PtrSize = 8 ? "Ptr" : "" ; Fixes 32-bit windows
+      DllCall("SetWindowLong" __32, "ptr", hwnd, "int", 0, "ptr", hwnd)
+
       ; Check for multiple frames.
       DllCall("gdiplus\GdipImageGetFrameDimensionsCount", "ptr", pBitmap, "uint*", dims:=0)
       DllCall("gdiplus\GdipImageGetFrameDimensionsList", "ptr", pBitmap, "ptr", &dimIDs := VarSetCapacity(dimIDs, 16*dims), "uint", dims)
@@ -2727,7 +2738,6 @@ class ImagePut {
          DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmapClone)
 
          ; Store data inside window class extra bits (cbWndExtra).
-         __32 := A_PtrSize = 8 ? "Ptr" : "" ; Fixes 32-bit windows
          DllCall("SetWindowLong" __32, "ptr", hwnd, "int", 1*A_PtrSize, "ptr", pBitmapClone)
          DllCall("SetWindowLong" __32, "ptr", hwnd, "int", 2*A_PtrSize, "ptr", hdc)
          DllCall("SetWindowLong" __32, "ptr", hwnd, "int", 3*A_PtrSize, "ptr", Item)
@@ -2790,6 +2800,7 @@ class ImagePut {
    }
       ; Define window behavior.
       WindowProc(uMsg, wParam, lParam) {
+         __32 := A_PtrSize = 8 ? "Ptr" : "" ; Fixes 32-bit windows
          hwnd := this
          ; Prevent the script from exiting early.
          static void := ObjBindMethod({}, {})
@@ -2800,7 +2811,6 @@ class ImagePut {
 
          ; WM_DESTROY
          if (uMsg = 0x2) {
-            __32 := A_PtrSize = 8 ? "Ptr" : "" ; Fixes 32-bit windows
             if pBitmap := DllCall("GetWindowLong" __32, "ptr", hwnd, "int", 1*A_PtrSize, "ptr") {
                hdc := DllCall("GetWindowLong" __32, "ptr", hwnd, "int", 2*A_PtrSize, "ptr")
                Item := DllCall("GetWindowLong" __32, "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
@@ -2824,15 +2834,13 @@ class ImagePut {
 
          ; WM_LBUTTONDOWN
          if (uMsg = 0x201) {
-            parent := DllCall("GetParent", "ptr", hwnd, "ptr")
-            hwnd := (parent != A_ScriptHwnd && parent != 0) ? parent : hwnd
+            hwnd := DllCall("GetWindowLong" __32, "ptr", hwnd, "int", 0, "ptr") ; internal parent hwnd
             return DllCall("DefWindowProc", "ptr", hwnd, "uint", 0xA1, "uptr", 2, "ptr", 0, "ptr")
          }
 
          ; WM_RBUTTONUP
          if (uMsg = 0x205) {
-            parent := DllCall("GetParent", "ptr", hwnd, "ptr")
-            hwnd := (parent != A_ScriptHwnd && parent != 0) ? parent : hwnd
+            hwnd := DllCall("GetWindowLong" __32, "ptr", hwnd, "int", 0, "ptr") ; internal parent hwnd
             DllCall("DestroyWindow", "ptr", hwnd)
             return 0
          }
@@ -2843,7 +2851,6 @@ class ImagePut {
             Critical
 
             ; Get variables.
-            __32 := A_PtrSize = 8 ? "Ptr" : "" ; Fixes 32-bit windows
             pBitmap := DllCall("GetWindowLong" __32, "ptr", hwnd, "int", 1*A_PtrSize, "ptr")
             hdc := DllCall("GetWindowLong" __32, "ptr", hwnd, "int", 2*A_PtrSize, "ptr")
             Item := DllCall("GetWindowLong" __32, "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
