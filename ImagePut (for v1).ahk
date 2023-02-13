@@ -2727,10 +2727,11 @@ class ImagePut {
          DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmapClone)
 
          ; Store data inside window class extra bits (cbWndExtra).
-         DllCall("SetWindowLongPtr", "ptr", hwnd, "int", 0, "ptr", pBitmapClone)
-         DllCall("SetWindowLongPtr", "ptr", hwnd, "int", A_PtrSize, "ptr", hdc)
-         DllCall("SetWindowLongPtr", "ptr", hwnd, "int", 2*A_PtrSize, "ptr", Item)
-         DllCall("SetWindowLongPtr", "ptr", hwnd, "int", 3*A_PtrSize, "ptr", pBits)
+         __32 := A_PtrSize = 8 ? "Ptr" : "" ; Fixes 32-bit windows
+         DllCall("SetWindowLong" __32, "ptr", hwnd, "int", 0, "ptr", pBitmapClone)
+         DllCall("SetWindowLong" __32, "ptr", hwnd, "int", A_PtrSize, "ptr", hdc)
+         DllCall("SetWindowLong" __32, "ptr", hwnd, "int", 2*A_PtrSize, "ptr", Item)
+         DllCall("SetWindowLong" __32, "ptr", hwnd, "int", 3*A_PtrSize, "ptr", pBits)
 
          ; Preserve GDI+ scope.
          ImagePut.gdiplusStartup()
@@ -2799,12 +2800,13 @@ class ImagePut {
 
          ; WM_DESTROY
          if (uMsg = 0x2) {
-            if pBitmap := DllCall("GetWindowLongPtr", "ptr", hwnd, "int", 0, "ptr") {
-               hdc := DllCall("GetWindowLongPtr", "ptr", hwnd, "int", A_PtrSize, "ptr")
-               Item := DllCall("GetWindowLongPtr", "ptr", hwnd, "int", 2*A_PtrSize, "ptr")
+            __32 := A_PtrSize = 8 ? "Ptr" : "" ; Fixes 32-bit windows
+            if pBitmap := DllCall("GetWindowLong" __32, "ptr", hwnd, "int", 0, "ptr") {
+               hdc := DllCall("GetWindowLong" __32, "ptr", hwnd, "int", A_PtrSize, "ptr")
+               Item := DllCall("GetWindowLong" __32, "ptr", hwnd, "int", 2*A_PtrSize, "ptr")
 
                ; Exit loop.
-               DllCall("SetWindowLongPtr", "ptr", hwnd, "int", 0, "ptr", 0) ; Exit loop.
+               DllCall("SetWindowLong" __32, "ptr", hwnd, "int", 0, "ptr", 0)
 
                ; Dispose of all data stored in the window class.
                DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
@@ -2841,11 +2843,12 @@ class ImagePut {
             Critical
 
             ; Exit Gif loop or get variables.
-            if !(pBitmap := DllCall("GetWindowLongPtr", "ptr", hwnd, "int", 0, "ptr"))
+            __32 := A_PtrSize = 8 ? "Ptr" : "" ; Fixes 32-bit windows
+            if !(pBitmap := DllCall("GetWindowLong" __32, "ptr", hwnd, "int", 0, "ptr"))
                return
-            hdc := DllCall("GetWindowLongPtr", "ptr", hwnd, "int", A_PtrSize, "ptr")
-            Item := DllCall("GetWindowLongPtr", "ptr", hwnd, "int", 2*A_PtrSize, "ptr")
-            pBits := DllCall("GetWindowLongPtr", "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
+            hdc := DllCall("GetWindowLong" __32, "ptr", hwnd, "int", A_PtrSize, "ptr")
+            Item := DllCall("GetWindowLong" __32, "ptr", hwnd, "int", 2*A_PtrSize, "ptr")
+            pBits := DllCall("GetWindowLong" __32, "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
             frame := wParam + 1
 
             ; Get the next frame and delay.
