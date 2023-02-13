@@ -3,7 +3,7 @@
 #singleinstance force
 
 ; Show image in window.
-hwnd := ImagePutWindow("https://picsum.photos/1000/200", "Thank you for trying ImagePut ♥")
+hwnd := ImagePutWindow("https://picsum.photos/1000/200", "Thank you for trying ImagePut ♥ Right click to close")
 
 ; Save image to file.
 filepath := ImagePutFile("https://i.imgur.com/cCyb8bq.gif")
