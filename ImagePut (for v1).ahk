@@ -2728,10 +2728,10 @@ class ImagePut {
 
          ; Store data inside window class extra bits (cbWndExtra).
          __32 := A_PtrSize = 8 ? "Ptr" : "" ; Fixes 32-bit windows
-         DllCall("SetWindowLong" __32, "ptr", hwnd, "int", 0, "ptr", pBitmapClone)
-         DllCall("SetWindowLong" __32, "ptr", hwnd, "int", A_PtrSize, "ptr", hdc)
-         DllCall("SetWindowLong" __32, "ptr", hwnd, "int", 2*A_PtrSize, "ptr", Item)
-         DllCall("SetWindowLong" __32, "ptr", hwnd, "int", 3*A_PtrSize, "ptr", pBits)
+         DllCall("SetWindowLong" __32, "ptr", hwnd, "int", 1*A_PtrSize, "ptr", pBitmapClone)
+         DllCall("SetWindowLong" __32, "ptr", hwnd, "int", 2*A_PtrSize, "ptr", hdc)
+         DllCall("SetWindowLong" __32, "ptr", hwnd, "int", 3*A_PtrSize, "ptr", Item)
+         DllCall("SetWindowLong" __32, "ptr", hwnd, "int", 4*A_PtrSize, "ptr", pBits)
 
          ; Preserve GDI+ scope.
          ImagePut.gdiplusStartup()
@@ -2801,12 +2801,12 @@ class ImagePut {
          ; WM_DESTROY
          if (uMsg = 0x2) {
             __32 := A_PtrSize = 8 ? "Ptr" : "" ; Fixes 32-bit windows
-            if pBitmap := DllCall("GetWindowLong" __32, "ptr", hwnd, "int", 0, "ptr") {
-               hdc := DllCall("GetWindowLong" __32, "ptr", hwnd, "int", A_PtrSize, "ptr")
-               Item := DllCall("GetWindowLong" __32, "ptr", hwnd, "int", 2*A_PtrSize, "ptr")
+            if pBitmap := DllCall("GetWindowLong" __32, "ptr", hwnd, "int", 1*A_PtrSize, "ptr") {
+               hdc := DllCall("GetWindowLong" __32, "ptr", hwnd, "int", 2*A_PtrSize, "ptr")
+               Item := DllCall("GetWindowLong" __32, "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
 
                ; Exit loop.
-               DllCall("SetWindowLong" __32, "ptr", hwnd, "int", 0, "ptr", 0)
+               DllCall("SetWindowLong" __32, "ptr", hwnd, "int", 1*A_PtrSize, "ptr", 0)
 
                ; Dispose of all data stored in the window class.
                DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
@@ -2844,10 +2844,10 @@ class ImagePut {
 
             ; Get variables.
             __32 := A_PtrSize = 8 ? "Ptr" : "" ; Fixes 32-bit windows
-            pBitmap := DllCall("GetWindowLong" __32, "ptr", hwnd, "int", 0, "ptr")
-            hdc := DllCall("GetWindowLong" __32, "ptr", hwnd, "int", A_PtrSize, "ptr")
-            Item := DllCall("GetWindowLong" __32, "ptr", hwnd, "int", 2*A_PtrSize, "ptr")
-            pBits := DllCall("GetWindowLong" __32, "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
+            pBitmap := DllCall("GetWindowLong" __32, "ptr", hwnd, "int", 1*A_PtrSize, "ptr")
+            hdc := DllCall("GetWindowLong" __32, "ptr", hwnd, "int", 2*A_PtrSize, "ptr")
+            Item := DllCall("GetWindowLong" __32, "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
+            pBits := DllCall("GetWindowLong" __32, "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
 
             ; Exit loop.
             if !pBitmap
