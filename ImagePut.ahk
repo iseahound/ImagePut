@@ -2393,7 +2393,7 @@ class ImagePut {
 
          ; Search for the address of the first matching image.
          byte := DllCall(code, "ptr", this.ptr, "uint", this.width, "uint", this.height
-                           , "ptr", image.ptr, "uint", image.width, "uint", image.height, "ptr")
+                           , "ptr", image.ptr, "uint", image.width, "uint", image.height, "CDecl")
 
          ; Compare the address to the out-of-bounds limit.
          if (byte == this.ptr + this.size)
