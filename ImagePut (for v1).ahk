@@ -1361,7 +1361,7 @@ class ImagePut {
          throw Exception("AsyncInfo status error: " ErrorCode)
       }
 
-      DllCall(NumGet(NumGet(Object+0)+8*A_PtrSize), "ptr", Object, "ptr*", ObjectResult:=0) ; GetResults
+      DllCall(NumGet(NumGet(Object+0)+8*A_PtrSize), "ptr", Object, "ptr*", ObjectResult:=0, "cdecl") ; GetResults
       ObjRelease(Object)
       Object := ObjectResult
 
