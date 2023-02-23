@@ -1808,7 +1808,7 @@ class ImagePut {
       }
 
       ; Sample the top-left pixel and set all matching pixels to be transparent.
-      DllCall(code, "ptr", Scan0, "ptr", Scan0 + 4*width*height, "uint", NumGet(Scan0+0, "uint"))
+      DllCall(code, "ptr", Scan0, "ptr", Scan0 + 4*width*height, "uint", NumGet(Scan0+0, "uint"), "cdecl")
 
       ; Write pixels to bitmap.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
@@ -2201,7 +2201,7 @@ class ImagePut {
             ; Set eax flag to 1 to retrieve supported CPU features.
             ; See this for CPU features: https://wiki.osdev.org/CPUID
             ; Also see page 591: https://www.amd.com/system/files/TechDocs/24594.pdf
-            DllCall(code, "uint*", &a := 1, "uint*", &b := 0, "uint*", &c := 0, "uint*", &d := 0)
+            DllCall(code, "uint*", &a := 1, "uint*", &b := 0, "uint*", &c := 0, "uint*", &d := 0, "cdecl")
 
             ; Free memory.
             DllCall("GlobalFree", "ptr", code)
@@ -2235,7 +2235,7 @@ class ImagePut {
          (key == "sentinel") && key := NumGet(this.ptr, "uint")
 
          ; Replaces one ARGB color with another.
-         DllCall(code, "ptr", this.ptr, "uint", this.ptr + this.size, "uint", key, "uint", value)
+         DllCall(code, "ptr", this.ptr, "uint", this.ptr + this.size, "uint", key, "uint", value, "cdecl")
       }
 
       SetAlpha(alpha := 0xFF) {
@@ -2246,7 +2246,7 @@ class ImagePut {
             : "SDnRcwpEiEEDSIPBBOvxww==")
 
          ; Sets the transparency of the entire bitmap.
-         DllCall(code, "ptr", this.ptr, "ptr", this.ptr + this.size, "uchar", alpha)
+         DllCall(code, "ptr", this.ptr, "ptr", this.ptr + this.size, "uchar", alpha, "cdecl")
       }
 
       TransColor(color := "sentinel", alpha := 0x00) {
@@ -2260,7 +2260,7 @@ class ImagePut {
          (color == "sentinel") && color := NumGet(this.ptr, "uint")
 
          ; Sets the alpha value of a specified RGB color.
-         DllCall(code, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "uchar", alpha)
+         DllCall(code, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "uchar", alpha, "cdecl")
       }
 
       PixelSearch(color, variation := 0) {
@@ -2281,7 +2281,7 @@ class ImagePut {
 
          ; PixelSearch, single color, no variation
          if !IsObject(variation) && (variation == 0)
-            byte := DllCall(PixelSearch, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "ptr")
+            byte := DllCall(PixelSearch, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "cdecl ptr")
 
          ; PixelSearch, single color, and variation
          else if !IsObject(variation) && (variation != 0) {
@@ -2298,7 +2298,7 @@ class ImagePut {
                      , "uchar", max(g-v, 0)
                      , "uchar", min(b+v, 255)
                      , "uchar", max(b-v, 0)
-                     , "ptr")
+                     , "cdecl ptr")
          }
 
          ; PixelSearch, range of colors, and variation.
@@ -2314,7 +2314,7 @@ class ImagePut {
                      , "uchar", max(g - variation[2], 0)
                      , "uchar", min(b + variation[3], 255)
                      , "uchar", max(b - variation[3], 0)
-                     , "ptr")
+                     , "cdecl ptr")
          }
 
          ; PixelSearch, range of colors, and variation.
@@ -2326,7 +2326,7 @@ class ImagePut {
                      , "uchar", max(min(variation[3], variation[4]), 0)
                      , "uchar", min(max(variation[5], variation[6]), 255)
                      , "uchar", max(min(variation[5], variation[6]), 0)
-                     , "ptr")
+                     , "cdecl ptr")
          }
 
          else throw Error("Invalid variation parameter.")
@@ -2353,12 +2353,12 @@ class ImagePut {
          ; PixelSearchAll, single color, no variation
          capacity := 256
          result := Buffer(A_PtrSize * capacity)
-         count := DllCall(PixelSearch3, "ptr", result, "uint", capacity, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "uint")
+         count := DllCall(PixelSearch3, "ptr", result, "uint", capacity, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "cdecl uint")
 
          ; If the default 256 results is exceeded, run the function again.
          if (count > capacity) {
             result.size := A_PtrSize * count
-            count := DllCall(PixelSearch3, "ptr", result, "uint", count, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "uint")
+            count := DllCall(PixelSearch3, "ptr", result, "uint", count, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "cdecl uint")
          }
 
          ; Check if any matches are found.
@@ -2393,7 +2393,7 @@ class ImagePut {
 
          ; Search for the address of the first matching image.
          byte := DllCall(code, "ptr", this.ptr, "uint", this.width, "uint", this.height
-                           , "ptr", image.ptr, "uint", image.width, "uint", image.height, "ptr")
+                           , "ptr", image.ptr, "uint", image.width, "uint", image.height, "cdecl ptr")
 
          ; Compare the address to the out-of-bounds limit.
          if (byte == this.ptr + this.size)
@@ -2425,14 +2425,14 @@ class ImagePut {
          result := Buffer(A_PtrSize * capacity)
          count := DllCall(code, "ptr", result, "uint", capacity
                            , "ptr", this.ptr, "uint", this.width, "uint", this.height
-                           , "ptr", image.ptr, "uint", image.width, "uint", image.height, "uint")
+                           , "ptr", image.ptr, "uint", image.width, "uint", image.height, "cdecl uint")
 
          ; If more than 256 results, run the function with the true capacity.
          if (count > capacity) {
             result.size := A_PtrSize * count
             count := DllCall(code, "ptr", result, "uint", capacity
                            , "ptr", this.ptr, "uint", this.width, "uint", this.height
-                           , "ptr", image.ptr, "uint", image.width, "uint", image.height, "uint")
+                           , "ptr", image.ptr, "uint", image.width, "uint", image.height, "cdecl uint")
          }
 
          ; Check if any matches are found.
@@ -3190,7 +3190,7 @@ class ImagePut {
       ; Default to lowercase hex values. Or capitalize the string below.
       hex := Buffer(16)
       StrPut("0123456789abcdef", hex, "CP0")
-      DllCall(code, "ptr", hex, "ptr", bin, "uptr", size, "ptr", str, "uptr", length)
+      DllCall(code, "ptr", hex, "ptr", bin, "uptr", size, "ptr", str, "uptr", length, "cdecl")
 
       ; Release binary data and stream.
       DllCall("GlobalUnlock", "ptr", hbin)
@@ -3226,7 +3226,7 @@ class ImagePut {
       ; Default to lowercase hex values. Or capitalize the string below.
       hex := Buffer(16)
       StrPut("0123456789abcdef", hex, "CP0")
-      DllCall(code, "ptr", hex, "ptr", bin, "uptr", size, "ptr", str, "uptr", length)
+      DllCall(code, "ptr", hex, "ptr", bin, "uptr", size, "ptr", str, "uptr", length, "cdecl")
 
       ; Return encoded string from ANSI.
       return StrGet(str, length, "CP0")
