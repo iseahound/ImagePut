@@ -1361,7 +1361,7 @@ class ImagePut {
          throw Error("AsyncInfo status error: " ErrorCode)
       }
 
-      ComCall(8, Object, "ptr*", &ObjectResult:=0) ; GetResults
+      ComCall(8, Object, "ptr*", &ObjectResult:=0, "cdecl") ; GetResults
       ObjRelease(Object)
       Object := ObjectResult
 
