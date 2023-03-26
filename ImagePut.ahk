@@ -325,14 +325,14 @@ class ImagePut {
          ; A "buffer" is an object with ptr and size properties.
          if image.HasOwnProp("ptr") && image.HasOwnProp("size")
             return "buffer"
+         
+         ; A "window" is an object with an hwnd property.
+         if image.HasOwnProp("hwnd")
+            return "window"
 
          ; A "screenshot" is an array of 4 numbers.
          if (image[1] ~= "^-?\d+$" && image[2] ~= "^-?\d+$" && image[3] ~= "^-?\d+$" && image[4] ~= "^-?\d+$")
             return "screenshot"
-
-         ; A "window" is an object with an hwnd property.
-         if image.HasOwnProp("hwnd")
-            return "window"
       }
          ; A non-zero "monitor" number identifies each display uniquely; and 0 refers to the entire virtual screen.
          if (image ~= "^\d+$" && image >= 0 && image <= MonitorGetCount())
