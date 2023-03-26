@@ -1100,16 +1100,13 @@ class ImagePut {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
 
       if !IsObject(image) {
-         image := WinExist(image)
-         DllCall("GetWindowRect", "ptr", image, "ptr", &rect := VarSetCapacity(rect, 16))
-
-         if DllCall("IsIconic", "ptr", image)
-            DllCall("ShowWindow", "ptr", image, "int", 4)
-
-         image := [NumGet(rect, 0, "int")
-            , NumGet(rect, 4, "int")
-            , NumGet(rect, 8, "int") - NumGet(rect, 0, "int")
-            , NumGet(rect, 12, "int") - NumGet(rect, 4, "int")]
+         dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+         hwnd := WinExist(image)
+         VarSetCapacity(size, 16, 0)
+         DllCall("GetClientRect", "ptr", hwnd, "ptr", &size)
+         DllCall("ClientToScreen", "ptr", hwnd, "ptr", &size)
+         DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+         image := [NumGet(size, 0, "int"), NumGet(size, 4, "int"), NumGet(size, 8, "int"), NumGet(size, 12, "int")]
       }
 
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
