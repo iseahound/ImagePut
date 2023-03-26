@@ -1102,11 +1102,11 @@ class ImagePut {
       if !IsObject(image) {
          dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
          hwnd := WinExist(image)
-         VarSetCapacity(size, 16, 0)
-         DllCall("GetClientRect", "ptr", hwnd, "ptr", &size)
-         DllCall("ClientToScreen", "ptr", hwnd, "ptr", &size)
+         VarSetCapacity(rect, 16, 0)
+         DllCall("GetClientRect", "ptr", hwnd, "ptr", &rect)
+         DllCall("ClientToScreen", "ptr", hwnd, "ptr", &rect)
          DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
-         image := [NumGet(size, 0, "int"), NumGet(size, 4, "int"), NumGet(size, 8, "int"), NumGet(size, 12, "int")]
+         image := [NumGet(rect, 0, "int"), NumGet(rect, 4, "int"), NumGet(rect, 8, "int"), NumGet(rect, 12, "int")]
       }
 
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
