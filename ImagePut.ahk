@@ -337,6 +337,8 @@ class ImagePut {
          ; A "screenshot" is an array of 4 numbers.
          if (image[1] ~= "^-?\d+$" && image[2] ~= "^-?\d+$" && image[3] ~= "^-?\d+$" && image[4] ~= "^-?\d+$")
             return "screenshot"
+
+         throw Error("Image type could not be identified.")
       }
          ; A non-zero "monitor" number identifies each display uniquely; and 0 refers to the entire virtual screen.
          if (image ~= "^\d+$" && image >= 0 && image <= MonitorGetCount())
