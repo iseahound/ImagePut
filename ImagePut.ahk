@@ -325,10 +325,14 @@ class ImagePut {
          ; A "buffer" is an object with ptr and size properties.
          if image.HasOwnProp("ptr") && image.HasOwnProp("size")
             return "buffer"
-         
+
          ; A "window" is an object with an hwnd property.
          if image.HasOwnProp("hwnd")
             return "window"
+
+         ; A "window2" is an array with a string that contains the window title.
+         if (image.Has(1) && WinExist(image[1]))
+            return "window2"
 
          ; A "screenshot" is an array of 4 numbers.
          if (image[1] ~= "^-?\d+$" && image[2] ~= "^-?\d+$" && image[3] ~= "^-?\d+$" && image[4] ~= "^-?\d+$")
@@ -446,6 +450,9 @@ class ImagePut {
 
       if (type = "window")
          return this.from_window(image)
+
+      if (type = "window2")
+         return this.from_screenshot(image[1])
 
       if (type = "desktop")
          return this.from_desktop()
@@ -1091,6 +1098,19 @@ class ImagePut {
 
    static from_screenshot(image) {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
+
+      if !IsObject(image) {
+         image := WinExist(image)
+         DllCall("GetWindowRect", "ptr", image, "ptr", rect := Buffer(16))
+
+         if DllCall("IsIconic", "ptr", image)
+            DllCall("ShowWindow", "ptr", image, "int", 1)
+
+         image := [NumGet(rect, 0, "int")
+            , NumGet(rect, 4, "int")
+            , NumGet(rect, 8, "int") - NumGet(rect, 0, "int")
+            , NumGet(rect, 12, "int") - NumGet(rect, 4, "int")]
+      }
 
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
       hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
