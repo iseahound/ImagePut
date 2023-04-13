@@ -1827,7 +1827,7 @@ class ImagePut {
       }
 
       ; Sample the top-left pixel and set all matching pixels to be transparent.
-      DllCall(code, "ptr", Scan0, "ptr", Scan0 + 4*width*height, "uint", NumGet(Scan0+0, "uint"), "cdecl")
+      DllCall(code, "ptr", Scan0, "ptr", Scan0 + 4*width*height, "uint", NumGet(Scan0, "uint"), "cdecl")
 
       ; Write pixels to bitmap.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
@@ -1923,13 +1923,13 @@ class ImagePut {
       ; Requires a valid window handle via OpenClipboard or the next call to OpenClipboard will crash.
       DllCall("EmptyClipboard")
 
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", False, "ptr*", &pSharedStream:=0, "uint")
-      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "uint")
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
-      DllCall("shlwapi\IStream_Copy", "ptr", pStream, "ptr", pSharedStream, "uint", size, "uint")
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", False, "ptr*", &pSharedStream:=0, "hresult")
+      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
+      DllCall("shlwapi\IStream_Copy", "ptr", pStream, "ptr", pSharedStream, "uint", size, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
 
-      DllCall("ole32\GetHGlobalFromStream", "ptr", pSharedStream, "uint*", &hData:=0, "uint")
+      DllCall("ole32\GetHGlobalFromStream", "ptr", pSharedStream, "uint*", &hData:=0, "hresult")
       ObjRelease(pSharedStream)
       DllCall("SetClipboardData", "uint", DllCall("RegisterClipboardFormat", "str", extension, "uint"), "ptr", hData)
       DllCall("CloseClipboard")
