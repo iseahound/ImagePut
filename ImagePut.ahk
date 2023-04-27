@@ -332,10 +332,6 @@ class ImagePut {
          if image.HasOwnProp("hwnd")
             return "window"
 
-         ; A "window2" is an array with a string that contains the window title.
-         if (image.Has(1) && WinExist(image[1]))
-            return "window2"
-
          ; A "screenshot" is an array of 4 numbers.
          if (image[1] ~= "^-?\d+$" && image[2] ~= "^-?\d+$" && image[3] ~= "^-?\d+$" && image[4] ~= "^-?\d+$")
             return "screenshot"
@@ -454,9 +450,6 @@ class ImagePut {
 
       if (type = "window")
          return this.from_window(image)
-
-      if (type = "window2")
-         return this.from_screenshot(image[1])
 
       if (type = "desktop")
          return this.from_desktop()
