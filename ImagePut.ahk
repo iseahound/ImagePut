@@ -706,27 +706,31 @@ class ImagePut {
       crop[4] := (crop[4] < 0) ? height - Abs(crop[4]) - Abs(crop[2]) : crop[4]
 
       ; Round to the nearest integer. Reminder: width and height are distances, not coordinates.
-      safe_x := Round(crop[1])
-      safe_y := Round(crop[2])
-      safe_w := Round(crop[1] + crop[3]) - Round(crop[1])
-      safe_h := Round(crop[2] + crop[4]) - Round(crop[2])
-
-      ; Minimum size is 1 x 1. Ensure that coordinates can never exceed the expected Bitmap area.
-      safe_x := (safe_x >= width) ? 0 : safe_x                                       ; Default x is zero.
-      safe_y := (safe_y >= height) ? 0 : safe_y                                      ; Default y is zero.
-      safe_w := (safe_w <= 0 || safe_x + safe_w > width) ? width - safe_x : safe_w   ; Default w is max width.
-      safe_h := (safe_h <= 0 || safe_y + safe_h > height) ? height - safe_y : safe_h ; Default h is max height.
+      crop[1] := Round(crop[1])
+      crop[2] := Round(crop[2])
+      crop[3] := Round(crop[1] + crop[3]) - Round(crop[1])
+      crop[4] := Round(crop[2] + crop[4]) - Round(crop[2])
 
       ; Avoid cropping if no changes are detected.
-      if (safe_x = 0 && safe_y = 0 && safe_w = width && safe_h = height)
+      if (crop[1] = 0 && crop[2] = 0 && crop[3] == width && crop[4] == height)
+         return pBitmap
+
+      ; Minimum size is 1 x 1. Ensure that coordinates can never exceed the expected Bitmap area.
+      safe_x := (crop[1] >= width)
+      safe_y := (crop[2] >= height)
+      safe_w := (crop[3] <= 0 || crop[1] + crop[3] > width)
+      safe_h := (crop[4] <= 0 || crop[2] + crop[4] > height)
+
+      ; Abort cropping if any of the changes would exceed a safe bound.
+      if (safe_x || safe_y || safe_w || safe_h)
          return pBitmap
 
       ; Clone
       DllCall("gdiplus\GdipCloneBitmapAreaI"
-               ,    "int", safe_x
-               ,    "int", safe_y
-               ,    "int", safe_w
-               ,    "int", safe_h
+               ,    "int", crop[1]
+               ,    "int", crop[2]
+               ,    "int", crop[3]
+               ,    "int", crop[4]
                ,    "int", format
                ,    "ptr", pBitmap
                ,   "ptr*", &pBitmapCrop:=0)
