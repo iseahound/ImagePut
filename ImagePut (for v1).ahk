@@ -1116,12 +1116,12 @@ class ImagePut {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
 
       if !IsObject(image) {
-         dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+         try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
          hwnd := WinExist(image)
          VarSetCapacity(rect, 16, 0)
          DllCall("GetClientRect", "ptr", hwnd, "ptr", &rect)
          DllCall("ClientToScreen", "ptr", hwnd, "ptr", &rect)
-         DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+         try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
          image := [NumGet(rect, 0, "int"), NumGet(rect, 4, "int"), NumGet(rect, 8, "int"), NumGet(rect, 12, "int")]
       }
 
@@ -1178,11 +1178,11 @@ class ImagePut {
       }
 
       ; Get the width and height of the client window.
-      dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", DPI_AWARENESS ? -3 : -5, "ptr")
+      try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", DPI_AWARENESS ? -3 : -5, "ptr")
       DllCall("GetClientRect", "ptr", image, "ptr", &Rect := VarSetCapacity(Rect, 16)) ; sizeof(RECT) = 16
          , width  := NumGet(Rect, 8, "int")
          , height := NumGet(Rect, 12, "int")
-      DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+      try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
       hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
@@ -1225,11 +1225,11 @@ class ImagePut {
          throw Exception("Could not locate hidden window behind desktop.")
 
       ; Get the width and height of the client window.
-      dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+      try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
       DllCall("GetClientRect", "ptr", WorkerW, "ptr", &Rect := VarSetCapacity(Rect, 16)) ; sizeof(RECT) = 16
          , width  := NumGet(Rect, 8, "int")
          , height := NumGet(Rect, 12, "int")
-      DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+      try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
       ; Get device context of spawned window.
       sdc := DllCall("GetDCEx", "ptr", WorkerW, "ptr", 0, "int", 0x403, "ptr") ; LockWindowUpdate | Cache | Window
@@ -1266,10 +1266,10 @@ class ImagePut {
 
    from_wallpaper() {
       ; Get the width and height of all monitors.
-      dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+      try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
       width  := DllCall("GetSystemMetrics", "int", 78, "int")
       height := DllCall("GetSystemMetrics", "int", 79, "int")
-      DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+      try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
       hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
@@ -1501,7 +1501,7 @@ class ImagePut {
    }
 
    from_monitor(image) {
-      dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+      try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
       if (image > 0) {
          SysGet _, Monitor, % image
          x := _Left
@@ -1514,7 +1514,7 @@ class ImagePut {
          w := DllCall("GetSystemMetrics", "int", 78, "int")
          h := DllCall("GetSystemMetrics", "int", 79, "int")
       }
-      DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+      try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
       return this.from_screenshot([x,y,w,h])
    }
 
@@ -2548,10 +2548,10 @@ class ImagePut {
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
 
       ; Get Screen width and height with DPI awareness.
-      dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+      try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
       ScreenWidth := A_ScreenWidth
       ScreenHeight := A_ScreenHeight
-      DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+      try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
       ; If both dimensions exceed the screen boundaries, compare the aspect ratio of the image
       ; to the aspect ratio of the screen to determine the scale factor. Default scale is 1.
@@ -2581,7 +2581,7 @@ class ImagePut {
 
       DllCall("AdjustWindowRectEx", "ptr", &rect, "uint", style, "uint", 0, "uint", styleEx)
 
-      dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+      try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
       hwnd := DllCall("CreateWindowEx"
                ,   "uint", styleEx
                ,    "str", this.WindowClass()       ; lpClassName
@@ -2596,7 +2596,7 @@ class ImagePut {
                ,    "ptr", 0                        ; hInstance
                ,    "ptr", 0                        ; lpParam
                ,    "ptr")
-      DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+      try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
       ; Tests have shown that changing the system default colors has no effect on F0F0F0.
       ; Must call SetWindowLong with WS_EX_LAYERED immediately before SetLayeredWindowAttributes.
@@ -2638,10 +2638,10 @@ class ImagePut {
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
 
       ; Get Screen width and height with DPI awareness.
-      dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+      try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
       ScreenWidth := A_ScreenWidth
       ScreenHeight := A_ScreenHeight
-      DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+      try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
       ; If both dimensions exceed the screen boundaries, compare the aspect ratio of the image
       ; to the aspect ratio of the screen to determine the scale factor. Default scale is 1.
@@ -2721,7 +2721,7 @@ class ImagePut {
          DllCall("gdiplus\GdipDeleteGraphics", "ptr", pGraphics)
       }
 
-      dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+      try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
       hwnd := DllCall("CreateWindowEx"
                ,   "uint", styleEx | WS_EX_LAYERED  ; dwExStyle
                ,    "str", this.WindowClass()       ; lpClassName
@@ -2736,7 +2736,7 @@ class ImagePut {
                ,    "ptr", 0                        ; hInstance
                ,    "ptr", 0                        ; lpParam
                ,    "ptr")
-      DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+      try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
       ; Draw the contents of the device context onto the layered window.
       DllCall("UpdateLayeredWindow"
