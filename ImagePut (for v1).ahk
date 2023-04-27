@@ -186,12 +186,12 @@ class ImagePut {
          type := this.ImageType(image)
 
       crop := keywords.crop
-      scale := keywords.scale
+      scale := keywords.scale, upscale := keywords.upscale, downscale := keywords.downscale
       decode := (keywords.decode != "") ? keywords.decode : this.decode
       validate := (keywords.validate != "") ? keywords.validate : this.validate
 
       ; #1 - Stream intermediate.
-      if not decode and not crop and not scale
+      if not decode and not crop and not (scale || upscale || downscale)
          and (type ~= "^(?i:clipboard_png|pdf|url|file|stream|RandomAccessStream|hex|base64)$")
          and (cotype ~= "^(?i:file|stream|RandomAccessStream|hex|base64|uri|explorer|safeArray|formData)$")
          and (p[1] == "") { ; For now, disallow any specification of extensions.
@@ -221,6 +221,8 @@ class ImagePut {
          (validate) && DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmap)
          (crop) && this.BitmapCrop(pBitmap, crop)
          (scale) && this.BitmapScale(pBitmap, scale)
+         (upscale) && this.BitmapScale(pBitmap, upscale, 1)
+         (downscale) && this.BitmapScale(pBitmap, downscale, -1)
          coimage := this.BitmapToCoimage(cotype, pBitmap, p*)
 
          ; Clean up the pBitmap copy. Export raw pointers if requested.
@@ -740,7 +742,7 @@ class ImagePut {
       return pBitmap := pBitmapCrop
    }
 
-   BitmapScale(ByRef pBitmap, scale) {
+   BitmapScale(ByRef pBitmap, scale, direction := 0) {
       if not (IsObject(scale) && ((scale[1] ~= "^\d+$") || (scale[2] ~= "^\d+$")) || (scale ~= "^\d+(\.\d+)?$"))
          throw Exception("Invalid scale.")
 
@@ -761,6 +763,14 @@ class ImagePut {
       if (safe_w = width && safe_h = height)
          return pBitmap
 
+      ; Force upscaling.
+      if (direction > 0 and (safe_w < width && safe_h < height))
+         return pBitmap
+
+      ; Force downscaling.
+      if (direction < 0 and (safe_w > width && safe_h > height))
+         return pBitmap
+      
       ; Create a new bitmap and get the graphics context.
       DllCall("gdiplus\GdipCreateBitmapFromScan0"
                , "int", safe_w, "int", safe_h, "int", 0, "int", format, "ptr", 0, "ptr*", pBitmapScale:=0)
