@@ -1985,7 +1985,7 @@ class ImagePut {
       return new ImagePut.BitmapBuffer(ptr, size, width, height, free)
    }
 
-   read_sharedbuffer(image) {
+   open_sharedbuffer(image) {
       hMap := DllCall("OpenFileMapping", "uint", 0x2, "int", 0, "str", image, "ptr")
       pMap := DllCall("MapViewOfFile", "ptr", hMap, "uint", 0x2, "uint", 0, "uint", 0, "uptr", 0, "ptr")
 
