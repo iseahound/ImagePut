@@ -1979,38 +1979,43 @@ class ImagePut {
       hMap := DllCall("OpenFileMapping", "uint", 0x2, "int", 0, "str", image, "ptr")
       pMap := DllCall("MapViewOfFile", "ptr", hMap, "uint", 0x2, "uint", 0, "uint", 0, "uptr", 0, "ptr")
 
-      width := RegExReplace(image, ".*?(\d+)x\d+", "$1")
-      height := RegExReplace(image, ".*?\d+x(\d+)", "$1")
+      width := NumGet(pMap + 0, "uint")
+      height := NumGet(pMap + 4, "uint")
       size := 4 * width * height
+      ptr := pMap + 8
 
       free := DllCall.bind("UnmapViewOfFile", "ptr", pMap)
       ;   DllCall("UnmapViewOfFile", "ptr", pMap),
       ;   DllCall("CloseHandle", "ptr", hMap)
       ;)
 
-      buf := new ImagePut.BitmapBuffer(pMap, size, width, height, free)
+      buf := new ImagePut.BitmapBuffer(ptr, size, width, height, free)
       buf.name := image
       return buf
    }
 
-   to_sharedbuffer(pBitmap) {
+   to_sharedbuffer(pBitmap, name := "Alice") {
       ; Get Bitmap width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
 
       ; Allocate shared memory.
-      name := "Alice" width "x" height
       size := 4 * width * height
       hMap := DllCall("CreateFileMapping", "ptr", -1, "ptr", 0, "uint", 0x4, "uint", 0, "uint", size, "str", name, "ptr")
       pMap := DllCall("MapViewOfFile", "ptr", hMap, "uint", 0x2, "uint", 0, "uint", 0, "uptr", 0, "ptr")
 
-      ; Create a pixel buffer.
+      ; Store width and height in the first 8 bytes.
+      NumPut( width, pMap, 0, "uint")
+      NumPut(height, pMap, 4, "uint")
+      ptr := pMap + 8
+
+      ; Target a pixel buffer.
       VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
          NumPut(  width, Rect,  8,   "uint") ; Width
          NumPut( height, Rect, 12,   "uint") ; Height
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
          NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
-         NumPut(      pMap, BitmapData, 16,    "ptr") ; Scan0
+         NumPut(       ptr, BitmapData, 16,    "ptr") ; Scan0
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
                ,    "ptr", &Rect
@@ -2027,7 +2032,7 @@ class ImagePut {
       ;   DllCall("UnmapViewOfFile", "ptr", pMap),
       ;)
 
-      buf := new ImagePut.BitmapBuffer(pMap, size, width, height, free)
+      buf := new ImagePut.BitmapBuffer(ptr, size, width, height, free)
       buf.name := name
       return buf
    }
