@@ -105,6 +105,12 @@ ImagePutScreenshot(image, screenshot := "", alpha := "") {
    return ImagePut("screenshot", image, screenshot, alpha)
 }
 
+; Puts the image into a file mapping and returns a buffer object sharable across processes.
+;   name       -  Global Name             |  string   ->   "Alice"
+ImagePutSharedBuffer(image, name := "") {
+   return ImagePut("SharedBuffer", image, name)
+}
+
 ; Puts the image into a file format and returns a pointer to a stream.
 ;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
@@ -513,6 +519,10 @@ class ImagePut {
       ; BitmapToCoimage("buffer", pBitmap)
       if (cotype = "buffer")
          return this.to_buffer(pBitmap)
+
+      ; BitmapToCoimage("sharedbuffer", pBitmap, p1)
+      if (cotype = "sharedbuffer")
+         return this.to_sharedbuffer(pBitmap, p1)
 
       ; BitmapToCoimage("screenshot", pBitmap, screenshot, alpha)
       if (cotype = "screenshot")
