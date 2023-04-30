@@ -1975,6 +1975,63 @@ class ImagePut {
       return ImagePut.BitmapBuffer(ptr, size, width, height, free)
    }
 
+   static read_sharedbuffer(image) {
+      hMap := DllCall("OpenFileMapping", "uint", 0x2, "int", 0, "str", image, "ptr")
+      pMap := DllCall("MapViewOfFile", "ptr", hMap, "uint", 0x2, "uint", 0, "uint", 0, "uptr", 0, "ptr")
+
+      width := RegExReplace(image, ".*?(\d+)x\d+", "$1")
+      height := RegExReplace(image, ".*?\d+x(\d+)", "$1")
+      size := 4 * width * height
+
+      free := () => (
+         DllCall("UnmapViewOfFile", "ptr", pMap),
+         DllCall("CloseHandle", "ptr", hMap)
+      )
+
+      buf := ImagePut.BitmapBuffer(pMap, size, width, height, free)
+      buf.name := image
+      return buf
+   }
+
+   static to_sharedbuffer(pBitmap) {
+      ; Get Bitmap width and height.
+      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
+      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
+
+      ; Allocate shared memory.
+      name := "Alice" width "x" height
+      size := 4 * width * height
+      hMap := DllCall("CreateFileMapping", "ptr", -1, "ptr", 0, "uint", 0x4, "uint", 0, "uint", size, "str", name, "ptr")
+      pMap := DllCall("MapViewOfFile", "ptr", hMap, "uint", 0x2, "uint", 0, "uint", 0, "uptr", 0, "ptr")
+
+      ; Target a pixel buffer.
+      Rect := Buffer(16, 0)                  ; sizeof(Rect) = 16
+         NumPut(  "uint",   width, Rect,  8) ; Width
+         NumPut(  "uint",  height, Rect, 12) ; Height
+      BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
+         NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
+         NumPut(   "ptr",       pMap, BitmapData, 16) ; Scan0
+      DllCall("gdiplus\GdipBitmapLockBits"
+               ,    "ptr", pBitmap
+               ,    "ptr", Rect
+               ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
+               ,    "int", 0x26200A     ; Format32bppArgb
+               ,    "ptr", BitmapData)
+
+      ; Write pixels to buffer.
+      DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
+
+      ; Free the pixels later.
+      free := () => (
+         DllCall("UnmapViewOfFile", "ptr", pMap),
+         DllCall("CloseHandle", "ptr", hMap)
+      )
+
+      buf := ImagePut.BitmapBuffer(pMap, size, width, height, free)
+      buf.name := name
+      return buf
+   }
+
    class BitmapBuffer {
 
       __New(ptr, size, width, height, free:="") {
