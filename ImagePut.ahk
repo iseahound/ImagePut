@@ -3787,7 +3787,7 @@ class ImagePut {
                throw Error("Bitmap is out of scope. `n`nIf you wish to handle raw pointers to GDI+ bitmaps, add the line"
                   . "`n`n`t`t" this.prototype.__class ".gdiplusStartup()"
                   . "`n`nto the top of your script. If using Gdip_All.ahk use pToken := Gdip_Startup()."
-                  . "`nAlternatively, use pic := ImagePutBuffer() and pic.pBitmap instead."
+                  . "`nAlternatively, use pic := ImagePutBuffer(image) and pic.pBitmap instead."
                   . "`nYou can copy this message by pressing Ctrl + C.", -4)
          }
       }
