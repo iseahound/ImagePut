@@ -2275,12 +2275,18 @@ class ImagePut {
          return filepath
       }
 
-      Base64Put(b64) {
+      Base64Code(b64) {
+         static codes := {}
+
+         if codes.haskey(b64)
+            return codes[b64]
+
          s64 := StrLen(RTrim(b64, "=")) * 3 // 4
          code := DllCall("GlobalAlloc", "uint", 0, "uptr", s64, "ptr")
          DllCall("crypt32\CryptStringToBinary", "str", b64, "uint", 0, "uint", 0x1, "ptr", code, "uint*", s64, "ptr", 0, "ptr", 0)
          DllCall("VirtualProtect", "ptr", code, "ptr", s64, "uint", 0x40, "uint*", op:=0)
-         return code
+
+         return codes[b64] := code
       }
 
       CPUID() {
@@ -2325,7 +2331,7 @@ class ImagePut {
       ColorKey(key := "sentinel", value := 0x00000000) {
          ; C source code - https://godbolt.org/z/eaG9fax9v
          static code := 0
-         (code) || code := this.Base64Put((A_PtrSize == 4)
+         (code) || code := this.Base64Code((A_PtrSize == 4)
             ? "VYnli0UIi1UQi00UO0UMcws5EHUCiQiDwATr8F3D"
             : "SDnRcw5EOQF1A0SJCUiDwQTr7cM=")
 
@@ -2339,7 +2345,7 @@ class ImagePut {
       SetAlpha(alpha := 0xFF) {
          ; C source code - https://godbolt.org/z/aWf73jTqc
          static code := 0
-         (code) || code := this.Base64Put((A_PtrSize == 4)
+         (code) || code := this.Base64Code((A_PtrSize == 4)
             ? "VYnli0UIilUQO0UMcwiIUAODwATr813D"
             : "SDnRcwpEiEEDSIPBBOvxww==")
 
@@ -2350,7 +2356,7 @@ class ImagePut {
       TransColor(color := "sentinel", alpha := 0x00) {
          ; C source code - https://godbolt.org/z/z3a8WcM5M
          static code := 0
-         (code) || code := this.Base64Put((A_PtrSize == 4)
+         (code) || code := this.Base64Code((A_PtrSize == 4)
             ? "VYnli0UIilUUO0UMcxWLTRAzCIHh////AHUDiFADg8AE6+Zdww=="
             : "SDnRcxaLAUQxwKn///8AdQREiEkDSIPBBOvlww==")
 
@@ -2364,13 +2370,13 @@ class ImagePut {
       PixelSearch(color, variation := 0) {
          ; C source code - https://godbolt.org/z/o7EPo8xPr
          static PixelSearch := 0
-         (PixelSearch) || PixelSearch := this.Base64Put((A_PtrSize == 4)
+         (PixelSearch) || PixelSearch := this.Base64Code((A_PtrSize == 4)
             ? "VYnli1UMi00Qi0UIOdBzCTkIdAeDwATr84nQXcM="
             : "SInISDnQcwtEOQB0CUiDwATr8EiJ0MM=")
 
          ; C source code - https://godbolt.org/z/4K38sq8hY
          static PixelSearch2 := 0
-         (PixelSearch2) || PixelSearch2 := this.Base64Put((A_PtrSize == 4)
+         (PixelSearch2) || PixelSearch2 := this.Base64Code((A_PtrSize == 4)
             ? "VYnlVlNRikUQilUcik0gil0ki3UIiEX3ikUUiEX2ikUYiEX1O3UMcyiKRgI4RfdyGzpF9nIWikYBOEX1cg440HIKigY4wXIEONhzBYPGBOvTWonwW15dww=="
             : "VlNEilQkOESKXCRAilwkSECKdCRQSInISDnQcyuKSAJBOMhyHUQ4yXIYikgBQTjKchBEONlyC4oIOMtyBUA48XMGSIPABOvQW17D")
 
@@ -2441,7 +2447,7 @@ class ImagePut {
       PixelSearchAll(color) {
          ; C source code - https://godbolt.org/z/zPY1qMvYe
          static PixelSearch3 := 0
-         (PixelSearch3) || PixelSearch3 := this.Base64Put((A_PtrSize == 4)
+         (PixelSearch3) || PixelSearch3 := this.Base64Code((A_PtrSize == 4)
             ? "VTHAieVTi1UQi00UOcpzGItdGDkadQw7RQxzBotdCIkUg0CDwgTr5Ftdww=="
             : "McBEi1QkKE05yHMYRTkQdQ050HMHQYnDTokE2f/ASYPABOvjww==")
 
@@ -2477,7 +2483,7 @@ class ImagePut {
       ImageSearch(image) {
          ; C source code - https://godbolt.org/z/qPodGdP1d
          static code := 0
-         (code) || code := this.Base64Put((A_PtrSize == 4)
+         (code) || code := this.Base64Code((A_PtrSize == 4)
             ? "VYnlV1ZTg+wUi0UMi1UYi00IjTyFAAAAAItFECtFHA+vxwNFCIlF6ItFDCnQiUXkjQSVAAAAAIlF7ItF6DnBc2eLRRSLADkBdAmL"
             . "RRSAeAMAdVCJyCtFCDHSwfgC93UMOVXkfD4x0otFFInLiVXwi3XwO3UcdDyLVeyJ3gHCiVXgi1XgOdBzFIB4AwB0BosWORB1D4PA"
             . "BIPGBOvl/0XwAfvrzIPBBOuSi0UQD6/HA0UIicGDxBSJyFteX13D"
@@ -2505,7 +2511,7 @@ class ImagePut {
       ImageSearchAll(image) {
          ; C source code - https://godbolt.org/z/qPodGdP1d
          static code := 0
-         (code) || code := this.Base64Put((A_PtrSize == 4)
+         (code) || code := this.Base64Code((A_PtrSize == 4)
             ? "VYnlV1ZTg+wUi0UMi1UYi00IjTyFAAAAAItFECtFHA+vxwNFCIlF6ItFDCnQiUXkjQSVAAAAAIlF7ItF6DnBc2eLRRSLADkBdAmL"
             . "RRSAeAMAdVCJyCtFCDHSwfgC93UMOVXkfD4x0otFFInLiVXwi3XwO3UcdDyLVeyJ3gHCiVXgi1XgOdBzFIB4AwB0BosWORB1D4PA"
             . "BIPGBOvl/0XwAfvrzIPBBOuSi0UQD6/HA0UIicGDxBSJyFteX13D"
