@@ -1126,7 +1126,7 @@ class ImagePut {
       }
 
 
-      
+
 
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
       hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
@@ -2280,7 +2280,7 @@ class ImagePut {
 
          if codes.has(b64)
             return codes[b64]
-            
+
          s64 := StrLen(RTrim(b64, "=")) * 3 // 4
          code := DllCall("GlobalAlloc", "uint", 0, "uptr", s64, "ptr")
          DllCall("crypt32\CryptStringToBinary", "str", b64, "uint", 0, "uint", 0x1, "ptr", code, "uint*", s64, "ptr", 0, "ptr", 0)
@@ -2365,32 +2365,76 @@ class ImagePut {
       }
 
       PixelSearch(color, variation := 0) {
-         ; C source code - https://godbolt.org/z/o7EPo8xPr
-         PixelSearch := this.Base64Code((A_PtrSize == 4)
-            ? "VYnli1UMi00Qi0UIOdBzCTkIdAeDwATr84nQXcM="
-            : "SInISDnQcwtEOQB0CUiDwATr8EiJ0MM=")
 
-         ; C source code - https://godbolt.org/z/4K38sq8hY
-         PixelSearch2 := this.Base64Code((A_PtrSize == 4)
+         ; Option 1: PixelSearch, single color with no variation.
+         ; Option 2: PixelSearch, single color with single variation.
+         ; Option 3: PixelSearch, single color with multiple variation.
+         ; Option 4: PixelSearch, range of colors.
+         ; Option 5: PixelSearch, multiple colors with no variation.
+         ; Option 6: PixelSearch, multiple colors with single variation.
+         ; Option 7: PixelSearch, multiple colors with multiple variation.
+
+         if not IsObject(color) {
+
+            ; Lift color to 32-bits if first 8 bits are zero.
+            (color >> 24) || color |= 0xFF000000
+
+            if not IsObject(variation)
+               if (variation == 0)
+                  option := 1
+               else
+                  option := 2
+            else if (variation.length == 3)
+                  option := 3
+            else if (variation.length == 6)
+                  option := 4
+            else throw Error("Invalid variation parameter.")
+         }
+         else
+            if not IsObject(variation)
+               if (variation == 0)
+                  option := 5
+               else
+                  option := 6
+            else if (variation.length == 3)
+                  option := 7
+            else throw Error("Invalid variation parameter.")
+
+         ; ---------------------------- Machine code generated with MCode4GCC using gcc 13.2.0 ----------------------------
+
+         ; C source code - https://godbolt.org/z/n8894d9oG
+         pixelsearch := this.Base64Code((A_PtrSize == 4)
+            ? "VYnli1UMi00Qi0UIOdBzCTkIdAWDwATr813D"
+            : "SInISDnQcwtEOQB0BkiDwATr8MM=")
+
+         ; C source code - https://godbolt.org/z/19TM9Gzo5
+         pixelsearch2 := this.Base64Code((A_PtrSize == 4)
             ? "VYnlVlNRikUQilUcik0gil0ki3UIiEX3ikUUiEX2ikUYiEX1O3UMcyiKRgI4RfdyGzpF9nIWikYBOEX1cg440HIKigY4wXIEONhzBYPGBOvTWonwW15dww=="
             : "VlNEilQkOESKXCRAilwkSECKdCRQSInISDnQcyuKSAJBOMhyHUQ4yXIYikgBQTjKchBEONlyC4oIOMtyBUA48XMGSIPABOvQW17D")
 
-         ; Lift color to 32-bits if first 8 bits are zero.
-         (color >> 24) || color |= 0xFF000000
+         ; C source code - https://godbolt.org/z/4hEhb7vG8
+         pixelsearch3 := this.Base64Code((A_PtrSize == 4)
+            ? "VYnlU4tNDItFCDnIcxkx0jtVFHQNi10QixyTORh0CELr7oPABOvjW13D"
+            : "SInISDnQcxwxyUQ5yXMPSP/BRYtUiPxEORB17usGSIPABOvfww==")
 
-         ; PixelSearch, single color with no variation
-         if !IsObject(variation) && (variation == 0)
-            byte := DllCall(PixelSearch, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "cdecl ptr")
+         ; C source code - https://godbolt.org/z/oEGGeedac
+         pixelsearch4 := this.Base64Code((A_PtrSize == 4)
+            ? "VYnlV1ZTUYt1EIt9FItVCDtVDHNFikICiloBiEXzigKIRfIxwDtFGHQrik3zOEyGAnIfOkyHAnIZOFyGAXITOlyHAXINik3yOAyGcgU6DIdzCEDr0IPCBOu2idBaW15fXcM="
+            : "U0iJyEg50HNFRIpQAkSKWAExyYoYO0wkMHMtRThUiAJyIUU6VIkCchpFOFyIAXITRTpciQFyDEE4HIhyBkE6HIlzC0j/wevNSIPABOu2W8M=")
 
-         ; PixelSearch, single color with single variation
-         else if !IsObject(variation) && (variation != 0) {
+         ; ----------------------------------------------------------------------------------------------------------------
+
+         if (option == 1)
+            ; When doing pointer arithmetic, *Scan0 + 1 is actually adding 4 bytes.
+            byte := DllCall(pixelsearch, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "cdecl ptr")
+
+         if (option == 2) {
             r := ((color & 0xFF0000) >> 16)
             g := ((color & 0xFF00) >> 8)
             b := ((color & 0xFF))
             v := abs(variation)
 
-            ; When doing pointer arithmetic, *Scan0 + 1 is actually adding 4 bytes.
-            byte := DllCall(PixelSearch2, "ptr", this.ptr, "ptr", this.ptr + this.size
+            byte := DllCall(pixelsearch2, "ptr", this.ptr, "ptr", this.ptr + this.size
                      , "uchar", min(r+v, 255)
                      , "uchar", max(r-v, 0)
                      , "uchar", min(g+v, 255)
@@ -2400,25 +2444,26 @@ class ImagePut {
                      , "cdecl ptr")
          }
 
-         ; PixelSearch, single color with multiple variation.
-         else if IsObject(variation) && (variation.length == 3) {
+         if (option == 3) {
             r := ((color & 0xFF0000) >> 16)
             g := ((color & 0xFF00) >> 8)
             b := ((color & 0xFF))
+            vr := abs(variation[1])
+            vg := abs(variation[2])
+            vb := abs(variation[3])
 
-            byte := DllCall(PixelSearch2, "ptr", this.ptr, "ptr", this.ptr + this.size
-                     , "uchar", min(r + variation[1], 255)
-                     , "uchar", max(r - variation[1], 0)
-                     , "uchar", min(g + variation[2], 255)
-                     , "uchar", max(g - variation[2], 0)
-                     , "uchar", min(b + variation[3], 255)
-                     , "uchar", max(b - variation[3], 0)
+            byte := DllCall(pixelsearch2, "ptr", this.ptr, "ptr", this.ptr + this.size
+                     , "uchar", min(r + vr, 255)
+                     , "uchar", max(r - vr, 0)
+                     , "uchar", min(g + vg, 255)
+                     , "uchar", max(g - vg, 0)
+                     , "uchar", min(b + vb, 255)
+                     , "uchar", max(b - vb, 0)
                      , "cdecl ptr")
          }
 
-         ; PixelSearch, range of colors.
-         else if IsObject(variation) && (variation.length == 6) {
-            byte := DllCall(PixelSearch2, "ptr", this.ptr, "ptr", this.ptr + this.size
+         if (option == 4)
+            byte := DllCall(pixelsearch2, "ptr", this.ptr, "ptr", this.ptr + this.size
                      , "uchar", min(max(variation[1], variation[2]), 255)
                      , "uchar", max(min(variation[1], variation[2]), 0)
                      , "uchar", min(max(variation[3], variation[4]), 255)
@@ -2426,9 +2471,71 @@ class ImagePut {
                      , "uchar", min(max(variation[5], variation[6]), 255)
                      , "uchar", max(min(variation[5], variation[6]), 0)
                      , "cdecl ptr")
+
+         if (option == 5) {
+            ; Create a struct of unsigned integers.
+            colors := Buffer(4*color.length)
+
+            ; Fill the struct by iterating through the input array.
+            for c in color {
+                (c >> 24) || c |= 0xFF000000             ; Lift colors to 32-bit ARGB.
+                NumPut("uint", c, colors, 4*(A_Index-1)) ; Place the unsigned int at each offset.
+            }
+
+            byte := DllCall(pixelsearch3, "ptr", this.ptr, "ptr", this.ptr + this.size, "ptr", colors, "uint", color.length, "cdecl ptr")
          }
 
-         else throw Error("Invalid variation parameter.")
+         ; Options 6 & 7 - Creates a high and low struct where each pair is the min and max range.
+
+         if (option == 6) {
+            high := Buffer(4*color.length)
+            low := Buffer(4*color.length)
+
+            for c in color {
+               A_Offset := A_Index - 1
+
+               r := ((c & 0xFF0000) >> 16)
+               g := ((c & 0xFF00) >> 8)
+               b := ((c & 0xFF))
+               v := abs(variation)
+
+               NumPut("uchar", min(r+v, 255), high, 4*A_Offset + 2)
+               NumPut("uchar", min(g+v, 255), high, 4*A_Offset + 1)
+               NumPut("uchar", min(b+v, 255), high, 4*A_Offset + 0)
+
+               NumPut("uchar", max(r-v, 0), low, 4*A_Offset + 2)
+               NumPut("uchar", max(g-v, 0), low, 4*A_Offset + 1)
+               NumPut("uchar", max(b-v, 0), low, 4*A_Offset + 0)
+            }
+
+            byte := DllCall(pixelsearch4, "ptr", this.ptr, "ptr", this.ptr + this.size, "ptr", high, "ptr", low, "uint", color.length, "cdecl ptr")
+         }
+
+         if (option == 7) {
+            high := Buffer(4*color.length)
+            low := Buffer(4*color.length)
+
+            for c in color {
+               A_Offset := A_Index - 1
+
+               r := ((c & 0xFF0000) >> 16)
+               g := ((c & 0xFF00) >> 8)
+               b := ((c & 0xFF))
+               vr := abs(variation[1])
+               vg := abs(variation[2])
+               vb := abs(variation[3])
+
+               NumPut("uchar", min(r + vr, 255), high, 4*A_Offset + 2)
+               NumPut("uchar", min(g + vg, 255), high, 4*A_Offset + 1)
+               NumPut("uchar", min(b + vb, 255), high, 4*A_Offset + 0)
+
+               NumPut("uchar", max(r - vr, 0), low, 4*A_Offset + 2)
+               NumPut("uchar", max(g - vg, 0), low, 4*A_Offset + 1)
+               NumPut("uchar", max(b - vb, 0), low, 4*A_Offset + 0)
+            }
+
+            byte := DllCall(pixelsearch4, "ptr", this.ptr, "ptr", this.ptr + this.size, "ptr", high, "ptr", low, "uint", color.length, "cdecl ptr")
+         }
 
          ; Compare the address to the out-of-bounds limit.
          if (byte == this.ptr + this.size)
@@ -2668,7 +2775,7 @@ class ImagePut {
 
       ; Set itself as the *internal* top level window.
       DllCall("SetWindowLong" (A_PtrSize=8 ? "Ptr":""), "ptr", hwnd, "int", 0, "ptr", hwnd)
-      
+
       ; A layered child window is only available on Windows 8+.
       hwnd_child := this.show(pBitmap, title, [0, 0, w, h], WS_CHILD | WS_VISIBLE, WS_EX_LAYERED, hwnd)
 
@@ -2952,7 +3059,7 @@ class ImagePut {
             ; Exit loop.
             if !pBitmap
                return
-            
+
             ; Get next frame.
             frames := NumGet(Item + 4, "uint") // 4                 ; Max frames
             frame := wParam + 1                                     ; Next frame
