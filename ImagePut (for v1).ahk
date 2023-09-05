@@ -2400,7 +2400,7 @@ class ImagePut {
                   option := 7
             else throw Exception("Invalid variation parameter.")
 
-         ; ----------------------- Machine code generated with MCode4GCC using gcc 13.2.0 -----------------------
+         ; ---------------------------- Machine code generated with MCode4GCC using gcc 13.2.0 ----------------------------
 
          ; C source code - https://godbolt.org/z/n8894d9oG
          pixelsearch := this.Base64Code((A_PtrSize == 4)
@@ -2422,7 +2422,7 @@ class ImagePut {
             ? "VYnlV1ZTUYt1EIt9FItVCDtVDHNFikICiloBiEXzigKIRfIxwDtFGHQrik3zOEyGAnIfOkyHAnIZOFyGAXITOlyHAXINik3yOAyGcgU6DIdzCEDr0IPCBOu2idBaW15fXcM="
             : "U0iJyEg50HNFRIpQAkSKWAExyYoYO0wkMHMtRThUiAJyIUU6VIkCchpFOFyIAXITRTpciQFyDEE4HIhyBkE6HIlzC0j/wevNSIPABOu2W8M=")
 
-         ; ------------------------------------------------------------------------------------------------------
+         ; ----------------------------------------------------------------------------------------------------------------
 
          if (option == 1)
             ; When doing pointer arithmetic, *Scan0 + 1 is actually adding 4 bytes.
