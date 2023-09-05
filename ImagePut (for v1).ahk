@@ -2378,11 +2378,11 @@ class ImagePut {
          ; Lift color to 32-bits if first 8 bits are zero.
          (color >> 24) || color |= 0xFF000000
 
-         ; PixelSearch, single color, no variation
+         ; PixelSearch, single color with no variation
          if !IsObject(variation) && (variation == 0)
             byte := DllCall(PixelSearch, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "cdecl ptr")
 
-         ; PixelSearch, single color, and variation
+         ; PixelSearch, single color with single variation
          else if !IsObject(variation) && (variation != 0) {
             r := ((color & 0xFF0000) >> 16)
             g := ((color & 0xFF00) >> 8)
@@ -2400,7 +2400,7 @@ class ImagePut {
                      , "cdecl ptr")
          }
 
-         ; PixelSearch, range of colors, and variation.
+         ; PixelSearch, single color with multiple variation.
          else if IsObject(variation) && (variation.length() == 3) {
             r := ((color & 0xFF0000) >> 16)
             g := ((color & 0xFF00) >> 8)
@@ -2416,7 +2416,7 @@ class ImagePut {
                      , "cdecl ptr")
          }
 
-         ; PixelSearch, range of colors, and variation.
+         ; PixelSearch, range of colors.
          else if IsObject(variation) && (variation.length() == 6) {
             byte := DllCall(PixelSearch2, "ptr", this.ptr, "ptr", this.ptr + this.size
                      , "uchar", min(max(variation[1], variation[2]), 255)
