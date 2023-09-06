@@ -1,4 +1,4 @@
-unsigned int imagesearchall(unsigned int ** result, unsigned int capacity, unsigned int * start, unsigned int width, unsigned int height, unsigned int * s, unsigned int w, unsigned int h) {
+unsigned int imagesearchall1(unsigned int ** result, unsigned int capacity, unsigned int * start, unsigned int width, unsigned int height, unsigned int * s, unsigned int w, unsigned int h) {
     // width, height, start, current, end refer to the haystack (main image)
     // x, y, w, h, s, c, e refer to the needle (search image)
     unsigned int count = 0;
