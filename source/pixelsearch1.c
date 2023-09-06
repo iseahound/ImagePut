@@ -1,4 +1,4 @@
-unsigned int * pixelsearch(unsigned int * start, unsigned int * end, unsigned int color) {
+unsigned int * pixelsearch1(unsigned int * start, unsigned int * end, unsigned int color) {
     while (start < end) {
         if (*start == color)
             return start;

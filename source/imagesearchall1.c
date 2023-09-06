@@ -1,7 +1,7 @@
-unsigned int * imagesearch1(unsigned int * start, unsigned int width, unsigned int height, unsigned int * s, unsigned int w, unsigned int h) {
+unsigned int imagesearchall1(unsigned int ** result, unsigned int capacity, unsigned int * start, unsigned int width, unsigned int height, unsigned int * s, unsigned int w, unsigned int h) {
     // width, height, start, current, end refer to the haystack (main image)
     // x, y, w, h, s, c, e refer to the needle (search image)
-
+    unsigned int count = 0;
     unsigned int * current = start;
     unsigned int * end = start + width * (height - h); // Remaining area must be greater than search height
 
@@ -42,10 +42,14 @@ unsigned int * imagesearch1(unsigned int * start, unsigned int width, unsigned i
                     p++; // Will be reset each run
                 }
             }
-            return current;
+                
+            // Found matching image!
+            if (count < capacity)
+                *(result + count) = current;
+            count++;
         }
         next:
         current++;
     }
-    return start + width * height; // real end
+    return count;
 }
