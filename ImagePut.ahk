@@ -2402,10 +2402,10 @@ class ImagePut {
 
          ; ----------------------- Machine code generated with MCode4GCC using gcc 13.2.0 -----------------------
 
-         ; C source code - https://godbolt.org/z/n8894d9oG
-         pixelsearch := this.Base64Code((A_PtrSize == 4)
-            ? "VYnli1UMi00Qi0UIOdBzCTkIdAWDwATr813D"
-            : "SInISDnQcwtEOQB0BkiDwATr8MM=")
+         ; C source code - https://godbolt.org/z/6jPnc6b5s
+         pixelsearch1 := this.Base64Code((A_PtrSize == 4)
+            ? "VYnlVotNEItVDFOLRQhmD27RjVr0Zg9wygA52HMbDxAAZg92wWYP1/CF9nUMg8AQ6+g5CHQHg8AEOdBy9VteXcM="
+            : "ZkEPbtBIichIjUr0Zg9wygBIOchzIA8QAGYPdsFmRA/XyEWFyXUPSIPAEOvkRDkAdAlIg8AESDnQcvLD")
 
          ; C source code - https://godbolt.org/z/19TM9Gzo5
          pixelsearch2 := this.Base64Code((A_PtrSize == 4)
@@ -2426,7 +2426,7 @@ class ImagePut {
 
          if (option == 1)
             ; When doing pointer arithmetic, *Scan0 + 1 is actually adding 4 bytes.
-            byte := DllCall(pixelsearch, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "cdecl ptr")
+            byte := DllCall(pixelsearch1, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "cdecl ptr")
 
          if (option == 2) {
             r := ((color & 0xFF0000) >> 16)
