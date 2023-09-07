@@ -2407,14 +2407,16 @@ class ImagePut {
             ? "VYnlVotNEItVDFOLRQhmD27RjVr0Zg9wygA52HMbDxAAZg92wWYP1/CF9nUMg8AQ6+g5CHQHg8AEOdBy9VteXcM="
             : "ZkEPbtBIichIjUr0Zg9wygBIOchzIA8QAGYPdsFmRA/XyEWFyXUPSIPAEOvkRDkAdAlIg8AESDnQcvLD")
 
-         ; C source code - https://godbolt.org/z/YcW7bE6YK
+         ; C source code - https://godbolt.org/z/7fv3P6KTb
          pixelsearch2 := this.Base64Code((A_PtrSize == 4)
-            ? "VQ9X0onlV1ZTg+Twg+wQi0UQi00Yi3UgilUUil0ci30MiEQkDw+2wIhMJA0tAAAAAYPBENPgjU4IiFQkDopVJNPgiFwkDI1P9Inz"                                                                               
-            . "Zg9u4ItFCGYPcMQAOchzLQ8QCA8QKA8o2mYPZMhmD2TdD1bLZg/X8YX2dRGDwBDr24pIAjhMJA9zCYPABDn4cvDrHzpMJA5y8YpI"
-            . "AThMJA1y6DpMJAxy4ooIOMty3DjRctiNZfRbXl9dww=="
-            : "VVdWUw9X24tsJFiKXCRQQIp8JGCJ7kiJyItMJEhFicJFD7bAQYHoAAAAAUGJy4PBEEHT4I1NCEHT4EiNSvRmQQ9u6GYPcMUASDnI"
-            . "czAPEBAPKOMPKMpmD2TiZg9kyA9WzGZED9fBRYXAdRJIg8AQ69eKSAJBOMpzC0iDwARIOdBy7+sdRDjJcvCKSAFBOMty6DjZcuSK"
-            . "CEA4znLdQDj5cthbXl9dww==")
+            ? "VWYPduSJ5VdWU4Pk8IPsEIpFFItdEItNGItVHIt1DIt9IIhEJA6KRSSIXCQPD7bbiEwkDcHjEA+2yYhEJAsPtkUgweEIiFQkDA+2"
+            . "0gnYweIICcgPtk0kDQAAAP8J0Q+2VRRmD27oi0UIZg9wzQDB4hAJ0Y1W9GYPbvFmD3DWADnQczkPEAAPEBgPEDhmD97BZg/e2mYP"
+            . "dMFmD3TfD1TDZg92xGYP18iFyXURg8AQ68+KUAI4VCQPcwmDwAQ58HLw6yM6VCQOcvGKUAE4VCQNcug6VCQMcuKKEIn5ONFy2jpU"
+            . "JAty1I1l9FteX13D"  
+            : "QVZBVUFUVVdWU0SLbCRgi0QkaESLdCRwRItUJHhEie6Jx0UPtu0PtsBBweUIRIn1RQ+29kWJ1EWJw0UPtsBEicvB4AhBweAQRQ+2"
+            . "0kUPtslFCfBECdBBweEQRQnoRAnIQYHIAAAA/2YPbuhIichmQQ9uyEiNSvRmD3DBAGYPcM0AZg927Ug5yHM8DxAgDyjQDyjcZg/e"
+            . "1GYP3tlmD3TQZg903A9U02YPdtVmRA/XwkWFwHUSSIPAEOvLikgCQTjLcwtIg8AESDnQcu/rHTjZcvGKSAFAOM5y6UA4+XLkighA"
+            . "OM1y3UQ44XLYW15fXUFcQV1BXsM=")
 
          ; C source code - https://godbolt.org/z/4hEhb7vG8
          pixelsearch3 := this.Base64Code((A_PtrSize == 4)
