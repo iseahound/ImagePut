@@ -2945,22 +2945,15 @@ class ImagePut {
       DllCall("gdiplus\GdipImageGetFrameCount", "ptr", pBitmap, "ptr", dimIDs, "uint*", &frames:=0)
 
 
-      static RegisterSyncCallback(funcObj, hwnd) {
-         static msg := 0x8000, SendMessageW := 0
-     
-         (!IsSet(paramCount) && paramCount := funcObj.MinParams)
-         if IsSet(paramCount) && paramCount > funcObj.MaxParams {
-             throw ValueError('Incorrect paramCount', paramCount)
-         }
+      static RegisterSyncCallback(hwnd, msg) {
+         hModule := DllCall("GetModuleHandle", "str", "user32.dll", "ptr")
+         SendMessageW := DllCall("GetProcAddress", "ptr", hModule, "astr", "SendMessageW", "ptr")
 
-         hModule := DllCall('GetModuleHandle', 'Str', 'user32.dll', 'Ptr')
-         SendMessageW := DllCall('GetProcAddress', 'Ptr', hModule, 'AStr', 'SendMessageW', 'Ptr')
-
-         pcb := DllCall('GlobalAlloc', 'UInt', 0, 'Ptr', 96, 'Ptr')
-         DllCall('VirtualProtect', 'Ptr', pcb, 'Ptr', 96, 'UInt', 0x40, 'UInt*', 0)
+         pcb := DllCall("GlobalAlloc", "uint", 0, "ptr", 96, "ptr")
+         DllCall("VirtualProtect", "ptr", pcb, "ptr", 96, "uint", 0x40, "uint*", 0)
      
          p := pcb
-         if A_PtrSize = 8 {
+         if (A_PtrSize = 8) {
              /*
              48 89 4c 24 08  ; mov [rsp+8], rcx
              48 89 54'24 10  ; mov [rsp+16], rdx
@@ -2970,61 +2963,42 @@ class ImagePut {
              4c 8d 44 24 30  ; lea r8, [rsp+48]  (arg 3, &params)
              49 b9 ..        ; mov r9, .. (arg 4, operand to follow)
              */
-             p := NumPut('Ptr'  , 0x54894808244c8948,
-                         'Ptr'  , 0x4c182444894c1024,
-                         'Ptr'  , 0x28ec834820244c89,
-                         'Ptr'  , 0x00b9493024448d4c, p) - 1
+             p := NumPut("ptr"  , 0x54894808244c8948,
+                         "ptr"  , 0x4c182444894c1024,
+                         "ptr"  , 0x28ec834820244c89,
+                         "ptr"  , 0x00b9493024448d4c, p) - 1
              lParamPtr := p, p += 8
      
-             p := NumPut('Char' , 0xba,        ; mov edx, nmsg
-                         'Int'  , msg, 
-                         'Char' , 0xb9,        ; mov ecx, hwnd
-                         'Int'  , hwnd, 
-                         'Short', 0xb848,      ; mov rax, SendMessageW
-                         'Ptr'  , SendMessageW,
+             p := NumPut("char" , 0xba,        ; mov edx, nmsg
+                         "int"  , msg, 
+                         "char" , 0xb9,        ; mov ecx, hwnd
+                         "int"  , hwnd, 
+                         "short", 0xb848,      ; mov rax, SendMessageW
+                         "ptr"  , SendMessageW,
                                  /*
                                  ff d0         ; call rax
                                  48 83 c4 28   ; add rsp, 40
                                  c3            ; ret
                                  */
-                         'Ptr'  , 0x00c328c48348d0ff, p)
+                         "ptr"  , 0x00c328c48348d0ff, p)
          } else {
-             p := NumPut('Char' , 0x68, p)     ; push ... (lParam data)
+             p := NumPut("char" , 0x68, p)     ; push ... (lParam data)
              lParamPtr := p, p += 4
-             p := NumPut('Int'  , 0x0824448d,  ; lea eax, [esp+8]
-                         'Char' , 0x50,        ; push eax
-                         'Char' , 0x68,        ; push nmsg
-                         'Int'  , msg, 
-                         'Char' , 0x68,        ; push hwnd
-                         'Int'  , hwnd, 
-                         'Char' , 0xb8,        ; mov eax, &SendMessageW
-                         'Int'  , SendMessageW,
-                         'Short', 0xd0ff,      ; call eax
-                         'Char' , 0xc2,        ; ret argsize
-                         'Short', ParamCount * 4, p) ; InStr(Options, 'C') ? 0 :
+             p := NumPut("int"  , 0x0824448d,  ; lea eax, [esp+8]
+                         "char" , 0x50,        ; push eax
+                         "char" , 0x68,        ; push nmsg
+                         "int"  , msg, 
+                         "char" , 0x68,        ; push hwnd
+                         "int"  , hwnd, 
+                         "char" , 0xb8,        ; mov eax, &SendMessageW
+                         "int"  , SendMessageW,
+                         "short", 0xd0ff,      ; call eax
+                         "char" , 0xc2,        ; ret argsize
+                         "short", 0, p) ; InStr(Options, "C") ? 0 : ParamCount * 4
          }
-         NumPut('Ptr', p, lParamPtr)
-         NumPut('Ptr', ObjPtrAddRef(funcObj),
-                'Int', paramCount, p)
+         NumPut("ptr", p, lParamPtr)
          return pcb
-     /*
-
-
-         RegisterSyncCallback_Msg(wParam, lParam, msg, hwnd) {
-            MsgBox hwnd ", " msg ", " wParam ", " lParam
-             if hwnd != wnd.hwnd {
-                 return
-             }
-             fn := ObjFromPtrAddRef(NumGet(lParam, 'Ptr'))
-             paramCount := NumGet(lParam, A_PtrSize, 'Int')
-             params := []
-             Loop paramCount {
-                 params.Push(NumGet(wParam, A_PtrSize * (A_Index - 1), 'Ptr'))
-             }
-             return fn(params*)
-         }
-         */
-     }
+      }
 
       ; GIF Animations!
       if (frames > 1) {
@@ -3037,7 +3011,7 @@ class ImagePut {
          DllCall("gdiplus\GdipCloneImage", "ptr", pBitmap, "ptr*", &pBitmapClone:=0)
          DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmapClone)
 
-         pTimeProc := RegisterSyncCallback(TimeProc, hwnd)
+         pTimeProc := RegisterSyncCallback(hwnd, 0x8000)
 
          ; Allocate a private struct.
          ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", 4*A_PtrSize, "ptr")
@@ -3265,6 +3239,7 @@ class ImagePut {
                      , "uint", 0                                ; fuEvent
                      , "uint")
 
+/*
 
             ; Debug code
             static start := 0, sum := 0, count := 0, sum2 := 0, count2 := 0
@@ -3286,6 +3261,7 @@ class ImagePut {
                      ; "`nFloor and Ceiling:`t" Floor(delay / resolution) * resolution ", " Ceil(delay / resolution) * resolution
             }
             start := now
+*/
 
 
 
