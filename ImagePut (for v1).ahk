@@ -3104,7 +3104,7 @@ class ImagePut {
             pWndProc := RegisterCallback(ImagePut.WindowProc,,, &ImagePut)
             clock := Func("DllCall").bind(pWndProc, "ptr", hwnd, "uint", 0x8001, "uptr", A_TickCount, "ptr", 0)
             SetTimer % clock, -7000
-            DllCall("GlobalFree", "ptr", pWndProc, "ptr")
+            ;DllCall("GlobalFree", "ptr", pWndProc, "ptr")
          }
 
          if (uMsg = 0x8001)
@@ -3153,7 +3153,7 @@ class ImagePut {
             pWndProc := RegisterCallback(ImagePut.WindowProc,,, &ImagePut)
             next_frame := Func("DllCall").bind(pWndProc, "ptr", hwnd, "uint", uMsg, "uptr", frame, "ptr", 0)
             SetTimer % next_frame, % -1 * res
-            DllCall("GlobalFree", "ptr", pWndProc, "ptr")
+            ; DllCall("GlobalFree", "ptr", pWndProc, "ptr")
             /*
             ; Debug code
             static start := 0, sum := 0, count := 0, sum2 := 0, count2 := 0
