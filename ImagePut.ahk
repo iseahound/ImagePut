@@ -2954,47 +2954,47 @@ class ImagePut {
      
          p := pcb
          if (A_PtrSize = 8) {
-             /*
-             48 89 4c 24 08  ; mov [rsp+8], rcx
-             48 89 54'24 10  ; mov [rsp+16], rdx
-             4c 89 44 24 18  ; mov [rsp+24], r8
-             4c'89 4c 24 20  ; mov [rsp+32], r9
-             48 83 ec 28'    ; sub rsp, 40
-             4c 8d 44 24 30  ; lea r8, [rsp+48]  (arg 3, &params)
-             49 b9 ..        ; mov r9, .. (arg 4, operand to follow)
-             */
-             p := NumPut("ptr"  , 0x54894808244c8948,
-                         "ptr"  , 0x4c182444894c1024,
-                         "ptr"  , 0x28ec834820244c89,
-                         "ptr"  , 0x00b9493024448d4c, p) - 1
-             lParamPtr := p, p += 8
-     
-             p := NumPut("char" , 0xba,        ; mov edx, nmsg
-                         "int"  , msg, 
-                         "char" , 0xb9,        ; mov ecx, hwnd
-                         "int"  , hwnd, 
-                         "short", 0xb848,      ; mov rax, SendMessageW
-                         "ptr"  , SendMessageW,
+            /*
+            48 89 4c 24 08  ; mov [rsp+8], rcx
+            48 89 54'24 10  ; mov [rsp+16], rdx
+            4c 89 44 24 18  ; mov [rsp+24], r8
+            4c'89 4c 24 20  ; mov [rsp+32], r9
+            48 83 ec 28'    ; sub rsp, 40
+            4c 8d 44 24 30  ; lea r8, [rsp+48]  (arg 3, &params)
+            49 b9 ..        ; mov r9, .. (arg 4, operand to follow)
+            */
+            p := NumPut("ptr"  , 0x54894808244c8948,
+                        "ptr"  , 0x4c182444894c1024,
+                        "ptr"  , 0x28ec834820244c89,
+                        "ptr"  , 0x00b9493024448d4c, p) - 1
+            lParamPtr := p, p += 8
+   
+            p := NumPut("char" , 0xba,        ; mov edx, nmsg
+                        "int"  , msg, 
+                        "char" , 0xb9,        ; mov ecx, hwnd
+                        "int"  , hwnd, 
+                        "short", 0xb848,      ; mov rax, SendMessageW
+                        "ptr"  , SendMessageW,
                                  /*
                                  ff d0         ; call rax
                                  48 83 c4 28   ; add rsp, 40
                                  c3            ; ret
                                  */
-                         "ptr"  , 0x00c328c48348d0ff, p)
+                        "ptr"  , 0x00c328c48348d0ff, p)
          } else {
-             p := NumPut("char" , 0x68, p)     ; push ... (lParam data)
-             lParamPtr := p, p += 4
-             p := NumPut("int"  , 0x0824448d,  ; lea eax, [esp+8]
-                         "char" , 0x50,        ; push eax
-                         "char" , 0x68,        ; push nmsg
-                         "int"  , msg, 
-                         "char" , 0x68,        ; push hwnd
-                         "int"  , hwnd, 
-                         "char" , 0xb8,        ; mov eax, &SendMessageW
-                         "int"  , SendMessageW,
-                         "short", 0xd0ff,      ; call eax
-                         "char" , 0xc2,        ; ret argsize
-                         "short", 0, p) ; InStr(Options, "C") ? 0 : ParamCount * 4
+            p := NumPut("char" , 0x68, p)     ; push ... (lParam data)
+            lParamPtr := p, p += 4
+            p := NumPut("int"  , 0x0824448d,  ; lea eax, [esp+8]
+                        "char" , 0x50,        ; push eax
+                        "char" , 0x68,        ; push nmsg
+                        "int"  , msg, 
+                        "char" , 0x68,        ; push hwnd
+                        "int"  , hwnd, 
+                        "char" , 0xb8,        ; mov eax, &SendMessageW
+                        "int"  , SendMessageW,
+                        "short", 0xd0ff,      ; call eax
+                        "char" , 0xc2,        ; ret argsize
+                        "short", 0, p)        ; InStr(Options, "C") ? 0 : ParamCount * 4
          }
          NumPut("ptr", p, lParamPtr)
          return pcb
@@ -3023,14 +3023,19 @@ class ImagePut {
 
          ; Preserve GDI+ scope.
          ImagePut.gdiplusStartup()
-         DllCall("winmm\timeBeginPeriod", "uint", 10)
+
+         DllCall("PostMessage", "ptr", hwnd, "uint", 0x8000, "uptr", 0, "ptr", 0)
+         /*
+
+
          DllCall("winmm\timeSetEvent"
             , "uint", 1                                ; uDelay
-            , "uint", 10                               ; uResolution
+            , "uint", 1                                ; uResolution
             ,  "ptr", pTimeProc                        ; lpTimeProc
             , "uint", hwnd                             ; dwUser
             , "uint", 0                                ; fuEvent
             , "uint")
+            */
       }
 
       ; WM_APP - Animate GIFs
@@ -3197,11 +3202,9 @@ class ImagePut {
                return
 
             ; Get next frame.
-            frames := NumGet(Item + 4, "uint") // 4                 ; Max frames
-            ;frame += 1                                     ; Next frame
-            frame := mod(frame + 1, frames)                             ; Loop back to first frame
-            NumPut("int", frame, ptr, 0*A_PtrSize)
-
+            frames := NumGet(Item + 4, "uint") // 4                 ; Total number of frames
+            frame := mod(frame + 1, frames)                         ; Get next frame; loop back to 0
+            NumPut("int", frame, ptr, 0*A_PtrSize)                  ; Save the frame number
 
             ; Get delay.
             delays := NumGet(Item + 8 + A_PtrSize, "ptr")           ; Array of delays
@@ -3232,14 +3235,14 @@ class ImagePut {
             DllCall("winmm\timeKillEvent", "uint", wparam) ; Kill previous timer
 
             r := DllCall("winmm\timeSetEvent"
-                     , "uint", delay-3.1                            ; uDelay
-                     , "uint", 1                               ; uResolution
+                     , "uint", delay                            ; uDelay
+                     , "uint", 1                                ; uResolution
                      ,  "ptr", pTimeProc                        ; lpTimeProc
                      , "uint", hwnd                             ; dwUser
                      , "uint", 0                                ; fuEvent
                      , "uint")
 
-/*
+
 
             ; Debug code
             static start := 0, sum := 0, count := 0, sum2 := 0, count2 := 0
@@ -3250,9 +3253,9 @@ class ImagePut {
                sum += time
                count++
                average := sum / count
-               sum2 += delay-3.1 ; change this to res or delay
+               sum2 += delay ; change this to res or delay
                count2++
-               if count > 1000
+               ;if count > 1000
                Tooltip   "Current Tick:`t" Round(time, 4)
                      . "`nAverage FPS:`t" Round(average, 4)
                      . "`nQueued FPS:`t" Round(sum2 / count2, 4)
@@ -3261,7 +3264,7 @@ class ImagePut {
                      ; "`nFloor and Ceiling:`t" Floor(delay / resolution) * resolution ", " Ceil(delay / resolution) * resolution
             }
             start := now
-*/
+
 
 
 
