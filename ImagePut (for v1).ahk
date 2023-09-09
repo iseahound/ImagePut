@@ -2072,7 +2072,7 @@ class ImagePut {
       }
 
       __Get(x, y) {
-         return Format("0x{:X}", NumGet(this.ptr + 4*(y*this.width + x), "uint"))
+         return Format("0x{:08X}", NumGet(this.ptr + 4*(y*this.width + x), "uint"))
       }
 
       __Set(x, y, color) {
@@ -2787,14 +2787,14 @@ class ImagePut {
       DllCall("SetWindowLong", "ptr", hwnd, "int", -20, "int", styleEx | WS_EX_LAYERED)
       DllCall("SetLayeredWindowAttributes", "ptr", hwnd, "uint", 0xF0F0F0, "uchar", 0, "int", 1)
 
-      ; Set itself as the *internal* top level window.
-      DllCall("SetWindowLong" (A_PtrSize=8 ? "Ptr":""), "ptr", hwnd, "int", 0, "ptr", hwnd)
-
       ; A layered child window is only available on Windows 8+.
-      hwnd_child := this.show(pBitmap, title, [0, 0, w, h], WS_CHILD | WS_VISIBLE, WS_EX_LAYERED, hwnd)
+      child := this.show(pBitmap, title, [0, 0, w, h], WS_CHILD | WS_VISIBLE, WS_EX_LAYERED, hwnd)
 
-      ; Override the child's internal hwnd with the parent's hwnd.
-      DllCall("SetWindowLong" (A_PtrSize=8 ? "Ptr":""), "ptr", hwnd_child, "int", 0, "ptr", hwnd)
+      ; Store extra data inside window struct (cbWndExtra).
+      DllCall("SetWindowLong", "ptr", hwnd, "int", 0*A_PtrSize, "ptr", hwnd) ; parent window
+      DllCall("SetWindowLong", "ptr", hwnd, "int", 1*A_PtrSize, "ptr", child) ; child window
+      DllCall("SetWindowLong", "ptr", child, "int", 0*A_PtrSize, "ptr", hwnd) ; parent window
+      DllCall("SetWindowLong", "ptr", child, "int", 1*A_PtrSize, "ptr", child) ; child window
 
       ; Prevent empty windows from showing.
       DllCall("ShowWindow", "ptr", hwnd, "int", 1)
@@ -2933,15 +2933,17 @@ class ImagePut {
                ,  "uint*", 0xFF << 16 | 0x01 << 24  ; *pblend
                ,   "uint", 2)                       ; dwFlags
 
-      ; Set itself as the *internal* top level window.
-      DllCall("SetWindowLong" (A_PtrSize=8 ? "Ptr":""), "ptr", hwnd, "int", 0, "ptr", hwnd)
+      ; Store extra data inside window struct (cbWndExtra).
+      DllCall("SetWindowLong", "ptr", hwnd, "int", 0*A_PtrSize, "ptr", hwnd) ; parent window (same, only 1 window for now)
+      DllCall("SetWindowLong", "ptr", hwnd, "int", 1*A_PtrSize, "ptr", hwnd) ; child window  (same, only 1 window for now)
+      DllCall("SetWindowLong", "ptr", hwnd, "int", 2*A_PtrSize, "ptr", hdc)  ; contains a pixel buffer
 
       ; Check for multiple frames.
       DllCall("gdiplus\GdipImageGetFrameDimensionsCount", "ptr", pBitmap, "uint*", dims:=0)
       DllCall("gdiplus\GdipImageGetFrameDimensionsList", "ptr", pBitmap, "ptr", &dimIDs := VarSetCapacity(dimIDs, 16*dims), "uint", dims)
       DllCall("gdiplus\GdipImageGetFrameCount", "ptr", pBitmap, "ptr", &dimIDs, "uint*", frames:=0)
 
-      ; For multiple frames, send WM_APP to WindowProc to render GIFs.
+      ; GIF Animations!
       if (frames > 1) {
          ; Save frame delays because they are slow enough to impact timing.
          DllCall("gdiplus\GdipGetPropertyItemSize", "ptr", pBitmap, "uint", 0x5100, "uint*", ItemSize:=0) ; PropertyTagFrameDelay
@@ -2952,26 +2954,16 @@ class ImagePut {
          DllCall("gdiplus\GdipCloneImage", "ptr", pBitmap, "ptr*", pBitmapClone:=0)
          DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmapClone)
 
-         ; Store data inside window class extra bits (cbWndExtra).
-         DllCall("SetWindowLong" (A_PtrSize=8 ? "Ptr":""), "ptr", hwnd, "int", 1*A_PtrSize, "ptr", pBitmapClone)
-         DllCall("SetWindowLong" (A_PtrSize=8 ? "Ptr":""), "ptr", hwnd, "int", 2*A_PtrSize, "ptr", hdc)
-         DllCall("SetWindowLong" (A_PtrSize=8 ? "Ptr":""), "ptr", hwnd, "int", 3*A_PtrSize, "ptr", Item)
-         DllCall("SetWindowLong" (A_PtrSize=8 ? "Ptr":""), "ptr", hwnd, "int", 4*A_PtrSize, "ptr", pBits)
+         ; Store extra data inside window struct (cbWndExtra).
+         DllCall("SetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr", pBitmapClone)
+         DllCall("SetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr", Item)
 
          ; Preserve GDI+ scope.
          ImagePut.gdiplusStartup()
 
-         ; Goto WindowProc() and initiate animation via PostMessage.
+         ; Start animations using WM_APP in WindowProc().
          DllCall("PostMessage", "ptr", hwnd, "uint", 0x8000, "uptr", -1, "ptr", 0)
-
-         ; Avoid disposing the device context.
-         return hwnd
       }
-
-      ; Cleanup the hBitmap and device contexts.
-      DllCall("SelectObject", "ptr", hdc, "ptr", obm)
-      DllCall("DeleteObject", "ptr", hbm)
-      DllCall("DeleteDC",     "ptr", hdc)
 
       return hwnd
    }
@@ -3025,50 +3017,108 @@ class ImagePut {
 
          ; WM_DESTROY
          if (uMsg = 0x2) {
-            if pBitmap := DllCall("GetWindowLong" (A_PtrSize=8 ? "Ptr":""), "ptr", hwnd, "int", 1*A_PtrSize, "ptr") {
-               hdc := DllCall("GetWindowLong" (A_PtrSize=8 ? "Ptr":""), "ptr", hwnd, "int", 2*A_PtrSize, "ptr")
-               Item := DllCall("GetWindowLong" (A_PtrSize=8 ? "Ptr":""), "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
+            ; Cleanup the hBitmap and device contexts.
+            hdc := DllCall("GetWindowLong", "ptr", hwnd, "int", 2*A_PtrSize, "ptr")
+            obm := DllCall("CreateBitmap", "int", 0, "int", 0, "uint", 1, "uint", 1, "ptr", 0, "ptr")
+            hbm := DllCall("SelectObject", "ptr", hdc, "ptr", obm, "ptr")
+            DllCall("DeleteObject", "ptr", hbm)
+            DllCall("DeleteDC", "ptr", hdc)
 
-               ; Exit loop.
-               DllCall("SetWindowLong" (A_PtrSize=8 ? "Ptr":""), "ptr", hwnd, "int", 1*A_PtrSize, "ptr", 0)
-
-               ; Dispose of all data stored in the window class.
+            ; Exit GIF Animation loop.
+            if pBitmap := DllCall("GetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr") {
                DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
-               obm := DllCall("CreateBitmap", "int", 0, "int", 0, "uint", 1, "uint", 1, "ptr", 0, "ptr")
-               hbm := DllCall("SelectObject", "ptr", hdc, "ptr", obm, "ptr")
-               DllCall("DeleteObject", "ptr", hbm)
-               DllCall("DeleteDC", "ptr", hdc)
+               DllCall("SetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr", 0) ; Exit loop
+
+               ; Delete Item.
+               Item := DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
                DllCall("GlobalFree", "ptr", Item)
 
                ; Exit GDI+ conditionally due to the ImagePut class being destroyed first.
                ImagePut.gdiplusShutdown()
             }
-            Hotkey % "^+F12", % void, Off ; Cannot disable, does nothing
+
+            Hotkey % "^+F12", % void, Off ; Cannot disable script persistence, does nothing
          }
 
-         ; WM_LBUTTONDOWN
+         ; WM_LBUTTONDOWN - Drag to move the window.
          if (uMsg = 0x201) {
-            hwnd := DllCall("GetWindowLong" (A_PtrSize=8 ? "Ptr":""), "ptr", hwnd, "int", 0, "ptr") ; internal parent hwnd
-            return DllCall("DefWindowProc", "ptr", hwnd, "uint", 0xA1, "uptr", 2, "ptr", 0, "ptr")
+            parent := DllCall("GetWindowLong", "ptr", hwnd, "int", 0*A_PtrSize, "ptr")
+            return DllCall("DefWindowProc", "ptr", parent, "uint", 0xA1, "uptr", 2, "ptr", 0, "ptr")
          }
 
-         ; WM_RBUTTONUP
+         ; WM_RBUTTONUP - Destroy the window.
          if (uMsg = 0x205) {
-            hwnd := DllCall("GetWindowLong" (A_PtrSize=8 ? "Ptr":""), "ptr", hwnd, "int", 0, "ptr") ; internal parent hwnd
-            DllCall("DestroyWindow", "ptr", hwnd)
+            parent := DllCall("GetWindowLong", "ptr", hwnd, "int", 0*A_PtrSize, "ptr")
+            DllCall("DestroyWindow", "ptr", parent)
             return 0
          }
+         
+         ; WM_MBUTTONDOWN - Show x, y, and color.
+         if (uMsg = 0x207) {
+            ; Force the child hwnd as transparent pixels could redirect to the parent hwnd.
+            child := DllCall("GetWindowLong", "ptr", hwnd, "int", 1*A_PtrSize, "ptr")
+            hdc := DllCall("GetWindowLong", "ptr", child, "int", 2*A_PtrSize, "ptr")
+
+            ; Get pBits from hBitmap currently selected onto the device context.
+            ; struct DIBSECTION - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-dibsection
+            ; struct BITMAP - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmap
+            hbm := DllCall("GetCurrentObject", "ptr", hdc, "uint", 7)
+            VarSetCapacity(dib, size := 64+5*A_PtrSize) ; sizeof(DIBSECTION) = 84, 104
+            DllCall("GetObject", "ptr", hbm, "int", size, "ptr", &dib)
+               , width  := NumGet(dib, 4, "uint")
+               , height := NumGet(dib, 8, "uint")
+               , pBits  := NumGet(dib, A_PtrSize = 4 ? 20:24, "ptr")
+
+            ; Convert from unsigned int to signed shorts.
+            VarSetCapacity(xy, 4)
+            NumPut(lparam, xy, "uint")
+            x := NumGet(xy, 0, "short")
+            y := NumGet(xy, 2, "short")
+
+            ; Safe limits for x and y.
+            (x < 0) && x := 0
+            (x >= width) && x := width-1
+            (y < 0) && y := 0
+            (y >= height) && y := height-1
+
+            ; Get color.
+            c := Format("0x{:08X}", NumGet(pBits + 4*(y*width + x), "uint"))
+
+            ; Process background color (BGR) and text color (greyscale).
+            background_color := RegExReplace(c, "^0x..(..)(..)(..)$", "0x$3$2$1")
+            text_color := (0.3*(255&c>>16) + 0.59*(255&c>>8) + 0.11*(255&c)) >= 128 ? 0x000000 : 0xFFFFFF
+
+            ; Show tooltip.
+            Tooltip % " (" x ", " y ") `n " SubStr(c, 3) " "
+            tt := WinExist("ahk_class tooltips_class32 ahk_exe" A_AhkPath)
+
+            ; Style background and text color.
+            DllCall("UxTheme\SetWindowTheme", "ptr", tt, "ptr", 0, "ptr", &empty := VarSetCapacity(2, 0), "uint")
+            DllCall("SendMessage", "ptr", tt, "uint", 1043, "ptr", background_color, "ptr", 0)
+            DllCall("SendMessage", "ptr", tt, "uint", 1044, "ptr", text_color, "ptr", 0)
+
+            ; Destroy tooltip after 7 seconds of the last showing.
+            static tick
+            tick := A_TickCount
+            pWndProc := RegisterCallback(ImagePut.WindowProc,,, &ImagePut)
+            clock := Func("DllCall").bind(pWndProc, "ptr", hwnd, "uint", 0x8001, "uptr", A_TickCount, "ptr", 0)
+            SetTimer % clock, -7000
+            DllCall("GlobalFree", "ptr", pWndProc, "ptr")
+         }
+         
+         if (uMsg = 0x8001)
+            if (tick == wParam)
+               Tooltip
 
          ; WM_APP - Animate GIFs
-         if (uMsg = 0x8000) {
+         if (uMsg = 0x8000) { 
             ; Thanks tmplinshi, Teadrinker - https://www.autohotkey.com/boards/viewtopic.php?f=76&t=83358
             Critical
 
             ; Get variables.
-            pBitmap := DllCall("GetWindowLong" (A_PtrSize=8 ? "Ptr":""), "ptr", hwnd, "int", 1*A_PtrSize, "ptr")
-            hdc := DllCall("GetWindowLong" (A_PtrSize=8 ? "Ptr":""), "ptr", hwnd, "int", 2*A_PtrSize, "ptr")
-            Item := DllCall("GetWindowLong" (A_PtrSize=8 ? "Ptr":""), "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
-            pBits := DllCall("GetWindowLong" (A_PtrSize=8 ? "Ptr":""), "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
+            hdc := DllCall("GetWindowLong", "ptr", hwnd, "int", 2*A_PtrSize, "ptr")
+            pBitmap := DllCall("GetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
+            Item := DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
 
             ; Exit loop.
             if !pBitmap
@@ -3099,9 +3149,10 @@ class ImagePut {
                res := Ceil(delay / resolution) * resolution
 
             ; Async the next frame as soon as possible to prevent rendering lag.
-            static pWndProc := RegisterCallback(ImagePut.WindowProc,,, &ImagePut)
+            pWndProc := RegisterCallback(ImagePut.WindowProc,,, &ImagePut)
             next_frame := Func("DllCall").bind(pWndProc, "ptr", hwnd, "uint", uMsg, "uptr", frame, "ptr", 0)
             SetTimer % next_frame, % -1 * res
+            DllCall("GlobalFree", "ptr", pWndProc, "ptr")
             /*
             ; Debug code
             static start := 0, sum := 0, count := 0, sum2 := 0, count2 := 0
@@ -3128,9 +3179,15 @@ class ImagePut {
             DllCall("gdiplus\GdipImageGetFrameDimensionsList", "ptr", pBitmap, "ptr", &dimIDs := VarSetCapacity(dimIDs, 16*dims), "uint", dims)
             DllCall("gdiplus\GdipImageSelectActiveFrame", "ptr", pBitmap, "ptr", &dimIDs, "uint", frame)
 
-            ; Get Bitmap width and height.
-            DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
-            DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
+            ; Get pBits from hBitmap currently selected onto the device context.
+            ; struct DIBSECTION - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-dibsection
+            ; struct BITMAP - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmap
+            hbm := DllCall("GetCurrentObject", "ptr", hdc, "uint", 7)
+            VarSetCapacity(dib, size := 64+5*A_PtrSize) ; sizeof(DIBSECTION) = 84, 104
+            DllCall("GetObject", "ptr", hbm, "int", size, "ptr", &dib)
+               , width  := NumGet(dib, 4, "uint")
+               , height := NumGet(dib, 8, "uint")
+               , pBits  := NumGet(dib, A_PtrSize = 4 ? 20:24, "ptr")
 
             ; Transfer data from source pBitmap to an hBitmap manually.
             VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
@@ -3162,6 +3219,7 @@ class ImagePut {
          }
 
          ; Must return
+         default:
          return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
       }
 
