@@ -773,7 +773,7 @@ class ImagePut {
       ; Force downscaling.
       if (direction < 0 and (safe_w > width && safe_h > height))
          return pBitmap
-      
+
       ; Create a new bitmap and get the graphics context.
       DllCall("gdiplus\GdipCreateBitmapFromScan0"
                , "int", safe_w, "int", safe_h, "int", 0, "int", format, "ptr", 0, "ptr*", pBitmapScale:=0)
@@ -2412,7 +2412,7 @@ class ImagePut {
             ? "VWYPduSJ5VdWU4Pk8IPsEIpFFItdEItNGItVHIt1DIt9IIhEJA6KRSSIXCQPD7bbiEwkDcHjEA+2yYhEJAsPtkUgweEIiFQkDA+2"
             . "0gnYweIICcgPtk0kDQAAAP8J0Q+2VRRmD27oi0UIZg9wzQDB4hAJ0Y1W9GYPbvFmD3DWADnQczkPEAAPEBgPEDhmD97BZg/e2mYP"
             . "dMFmD3TfD1TDZg92xGYP18iFyXURg8AQ68+KUAI4VCQPcwmDwAQ58HLw6yM6VCQOcvGKUAE4VCQNcug6VCQMcuKKEIn5ONFy2jpU"
-            . "JAty1I1l9FteX13D"  
+            . "JAty1I1l9FteX13D"
             : "QVZBVUFUVVdWU0SLbCRgi0QkaESLdCRwRItUJHhEie6Jx0UPtu0PtsBBweUIRIn1RQ+29kWJ1EWJw0UPtsBEicvB4AhBweAQRQ+2"
             . "0kUPtslFCfBECdBBweEQRQnoRAnIQYHIAAAA/2YPbuhIichmQQ9uyEiNSvRmD3DBAGYPcM0AZg927Ug5yHM8DxAgDyjQDyjcZg/e"
             . "1GYP3tlmD3TQZg903A9U02YPdtVmRA/XwkWFwHUSSIPAEOvLikgCQTjLcwtIg8AESDnQcu/rHTjZcvGKSAFAOM5y6UA4+XLkighA"
@@ -3052,7 +3052,7 @@ class ImagePut {
             DllCall("DestroyWindow", "ptr", parent)
             return 0
          }
-         
+
          ; WM_MBUTTONDOWN - Show x, y, and color.
          if (uMsg = 0x207) {
             ; Force the child hwnd as transparent pixels could redirect to the parent hwnd.
@@ -3105,13 +3105,13 @@ class ImagePut {
             SetTimer % clock, -7000
             DllCall("GlobalFree", "ptr", pWndProc, "ptr")
          }
-         
+
          if (uMsg = 0x8001)
             if (tick == wParam)
                Tooltip
 
          ; WM_APP - Animate GIFs
-         if (uMsg = 0x8000) { 
+         if (uMsg = 0x8000) {
             ; Thanks tmplinshi, Teadrinker - https://www.autohotkey.com/boards/viewtopic.php?f=76&t=83358
             Critical
 
@@ -3123,7 +3123,7 @@ class ImagePut {
             ; Exit loop.
             if !pBitmap
                return
-            
+
             ; Get next frame.
             frames := NumGet(Item + 4, "uint") // 4                 ; Max frames
             frame := wParam + 1                                     ; Next frame
@@ -3935,7 +3935,7 @@ class ImagePut {
 
 
 
-      
+
 
       ; Startup gdiplus when counter rises from 0 -> 1.
       if (instances = 0 && vary = 1) {
