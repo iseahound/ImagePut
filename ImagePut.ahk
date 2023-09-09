@@ -2944,6 +2944,88 @@ class ImagePut {
       DllCall("gdiplus\GdipImageGetFrameDimensionsList", "ptr", pBitmap, "ptr", dimIDs := Buffer(16*dims), "uint", dims)
       DllCall("gdiplus\GdipImageGetFrameCount", "ptr", pBitmap, "ptr", dimIDs, "uint*", &frames:=0)
 
+
+      static RegisterSyncCallback(funcObj, hwnd) {
+         static msg := 0x8000, SendMessageW := 0
+     
+         (!IsSet(paramCount) && paramCount := funcObj.MinParams)
+         if IsSet(paramCount) && paramCount > funcObj.MaxParams {
+             throw ValueError('Incorrect paramCount', paramCount)
+         }
+
+         hModule := DllCall('GetModuleHandle', 'Str', 'user32.dll', 'Ptr')
+         SendMessageW := DllCall('GetProcAddress', 'Ptr', hModule, 'AStr', 'SendMessageW', 'Ptr')
+
+         pcb := DllCall('GlobalAlloc', 'UInt', 0, 'Ptr', 96, 'Ptr')
+         DllCall('VirtualProtect', 'Ptr', pcb, 'Ptr', 96, 'UInt', 0x40, 'UInt*', 0)
+     
+         p := pcb
+         if A_PtrSize = 8 {
+             /*
+             48 89 4c 24 08  ; mov [rsp+8], rcx
+             48 89 54'24 10  ; mov [rsp+16], rdx
+             4c 89 44 24 18  ; mov [rsp+24], r8
+             4c'89 4c 24 20  ; mov [rsp+32], r9
+             48 83 ec 28'    ; sub rsp, 40
+             4c 8d 44 24 30  ; lea r8, [rsp+48]  (arg 3, &params)
+             49 b9 ..        ; mov r9, .. (arg 4, operand to follow)
+             */
+             p := NumPut('Ptr'  , 0x54894808244c8948,
+                         'Ptr'  , 0x4c182444894c1024,
+                         'Ptr'  , 0x28ec834820244c89,
+                         'Ptr'  , 0x00b9493024448d4c, p) - 1
+             lParamPtr := p, p += 8
+     
+             p := NumPut('Char' , 0xba,        ; mov edx, nmsg
+                         'Int'  , msg, 
+                         'Char' , 0xb9,        ; mov ecx, hwnd
+                         'Int'  , hwnd, 
+                         'Short', 0xb848,      ; mov rax, SendMessageW
+                         'Ptr'  , SendMessageW,
+                                 /*
+                                 ff d0         ; call rax
+                                 48 83 c4 28   ; add rsp, 40
+                                 c3            ; ret
+                                 */
+                         'Ptr'  , 0x00c328c48348d0ff, p)
+         } else {
+             p := NumPut('Char' , 0x68, p)     ; push ... (lParam data)
+             lParamPtr := p, p += 4
+             p := NumPut('Int'  , 0x0824448d,  ; lea eax, [esp+8]
+                         'Char' , 0x50,        ; push eax
+                         'Char' , 0x68,        ; push nmsg
+                         'Int'  , msg, 
+                         'Char' , 0x68,        ; push hwnd
+                         'Int'  , hwnd, 
+                         'Char' , 0xb8,        ; mov eax, &SendMessageW
+                         'Int'  , SendMessageW,
+                         'Short', 0xd0ff,      ; call eax
+                         'Char' , 0xc2,        ; ret argsize
+                         'Short', ParamCount * 4, p) ; InStr(Options, 'C') ? 0 :
+         }
+         NumPut('Ptr', p, lParamPtr)
+         NumPut('Ptr', ObjPtrAddRef(funcObj),
+                'Int', paramCount, p)
+         return pcb
+     /*
+
+
+         RegisterSyncCallback_Msg(wParam, lParam, msg, hwnd) {
+            MsgBox hwnd ", " msg ", " wParam ", " lParam
+             if hwnd != wnd.hwnd {
+                 return
+             }
+             fn := ObjFromPtrAddRef(NumGet(lParam, 'Ptr'))
+             paramCount := NumGet(lParam, A_PtrSize, 'Int')
+             params := []
+             Loop paramCount {
+                 params.Push(NumGet(wParam, A_PtrSize * (A_Index - 1), 'Ptr'))
+             }
+             return fn(params*)
+         }
+         */
+     }
+
       ; GIF Animations!
       if (frames > 1) {
          ; Save frame delays because they are slow enough to impact timing.
@@ -2955,15 +3037,31 @@ class ImagePut {
          DllCall("gdiplus\GdipCloneImage", "ptr", pBitmap, "ptr*", &pBitmapClone:=0)
          DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmapClone)
 
-         ; Store extra data inside window struct (cbWndExtra).
-         DllCall("SetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr", pBitmapClone)
-         DllCall("SetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr", Item)
+         pTimeProc := RegisterSyncCallback(TimeProc, hwnd)
+
+         ; Allocate a private struct.
+         ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", 4*A_PtrSize, "ptr")
+            NumPut("int",           -1, ptr, 0*A_PtrSize) ; current frame
+            NumPut("ptr", pBitmapClone, ptr, 1*A_PtrSize) ; rest of GIF frames
+            NumPut("ptr",         Item, ptr, 2*A_PtrSize) ; frame delays
+            NumPut("ptr",    pTimeProc, ptr, 3*A_PtrSize) ; timer callback
+         DllCall("SetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr", ptr)
 
          ; Preserve GDI+ scope.
          ImagePut.gdiplusStartup()
+         DllCall("winmm\timeBeginPeriod", "uint", 10)
+         DllCall("winmm\timeSetEvent"
+            , "uint", 1                                ; uDelay
+            , "uint", 10                               ; uResolution
+            ,  "ptr", pTimeProc                        ; lpTimeProc
+            , "uint", hwnd                             ; dwUser
+            , "uint", 0                                ; fuEvent
+            , "uint")
+      }
 
-         ; Start animations using WM_APP in WindowProc().
-         DllCall("PostMessage", "ptr", hwnd, "uint", 0x8000, "uptr", -1, "ptr", 0)
+      ; WM_APP - Animate GIFs
+      static TimeProc(uTimerID, uMsg, hwnd, dw1, dw2) {
+         DllCall("PostMessage", "ptr", hwnd, "uint", 0x8000, "uptr", uTimerID, "ptr", 0)
       }
 
       return hwnd
@@ -3108,18 +3206,17 @@ class ImagePut {
 
 
 
-
-
-
-         ; WM_APP - Animate GIFs
          if (uMsg = 0x8000) {
             ; Thanks tmplinshi, Teadrinker - https://www.autohotkey.com/boards/viewtopic.php?f=76&t=83358
             Critical
 
             ; Get variables.
             hdc := DllCall("GetWindowLong", "ptr", hwnd, "int", 2*A_PtrSize, "ptr")
-            pBitmap := DllCall("GetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
-            Item := DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
+            ptr := DllCall("GetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
+               , frame        := NumGet(ptr, 0*A_PtrSize, "int")
+               , pBitmap      := NumGet(ptr, 1*A_PtrSize, "ptr")
+               , Item         := NumGet(ptr, 2*A_PtrSize, "ptr")
+               , pTimeProc    := NumGet(ptr, 3*A_PtrSize, "ptr")
 
             ; Exit loop.
             if !pBitmap
@@ -3127,8 +3224,10 @@ class ImagePut {
 
             ; Get next frame.
             frames := NumGet(Item + 4, "uint") // 4                 ; Max frames
-            frame := wParam + 1                                     ; Next frame
-            frame := mod(frame, frames)                             ; Loop back to first frame
+            ;frame += 1                                     ; Next frame
+            frame := mod(frame + 1, frames)                             ; Loop back to first frame
+            NumPut("int", frame, ptr, 0*A_PtrSize)
+
 
             ; Get delay.
             delays := NumGet(Item + 8 + A_PtrSize, "ptr")           ; Array of delays
@@ -3137,6 +3236,9 @@ class ImagePut {
             (delay == 10) && delay := 100                           ; 10 ms is actually 100 ms
             ; See: https://www.biphelps.com/blog/The-Fastest-GIF-Does-Not-Exist
 
+
+
+            /*
             ; Randomize the delay in intervals of 15.6
             resolution := 15.6
             rand := random()
@@ -3148,13 +3250,22 @@ class ImagePut {
                res := Floor(delay / resolution) * resolution
             else
                res := Ceil(delay / resolution) * resolution
+*/
+            ; Async the next frame as soon as possible to prevent  rendering lag.
+            ;SetTimer WindowProc.bind(hwnd, uMsg, 0, 0), -1 * delay
 
-            ; Async the next frame as soon as possible to prevent rendering lag.
-            SetTimer WindowProc.bind(hwnd, uMsg, frame, 0), -1 * res
+
+            DllCall("winmm\timeKillEvent", "uint", wparam) ; Kill previous timer
+
+            r := DllCall("winmm\timeSetEvent"
+                     , "uint", delay-3.1                            ; uDelay
+                     , "uint", 1                               ; uResolution
+                     ,  "ptr", pTimeProc                        ; lpTimeProc
+                     , "uint", hwnd                             ; dwUser
+                     , "uint", 0                                ; fuEvent
+                     , "uint")
 
 
-
-            /*
             ; Debug code
             static start := 0, sum := 0, count := 0, sum2 := 0, count2 := 0
             DllCall("QueryPerformanceFrequency", "int64*", &frequency:=0)
@@ -3164,17 +3275,23 @@ class ImagePut {
                sum += time
                count++
                average := sum / count
-               sum2 += res
+               sum2 += delay-3.1 ; change this to res or delay
                count2++
+               if count > 1000
                Tooltip   "Current Tick:`t" Round(time, 4)
                      . "`nAverage FPS:`t" Round(average, 4)
                      . "`nQueued FPS:`t" Round(sum2 / count2, 4)
                      . "`nTarget FPS:`t" delay
-                     . "`nPercentage:`t" percentage ", " rand
-                     . "`nFloor and Ceiling:`t" Floor(delay / resolution) * resolution ", " Ceil(delay / resolution) * resolution
+                     ; "`nPercentage:`t" percentage ", " rand
+                     ; "`nFloor and Ceiling:`t" Floor(delay / resolution) * resolution ", " Ceil(delay / resolution) * resolution
             }
             start := now
-            */
+
+
+
+
+
+
             ; Select frame to show.
             DllCall("gdiplus\GdipImageGetFrameDimensionsCount", "ptr", pBitmap, "uint*", &dims:=0)
             DllCall("gdiplus\GdipImageGetFrameDimensionsList", "ptr", pBitmap, "ptr", dimIDs := Buffer(16*dims), "uint", dims)
@@ -3216,8 +3333,10 @@ class ImagePut {
                      ,   "uint", 0                        ; crKey
                      ,  "uint*", 0xFF << 16 | 0x01 << 24  ; *pblend
                      ,   "uint", 2)                       ; dwFlags
-            return
+                     
          }
+
+
 
          ; Must return
          default:
