@@ -2944,65 +2944,6 @@ class ImagePut {
       DllCall("gdiplus\GdipImageGetFrameDimensionsList", "ptr", pBitmap, "ptr", dimIDs := Buffer(16*dims), "uint", dims)
       DllCall("gdiplus\GdipImageGetFrameCount", "ptr", pBitmap, "ptr", dimIDs, "uint*", &frames:=0)
 
-
-
-      static SyncWindowProc(hwnd, msg, paramCount := 0) {
-         hModule := DllCall("GetModuleHandle", "str", "user32.dll", "ptr")
-         SendMessageW := DllCall("GetProcAddress", "ptr", hModule, "astr", "SendMessageW", "ptr")
-
-         pcb := DllCall("GlobalAlloc", "uint", 0, "ptr", 96, "ptr")
-         DllCall("VirtualProtect", "ptr", pcb, "ptr", 96, "uint", 0x40, "uint*", 0)
-
-         p := pcb
-         if (A_PtrSize = 8) {
-                        /*
-                        48 89 4c 24 08  ; mov [rsp+8], rcx
-                        48 89 54'24 10  ; mov [rsp+16], rdx
-                        4c 89 44 24 18  ; mov [rsp+24], r8
-                        4c'89 4c 24 20  ; mov [rsp+32], r9
-                        48 83 ec 28'    ; sub rsp, 40
-                        4c 8d 44 24 30  ; lea r8, [rsp+48]  (arg 3, &params)
-                        49 b9 ..        ; mov r9, .. (arg 4, operand to follow)
-                        */
-            p := NumPut("ptr"  , 0x54894808244c8948,
-                        "ptr"  , 0x4c182444894c1024,
-                        "ptr"  , 0x28ec834820244c89,
-                        "ptr"  , 0x00b9493024448d4c, p) - 1
-            lParamPtr := p, p += 8
-
-            p := NumPut("char" , 0xba,        ; mov edx, nmsg
-                        "int"  , msg,
-                        "char" , 0xb9,        ; mov ecx, hwnd
-                        "int"  , hwnd,
-                        "short", 0xb848,      ; mov rax, SendMessageW
-                        "ptr"  , SendMessageW,
-                        /*
-                        ff d0        ; call rax
-                        48 83 c4 28  ; add rsp, 40
-                        c3           ; ret
-                        */
-                        "ptr"  , 0x00c328c48348d0ff, p)
-         } else {
-            p := NumPut("char" , 0x68, p)     ; push ... (lParam data)
-            lParamPtr := p, p += 4
-            p := NumPut("int"  , 0x0824448d,  ; lea eax, [esp+8]
-                        "char" , 0x50,        ; push eax
-                        "char" , 0x68,        ; push nmsg
-                        "int"  , msg,
-                        "char" , 0x68,        ; push hwnd
-                        "int"  , hwnd,
-                        "char" , 0xb8,        ; mov eax, &SendMessageW
-                        "int"  , SendMessageW,
-                        "short", 0xd0ff,      ; call eax
-                        "char" , 0xc2,        ; ret argsize
-                        "short", ParamCount*4, p) ; InStr(Options, "C") ? 0
-         }
-         NumPut("ptr", p, lParamPtr)          ; To be passed as lParam.
-         p := NumPut("ptr", 0, p)             ; There isn't a function object here so...
-         p := NumPut("int", ParamCount, lParamPtr)
-         return pcb
-      }
-
       ; GIF Animations!
       if (frames > 1) {
          ; Save frame delays because they are slow enough to impact timing.
@@ -3014,35 +2955,92 @@ class ImagePut {
          DllCall("gdiplus\GdipCloneImage", "ptr", pBitmap, "ptr*", &pBitmapClone:=0)
          DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmapClone)
 
-         ; Because timeSetEvent calls via a seperate thread, those events can be synchronized
-         ; with the main thread using a window message. Thanks: Lexikos
+         ; Because timeSetEvent calls in a seperate thread, redirect to main thread.
          ; LPTIMECALLBACK: (uTimerID, uMsg, dwUser, dw1, dw2)
-         pTimeProc := SyncWindowProc(hwnd, 0x8000, 5) ; ParamCount = 5
+         pTimeProc := this.SyncWindowProc(hwnd, 0x8000, 5) ; ParamCount = 5
 
          ; Allocate a private struct.
-         ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", 4*A_PtrSize, "ptr")
-            NumPut("int",           -1, ptr, 0*A_PtrSize) ; current frame
-            NumPut("ptr", pBitmapClone, ptr, 1*A_PtrSize) ; rest of GIF frames
-            NumPut("ptr",         Item, ptr, 2*A_PtrSize) ; frame delays
-            NumPut("ptr",    pTimeProc, ptr, 3*A_PtrSize) ; timer callback
+         ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", 6*A_PtrSize, "ptr")
+            NumPut("int",           32, ptr, 0*A_PtrSize) ; custom struct id
+            NumPut("int",           -1, ptr, 1*A_PtrSize) ; frame number
+            NumPut("int",            0, ptr, 2*A_PtrSize) ; current delay
+            NumPut("ptr", pBitmapClone, ptr, 3*A_PtrSize) ; GIF storage
+            NumPut("ptr",         Item, ptr, 4*A_PtrSize) ; Item (max frames & delays)
+            NumPut("ptr",    pTimeProc, ptr, 5*A_PtrSize) ; callback address
          DllCall("SetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr", ptr)
 
          ; Preserve GDI+ scope.
          ImagePut.gdiplusStartup()
 
-         ; Start GIF Animation loop (without using a timer for now).
-         ; DllCall("PostMessage", "ptr", hwnd, "uint", 0x8000, "uptr", 0, "ptr", 0)
-
-         DllCall("winmm\timeSetEvent"
-         , "uint", 10     ; uDelay
-         , "uint", 10         ; uResolution
-         ,  "ptr", pTimeProc ; lpTimeProc
-         , "uint", hwnd      ; dwUser
-         , "uint", 1         ; fuEvent
-         , "uint")
+         ; Start GIF Animation loop.
+         timer := DllCall("winmm\timeSetEvent"
+                  , "uint", 10        ; uDelay
+                  , "uint", 10        ; uResolution
+                  ,  "ptr", pTimeProc ; lpTimeProc
+                  , "uint", hwnd      ; dwUser
+                  , "uint", 1         ; fuEvent
+                  , "uint")
+         DllCall("SetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr", timer)
       }
 
       return hwnd
+   }
+
+   static SyncWindowProc(hwnd, msg, paramCount := 0) {
+      hModule := DllCall("GetModuleHandle", "str", "user32.dll", "ptr")
+      SendMessageW := DllCall("GetProcAddress", "ptr", hModule, "astr", "SendMessageW", "ptr")
+
+      pcb := DllCall("GlobalAlloc", "uint", 0, "ptr", 96, "ptr")
+      DllCall("VirtualProtect", "ptr", pcb, "ptr", 96, "uint", 0x40, "uint*", 0)
+
+      p := pcb
+      if (A_PtrSize = 8) {
+                     /*
+                     48 89 4c 24 08  ; mov [rsp+8], rcx
+                     48 89 54'24 10  ; mov [rsp+16], rdx
+                     4c 89 44 24 18  ; mov [rsp+24], r8
+                     4c'89 4c 24 20  ; mov [rsp+32], r9
+                     48 83 ec 28'    ; sub rsp, 40
+                     4c 8d 44 24 30  ; lea r8, [rsp+48]  (arg 3, &params)
+                     49 b9 ..        ; mov r9, .. (arg 4, operand to follow)
+                     */
+         p := NumPut("ptr"  , 0x54894808244c8948,
+                     "ptr"  , 0x4c182444894c1024,
+                     "ptr"  , 0x28ec834820244c89,
+                     "ptr"  , 0x00b9493024448d4c, p) - 1
+         lParamPtr := p, p += 8
+
+         p := NumPut("char" , 0xba,        ; mov edx, nmsg
+                     "int"  , msg,
+                     "char" , 0xb9,        ; mov ecx, hwnd
+                     "int"  , hwnd,
+                     "short", 0xb848,      ; mov rax, SendMessageW
+                     "ptr"  , SendMessageW,
+                     /*
+                     ff d0        ; call rax
+                     48 83 c4 28  ; add rsp, 40
+                     c3           ; ret
+                     */
+                     "ptr"  , 0x00c328c48348d0ff, p)
+      } else {
+         p := NumPut("char" , 0x68, p)     ; push ... (lParam data)
+         lParamPtr := p, p += 4
+         p := NumPut("int"  , 0x0824448d,  ; lea eax, [esp+8]
+                     "char" , 0x50,        ; push eax
+                     "char" , 0x68,        ; push nmsg
+                     "int"  , msg,
+                     "char" , 0x68,        ; push hwnd
+                     "int"  , hwnd,
+                     "char" , 0xb8,        ; mov eax, &SendMessageW
+                     "int"  , SendMessageW,
+                     "short", 0xd0ff,      ; call eax
+                     "char" , 0xc2,        ; ret argsize
+                     "short", ParamCount*4, p) ; InStr(Options, "C") ? 0
+      }
+      NumPut("ptr", p, lParamPtr)          ; To be passed as lParam.
+      p := NumPut("ptr", 0, p)             ; There isn't a function object here so...
+      p := NumPut("int", ParamCount, lParamPtr)
+      return pcb
    }
 
    static WindowClass(style := 0) {
@@ -3101,17 +3099,28 @@ class ImagePut {
             DllCall("DeleteObject", "ptr", hbm)
             DllCall("DeleteDC", "ptr", hdc)
 
-            ; Exit GIF Animation loop.
-            if pBitmap := DllCall("GetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr") {
-               DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
-               DllCall("SetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr", 0) ; Exit loop
+            if ptr := DllCall("GetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr") {
+               id := NumGet(ptr, 0, "int")
 
-               ; Delete Item.
-               Item := DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
-               DllCall("GlobalFree", "ptr", Item)
+               ; Exit GIF Animation loop.
+               if (id == 32) {
+                  pBitmap      := NumGet(ptr, 3*A_PtrSize, "ptr")
+                  Item         := NumGet(ptr, 4*A_PtrSize, "ptr")
+                  pTimeProc    := NumGet(ptr, 5*A_PtrSize, "ptr")
+                  timer        := DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
 
-               ; Exit GDI+ conditionally due to the ImagePut class being destroyed first.
-               ImagePut.gdiplusShutdown()
+                  DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
+                  DllCall("GlobalFree", "ptr", Item)
+                  DllCall("GlobalFree", "ptr", pTimeProc)
+                  DllCall("winmm\timeKillEvent", "uint", timer)
+
+                  ; Exit GDI+ conditionally due to the ImagePut class being destroyed first.
+                  ImagePut.gdiplusShutdown()
+
+                  ; Exit the window procedure.
+                  DllCall("GlobalFree", "ptr", ptr)
+                  DllCall("SetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr", 0) ; Exit loop
+               }
             }
 
             Persistent(--active_windows)
@@ -3188,14 +3197,20 @@ class ImagePut {
             ; Get variables.
             hdc := DllCall("GetWindowLong", "ptr", hwnd, "int", 2*A_PtrSize, "ptr")
             ptr := DllCall("GetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
-               , frame        := NumGet(ptr, 0*A_PtrSize, "int")
-               , pBitmap      := NumGet(ptr, 1*A_PtrSize, "ptr")
-               , Item         := NumGet(ptr, 2*A_PtrSize, "ptr")
-               , pTimeProc    := NumGet(ptr, 3*A_PtrSize, "ptr")
 
             ; Exit GIF animation loop.
-            if !pBitmap
+            if !ptr
                return
+
+            frame        := NumGet(ptr, 1*A_PtrSize, "int")
+            current      := NumGet(ptr, 2*A_PtrSize, "int")
+            pBitmap      := NumGet(ptr, 3*A_PtrSize, "ptr")
+            Item         := NumGet(ptr, 4*A_PtrSize, "ptr")
+            pTimeProc    := NumGet(ptr, 5*A_PtrSize, "ptr")
+
+            ; Get next frame.
+            frames := NumGet(Item + 4, "uint") // 4            ; Total number of frames
+            frame := mod(frame + 1, frames)                    ; Loop back to zero
 
             ; Get delay.
             delays := NumGet(Item + 8 + A_PtrSize, "ptr")      ; Array of delays
@@ -3204,10 +3219,17 @@ class ImagePut {
             (delay == 10) && delay := 100                      ; 10 ms is actually 100 ms
             ; See: https://www.biphelps.com/blog/The-Fastest-GIF-Does-Not-Exist
 
-            static current := 0
-            current += 10 ; Add resolution of timer.
+            ; Check delay.
+            current += 10                                      ; Add resolution of timer
+            NumPut("int", current, ptr, 2*A_PtrSize)           ; Save the current delay
+
+            ; Note that the rounding errors may accumulate, but it will even out over time.
+            ; This checks every 10 ms. Using <= 5 ensures that the range will always be 10 ms.  
             if ! (abs(current - delay) <= 5) 
                return
+
+            NumPut("int",   frame, ptr, 1*A_PtrSize)           ; Save the frame number
+            NumPut("int",       0, ptr, 2*A_PtrSize)           ; Reset the current delay
 
             /*
             ; Debug code
@@ -3225,13 +3247,6 @@ class ImagePut {
             }
             start := now
             */
-
-            current := 0
-
-            ; Get next frame.
-            frames := NumGet(Item + 4, "uint") // 4            ; Total number of frames
-            frame := mod(frame + 1, frames)                    ; Get next frame; loop back to 0
-            NumPut("int", frame, ptr, 0*A_PtrSize)             ; Save the frame number
 
             ; Select frame to show.
             DllCall("gdiplus\GdipImageGetFrameDimensionsCount", "ptr", pBitmap, "uint*", &dims:=0)
