@@ -2959,14 +2959,14 @@ class ImagePut {
          ; LPTIMECALLBACK: (uTimerID, uMsg, dwUser, dw1, dw2)
          pTimeProc := this.SyncWindowProc(hwnd, 0x8000, 5) ; ParamCount = 5
 
-         ; Allocate a private struct.
+         ; Store extra data inside window struct (cbWndExtra).
          ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", 6*A_PtrSize, "ptr")
-            NumPut("int",           32, ptr, 0*A_PtrSize) ; custom struct id
-            NumPut("int",           -1, ptr, 1*A_PtrSize) ; frame number
-            NumPut("int",            0, ptr, 2*A_PtrSize) ; current delay
-            NumPut("ptr", pBitmapClone, ptr, 3*A_PtrSize) ; GIF storage
-            NumPut("ptr",         Item, ptr, 4*A_PtrSize) ; Item (max frames & delays)
-            NumPut("ptr",    pTimeProc, ptr, 5*A_PtrSize) ; callback address
+            NumPut("int",           32, ptr + 0*A_PtrSize) ; custom struct id
+            NumPut("int",           -1, ptr + 1*A_PtrSize) ; frame number
+            NumPut("int",            0, ptr + 2*A_PtrSize) ; current delay
+            NumPut("ptr", pBitmapClone, ptr + 3*A_PtrSize) ; GIF storage
+            NumPut("ptr",         Item, ptr + 4*A_PtrSize) ; Item (max frames & delays)
+            NumPut("ptr",    pTimeProc, ptr + 5*A_PtrSize) ; callback address
          DllCall("SetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr", ptr)
 
          ; Preserve GDI+ scope.
@@ -2977,7 +2977,7 @@ class ImagePut {
                   , "uint", 10        ; uDelay
                   , "uint", 10        ; uResolution
                   ,  "ptr", pTimeProc ; lpTimeProc
-                  , "uint", hwnd      ; dwUser
+                  , "uint", 0         ; dwUser
                   , "uint", 1         ; fuEvent
                   , "uint")
          DllCall("SetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr", timer)
@@ -2986,7 +2986,7 @@ class ImagePut {
       return hwnd
    }
 
-   static SyncWindowProc(hwnd, msg, paramCount := 0) {
+   static SyncWindowProc(hwnd, msg, ParamCount := 0) {
       hModule := DllCall("GetModuleHandle", "str", "user32.dll", "ptr")
       SendMessageW := DllCall("GetProcAddress", "ptr", hModule, "astr", "SendMessageW", "ptr")
 
@@ -3039,7 +3039,7 @@ class ImagePut {
       }
       NumPut("ptr", p, lParamPtr)          ; To be passed as lParam.
       p := NumPut("ptr", 0, p)             ; There isn't a function object here so...
-      p := NumPut("int", ParamCount, lParamPtr)
+      p := NumPut("int", ParamCount, p)
       return pcb
    }
 
@@ -3104,9 +3104,9 @@ class ImagePut {
 
                ; Exit GIF Animation loop.
                if (id == 32) {
-                  pBitmap      := NumGet(ptr, 3*A_PtrSize, "ptr")
-                  Item         := NumGet(ptr, 4*A_PtrSize, "ptr")
-                  pTimeProc    := NumGet(ptr, 5*A_PtrSize, "ptr")
+                  pBitmap      := NumGet(ptr + 3*A_PtrSize, "ptr")
+                  Item         := NumGet(ptr + 4*A_PtrSize, "ptr")
+                  pTimeProc    := NumGet(ptr + 5*A_PtrSize, "ptr")
                   timer        := DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
 
                   DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
@@ -3189,6 +3189,14 @@ class ImagePut {
             SetTimer (tock => (tick == tock) && Tooltip()).Bind(A_TickCount), -7000
          }
 
+
+
+
+
+
+
+
+
          ; WM_APP - Animate GIFs
          if (uMsg = 0x8000) {
             ; Thanks tmplinshi, Teadrinker - https://www.autohotkey.com/boards/viewtopic.php?f=76&t=83358
@@ -3202,48 +3210,48 @@ class ImagePut {
             if !ptr
                return
 
-            frame        := NumGet(ptr, 1*A_PtrSize, "int")
-            current      := NumGet(ptr, 2*A_PtrSize, "int")
-            pBitmap      := NumGet(ptr, 3*A_PtrSize, "ptr")
-            Item         := NumGet(ptr, 4*A_PtrSize, "ptr")
-            pTimeProc    := NumGet(ptr, 5*A_PtrSize, "ptr")
+            frame        := NumGet(ptr + 1*A_PtrSize, "int")
+            current      := NumGet(ptr + 2*A_PtrSize, "int")
+            pBitmap      := NumGet(ptr + 3*A_PtrSize, "ptr")
+            Item         := NumGet(ptr + 4*A_PtrSize, "ptr")
+            pTimeProc    := NumGet(ptr + 5*A_PtrSize, "ptr")
 
             ; Get next frame.
             frames := NumGet(Item + 4, "uint") // 4            ; Total number of frames
             frame := mod(frame + 1, frames)                    ; Loop back to zero
 
-            ; Get delay.
+            ; Get delay. See: https://www.biphelps.com/blog/The-Fastest-GIF-Does-Not-Exist
             delays := NumGet(Item + 8 + A_PtrSize, "ptr")      ; Array of delays
             delay := 10 * NumGet(delays + 4*frame, "uint")     ; Delay of next frame
             delay := max(delay, 10)                            ; Minimum delay is 10ms
             (delay == 10) && delay := 100                      ; 10 ms is actually 100 ms
-            ; See: https://www.biphelps.com/blog/The-Fastest-GIF-Does-Not-Exist
 
             ; Check delay.
             current += 10                                      ; Add resolution of timer
-            NumPut("int", current, ptr, 2*A_PtrSize)           ; Save the current delay
+            NumPut("int", current, ptr + 2*A_PtrSize)          ; Save the current delay
 
             ; Note that the rounding errors may accumulate, but it will even out over time.
-            ; This checks every 10 ms. Using <= 5 ensures that the range will always be 10 ms.  
-            if ! (abs(current - delay) <= 5) 
+            ; This checks every 10 ms. Using <= 5 ensures that the range will always be 10 ms.
+            ; Will execute by frame number rather than timing, due to the current delay being incremented by 10.
+            if ! (abs(current - delay) <= 5)
                return
 
-            NumPut("int",   frame, ptr, 1*A_PtrSize)           ; Save the frame number
-            NumPut("int",       0, ptr, 2*A_PtrSize)           ; Reset the current delay
+            NumPut("int",   frame, ptr + 1*A_PtrSize)          ; Save the frame number
+            NumPut("int",       0, ptr + 2*A_PtrSize)          ; Reset the current delay
 
             /*
             ; Debug code
-            static start := 0, sum := 0, count := 1
+            static start := 0, sum := 0, count := 0
             DllCall("QueryPerformanceFrequency", "int64*", &frequency:=0)
             DllCall("QueryPerformanceCounter", "int64*", &now:=0)
             time := (now - start) / frequency * 1000
             if (time < 10000) {
                sum += time
                count += 1
-               if (mod(count, 10) = 0) ; Prevent the tooltip from impacting timings
-                  Tooltip "Current Delay:`t" Round(time, 4)
-                     .  "`nAverage Delay:`t" Round(sum / count, 4)
-                     .  "`nPlanned Delay:`t" (delay ?? "unknown")
+               ;if (mod(count, 10) = 0) ; Prevent the tooltip from impacting timings
+                  Tooltip   "Current Delay:`t" Round(time, 4)
+                     . "`n" "Average Delay:`t" Round(sum / count, 4)
+                     . "`n" "Planned Delay:`t" (delay ?? "unknown")
             }
             start := now
             */
