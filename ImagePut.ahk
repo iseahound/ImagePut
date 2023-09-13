@@ -3230,12 +3230,12 @@ class ImagePut {
             current += 10                                      ; Add resolution of timer
             NumPut("int", current, ptr + 2*A_PtrSize)          ; Save the current delay
 
-            ; Note that the rounding errors may accumulate, but it will even out over time.
-            ; This checks every 10 ms. Using <= 5 ensures that the range will always be 10 ms.
+            ; Check if the current tick is equal to the delay.
             ; Will execute by frame number rather than timing, which is more accurate,
             ; because the timing will rely take into account the above overhead,
             ; whereas the frame number will always form an even distribution.
-            if ! (abs(current - delay) <= 5)
+            ; Note that the variance (jitter) is additive, yet reverts to zero over time.
+            if (current != delay)
                return
 
             NumPut("int",   frame, ptr + 1*A_PtrSize)          ; Save the frame number
