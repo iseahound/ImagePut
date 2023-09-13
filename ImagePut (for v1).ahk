@@ -3232,7 +3232,9 @@ class ImagePut {
 
             ; Note that the rounding errors may accumulate, but it will even out over time.
             ; This checks every 10 ms. Using <= 5 ensures that the range will always be 10 ms.
-            ; Will execute by frame number rather than timing, due to the current delay being incremented by 10.
+            ; Will execute by frame number rather than timing, which is more accurate,
+            ; because the timing will rely take into account the above overhead,
+            ; whereas the frame number will always form an even distribution.
             if ! (abs(current - delay) <= 5)
                return
 
