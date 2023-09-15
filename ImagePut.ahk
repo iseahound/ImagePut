@@ -2289,6 +2289,17 @@ class ImagePut {
          return codes[b64] := code
       }
 
+      AVX2() {
+         ; This is just plain old AVX, not a check for AVX2 (which is neexed for pixelsearch1y)
+         ; Also see: https://store.steampowered.com/hwsurvey/steam-hardware-software-survey-welcome-to-steam
+         ; C source code - https://godbolt.org/z/n8fxxdsfs
+         code := this.Base64Code((A_PtrSize == 4)
+            ? "VYnli0UIi1UQi00UO0UMcws5EHUCiQiDwATr8F3D" ; not implemented
+            : "U0UxwLgBAAAARInBD6IPuuEbcxkPuuEccxNEicEPAdBI99CoBg+UwA+2wOsCMcBbww==")
+
+         return DllCall(code, "int")
+      }
+
       CPUID() {
          static cpuid := 0
 
