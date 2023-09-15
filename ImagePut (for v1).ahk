@@ -2304,7 +2304,8 @@ class ImagePut {
 
             ; Set eax flag to 1 to retrieve supported CPU features.
             ; See this for CPU features: https://wiki.osdev.org/CPUID
-            ; Also see page 591: https://www.amd.com/system/files/TechDocs/24594.pdf
+            ; Also see: Appendix D.2 - CPUID Feature Flags Related to Instruction Support
+            ; On page 1861 - https://www.amd.com/content/dam/amd/en/documents/processor-tech-docs/programmer-references/40332.pdf
             DllCall(code, "uint*", a := 1, "uint*", b := 0, "uint*", c := 0, "uint*", d := 0, "cdecl")
 
             ; Free memory.
