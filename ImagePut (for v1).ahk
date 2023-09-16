@@ -3187,7 +3187,7 @@ class ImagePut {
             text_color := (0.3*(255&c>>16) + 0.59*(255&c>>8) + 0.11*(255&c)) >= 128 ? 0x000000 : 0xFFFFFF
 
             ; Show tooltip.
-            Tooltip % " (" x ", " y ") `n " SubStr(c, 3) " "
+            Tooltip % " (" x ", " y ") `n " SubStr(c, 3) " ",,, 16
             tt := WinExist("ahk_class tooltips_class32 ahk_exe" A_AhkPath)
 
             ; Style background and text color.
@@ -3200,7 +3200,7 @@ class ImagePut {
             goto default
 
             Tooltip:
-               Tooltip
+               Tooltip,,,, 16
             return
          }
 

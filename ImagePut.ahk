@@ -3187,7 +3187,7 @@ class ImagePut {
             text_color := (0.3*(255&c>>16) + 0.59*(255&c>>8) + 0.11*(255&c)) >= 128 ? 0x000000 : 0xFFFFFF
 
             ; Show tooltip.
-            tt := Tooltip(" (" x ", " y ") `n " SubStr(c, 3) " ")
+            tt := Tooltip(" (" x ", " y ") `n " SubStr(c, 3) " ",,, 16)
 
 
             ; Style background and text color.
@@ -3196,7 +3196,7 @@ class ImagePut {
             DllCall("SendMessage", "ptr", tt, "uint", 1044, "ptr", text_color, "ptr", 0)
 
             ; Destroy tooltip after 7 seconds of the last showing.
-            SetTimer Tooltip, -7000
+            SetTimer Tooltip.bind(,,, 16), -7000
          }
 
 
