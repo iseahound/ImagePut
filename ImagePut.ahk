@@ -3196,13 +3196,8 @@ class ImagePut {
             DllCall("SendMessage", "ptr", tt, "uint", 1044, "ptr", text_color, "ptr", 0)
 
             ; Destroy tooltip after 7 seconds of the last showing.
-            static tick          ; Using a static allows changes in value to affect tick inside the closure.
-            tick := A_TickCount  ; Change and update tick. tock is set only once using bind to eval A_TickCount.
-            SetTimer (tock => (tick == tock) && Tooltip()).Bind(A_TickCount), -7000
+            SetTimer Tooltip, -7000
          }
-
-
-
 
 
 
