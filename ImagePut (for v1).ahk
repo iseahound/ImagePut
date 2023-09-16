@@ -3196,18 +3196,13 @@ class ImagePut {
             DllCall("SendMessage", "ptr", tt, "uint", 1044, "ptr", text_color, "ptr", 0)
 
             ; Destroy tooltip after 7 seconds of the last showing.
-            static tick
-            tick := A_TickCount
-            pWndProc := RegisterCallback(ImagePut.WindowProc,,, &ImagePut)
-            clock := Func("DllCall").bind(pWndProc, "ptr", hwnd, "uint", 0x8001, "uptr", A_TickCount, "ptr", pWndProc)
-            SetTimer % clock, -7000
-         }
+            SetTimer Tooltip, -7000
+            goto default
 
-         if (uMsg = 0x8001)
-            if (tick == wParam) { ; tock is wParam
+            Tooltip:
                Tooltip
-               DllCall("GlobalFree", "ptr", lParam, "ptr") ; pWndProc is lParam
-            }
+            return
+         }
 
          ; WM_APP - Animate GIFs
          if (uMsg = 0x8000) {
