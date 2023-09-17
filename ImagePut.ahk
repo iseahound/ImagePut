@@ -242,8 +242,8 @@ class ImagePut {
       return coimage
    }
 
-   static get(name, p*) {
-      return ObjHasOwnProp(this, name) ? this.name : ""
+   static get(self, name) {
+      return ObjHasOwnProp(self, name) ? self.%name% : ""
    }
 
    static inputs := [
@@ -279,7 +279,7 @@ class ImagePut {
    static DontVerifyImageType(&image, &keywords := "") {
 
       ; Sentinel value: Returns the empty string for unknown properties.
-      keywords := {base: {__get: this.get}}
+      keywords := {base: {__get: (self, name, *) => this.get(self, name)}}
 
       ; Try ImageType.
       if !IsObject(image)
@@ -288,7 +288,7 @@ class ImagePut {
       ; Goto ImageType.
       if ObjHasOwnProp(image, "image") {
          keywords := image
-         keywords.base := {__get: this.get}
+         keywords.base := {__get: (self, name, *) => this.get(self, name)}
          image := image.image
          throw Error("Must catch this error with ImageType.")
       }
@@ -297,7 +297,7 @@ class ImagePut {
       for type in this.inputs
          if ObjHasOwnProp(image, type) {
             keywords := image
-            keywords.base := {__get: this.get}
+            keywords.base := {__get: (self, name, *) => this.get(self, name)}
             image := image.%type%
             return type
          }
@@ -437,7 +437,7 @@ class ImagePut {
    static ToBitmap(type, image, k := "") {
 
       ; Sentinel value: Returns the empty string for unknown properties.
-      (!k) && k := {base: {__get: this.get}}
+      (!k) && k := {__get: (self, name, *) => this.get(self, name)}
 
       if (type = "clipboard_png")
          return this.from_clipboard_png()
@@ -614,7 +614,7 @@ class ImagePut {
    static ToStream(type, image, k := "") {
 
       ; Sentinel value: Returns the empty string for unknown properties.
-      (!k) && k := {base: {__get: this.get}}
+      (!k) && k := {__get: (self, name, *) => this.get(self, name)}
 
       if (type = "clipboard_png")
          return this.get_clipboard_png()
