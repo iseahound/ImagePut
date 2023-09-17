@@ -1,4 +1,4 @@
-﻿void native_cpuid(unsigned int *eax, unsigned int *ebx, unsigned int *ecx, unsigned int *edx) {
+void native_cpuid(unsigned int *eax, unsigned int *ebx, unsigned int *ecx, unsigned int *edx) {
         /* ecx is often an input as well as an output. */
         asm volatile("cpuid"
             : "=a" (*eax),
