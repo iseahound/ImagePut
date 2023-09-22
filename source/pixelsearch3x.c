@@ -2,34 +2,54 @@
 
 unsigned int * pixelsearch3(unsigned int * start, unsigned int * end, unsigned int * colors, unsigned int length) {
 
+    // Save the starting pointer position.
     unsigned int * current = start;
-    __m128i vstart, vcolor0, vcolor1, vcolor2;
-    
+
+    // Offset of pointer to stored colors.
     int i = 0;
 
+    // Number of colors left.
+    int n;
+
+    // Determine how many matches to be run in sequence.
     enter:
-    start = current; // Reset pointer for each run.
-    if (length - i > 2)
-        goto check_3;
-    else if (length - i > 1)
-        goto check_2;
-    else if (length - i > 0)
+    n = length - i;
+    if (n == 0)
+        return end; // Somehow goto exit creates a bigger binary in mcodeforgcc (not here though).
+    if (n == 1)
+        goto init_1;
+    if (n == 2)
+        goto init_2;
+    if (n > 2)
+        goto init_3; // Segue into next label.
+
+    // Create vectors from pointer to stored colors.
+    init_3:
+    __m128i vcolor3 = _mm_set1_epi32(*(colors + i + 2));
+    init_2:
+    __m128i vcolor2 = _mm_set1_epi32(*(colors + i + 1));
+    init_1:
+    __m128i vcolor1 = _mm_set1_epi32(*(colors + i + 0));
+
+    // Restore starting pointer for each run.
+    start = current;
+
+    // Somehow there are diminishing returns past running 3 checks at once.
+    if (n == 1)
         goto check_1;
-    else
-        goto exit;
+    if (n == 2)
+        goto check_2;
+    if (n > 2)
+        goto check_3;  // Segue into next label.
 
     check_3:
-    vcolor0 = _mm_set1_epi32(*(colors + i + 0));
-    vcolor1 = _mm_set1_epi32(*(colors + i + 1));
-    vcolor2 = _mm_set1_epi32(*(colors + i + 2));
-
     while (start < end - 3) {
-        vstart = _mm_loadu_si128((__m128i *) start);
-        if (_mm_movemask_epi8(_mm_cmpeq_epi32(vcolor0, vstart)) != 0)
-            goto exit;
+        __m128i vstart = _mm_loadu_si128((__m128i *) start);
         if (_mm_movemask_epi8(_mm_cmpeq_epi32(vcolor1, vstart)) != 0)
             goto exit;
         if (_mm_movemask_epi8(_mm_cmpeq_epi32(vcolor2, vstart)) != 0)
+            goto exit;
+        if (_mm_movemask_epi8(_mm_cmpeq_epi32(vcolor3, vstart)) != 0)
             goto exit;
         start += 4;
     }
@@ -37,14 +57,11 @@ unsigned int * pixelsearch3(unsigned int * start, unsigned int * end, unsigned i
     goto enter;
 
     check_2:
-    vcolor0 = _mm_set1_epi32(*(colors + i + 0));
-    vcolor1 = _mm_set1_epi32(*(colors + i + 1));
-
     while (start < end - 3) {
-        vstart = _mm_loadu_si128((__m128i *) start);
-        if (_mm_movemask_epi8(_mm_cmpeq_epi32(vcolor0, vstart)) != 0)
-            goto exit;
+        __m128i vstart = _mm_loadu_si128((__m128i *) start);
         if (_mm_movemask_epi8(_mm_cmpeq_epi32(vcolor1, vstart)) != 0)
+            goto exit;
+        if (_mm_movemask_epi8(_mm_cmpeq_epi32(vcolor2, vstart)) != 0)
             goto exit;
         start += 4;
     }
@@ -52,11 +69,9 @@ unsigned int * pixelsearch3(unsigned int * start, unsigned int * end, unsigned i
     goto enter;
 
     check_1:
-    vcolor0 = _mm_set1_epi32(*(colors + i + 0));
-
     while (start < end - 3) {
-        vstart = _mm_loadu_si128((__m128i *) start);
-        if (_mm_movemask_epi8(_mm_cmpeq_epi32(vcolor0, vstart)) != 0)
+        __m128i vstart = _mm_loadu_si128((__m128i *) start);
+        if (_mm_movemask_epi8(_mm_cmpeq_epi32(vcolor1, vstart)) != 0)
             goto exit;
         start += 4;
     }
