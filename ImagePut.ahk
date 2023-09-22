@@ -2430,7 +2430,7 @@ class ImagePut {
             . "1GYP3tlmD3TQZg903A9U02YPdtVmRA/XwkWFwHUSSIPAEOvLikgCQTjLcwtIg8AESDnQcu/rHTjZcvGKSAFAOM5y6UA4+XLkighA"
             . "OM1y3UQ44XLYW15fXUFcQV1BXsM=")
 
-         ; C source code - https://godbolt.org/z/1vj98cocW
+         ; C source code - https://godbolt.org/z/xj5seEhba
          pixelsearch3 := this.Base64Code((A_PtrSize == 4)
             ? "VTHSieVXi00MVlOLXRCLRRQp0A+E5QAAAIP4AXQbg/gCdAtmD25skwhmD3DdAGYPbnSTBGYPcNYAZg9uPJNmD3DPAIP4AXR6g/gC"
             . "jXH0i0UIdGM58HM2DxAADyjgZg924WYP1/yF/w+FiQAAAA8o4mYPduBmD9f8hf91emYPdsNmD9f4hf91boPAEOvGg8ID6Xn///8P"
@@ -2441,10 +2441,25 @@ class ImagePut {
             . "wgPpcP///w8QAA8o4WYPduBmD9fchdt1VmYPdsJmD9fYhdt1SkiDwBBMOdhy2YPCAulB////TInQTDnYcxUPEABmD3bBZg/X2IXb"
             . "dSJIg8AQ6+b/wukd////SP/CQYtckPw5GHQVRDnKcu9Ig8AESDnIcwcx0uvuSInIW8M=")
 
-         ; C source code - https://godbolt.org/z/oEGGeedac
+         ; C source code - https://godbolt.org/z/W54vWW7Gz
          pixelsearch4 := this.Base64Code((A_PtrSize == 4)
-            ? "VYnlV1ZTUYt1EIt9FItVCDtVDHNFikICiloBiEXzigKIRfIxwDtFGHQrik3zOEyGAnIfOkyHAnIZOFyGAXITOlyHAXINik3yOAyGcgU6DIdzCEDr0IPCBOu2idBaW15fXcM="
-            : "U0iJyEg50HNFRIpQAkSKWAExyYoYO0wkMHMtRThUiAJyIUU6VIkCchpFOFyIAXITRTpciQFyDEE4HIhyBkE6HIlzC0j/wevNSIPABOu2W8M=")
+            ? "VTHSieVXVlOD5PCD7CCLdRCLTRSLRRgp0A+EDAIAAIP4AXQ6g/gCdB9mD25klghmD3DsAA8pbCQQZg9ubJEIZg9w3QAPKRwkZg9u"
+            . "ZJYEZg9uVJEEZg9w3ABmD3DqAGYPbiSWZg9uNJFmD3DUAGYPcOYAg/gBD4QdAQAAg/gCi0UID4SlAAAAi30MZg929o1f9DnYD4OL"
+            . "AAAADxAADyj6DyjIZg/e+GYP3sxmD3T6Zg90yA9Uz2YPds5mD9f5hf8PhSgBAAAPKMsPKPhmD97IZg/e/WYPdMtmD3T4D1TPZg92"
+            . "zmYP1/mF/w+F/wAAAA8oPCQPKEwkEGYP3vhmD97IZg90TCQQZg90xw9UyGYPds5mD9f5hf8PhdEAAACDwBDpbf///4PCA+no/v//"
+            . "i10MZg929oPrDDnYc1YPEAAPKPgPKMhmD978Zg/eymYPdMpmD3T4D1TPZg92zmYP1/mF/w+FhwAAAA8o+A8oy2YP3shmD979Zg90"
+            . "y2YPdMcPVMhmD3bOZg/X+YX/dWKDwBDrpoPCAul8/v//i30Mi0UIZg929o1f9DnYcy0PEAgPEAAPEDhmD97MZg/ewmYPdMJmD3TP"
+            . "D1TBZg92xmYP1/iF/3Ucg8AQ689C6Tj+//+J+zhclgJzIkI7VRh18oPABDtFDHM8ilABD7Z4AohUJBCKEIgUJDHS6986XJECctiK"
+            . "XCQQOFyWAXLOOlyRAXLIihwkOByWcsA6HJFyu+sDi0UMjWX0W15fXcM="
+            : "VlNIg+xIDyk0JA8pfCQQRA8pRCQgRA8pTCQwi5wkgAAAAEmJykiJ0THSSI1x9EGJ20Ep0w+EEwIAAEhjwkGD+wF0NkGD+wJ0GGZB"
+            . "D250gAhmQQ9ubIEIZg9w5gBmD3D1AGZBD25cgARmQQ9ubIEEZg9w0wBmD3DtAGZBD24cgGZFD3bAZg9wywBmQQ9uHIFMidBmD3Db"
+            . "AEGD+wEPhFcBAABBg/sCD4QOAQAASDnwD4ObAAAADxAARA8oyQ8o+GZED97IZg/e+2ZED3TJZg90+EEPVPlmQQ92+GZED9ffRYXb"
+            . "D4UvAQAADyj6RA8oyGYP3vhmRA/ezWYPdPpmRA90yEEPVPlmQQ92+GZED9ffRYXbD4X/AAAARA8oyA8o/GYP3vhmRA/ezmYPdPxm"
+            . "QQ90wQ9Ux2ZBD3bAZkQP19hFhdsPhdAAAABIg8AQ6Vz///+DwgPp1/7//w8QAEQPKMgPKPhmRA/ey2YP3vlmD3T5ZkQPdMhBD1T5"
+            . "ZkEPdvhmRA/X30WF2w+FjAAAAEQPKMgPKPpmD974ZkQP3s1mD3T6ZkEPdMEPVMdmQQ92wGZED9fYRYXbdWFIg8AQSDnwcpmDwgLp"
+            . "aP7//w8QOEQPKM8PKMdmRA/ey2YP3sFmD3TBZkEPdPkPVMdmQQ92wGZED9fYRYXbdSJIg8AQSDnwcsn/wukq/v//RThUkAJzH0j/"
+            . "wjnacvJIg8AESDnIczVEilACRIpYATHSQIow6+RFOlSRAnLaRThckAFy00U6XJEBcsxBODSQcsZBOjSRcsDrA0iJyA8oNCQPKHwk"
+            . "EEQPKEQkIEQPKEwkMEiDxEhbXsM=")
 
          ; ------------------------------------------------------------------------------------------------------
 
@@ -2523,10 +2538,12 @@ class ImagePut {
                b := ((c & 0xFF))
                v := abs(variation)
 
+               NumPut("uchar", 255, high, 4*A_Offset + 3) ; Alpha
                NumPut("uchar", min(r+v, 255), high, 4*A_Offset + 2)
                NumPut("uchar", min(g+v, 255), high, 4*A_Offset + 1)
                NumPut("uchar", min(b+v, 255), high, 4*A_Offset + 0)
 
+               NumPut("uchar", 0, low, 4*A_Offset + 3) ; Alpha
                NumPut("uchar", max(r-v, 0), low, 4*A_Offset + 2)
                NumPut("uchar", max(g-v, 0), low, 4*A_Offset + 1)
                NumPut("uchar", max(b-v, 0), low, 4*A_Offset + 0)
@@ -2549,10 +2566,12 @@ class ImagePut {
                vg := abs(variation[2])
                vb := abs(variation[3])
 
+               NumPut("uchar", 255, high, 4*A_Offset + 3) ; Alpha
                NumPut("uchar", min(r + vr, 255), high, 4*A_Offset + 2)
                NumPut("uchar", min(g + vg, 255), high, 4*A_Offset + 1)
                NumPut("uchar", min(b + vb, 255), high, 4*A_Offset + 0)
 
+               NumPut("uchar", 0, low, 4*A_Offset + 3) ; Alpha
                NumPut("uchar", max(r - vr, 0), low, 4*A_Offset + 2)
                NumPut("uchar", max(g - vg, 0), low, 4*A_Offset + 1)
                NumPut("uchar", max(b - vb, 0), low, 4*A_Offset + 0)
