@@ -1,0 +1,3 @@
+Use this at the top of your code to get the x64 calling convention
+
+__attribute__((ms_abi))
