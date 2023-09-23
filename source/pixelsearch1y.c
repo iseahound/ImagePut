@@ -1,8 +1,8 @@
 #include <immintrin.h>
 
-unsigned int * pixelsearch1(unsigned int * start, unsigned int * end, unsigned int color) { 
-    
-    // Create a vector of eight copies of color.
+unsigned int * pixelsearch1y(unsigned int * start, unsigned int * end, unsigned int color) {
+
+    // Create a vector of eight copies of the target color.
     __m256i vcolor = _mm256_set1_epi32(color);
 
     // Loop over start pointer with a step of eight unsigned integers.

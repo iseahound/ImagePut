@@ -1,6 +1,6 @@
 #include <emmintrin.h>
 
-unsigned int * pixelsearch3(unsigned int * start, unsigned int * end, unsigned int * colors, unsigned int length) {
+unsigned int * pixelsearch3x(unsigned int * start, unsigned int * end, unsigned int * colors, unsigned int length) {
 
     // Save the starting pointer position.
     unsigned int * current = start;
@@ -11,19 +11,28 @@ unsigned int * pixelsearch3(unsigned int * start, unsigned int * end, unsigned i
     // Number of colors left.
     int n;
 
+    // Somehow there are diminishing returns past running 3 checks at once.
+    int check;
+
     // Determine how many matches to be run in sequence.
     enter:
     n = length - i;
     if (n == 0)
-        return end; // Somehow goto exit creates a bigger binary in mcodeforgcc (not here though).
-    if (n == 1)
+        return end; // Somehow goto exit creates a bigger binary in mcodeforgcc.
+    if (n == 1) {
+        check = 1;
         goto init_1;
-    if (n == 2)
+    }
+    if (n == 2) {
+        check = 2;
         goto init_2;
-    if (n > 2)
+    }
+    if (n > 2) {
+        check = 3;
         goto init_3; // Segue into next label.
+    }
 
-    // Create vectors from pointer to stored colors.
+    // Create a vector of four copies of the target color.
     init_3:
     __m128i vcolor3 = _mm_set1_epi32(*(colors + i + 2));
     init_2:
@@ -34,22 +43,21 @@ unsigned int * pixelsearch3(unsigned int * start, unsigned int * end, unsigned i
     // Restore starting pointer for each run.
     start = current;
 
-    // Somehow there are diminishing returns past running 3 checks at once.
+    // Loop over start pointer with a step of four unsigned integers.
     if (n == 1)
         goto check_1;
     if (n == 2)
         goto check_2;
     if (n > 2)
-        goto check_3;  // Segue into next label.
+        goto check_3; // Segue into next label.
 
     check_3:
     while (start < end - 3) {
         __m128i vstart = _mm_loadu_si128((__m128i *) start);
-        if (_mm_movemask_epi8(_mm_cmpeq_epi32(vcolor1, vstart)) != 0)
-            goto exit;
-        if (_mm_movemask_epi8(_mm_cmpeq_epi32(vcolor2, vstart)) != 0)
-            goto exit;
-        if (_mm_movemask_epi8(_mm_cmpeq_epi32(vcolor3, vstart)) != 0)
+        int mask1 = _mm_movemask_epi8(_mm_cmpeq_epi32(vcolor1, vstart));
+        int mask2 = _mm_movemask_epi8(_mm_cmpeq_epi32(vcolor2, vstart));
+        int mask3 = _mm_movemask_epi8(_mm_cmpeq_epi32(vcolor3, vstart));
+        if (mask1 != 0 || mask2 != 0 || mask3 != 0)
             goto exit;
         start += 4;
     }
@@ -59,9 +67,9 @@ unsigned int * pixelsearch3(unsigned int * start, unsigned int * end, unsigned i
     check_2:
     while (start < end - 3) {
         __m128i vstart = _mm_loadu_si128((__m128i *) start);
-        if (_mm_movemask_epi8(_mm_cmpeq_epi32(vcolor1, vstart)) != 0)
-            goto exit;
-        if (_mm_movemask_epi8(_mm_cmpeq_epi32(vcolor2, vstart)) != 0)
+        int mask1 = _mm_movemask_epi8(_mm_cmpeq_epi32(vcolor1, vstart));
+        int mask2 = _mm_movemask_epi8(_mm_cmpeq_epi32(vcolor2, vstart));
+        if (mask1 != 0 || mask2 != 0)
             goto exit;
         start += 4;
     }
@@ -71,18 +79,19 @@ unsigned int * pixelsearch3(unsigned int * start, unsigned int * end, unsigned i
     check_1:
     while (start < end - 3) {
         __m128i vstart = _mm_loadu_si128((__m128i *) start);
-        if (_mm_movemask_epi8(_mm_cmpeq_epi32(vcolor1, vstart)) != 0)
+        int mask1 = _mm_movemask_epi8(_mm_cmpeq_epi32(vcolor1, vstart));
+        if (mask1 != 0)
             goto exit;
         start += 4;
     }
     i += 1;
     goto enter;
 
-    exit:
     // Clean up any remaining elements.
+    exit:
     while (start < end) {
-        for (int i = 0; i < length; i++)
-            if (*start == colors[i])
+        for (int j = 0; j < check; j++)
+            if (*start == colors[i + j])
                 return start;
         start++;
     }

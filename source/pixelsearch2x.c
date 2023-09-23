@@ -5,13 +5,13 @@
 #define _mm_cmpgt_epu8(a, b) _mm_xor_si128(_mm_cmple_epu8(a, b), _mm_set1_epi8(-1))
 #define _mm_cmplt_epu8(a, b) _mm_cmpgt_epu8(b, a)
 
-unsigned int * pixelsearch2(unsigned int * start, unsigned int * end, unsigned char rh, unsigned char rl, unsigned char gh, unsigned char gl, unsigned char bh, unsigned char bl) {
+unsigned int * pixelsearch2x(unsigned int * start, unsigned int * end, unsigned char rh, unsigned char rl, unsigned char gh, unsigned char gl, unsigned char bh, unsigned char bl) {
 
     // Reconstruct ARGB from individual color channels.
     unsigned int h = (0xFF << 24 | rh << 16 | gh << 8 | bh << 0);
     unsigned int l = (0x00 << 24 | rl << 16 | gl << 8 | bl << 0);
 
-    // Create a vector of four copies.
+    // Create a vector of four copies of the target color.
     __m128i vh = _mm_set1_epi32(h);
     __m128i vl = _mm_set1_epi32(l);
     __m128i vmask = _mm_set1_epi32(0xFFFFFFFF);
@@ -26,7 +26,7 @@ unsigned int * pixelsearch2(unsigned int * start, unsigned int * end, unsigned c
         __m128i v2 = _mm_cmple_epu8(vstart, vh);
         __m128i v3 = _mm_cmpge_epu8(vstart, vl);
         __m128i v1234 = _mm_and_si128(v2, v3);
-        
+
         // Compare equality to four unsigned integers.
         __m128i vcmp = _mm_cmpeq_epi32(v1234, vmask);
 
@@ -36,10 +36,11 @@ unsigned int * pixelsearch2(unsigned int * start, unsigned int * end, unsigned c
         // If the mask is nonzero, there is at least one match.
         if (mask != 0)
             break;
-            
+
+        // Increment start by four unsigned integers.
         start += 4;
     }
-    
+
     // Clean up any remaining elements.
     unsigned char r, g, b;
     while (start < end) {

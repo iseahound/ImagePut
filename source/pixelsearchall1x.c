@@ -1,6 +1,6 @@
 #include <emmintrin.h>
 
-unsigned int pixelsearchall1(unsigned int ** result, unsigned int limit, unsigned int * start, unsigned int * end, unsigned int color) {
+unsigned int pixelsearchall1x(unsigned int ** result, unsigned int limit, unsigned int * start, unsigned int * end, unsigned int color) {
 
     // Number of 32-bit integers the register can hold.
     int pack = 4;
@@ -8,11 +8,11 @@ unsigned int pixelsearchall1(unsigned int ** result, unsigned int limit, unsigne
     // Track number of matching searches.
     unsigned int count = 0;
 
-    // Create a vector of four copies of color.
+    // Create a vector of four copies of the target color.
     __m128i vcolor = _mm_set1_epi32(color);
 
-    loop:
     // Loop over start pointer with a step of four unsigned integers.
+    loop:
     while (start < end - 3) {
 
         // Load four unsigned integers from start into a vector.
