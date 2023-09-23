@@ -2465,7 +2465,7 @@ class ImagePut {
 
          ; When doing pointer arithmetic, *Scan0 + 1 is actually adding 4 bytes.
          if (option == 1)
-            byte := DllCall(pixelsearch1, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "cdecl ptr")
+            address :=DllCall(pixelsearch1, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "cdecl ptr")
 
          if (option == 2) {
             r := ((color & 0xFF0000) >> 16)
@@ -2473,7 +2473,7 @@ class ImagePut {
             b := ((color & 0xFF))
             v := abs(variation)
 
-            byte := DllCall(pixelsearch2, "ptr", this.ptr, "ptr", this.ptr + this.size
+            address :=DllCall(pixelsearch2, "ptr", this.ptr, "ptr", this.ptr + this.size
                      , "uchar", min(r+v, 255)
                      , "uchar", max(r-v, 0)
                      , "uchar", min(g+v, 255)
@@ -2491,7 +2491,7 @@ class ImagePut {
             vg := abs(variation[2])
             vb := abs(variation[3])
 
-            byte := DllCall(pixelsearch2, "ptr", this.ptr, "ptr", this.ptr + this.size
+            address :=DllCall(pixelsearch2, "ptr", this.ptr, "ptr", this.ptr + this.size
                      , "uchar", min(r + vr, 255)
                      , "uchar", max(r - vr, 0)
                      , "uchar", min(g + vg, 255)
@@ -2502,7 +2502,7 @@ class ImagePut {
          }
 
          if (option == 4)
-            byte := DllCall(pixelsearch2, "ptr", this.ptr, "ptr", this.ptr + this.size
+            address :=DllCall(pixelsearch2, "ptr", this.ptr, "ptr", this.ptr + this.size
                      , "uchar", min(max(variation[1], variation[2]), 255)
                      , "uchar", max(min(variation[1], variation[2]), 0)
                      , "uchar", min(max(variation[3], variation[4]), 255)
@@ -2521,7 +2521,7 @@ class ImagePut {
                 NumPut(c, colors, 4*(A_Index-1), "uint") ; Place the unsigned int at each offset.
             }
 
-            byte := DllCall(pixelsearch3, "ptr", this.ptr, "ptr", this.ptr + this.size, "ptr", &colors, "uint", color.length(), "cdecl ptr")
+            address :=DllCall(pixelsearch3, "ptr", this.ptr, "ptr", this.ptr + this.size, "ptr", &colors, "uint", color.length(), "cdecl ptr")
          }
 
          ; Options 6 & 7 - Creates a high and low struct where each pair is the min and max range.
@@ -2549,7 +2549,7 @@ class ImagePut {
                NumPut(max(b-v, 0), low, 4*A_Offset + 0, "uchar")
             }
 
-            byte := DllCall(pixelsearch4, "ptr", this.ptr, "ptr", this.ptr + this.size, "ptr", &high, "ptr", &low, "uint", color.length(), "cdecl ptr")
+            address :=DllCall(pixelsearch4, "ptr", this.ptr, "ptr", this.ptr + this.size, "ptr", &high, "ptr", &low, "uint", color.length(), "cdecl ptr")
          }
 
          if (option == 7) {
@@ -2577,7 +2577,7 @@ class ImagePut {
                NumPut(max(b - vb, 0), low, 4*A_Offset + 0, "uchar")
             }
 
-            byte := DllCall(pixelsearch4, "ptr", this.ptr, "ptr", this.ptr + this.size, "ptr", &high, "ptr", &low, "uint", color.length(), "cdecl ptr")
+            address :=DllCall(pixelsearch4, "ptr", this.ptr, "ptr", this.ptr + this.size, "ptr", &high, "ptr", &low, "uint", color.length(), "cdecl ptr")
          }
 
          ; Compare the address to the out-of-bounds limit.
@@ -2799,13 +2799,13 @@ class ImagePut {
          }
 
          ; Check if any matches are found.
-         if (count = 0)
+         if (count == 0)
             return False
 
          ; Create an array of [x, y] coordinates.
          xys := []
          loop % count {
-            byte := NumGet(result, A_PtrSize*(A_Index-1), "ptr")
+            address :=NumGet(result, A_PtrSize*(A_Index-1), "ptr")
             offset := (byte - this.ptr) // 4
             xys.push([mod(offset, this.width), offset // this.width])
          }
@@ -2827,7 +2827,7 @@ class ImagePut {
             image := ImagePutBuffer(image)
 
          ; Search for the address of the first matching image.
-         byte := DllCall(code, "ptr", this.ptr, "uint", this.width, "uint", this.height
+         address :=DllCall(code, "ptr", this.ptr, "uint", this.width, "uint", this.height
                            , "ptr", image.ptr, "uint", image.width, "uint", image.height, "cdecl ptr")
 
          ; Compare the address to the out-of-bounds limit.
@@ -2876,7 +2876,7 @@ class ImagePut {
          ; Create an array of [x, y] coordinates.
          xys := []
          loop % count {
-            byte := NumGet(result, A_PtrSize*(A_Index-1), "ptr")
+            address :=NumGet(result, A_PtrSize*(A_Index-1), "ptr")
             offset := (byte - this.ptr) // 4
             xy := [mod(offset, this.width), offset // this.width]
             xys.push(xy)
