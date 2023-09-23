@@ -1,4 +1,4 @@
-unsigned int pixelsearchall2(unsigned int ** result, unsigned int capacity, unsigned int * start, unsigned int * end, unsigned char rh, unsigned char rl, unsigned char gh, unsigned char gl, unsigned char bh, unsigned char bl) {
+unsigned int pixelsearchall2(unsigned int ** result, unsigned int limit, unsigned int * start, unsigned int * end, unsigned char rh, unsigned char rl, unsigned char gh, unsigned char gl, unsigned char bh, unsigned char bl) {
     unsigned int count = 0;
     unsigned char r, g, b;
     while (start < end) {
@@ -6,7 +6,7 @@ unsigned int pixelsearchall2(unsigned int ** result, unsigned int capacity, unsi
         g = *((unsigned char *) start + 1);
         b = *((unsigned char *) start + 0);
         if (rh >= r && r >= rl && gh >= g && g >= gl && bh >= b && b >= bl) {
-            if (count < capacity)
+            if (count < limit)
                 *(result + count) = start;
             count++;
         }
