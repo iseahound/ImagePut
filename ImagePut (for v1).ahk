@@ -2376,15 +2376,15 @@ class ImagePut {
          DllCall(code, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "uchar", alpha, "cdecl")
       }
 
-      PixelSearch(color, variation := 0) {
+      ; Option 1: PixelSearch, single color with no variation.
+      ; Option 2: PixelSearch, single color with single variation.
+      ; Option 3: PixelSearch, single color with multiple variation.
+      ; Option 4: PixelSearch, range of colors.
+      ; Option 5: PixelSearch, multiple colors with no variation.
+      ; Option 6: PixelSearch, multiple colors with single variation.
+      ; Option 7: PixelSearch, multiple colors with multiple variation.
 
-         ; Option 1: PixelSearch, single color with no variation.
-         ; Option 2: PixelSearch, single color with single variation.
-         ; Option 3: PixelSearch, single color with multiple variation.
-         ; Option 4: PixelSearch, range of colors.
-         ; Option 5: PixelSearch, multiple colors with no variation.
-         ; Option 6: PixelSearch, multiple colors with single variation.
-         ; Option 7: PixelSearch, multiple colors with multiple variation.
+      PixelSearch(color, variation := 0) {
 
          if not IsObject(color) {
 
@@ -2463,8 +2463,8 @@ class ImagePut {
 
          ; ------------------------------------------------------------------------------------------------------
 
+         ; When doing pointer arithmetic, *Scan0 + 1 is actually adding 4 bytes.
          if (option == 1)
-            ; When doing pointer arithmetic, *Scan0 + 1 is actually adding 4 bytes.
             byte := DllCall(pixelsearch1, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "cdecl ptr")
 
          if (option == 2) {
@@ -2589,24 +2589,213 @@ class ImagePut {
          return [mod(offset, this.width), offset // this.width]
       }
 
-      PixelSearchAll(color) {
-         ; C source code - https://godbolt.org/z/zPY1qMvYe
-         PixelSearch3 := this.Base64Code((A_PtrSize == 4)
-            ? "VTHAieVTi1UQi00UOcpzGItdGDkadQw7RQxzBotdCIkUg0CDwgTr5Ftdww=="
+      PixelSearchAll(color, variation := 0) {
+
+         if not IsObject(color) {
+
+            ; Lift color to 32-bits if first 8 bits are zero.
+            (color >> 24) || color |= 0xFF000000
+
+            if not IsObject(variation)
+               if (variation == 0)
+                  option := 1
+               else
+                  option := 2
+            else if (variation.length() == 3)
+                  option := 3
+            else if (variation.length() == 6)
+                  option := 4
+            else throw Exception("Invalid variation parameter.")
+         }
+         else
+            if not IsObject(variation)
+               if (variation == 0)
+                  option := 5
+               else
+                  option := 6
+            else if (variation.length() == 3)
+                  option := 7
+            else throw Exception("Invalid variation parameter.")
+
+         ; ----------------------- Machine code generated with MCode4GCC using gcc 13.2.0 -----------------------
+
+         ; C source code - https://godbolt.org/z/6jPnc6b5s
+         pixelsearchall1 := this.Base64Code((A_PtrSize == 4)
+            ? "VYnlVotNEItVDFOLRQhmD27RjVr0Zg9wygA52HMbDxAAZg92wWYP1/CF9nUMg8AQ6+g5CHQHg8AEOdBy9VteXcM="
             : "McBEi1QkKE05yHMYRTkQdQ050HMHQYnDTokE2f/ASYPABOvjww==")
 
-         ; Lift color to 32-bits if first 8 bits are zero.
-         (color >> 24) || color |= 0xFF000000
+         ; C source code - https://godbolt.org/z/7fv3P6KTb
+         pixelsearchall2 := this.Base64Code((A_PtrSize == 4)
+            ? "VWYPduSJ5VdWU4Pk8IPsEIpFFItdEItNGItVHIt1DIt9IIhEJA6KRSSIXCQPD7bbiEwkDcHjEA+2yYhEJAsPtkUgweEIiFQkDA+2"
+            . "0gnYweIICcgPtk0kDQAAAP8J0Q+2VRRmD27oi0UIZg9wzQDB4hAJ0Y1W9GYPbvFmD3DWADnQczkPEAAPEBgPEDhmD97BZg/e2mYP"
+            . "dMFmD3TfD1TDZg92xGYP18iFyXURg8AQ68+KUAI4VCQPcwmDwAQ58HLw6yM6VCQOcvGKUAE4VCQNcug6VCQMcuKKEIn5ONFy2jpU"
+            . "JAty1I1l9FteX13D"
+            : "QVZBVUFUVVdWU0SLbCRgi0QkaESLdCRwRItUJHhEie6Jx0UPtu0PtsBBweUIRIn1RQ+29kWJ1EWJw0UPtsBEicvB4AhBweAQRQ+2"
+            . "0kUPtslFCfBECdBBweEQRQnoRAnIQYHIAAAA/2YPbuhIichmQQ9uyEiNSvRmD3DBAGYPcM0AZg927Ug5yHM8DxAgDyjQDyjcZg/e"
+            . "1GYP3tlmD3TQZg903A9U02YPdtVmRA/XwkWFwHUSSIPAEOvLikgCQTjLcwtIg8AESDnQcu/rHTjZcvGKSAFAOM5y6UA4+XLkighA"
+            . "OM1y3UQ44XLYW15fXUFcQV1BXsM=")
 
-         ; PixelSearchAll, single color, no variation
-         capacity := 256
-         VarSetCapacity(result, A_PtrSize * capacity)
-         count := DllCall(PixelSearch3, "ptr", &result, "uint", capacity, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "cdecl uint")
+         ; C source code - https://godbolt.org/z/xj5seEhba
+         pixelsearchall3 := this.Base64Code((A_PtrSize == 4)
+            ? "VTHSieVXi00MVlOLXRCLRRQp0A+E5QAAAIP4AXQbg/gCdAtmD25skwhmD3DdAGYPbnSTBGYPcNYAZg9uPJNmD3DPAIP4AXR6g/gC"
+            . "jXH0i0UIdGM58HM2DxAADyjgZg924WYP1/yF/w+FiQAAAA8o4mYPduBmD9f8hf91emYPdsNmD9f4hf91boPAEOvGg8ID6Xn///8P"
+            . "EAAPKOFmD3bgZg/X/IX/dU9mD3bCZg/X+IX/dUODwBA58HLbg8IC6Uz///+LRQiNcfQ58HMUDxAAZg92wWYP1/iF/3Ubg8AQ6+hC"
+            . "6Sj///+LNJM5MHQTQjtVFHXzg8AEOchzBjHS6/CJyFteX13D"
+            : "U0mJykiJ0THSTI1Z9ESJyCnQD4T2AAAASGPag/gBdB2D+AJ0DGZBD25smAhmD3DdAGZBD25smARmD3DVAGZBD24MmGYPcMkAg/gB"
+            . "dH+D+AJMidB0akw52HM7DxAADyjgZg924WYP19yF2w+FlQAAAA8o4mYPduBmD9fchdsPhYIAAABmD3bDZg/X2IXbdXZIg8AQ68CD"
+            . "wgPpcP///w8QAA8o4WYPduBmD9fchdt1VmYPdsJmD9fYhdt1SkiDwBBMOdhy2YPCAulB////TInQTDnYcxUPEABmD3bBZg/X2IXb"
+            . "dSJIg8AQ6+b/wukd////SP/CQYtckPw5GHQVRDnKcu9Ig8AESDnIcwcx0uvuSInIW8M=")
 
-         ; If the default 256 results is exceeded, run the function again.
-         if (count > capacity) {
-            VarSetCapacity(result, A_PtrSize * count)
-            count := DllCall(PixelSearch3, "ptr", &result, "uint", count, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "cdecl uint")
+         ; C source code - https://godbolt.org/z/W54vWW7Gz
+         pixelsearchall4 := this.Base64Code((A_PtrSize == 4)
+            ? "VTHSieVXVlOD5PCD7CCLdRCLTRSLRRgp0A+EDAIAAIP4AXQ6g/gCdB9mD25klghmD3DsAA8pbCQQZg9ubJEIZg9w3QAPKRwkZg9u"
+            . "ZJYEZg9uVJEEZg9w3ABmD3DqAGYPbiSWZg9uNJFmD3DUAGYPcOYAg/gBD4QdAQAAg/gCi0UID4SlAAAAi30MZg929o1f9DnYD4OL"
+            . "AAAADxAADyj6DyjIZg/e+GYP3sxmD3T6Zg90yA9Uz2YPds5mD9f5hf8PhSgBAAAPKMsPKPhmD97IZg/e/WYPdMtmD3T4D1TPZg92"
+            . "zmYP1/mF/w+F/wAAAA8oPCQPKEwkEGYP3vhmD97IZg90TCQQZg90xw9UyGYPds5mD9f5hf8PhdEAAACDwBDpbf///4PCA+no/v//"
+            . "i10MZg929oPrDDnYc1YPEAAPKPgPKMhmD978Zg/eymYPdMpmD3T4D1TPZg92zmYP1/mF/w+FhwAAAA8o+A8oy2YP3shmD979Zg90"
+            . "y2YPdMcPVMhmD3bOZg/X+YX/dWKDwBDrpoPCAul8/v//i30Mi0UIZg929o1f9DnYcy0PEAgPEAAPEDhmD97MZg/ewmYPdMJmD3TP"
+            . "D1TBZg92xmYP1/iF/3Ucg8AQ689C6Tj+//+J+zhclgJzIkI7VRh18oPABDtFDHM8ilABD7Z4AohUJBCKEIgUJDHS6986XJECctiK"
+            . "XCQQOFyWAXLOOlyRAXLIihwkOByWcsA6HJFyu+sDi0UMjWX0W15fXcM="
+            : "VlNIg+xIDyk0JA8pfCQQRA8pRCQgRA8pTCQwi5wkgAAAAEmJykiJ0THSSI1x9EGJ20Ep0w+EEwIAAEhjwkGD+wF0NkGD+wJ0GGZB"
+            . "D250gAhmQQ9ubIEIZg9w5gBmD3D1AGZBD25cgARmQQ9ubIEEZg9w0wBmD3DtAGZBD24cgGZFD3bAZg9wywBmQQ9uHIFMidBmD3Db"
+            . "AEGD+wEPhFcBAABBg/sCD4QOAQAASDnwD4ObAAAADxAARA8oyQ8o+GZED97IZg/e+2ZED3TJZg90+EEPVPlmQQ92+GZED9ffRYXb"
+            . "D4UvAQAADyj6RA8oyGYP3vhmRA/ezWYPdPpmRA90yEEPVPlmQQ92+GZED9ffRYXbD4X/AAAARA8oyA8o/GYP3vhmRA/ezmYPdPxm"
+            . "QQ90wQ9Ux2ZBD3bAZkQP19hFhdsPhdAAAABIg8AQ6Vz///+DwgPp1/7//w8QAEQPKMgPKPhmRA/ey2YP3vlmD3T5ZkQPdMhBD1T5"
+            . "ZkEPdvhmRA/X30WF2w+FjAAAAEQPKMgPKPpmD974ZkQP3s1mD3T6ZkEPdMEPVMdmQQ92wGZED9fYRYXbdWFIg8AQSDnwcpmDwgLp"
+            . "aP7//w8QOEQPKM8PKMdmRA/ey2YP3sFmD3TBZkEPdPkPVMdmQQ92wGZED9fYRYXbdSJIg8AQSDnwcsn/wukq/v//RThUkAJzH0j/"
+            . "wjnacvJIg8AESDnIczVEilACRIpYATHSQIow6+RFOlSRAnLaRThckAFy00U6XJEBcsxBODSQcsZBOjSRcsDrA0iJyA8oNCQPKHwk"
+            . "EEQPKEQkIEQPKEwkMEiDxEhbXsM=")
+
+         ; ------------------------------------------------------------------------------------------------------
+
+         ; Global number of addresses (matching searches) to allocate.
+         limit := 256
+
+         ; If the limit is exceeded, the following routine will be run again.
+         redo:
+         VarSetCapacity(result, A_PtrSize * limit) ; Allocate buffer for addresses.
+
+         ; When doing pointer arithmetic, *Scan0 + 1 is actually adding 4 bytes.
+         if (option == 1)
+            count := DllCall(pixelsearchall1, "ptr", &result, "uint", limit, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "cdecl uint")
+
+         if (option == 2) {
+            r := ((color & 0xFF0000) >> 16)
+            g := ((color & 0xFF00) >> 8)
+            b := ((color & 0xFF))
+            v := abs(variation)
+
+            count := DllCall(pixelsearch2, "ptr", &result, "uint", limit, "ptr", this.ptr, "ptr", this.ptr + this.size
+                     , "uchar", min(r+v, 255)
+                     , "uchar", max(r-v, 0)
+                     , "uchar", min(g+v, 255)
+                     , "uchar", max(g-v, 0)
+                     , "uchar", min(b+v, 255)
+                     , "uchar", max(b-v, 0)
+                     , "cdecl ptr")
+         }
+
+         if (option == 3) {
+            r := ((color & 0xFF0000) >> 16)
+            g := ((color & 0xFF00) >> 8)
+            b := ((color & 0xFF))
+            vr := abs(variation[1])
+            vg := abs(variation[2])
+            vb := abs(variation[3])
+
+            count := DllCall(pixelsearch2, "ptr", &result, "uint", limit, "ptr", this.ptr, "ptr", this.ptr + this.size
+                     , "uchar", min(r + vr, 255)
+                     , "uchar", max(r - vr, 0)
+                     , "uchar", min(g + vg, 255)
+                     , "uchar", max(g - vg, 0)
+                     , "uchar", min(b + vb, 255)
+                     , "uchar", max(b - vb, 0)
+                     , "cdecl ptr")
+         }
+
+         if (option == 4)
+            count := DllCall(pixelsearch2, "ptr", &result, "uint", limit, "ptr", this.ptr, "ptr", this.ptr + this.size
+                     , "uchar", min(max(variation[1], variation[2]), 255)
+                     , "uchar", max(min(variation[1], variation[2]), 0)
+                     , "uchar", min(max(variation[3], variation[4]), 255)
+                     , "uchar", max(min(variation[3], variation[4]), 0)
+                     , "uchar", min(max(variation[5], variation[6]), 255)
+                     , "uchar", max(min(variation[5], variation[6]), 0)
+                     , "cdecl ptr")
+
+         if (option == 5) {
+            ; Create a struct of unsigned integers.
+            VarSetCapacity(colors, 4*color.length())
+
+            ; Fill the struct by iterating through the input array.
+            for i, c in color {
+                  (c >> 24) || c |= 0xFF000000             ; Lift colors to 32-bit ARGB.
+                  NumPut(c, colors, 4*(A_Index-1), "uint") ; Place the unsigned int at each offset.
+            }
+
+            count := DllCall(pixelsearch3, "ptr", &result, "uint", limit, "ptr", this.ptr, "ptr", this.ptr + this.size, "ptr", &colors, "uint", color.length(), "cdecl ptr")
+         }
+
+         ; Options 6 & 7 - Creates a high and low struct where each pair is the min and max range.
+
+         if (option == 6) {
+            VarSetCapacity(high, 4*color.length())
+            VarSetCapacity(low, 4*color.length())
+
+            for i, c in color {
+               A_Offset := A_Index - 1
+
+               r := ((c & 0xFF0000) >> 16)
+               g := ((c & 0xFF00) >> 8)
+               b := ((c & 0xFF))
+               v := abs(variation)
+
+               NumPut(255, high, 4*A_Offset + 3, "uchar") ; Alpha
+               NumPut(min(r+v, 255), high, 4*A_Offset + 2, "uchar")
+               NumPut(min(g+v, 255), high, 4*A_Offset + 1, "uchar")
+               NumPut(min(b+v, 255), high, 4*A_Offset + 0, "uchar")
+
+               NumPut(0, low, 4*A_Offset + 3, "uchar") ; Alpha
+               NumPut(max(r-v, 0), low, 4*A_Offset + 2, "uchar")
+               NumPut(max(g-v, 0), low, 4*A_Offset + 1, "uchar")
+               NumPut(max(b-v, 0), low, 4*A_Offset + 0, "uchar")
+            }
+
+            count := DllCall(pixelsearch4, "ptr", &result, "uint", limit, "ptr", this.ptr, "ptr", this.ptr + this.size, "ptr", &high, "ptr", &low, "uint", color.length(), "cdecl ptr")
+         }
+
+         if (option == 7) {
+            VarSetCapacity(high, 4*color.length())
+            VarSetCapacity(low, 4*color.length())
+
+            for i, c in color {
+               A_Offset := A_Index - 1
+
+               r := ((c & 0xFF0000) >> 16)
+               g := ((c & 0xFF00) >> 8)
+               b := ((c & 0xFF))
+               vr := abs(variation[1])
+               vg := abs(variation[2])
+               vb := abs(variation[3])
+
+               NumPut(255, high, 4*A_Offset + 3, "uchar") ; Alpha
+               NumPut(min(r + vr, 255), high, 4*A_Offset + 2, "uchar")
+               NumPut(min(g + vg, 255), high, 4*A_Offset + 1, "uchar")
+               NumPut(min(b + vb, 255), high, 4*A_Offset + 0, "uchar")
+
+               NumPut(0, low, 4*A_Offset + 3, "uchar") ; Alpha
+               NumPut(max(r - vr, 0), low, 4*A_Offset + 2, "uchar")
+               NumPut(max(g - vg, 0), low, 4*A_Offset + 1, "uchar")
+               NumPut(max(b - vb, 0), low, 4*A_Offset + 0, "uchar")
+            }
+
+            count := DllCall(pixelsearch4, "ptr", &result, "uint", limit, "ptr", this.ptr, "ptr", this.ptr + this.size, "ptr", &high, "ptr", &low, "uint", color.length(), "cdecl ptr")
+         }
+
+         ; If the default 256 results is exceeded, run the machine code again.
+         if (count > limit) {
+            limit := count
+            goto redo
          }
 
          ; Check if any matches are found.
@@ -2618,8 +2807,7 @@ class ImagePut {
          loop % count {
             byte := NumGet(result, A_PtrSize*(A_Index-1), "ptr")
             offset := (byte - this.ptr) // 4
-            xy := [mod(offset, this.width), offset // this.width]
-            xys.push(xy)
+            xys.push([mod(offset, this.width), offset // this.width])
          }
          return xys
       }
