@@ -2630,10 +2630,7 @@ class ImagePut {
             . "0gnYweIICcgPtk0kDQAAAP8J0Q+2VRRmD27oi0UIZg9wzQDB4hAJ0Y1W9GYPbvFmD3DWADnQczkPEAAPEBgPEDhmD97BZg/e2mYP"
             . "dMFmD3TfD1TDZg92xGYP18iFyXURg8AQ68+KUAI4VCQPcwmDwAQ58HLw6yM6VCQOcvGKUAE4VCQNcug6VCQMcuKKEIn5ONFy2jpU"
             . "JAty1I1l9FteX13D"
-            : "QVZBVUFUVVdWU0SLbCRgi0QkaESLdCRwRItUJHhEie6Jx0UPtu0PtsBBweUIRIn1RQ+29kWJ1EWJw0UPtsBEicvB4AhBweAQRQ+2"
-            . "0kUPtslFCfBECdBBweEQRQnoRAnIQYHIAAAA/2YPbuhIichmQQ9uyEiNSvRmD3DBAGYPcM0AZg927Ug5yHM8DxAgDyjQDyjcZg/e"
-            . "1GYP3tlmD3TQZg903A9U02YPdtVmRA/XwkWFwHUSSIPAEOvLikgCQTjLcwtIg8AESDnQcu/rHTjZcvGKSAFAOM5y6UA4+XLkighA"
-            . "OM1y3UQ44XLYW15fXUFcQV1BXsM=")
+            : "QVRVV1ZTMcBEilwkUIpcJFhAinQkYECKfCRoQIpsJHBEimQkeE05yHM8RYpQAkU403ItQTjacihFilABRDjWch9BOPpyGkWKEEQ41XISRTjicg050HMHQYnCTokE0f/ASYPABOu/W15fXUFcww==")
 
          ; C source code - https://godbolt.org/z/xj5seEhba
          pixelsearchall3 := this.Base64Code((A_PtrSize == 4)
@@ -2685,7 +2682,7 @@ class ImagePut {
             b := ((color & 0xFF))
             v := abs(variation)
 
-            count := DllCall(pixelsearch2, "ptr", &result, "uint", limit, "ptr", this.ptr, "ptr", this.ptr + this.size
+            count := DllCall(pixelsearchall2, "ptr", &result, "uint", limit, "ptr", this.ptr, "ptr", this.ptr + this.size
                      , "uchar", min(r+v, 255)
                      , "uchar", max(r-v, 0)
                      , "uchar", min(g+v, 255)
@@ -2703,7 +2700,7 @@ class ImagePut {
             vg := abs(variation[2])
             vb := abs(variation[3])
 
-            count := DllCall(pixelsearch2, "ptr", &result, "uint", limit, "ptr", this.ptr, "ptr", this.ptr + this.size
+            count := DllCall(pixelsearchall2, "ptr", &result, "uint", limit, "ptr", this.ptr, "ptr", this.ptr + this.size
                      , "uchar", min(r + vr, 255)
                      , "uchar", max(r - vr, 0)
                      , "uchar", min(g + vg, 255)
@@ -2714,7 +2711,7 @@ class ImagePut {
          }
 
          if (option == 4)
-            count := DllCall(pixelsearch2, "ptr", &result, "uint", limit, "ptr", this.ptr, "ptr", this.ptr + this.size
+            count := DllCall(pixelsearchall2, "ptr", &result, "uint", limit, "ptr", this.ptr, "ptr", this.ptr + this.size
                      , "uchar", min(max(variation[1], variation[2]), 255)
                      , "uchar", max(min(variation[1], variation[2]), 0)
                      , "uchar", min(max(variation[3], variation[4]), 255)
@@ -2733,7 +2730,7 @@ class ImagePut {
                   NumPut(c, colors, 4*(A_Index-1), "uint") ; Place the unsigned int at each offset.
             }
 
-            count := DllCall(pixelsearch3, "ptr", &result, "uint", limit, "ptr", this.ptr, "ptr", this.ptr + this.size, "ptr", &colors, "uint", color.length(), "cdecl ptr")
+            count := DllCall(pixelsearchall3, "ptr", &result, "uint", limit, "ptr", this.ptr, "ptr", this.ptr + this.size, "ptr", &colors, "uint", color.length(), "cdecl ptr")
          }
 
          ; Options 6 & 7 - Creates a high and low struct where each pair is the min and max range.
@@ -2761,7 +2758,7 @@ class ImagePut {
                NumPut(max(b-v, 0), low, 4*A_Offset + 0, "uchar")
             }
 
-            count := DllCall(pixelsearch4, "ptr", &result, "uint", limit, "ptr", this.ptr, "ptr", this.ptr + this.size, "ptr", &high, "ptr", &low, "uint", color.length(), "cdecl ptr")
+            count := DllCall(pixelsearchall4, "ptr", &result, "uint", limit, "ptr", this.ptr, "ptr", this.ptr + this.size, "ptr", &high, "ptr", &low, "uint", color.length(), "cdecl ptr")
          }
 
          if (option == 7) {
@@ -2789,7 +2786,7 @@ class ImagePut {
                NumPut(max(b - vb, 0), low, 4*A_Offset + 0, "uchar")
             }
 
-            count := DllCall(pixelsearch4, "ptr", &result, "uint", limit, "ptr", this.ptr, "ptr", this.ptr + this.size, "ptr", &high, "ptr", &low, "uint", color.length(), "cdecl ptr")
+            count := DllCall(pixelsearchall4, "ptr", &result, "uint", limit, "ptr", this.ptr, "ptr", this.ptr + this.size, "ptr", &high, "ptr", &low, "uint", color.length(), "cdecl ptr")
          }
 
          ; If the default 256 results is exceeded, run the machine code again.
