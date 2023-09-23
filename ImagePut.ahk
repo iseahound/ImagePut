@@ -2619,28 +2619,59 @@ class ImagePut {
 
          ; ----------------------- Machine code generated with MCode4GCC using gcc 13.2.0 -----------------------
 
-         ; C source code - https://godbolt.org/z/ahEsGeaxK
+         ; C source code - https://godbolt.org/z/ErbrhbWWE
          pixelsearchall1 := this.Base64Code((A_PtrSize == 4)
-            ? "VYnlVotNEItVDFOLRQhmD27RjVr0Zg9wygA52HMbDxAAZg92wWYP1/CF9nUMg8AQ6+g5CHQHg8AEOdBy9VteXcM="
-            : "McBEi1QkKE05yHMYRTkQdQ050HMHQYnDTokE2f/ASYPABOvjww==")
-
-         ; C source code - https://godbolt.org/z/hq55M66fP
+            ? "VTHSieVXZg9uVRiLRRBWU4tdFGYPcMoAjXP0OfBzDw8QAGYPdsFmD9fIhcl0BY1IEOsVjUgQicjr4TnIdPiLfRg5OHQJg8AEOdhy"
+            . "7usOO1UMcwaLfQiJBJdC6+lbidBeX13D"
+            : "VlMxwESLVCQ4ZkEPbtJmD3DKAEmNWfRJOdhNjVgQcyNBDxAAZg92wWYP1/CF9nUTTYnY6+JNOdh09kU5EHQLSYPABE05yHLt6w45"
+            . "0HMGicZMiQTx/8Dr51teww==")
+            
+         ; C source code - https://godbolt.org/z/PssjWcE5M
          pixelsearchall2 := this.Base64Code((A_PtrSize == 4)
-            ? "VTHAieVTi1UQi00UOcpzGItdGDkadQw7RQxzBotdCIkUg0CDwgTr5Ftdww=="
-            : "QVRVV1ZTMcBEilwkUIpcJFhAinQkYECKfCRoQIpsJHBEimQkeE05yHM8RYpQAkU403ItQTjacihFilABRDjWch9BOPpyGkWKEEQ4"
-            . "1XISRTjicg050HMHQYnCTokE0f/ASYPABOu/W15fXUFcww==")
+            ? "VWYPduSJ5VdWU4Pk8IPsEItdGItNIItVKIpFHIhcJA8PttuLfRTB4xCIRCQOikUkiEwkDQ+2yY139IhUJAsPttLB4QgJ2ohEJAyK"
+            . "RSwJyg+2TSQPttiBygAAAP+IRCQKweEIZg9u6jHSCcsPtk0cZg9wzQDB4RAJy2YPbvNmD3DWADl1EHMri0UQDxAADxAYDxA4Zg/e"
+            . "wWYP3tpmD3TBZg903w9Uw2YPdsRmD9fIhcl0CItFEI1IEOsgi0UQjUgQiU0Q6705TRB09otFEIpYAjhcJA9zC4NFEAQ5fRBy5us0"
+            . "OlwkDnLvilgBOFwkDXLmOlwkDHLgihg4XCQLctg6XCQKctI7VQxzCYtFCItdEIkckELrwY1l9InQW15fXcM="
+            : "QVdBVkFVQVRVV1ZTRItUJGiLhCSIAAAARIucJJAAAABAimwkcESJ10UPttJBicYPtsBBweIQRYnfRQ+220iJy4tMJHiJ1ouUJIAA"
+            . "AABECdBNjVH0QYnMD7bJQYnVD7bSweEIweIICchAD7bNRAnaweEQDQAAAP8JymYPbsAxwGYPbupmD3DIAGYPcMUAZg927U050EmN"
+            . "UBBzQEEPECAPKNEPKNxmD97UZg/e2GYPdNFmD3TcD1TTZg921WYP18qFyXUXSYnQ68lJOdB09kGKSAJAOM9zC0mDwARNOchy6esu"
+            . "QDjpcvBBikgBQTjMcudEOOly4kGKCEE4znLaRDj5ctU58HMGicFMiQTL/8Drx1teX11BXEFdQV5BX8M=")
 
-         ; C source code - https://godbolt.org/z/9jT694Pdn
+         ; C source code - https://godbolt.org/z/zbPcWT1P3
          pixelsearchall3 := this.Base64Code((A_PtrSize == 4)
-            ? "VYnlV4tFHItVEFZTi10YjTSDMcA7VRRzIonZOfF0F4s5OTp1DDtFDHMGi30IiRSHQIPBBOvlg8IE69lbXl9dww=="
-            : "UzHATItcJDBNOchzKkUx0kQ7VCQ4cxpDixyTQTkYdQw50HMGicNMiQTZ/8BJ/8Lr30mDwATr0VvD")
+            ? "VTHSMcmJ5VdWU4Pk8IPsEItdGItFHI0Eg4lEJASLRRSD6AyJRCQIi0UcKdCJRCQMD4QTAQAAg/gBdBuD+AJ0C2YPbmyTCGYPcN0A"
+            . "Zg9udJMEZg9w1gBmD248k4tFEGYPcM8Ag3wkDAF1C4t9FI139OmUAAAAg3wkDAJ0a4t8JAg5+HM6DxAADyjgZg924WYP1/SF9nUP"
+            . "DyjiZg924GYP1/SF9nQIjXAQiTQk63pmD3bDZg/X8IX2deyDwBDrvoPCA+lh////DxAADyjhZg924GYP1/SF9nXNZg92wmYP1/CF"
+            . "9nXBg8AQi3wkCDn4cteDwgLpMP///w8QAGYPdsFmD9f4hf91n4PAEDnwcupC6RT///+LPjk4dCKDxgSLfCQEOf5174PABDtFFHMd"
+            . "izwkOfgPhCz///+J3uvhO00McwaLfQiJBI9B69CNZfSJyFteX13D"
+            : "QVZBVUFUVVdWU0yLXCRgi2wkaEiJzonXMckx0k2NYfRBiepBKdIPhA4BAABIY8JBg/oBdB5Bg/oCdAxmQQ9ubIMIZg9w3QBmQQ9u"
+            . "bIMEZg9w1QBmQQ9uDINMicBmD3DJAEGD+gEPhI4AAABBg/oCdGhMOeBzOQ8QAA8o4GYPduFmD9fchdt1Dw8o4mYPduBmD9fchdt0"
+            . "BkyNaBDrfGYPdsNmD9fYhdt17kiDwBDrwoPCA+lp////DxAADyjhZg924GYP19yF23XOZg92wmYP19iF23XCSIPAEEw54HLZg8IC"
+            . "6Tr///8PEABmD3bBZg/X2IXbdaJIg8AQTDngcuj/wukb////RYs0m0Q5MHQdSP/DOety8EiDwARMOchzHEw56A+EOv///zHb6+Y5"
+            . "+XMHQYnOSokE9v/B69SJyFteX11BXEFdQV7D")
 
-         ; C source code - https://godbolt.org/z/MhdaWq6fK
+         ; C source code - https://godbolt.org/z/7oKb5Tnqd
          pixelsearchall4 := this.Base64Code((A_PtrSize == 4)
-            ? "VYnlV1ZTUYtVEDHJi30Yi3UcO1UUc1eKQgKIRfOKQgGIRfKKAohF8THAO0UgdDqKXfM4XIcCci46XIYCciiKXfI4XIcBch86XIYB"
-            . "chmKXfE4HIdyETochnIMO00McwaLXQiJFItBQOvBg8IE66RaichbXl9dww=="
-            : "QVVBVFVXVlNIi1wkWItEJGhMjSSDQYnTSYnKMdJNOchzWEGKcAJBingBSInYQYooSItMJGBMOeB0OkA4cAJyKkA6cQJyJEA4eAFy"
-            . "HkA6eQFyGEA4KHITQDopcg5EOdpzB0GJ1U+JBOr/wkiDwARIg8EE68FJg8AE66OJ0FteX11BXEFdww==")
+            ? "VTHAZg920onlVzH/VlOD5PCD7DCLdRyJRCQsi0UgKfiJRCQoD4RCAgAAg/gBdECD+AJ0IotFGGYPbmS4CGYPcOwADylsJBBmD25s"
+            . "vghmD3DdAA8pHCSLRRhmD25MvgRmD25kuARmD3DpAGYPcNwAi0UYZg9uJLiLRRBmD3DMAGYPbiS+Zg9w5ACDfCQoAXULi1UUg+oM"
+            . "6UYBAACDfCQoAnULi00UjVH06fUAAACLVRSD6gw50A+DiwAAAA8QAA8o+Q8o8GYP3vhmD970Zg90+WYPdPAPVPdmD3byZg/XzoXJ"
+            . "dSUPKPMPKPhmD97wZg/e/WYPdPNmD3T4D1T3Zg928mYP186FyXQMjUgQiUwkIOkBAQAADyg8JA8odCQQZg/e+GYP3vBmD3R0JBBm"
+            . "D3THD1TwZg928mYP186FyXXKg8AQ6W3///+DxwPpzf7//w8QAA8o+A8o8GYP3vxmD97xZg908WYPdPgPVPdmD3byZg/XzoXJdZIP"
+            . "KPgPKPNmD97wZg/e/WYPdPNmD3THD1TwZg928mYP186FyQ+Faf///4PAEDnQcqiDxwLpbf7//w8QMA8QAA8QOGYP3vRmD97BZg90"
+            . "wWYPdPcPVMZmD3YFAAAAAGYP18iFyQ+FKv///4PAEDnQcslH6TD+//+LVCQgOdAPhJL+//+KUAKIVCQnilABiFQkJooQiFQkJTHS"
+            . "O1UgdQqDwAQ7RRRy0etQi10YikwkJzhMkwJyQDpMlgJyOopMJCY4TJMBcjA6TJYBciqKTCQlOAyTciE6DJZyHItMJCw7TQxzCotN"
+            . "CItcJCyJBJmLTCQsQYlMJCxC66GLRCQsjWX0W15fXcM="
+            : "QVdBVkFVQVRVV1ZTSIPsaA8pdCQQDyl8JCBEDylEJDBEDylMJEBEDylUJFBmD3bSTIuUJNAAAACLhCTgAAAASIu0JNgAAABJjQSC"
+            . "SImMJLAAAABJjXn0SIkEJImUJLgAAAAx0kyJhCTAAAAARTHAi5wk4AAAACnTD4RSAgAASGPCg/sBdDOD+wJ0F2ZBD258gghmD250"
+            . "hghmD3DvAGYPcP4AZkEPbmSCBGYPbnSGBGYPcNwAZg9w9gBmQQ9uJIJmD3DMAGYPbiSGSIuEJMAAAABmD3DkAGZFD3bJg/sBD4Rl"
+            . "AQAAg/sCD4QYAQAASDn4D4OiAAAADxAARA8oyUQPKMBmRA/eyGZED97EZkQPdMlmRA90wEUPVMFmRA92wmZBD9fIhcl1LkQPKMNE"
+            . "DyjIZkQP3sBmRA/ezmZED3TDZkQPdMhFD1TBZkQPdsJmQQ/XyIXJdA5IjUgQSIlMJAjpHgEAAEQPKMhEDyjFZkQP3sBmRA/ez2ZE"
+            . "D3TFZkEPdMFBD1TAZg92wmYP18iFyXXGSIPAEOlV////g8ID6c/+//8PEABEDyjIRA8owGZED97MZkQP3sFmRA90wWZED3TIRQ9U"
+            . "wWZED3bCZkEP18iFyXWERA8oyEQPKMNmRA/ewGZED97OZkQPdMNmQQ90wUEPVMBmD3bCZg/XyIXJD4VU////SIPAEEg5+HKWg8IC"
+            . "6V3+//9EDxAARQ8o0EEPKMBmRA/e1GYP3sFmD3TBZkUPdMJBD1TAZkEPdsFmD9fIhckPhRD///9Ig8AQSDn4csT/wuka/v//SItM"
+            . "JAhIOcgPhHP+//9AimgCRIpgAUmJ80yJ0USKKEyLNCRMOfF1C0iDwARMOchyz+tIQDhpAnI4QTprAnIyRDhhAXIsRTpjAXImRDgp"
+            . "ciFFOityHEQ7hCS4AAAAcw9Mi7QksAAAAEWJx0uJBP5B/8BIg8EESYPDBOukDyh0JBAPKHwkIESJwEQPKEQkMEQPKEwkQEQPKFQk"
+            . "UEiDxGhbXl9dQVxBXUFeQV/D")
 
          ; ------------------------------------------------------------------------------------------------------
          
