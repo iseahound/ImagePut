@@ -2581,11 +2581,11 @@ class ImagePut {
          }
 
          ; Compare the address to the out-of-bounds limit.
-         if (byte == this.ptr + this.size)
+         if (address == this.ptr + this.size)
             return False
 
          ; Return an [x, y] array.
-         offset := (byte - this.ptr) // 4
+         offset := (address - this.ptr) // 4
          return [mod(offset, this.width), offset // this.width]
       }
 
@@ -2806,7 +2806,7 @@ class ImagePut {
          xys := []
          loop count {
             address := NumGet(result, A_PtrSize * (A_Index-1), "ptr")
-            offset := (byte - this.ptr) // 4
+            offset := (address - this.ptr) // 4
             xys.push([mod(offset, this.width), offset // this.width])
          }
          return xys
@@ -2831,11 +2831,11 @@ class ImagePut {
                            , "ptr", image.ptr, "uint", image.width, "uint", image.height, "cdecl ptr")
 
          ; Compare the address to the out-of-bounds limit.
-         if (byte == this.ptr + this.size)
+         if (address == this.ptr + this.size)
             return False
 
          ; Return an [x, y] array.
-         offset := (byte - this.ptr) // 4
+         offset := (address - this.ptr) // 4
          return [mod(offset, this.width), offset // this.width]
       }
 
@@ -2877,7 +2877,7 @@ class ImagePut {
          xys := []
          loop count {
             address := NumGet(result, A_PtrSize*(A_Index-1), "ptr")
-            offset := (byte - this.ptr) // 4
+            offset := (address - this.ptr) // 4
             xy := [mod(offset, this.width), offset // this.width]
             xys.push(xy)
          }
