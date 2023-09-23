@@ -49,7 +49,6 @@ unsigned int pixelsearchall2x(unsigned int ** result, unsigned int limit, unsign
     }
 
     // Clean up any remaining elements.
-    exit:
     unsigned char r, g, b;
     while (start < end) {
         if (pack > 0) {
