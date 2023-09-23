@@ -3413,10 +3413,10 @@ class ImagePut {
             DllCall("SendMessage", "ptr", tt, "uint", 1044, "ptr", text_color, "ptr", 0)
 
             ; Destroy tooltip after 7 seconds of the last showing.
-            SetTimer Tooltip, -7000
-            goto default
+            SetTimer Reset_Tooltip, -7000
+            return
 
-            Tooltip:
+            Reset_Tooltip:
                Tooltip,,,, 16
             return
          }
