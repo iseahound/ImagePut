@@ -5,7 +5,7 @@
 #define _mm_cmpgt_epu8(a, b) _mm_xor_si128(_mm_cmple_epu8(a, b), _mm_set1_epi8(-1))
 #define _mm_cmplt_epu8(a, b) _mm_cmpgt_epu8(b, a)
 
-unsigned int pixelsearchall2(unsigned int ** result, unsigned int limit, unsigned int * start, unsigned int * end, unsigned char rh, unsigned char rl, unsigned char gh, unsigned char gl, unsigned char bh, unsigned char bl) {
+unsigned int pixelsearchall2x(unsigned int ** result, unsigned int limit, unsigned int * start, unsigned int * end, unsigned char rh, unsigned char rl, unsigned char gh, unsigned char gl, unsigned char bh, unsigned char bl) {
 
     // Number of 32-bit integers the register can hold.
     int pack = 4;
@@ -17,13 +17,13 @@ unsigned int pixelsearchall2(unsigned int ** result, unsigned int limit, unsigne
     unsigned int h = (0xFF << 24 | rh << 16 | gh << 8 | bh << 0);
     unsigned int l = (0x00 << 24 | rl << 16 | gl << 8 | bl << 0);
 
-    // Create a vector of four copies.
+    // Create a vector of four copies of the target color.
     __m128i vh = _mm_set1_epi32(h);
     __m128i vl = _mm_set1_epi32(l);
     __m128i vmask = _mm_set1_epi32(0xFFFFFFFF);
 
-    loop:
     // Loop over start pointer with a step of four unsigned integers.
+    loop:
     while (start < end - 3) {
 
         // Load four unsigned integers from start into a vector.
@@ -44,11 +44,12 @@ unsigned int pixelsearchall2(unsigned int ** result, unsigned int limit, unsigne
         if (mask != 0)
             break;
 
+        // Increment start by four unsigned integers.
         start += 4;
     }
 
-    exit:
     // Clean up any remaining elements.
+    exit:
     unsigned char r, g, b;
     while (start < end) {
         if (pack > 0) {

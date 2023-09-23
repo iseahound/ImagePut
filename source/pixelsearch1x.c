@@ -1,8 +1,8 @@
 #include <emmintrin.h>
 
-unsigned int * pixelsearch1(unsigned int * start, unsigned int * end, unsigned int color) { 
+unsigned int * pixelsearch1x(unsigned int * start, unsigned int * end, unsigned int color) {
 
-    // Create a vector of four copies of color.
+    // Create a vector of four copies of the target color.
     __m128i vcolor = _mm_set1_epi32(color);
 
     // Loop over start pointer with a step of four unsigned integers.
