@@ -2992,7 +2992,7 @@ class ImagePut {
          NumPut("int", x2, rect,  8)
          NumPut("int", y2, rect, 12)
 
-      DllCall("AdjustWindowRectEx", "ptr", rect, "uint", style, "uint", 0, "uint", styleEx)
+      DllCall("AdjustWindowRectEx", "ptr", rect, "uint", style, "int", 0, "uint", styleEx)
 
       try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
       hwnd := DllCall("CreateWindowEx"
