@@ -2299,7 +2299,7 @@ class ImagePut {
 
          return DllCall(code, "int")
       }
-      
+
       CPUID() {
          static cpuid := 0
 
@@ -2629,7 +2629,7 @@ class ImagePut {
             . "7usOO1UMcwaLfQiJBJdC6+lbidBeX13D"
             : "VlMxwESLVCQ4ZkEPbtJmD3DKAEmNWfRJOdhNjVgQcyNBDxAAZg92wWYP1/CF9nUTTYnY6+JNOdh09kU5EHQLSYPABE05yHLt6w45"
             . "0HMGicZMiQTx/8Dr51teww==")
-            
+
          ; C source code - https://godbolt.org/z/G5vYe5c8c
          pixelsearchall2 := this.Base64Code((A_PtrSize == 4)
             ? "VWYPduSJ5VdWU4Pk8IPsEItdGItNIItVKIpFHIhcJA8PttuLfRTB4xCIRCQOikUkiEwkDQ+2yY139IhUJAsPttLB4QgJ2ohEJAyK"
@@ -2978,6 +2978,18 @@ class ImagePut {
       x  := IsObject(pos) && pos.HasKey(1) ? pos[1] : 0.5*(ScreenWidth - w)
       y  := IsObject(pos) && pos.HasKey(2) ? pos[2] : 0.5*(ScreenHeight - h)
 
+      ; Adjust x and y if a relative to window position is given.
+      if IsObject(pos) && pos.HasKey(5) && (WinExist(pos[5]) || DllCall("IsWindow", "ptr", pos[5])) {
+         try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+         pos[5] := (hwnd := WinExist(pos[5])) ? hwnd : pos[5]
+         VarSetCapacity(rect, 16, 0)
+         DllCall("GetClientRect", "ptr", pos[5], "ptr", &rect)
+         DllCall("ClientToScreen", "ptr", pos[5], "ptr", &rect)
+         try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+         x += NumGet(rect, 0, "int")
+         y += NumGet(rect, 4, "int")
+      }
+
       ; Resolve dependent coordinates first, coordinates second, and distances last.
       x2 := Round(x + w)
       y2 := Round(y + h)
@@ -3066,6 +3078,18 @@ class ImagePut {
 
       x  := IsObject(pos) && pos.HasKey(1) ? pos[1] : 0.5*(ScreenWidth - w)
       y  := IsObject(pos) && pos.HasKey(2) ? pos[2] : 0.5*(ScreenHeight - h)
+
+      ; Adjust x and y if a relative to window position is given.
+      if IsObject(pos) && pos.Has(5) && (WinExist(pos[5]) || DllCall("IsWindow", "ptr", pos[5])) {
+         try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+         pos[5] := (hwnd := WinExist(pos[5])) ? hwnd : pos[5]
+         VarSetCapacity(rect, 16, 0)
+         DllCall("GetClientRect", "ptr", pos[5], "ptr", &rect)
+         DllCall("ClientToScreen", "ptr", pos[5], "ptr", &rect)
+         try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+         x += NumGet(rect, 0, "int")
+         y += NumGet(rect, 4, "int")
+      }
 
       ; Resolve dependent coordinates first, coordinates second, and distances last.
       x2 := Round(x + w)
