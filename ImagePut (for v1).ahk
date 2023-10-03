@@ -1118,14 +1118,27 @@ class ImagePut {
    from_screenshot(image) {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
 
-      if !IsObject(image) {
+      ; Allow the image to be a window handle.
+      if !IsObject(image) and WinExist(image) || DllCall("IsWindow", "ptr", image) {
          try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
-         hwnd := WinExist(image)
+         image := (hwnd := WinExist(image)) ? hwnd : image
          VarSetCapacity(rect, 16, 0)
-         DllCall("GetClientRect", "ptr", hwnd, "ptr", &rect)
-         DllCall("ClientToScreen", "ptr", hwnd, "ptr", &rect)
+         DllCall("GetClientRect", "ptr", image, "ptr", &rect)
+         DllCall("ClientToScreen", "ptr", image, "ptr", &rect)
          try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
          image := [NumGet(rect, 0, "int"), NumGet(rect, 4, "int"), NumGet(rect, 8, "int"), NumGet(rect, 12, "int")]
+      }
+
+      ; Adjust coordinates relative to specified window.
+      if image.haskey(5) && (WinExist(image[5]) || DllCall("IsWindow", "ptr", image[5])) {
+         try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+         image[5] := (hwnd := WinExist(image[5])) ? hwnd : image[5]
+         VarSetCapacity(rect, 16, 0)
+         DllCall("GetClientRect", "ptr", image[5], "ptr", &rect)
+         DllCall("ClientToScreen", "ptr", image[5], "ptr", &rect)
+         try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+         image[1] += NumGet(rect, 0, "int")
+         image[2] += NumGet(rect, 4, "int")
       }
 
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
@@ -3080,7 +3093,7 @@ class ImagePut {
       y  := IsObject(pos) && pos.HasKey(2) ? pos[2] : 0.5*(ScreenHeight - h)
 
       ; Adjust x and y if a relative to window position is given.
-      if IsObject(pos) && pos.Has(5) && (WinExist(pos[5]) || DllCall("IsWindow", "ptr", pos[5])) {
+      if IsObject(pos) && pos.HasKey(5) && (WinExist(pos[5]) || DllCall("IsWindow", "ptr", pos[5])) {
          try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
          pos[5] := (hwnd := WinExist(pos[5])) ? hwnd : pos[5]
          VarSetCapacity(rect, 16, 0)
