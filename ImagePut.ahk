@@ -2629,7 +2629,7 @@ class ImagePut {
             . "7usOO1UMcwaLfQiJBJdC6+lbidBeX13D"
             : "VlMxwESLVCQ4ZkEPbtJmD3DKAEmNWfRJOdhNjVgQcyNBDxAAZg92wWYP1/CF9nUTTYnY6+JNOdh09kU5EHQLSYPABE05yHLt6w45"
             . "0HMGicZMiQTx/8Dr51teww==")
-            
+
          ; C source code - https://godbolt.org/z/G5vYe5c8c
          pixelsearchall2 := this.Base64Code((A_PtrSize == 4)
             ? "VWYPduSJ5VdWU4Pk8IPsEItdGItNIItVKIpFHIhcJA8PttuLfRTB4xCIRCQOikUkiEwkDQ+2yY139IhUJAsPttLB4QgJ2ohEJAyK"
@@ -2679,7 +2679,7 @@ class ImagePut {
             . "dCQgDyh8JDBEidBEDyhEJEBEDyhMJFBEDyhUJGBIg8R4W15fXUFcQV1BXkFfww==")
 
          ; ------------------------------------------------------------------------------------------------------
-         
+
          ; Global number of addresses (matching searches) to allocate.
          limit := 256
 
@@ -2689,7 +2689,7 @@ class ImagePut {
 
          ; When doing pointer arithmetic, *Scan0 + 1 is actually adding 4 bytes.
          if (option == 1)
-            count := DllCall(pixelsearchall1, "ptr", result, "uint", limit, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "cdecl uint")   
+            count := DllCall(pixelsearchall1, "ptr", result, "uint", limit, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "cdecl uint")
 
          if (option == 2) {
             r := ((color & 0xFF0000) >> 16)
@@ -2978,6 +2978,18 @@ class ImagePut {
       x  := IsObject(pos) && pos.Has(1) ? pos[1] : 0.5*(ScreenWidth - w)
       y  := IsObject(pos) && pos.Has(2) ? pos[2] : 0.5*(ScreenHeight - h)
 
+      ; Adjust x and y if a relative to window position is given.
+      if IsObject(pos) && pos.Has(5) && WinExist(pos[5]) {
+         try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+         WinGetClientPos &xr, &yr,,, pos[5]
+         try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+         x += xr
+         y += yr
+      }
+
+
+
+
       ; Resolve dependent coordinates first, coordinates second, and distances last.
       x2 := Round(x + w)
       y2 := Round(y + h)
@@ -3066,6 +3078,18 @@ class ImagePut {
 
       x  := IsObject(pos) && pos.Has(1) ? pos[1] : 0.5*(ScreenWidth - w)
       y  := IsObject(pos) && pos.Has(2) ? pos[2] : 0.5*(ScreenHeight - h)
+
+      ; Adjust x and y if a relative to window position is given.
+      if IsObject(pos) && pos.Has(5) && WinExist(pos[5]) {
+         try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+         WinGetClientPos &xr, &yr,,, pos[5]
+         try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+         x += xr
+         y += yr
+      }
+
+
+
 
       ; Resolve dependent coordinates first, coordinates second, and distances last.
       x2 := Round(x + w)
