@@ -1118,11 +1118,24 @@ class ImagePut {
    static from_screenshot(image) {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
 
-      if !IsObject(image) {
+      ; Allow the image to be a window handle.
+      if !IsObject(image) and WinExist(image) {
          try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
          WinGetClientPos &x, &y, &w, &h, image
          try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
          image := [x, y, w, h]
+      }
+
+
+
+
+      ; Adjust coordinates relative to specified window.
+      if image.Has(5) and WinExist(image[5]) {
+         try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+         WinGetClientPos &xr, &yr,,, image[5]
+         try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+         image[1] += xr
+         image[2] += yr
       }
 
 
