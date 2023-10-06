@@ -2829,6 +2829,7 @@ class ImagePut {
 
          ; Create an array of [x, y] coordinates.
          xys := []
+         xys.count := count
          loop % count {
             address := NumGet(result, A_PtrSize*(A_Index-1), "ptr")
             offset := (address - this.ptr) // 4
@@ -2902,6 +2903,7 @@ class ImagePut {
 
          ; Create an array of [x, y] coordinates.
          xys := []
+         xys.count := count
          loop % count {
             address := NumGet(result, A_PtrSize*(A_Index-1), "ptr")
             offset := (address - this.ptr) // 4
