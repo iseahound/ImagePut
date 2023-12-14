@@ -2425,7 +2425,7 @@ class ImagePut {
                   option := 7
             else throw Error("Invalid variation parameter.")
 
-         ; ----------------------- Machine code generated with MCode4GCC using gcc 13.2.0 -----------------------
+         ; ------------------------ Machine code generated with MCode4GCC using gcc 13.2.0 ------------------------
 
          ; C source code - https://godbolt.org/z/zr71creqn
          pixelsearch1 := this.Base64Code((A_PtrSize == 4)
@@ -2478,7 +2478,7 @@ class ImagePut {
             . "QTp0CQJy00E4fAgBcsxBOnwJAXLFQTgsCHK/QTosCXK56wNMidgPKDQkDyh8JBBEDyhEJCBEDyhMJDBEDyhUJEBIg8RQW15fXUFc"
             . "ww==")
 
-         ; ------------------------------------------------------------------------------------------------------
+         ; --------------------------------------------------------------------------------------------------------
 
          ; When doing pointer arithmetic, *Scan0 + 1 is actually adding 4 bytes.
          if (option == 1)
@@ -2634,7 +2634,7 @@ class ImagePut {
                   option := 7
             else throw Error("Invalid variation parameter.")
 
-         ; ----------------------- Machine code generated with MCode4GCC using gcc 13.2.0 -----------------------
+         ; ------------------------ Machine code generated with MCode4GCC using gcc 13.2.0 ------------------------
 
          ; C source code - https://godbolt.org/z/GYMPYv4qT
          pixelsearchall1 := this.Base64Code((A_PtrSize == 4)
@@ -2691,7 +2691,7 @@ class ImagePut {
             . "cj1BOmwJAnI2RThkCAFyL0U6ZAkBcihFOCwIciJFOiwJchxEO5QkyAAAAHMPSIu8JMAAAABFiddKiQT/Qf/C/0QkDEiDwQTrnw8o"
             . "dCQgDyh8JDBEidBEDyhEJEBEDyhMJFBEDyhUJGBIg8R4W15fXUFcQV1BXkFfww==")
 
-         ; ------------------------------------------------------------------------------------------------------
+         ; --------------------------------------------------------------------------------------------------------
 
          ; Global number of addresses (matching searches) to allocate.
          limit := 256
@@ -2839,17 +2839,31 @@ class ImagePut {
       }
 
       ImageSearch(image, variation := 0) {
-         ; FIXME Since I haven't installed the GCC libraries for 32bit libraries and built 32bit binary, it won't work on 32-bit systems, Thank you for your understanding!
-         if ( A_PtrSize == 4 ) {
-           MsgBox("Since I haven't installed the GCC libraries for 32bit libraries and built 32bit binary, it won't work on 32-bit systems, Thank you for your understanding!")
-           return False
-         }
+
+         ; Convert image to a buffer object.
+         if !(IsObject(image) && ObjHasOwnProp(image, "ptr") && ObjHasOwnProp(image, "size"))
+            image := ImagePutBuffer(image)
+
+         ; Check if the object has the coordinates.
+         x := ObjHasOwnProp(image, "x") ? image.x : image.width//2
+         y := ObjHasOwnProp(image, "y") ? image.y : image.height//2
+
+         if (variation == 0)
+            option := 1
+         else
+            option := 2
+
+         ; ------------------------ Machine code generated with MCode4GCC using gcc 13.2.0 ------------------------
 
          ; C source code - https://godbolt.org/z/cKxrrT4ss
-         code := this.Base64Code((A_PtrSize == 4)
+         imagesearch1 := this.Base64Code((A_PtrSize == 4)
             ? "VYnlV1ZTg+wgi0Uki1UYi30Ui00gD6/Qi3UIix8Pr0UMAcqJXeSLHJeLfQwByItVECtVHIlF7MHnAold4ItdDA+v1ytdGANVCIlV"
             . "3Ild2ItF3DnGc3CLReyLTeA5DIZ1YInwK0UIMdLB+AL3dQw5VdhyTotF5DkGdUeLRRgx0onxiVXwweACiUXoi0UUi13wO10cdDyL"
             . "VeiJywHCiVXUi1XUOdBzFIB4AwB0BosTORB1D4PABIPDBOvl/0XwAfnrzIPGBOuJi0UQD6/HA0UIicaDxCCJ8FteX13D"
+            : "QVdBVkFVQVRVV1ZTSIPsGEWLIUSJw0SLhCSYAAAAQYnSi5QkkAAAAESJ1UiJzyusJIAAAABEicAPr4QkgAAAAEgB0EGLNIGJ2CuEJIgAAACDwAFBD6/CTI0cgUw52Q+DtAAAAEUPr8JJAdDrEA8fAEiDwQRMOdkPg5sAAABCOTSBde1Iicgx0kgp+EjB+AJB9/I51XLaRDkhddWLhCSIAAAAhcB0eouEJIAAAABFMfZFMf9IweACSIlEJAhMichMi2wkCESJ8kiNFJFJAcVMOehzTUSJdCQEDx+EAAAAAACAeAMAdAhEizJEOTB1gkiDwARIg8IETDnocuVEi3QkBEGDxwFEO7wkiAAAAHQSRQHW66wPH0QAAEEPr9pIjQyfSInISIPEGFteX11BXEFdQV5BX8M=")
+
+         imagesearch2 := this.Base64Code((A_PtrSize == 4)
+            ? ""
             : "QVdBVkFVQVRVV1ZTSIPsOIuEJLgAAACLrCSwAAAARA+3lCTAAAAASImMJIAAAACLjCSoAAAASImUJIgAAABEiYQkkAAAAIXAD4Va"
             . "AwAAiehBicxIi7wkoAAAAInKwegCQcHsAkiLnCSgAAAAD6/BRInmSAHwSI0Eh4nPD6/9QYn4TAHCTI0ck0w52A+DqwIAAEGJyEHR"
             . "6EnB4AJKjRQASDnCdxnpHwMAAA8fgAAAAABIg8AESDnCD4ZzAgAAgHgDAHTtSCuEJKAAAAAx0kGJyEjB+AL38Q+32kGJ0w+30EQP"
@@ -2864,49 +2878,59 @@ class ImagePut {
             . "/f//TIu0JKAAAABFMcAx2zHASYnbicJDgHwGAwAPhZD9//9BichBjUQk/ynPRSngSAH4SI0UtQAAAABJweACSY0Ehkj32kn32EmJ"
             . "w0kB03IP60QPH0AASIPoBEk5w3M3gHgDAHTx6R/9//8PH0AAD7fQicNBidDB6xCJ0EQPr8FBidtJAdhJweAC6ST9//9IidDpY///"
             . "/0wBwOut")
-            ;: "QVdBVkFVQVRVV1ZTSIPsKIuEJKgAAACLnCSQAAAARYshQYnSicJJicuLjCSgAAAAD6/TRInXQQ+vwinfiXwkHEgBykWLLJFEicIr"
-            ;. "lCSYAAAASAHIQQ+v0kiJRCQITInZSY0sk0g56Q+DgAAAAEiLRCQIRDksgXVsSInIMdJMKdhIwfgCQffyOVQkHHJXRDkhdVKJ3jH/"
-            ;. "MdJIjQS1AAAAAEiJRCQQTInIO5QkmAAAAHRESIt0JBBBif5OjTSxTI08MEw5+HMXgHgDAHQHQYs2OTB1EUiDwARJg8YE6+T/wkQB"
-            ;. "1+vESIPBBOl3////RQ+vwkuNDINIichIg8QoW15fXUFcQV1BXkFfww==")
+
+         ; --------------------------------------------------------------------------------------------------------
+
+         ; Search for the address of the first matching image.
+         if (option == 1)
+            address := DllCall(imagesearch1, "ptr", this.ptr, "uint", this.width, "uint", this.height
+                     , "ptr", image.ptr, "uint", image.width, "uint", image.height
+                     , "uint", x, "uint", y, "cdecl ptr")
+
+         ; Search for the coordinates of the first matching image.
+         if (option == 2)
+            address := DllCall(imagesearch2, "ptr", this.ptr, "uint", this.width, "uint", this.height
+                     , "ptr", image.ptr, "uint", image.width, "uint", image.height
+                     , "uint", x, "uint", y, "ushort", variation, "cdecl ptr")
+
+         ; Compare the address to the out-of-bounds limit.
+         if (address == this.ptr + this.size)
+            return False
+
+         ; Return an [x, y] array.
+         offset := (address - this.ptr) // 4
+         return [mod(offset, this.width), offset // this.width]
+      }
+
+      ImageSearchAll(image, variation := 0) {
 
          ; Convert image to a buffer object.
          if !(IsObject(image) && ObjHasOwnProp(image, "ptr") && ObjHasOwnProp(image, "size"))
             image := ImagePutBuffer(image)
 
          ; Check if the object has the coordinates.
-         coord_focus := ObjHasOwnProp(image, "coord_focus") ? image.coord_focus : 0
+         x := ObjHasOwnProp(image, "x") ? image.x : image.width//2
+         y := ObjHasOwnProp(image, "y") ? image.y : image.height//2
 
-         ; Search for the coordinates of the first matching image.
-         result := Buffer(2 * 4 + 4)
-         count := DllCall(code, "ptr", result
-            , "ptr", this.ptr, "uint", this.width, "uint", this.height
-            , "ptr", image.ptr, "uint", image.width, "uint", image.height
-            , "UInt", coord_focus, "UShort", variation, "cdecl uint")
+         if (variation == 0)
+            option := 1
+         else
+            option := 2
 
-         ; Prevent another search for focused pixel
-         image.coord_focus := NumGet(result, 4*2, "UInt")
-
-         if (count = 0)
-            return false
-
-         ; Return an [x, y] array.
-         xy := [NumGet(result, 4*0, "UInt"),
-            NumGet(result, 4*1, "UInt")]
-         return xy
-      }
-
-      ImageSearchAll(image, variation := 0) {
-         ; FIXME Since I haven't installed the GCC libraries for 32bit libraries and built 32bit binary, it won't work on 32-bit systems, Thank you for your understanding!
-         if ( A_PtrSize == 4 ) {
-           MsgBox("Since I haven't installed the GCC libraries for 32bit libraries and built 32bit binary, it won't work on 32-bit systems, Thank you for your understanding!")
-           return False
-         }
+         ; ------------------------ Machine code generated with MCode4GCC using gcc 13.2.0 ------------------------
 
          ; C source code - https://godbolt.org/z/qPodGdP1d
-         code := this.Base64Code((A_PtrSize == 4)
+         imagesearchall1 := this.Base64Code((A_PtrSize == 4)
             ? "VYnlV1ZTg+wUi0UMi1UYi00IjTyFAAAAAItFECtFHA+vxwNFCIlF6ItFDCnQiUXkjQSVAAAAAIlF7ItF6DnBc2eLRRSLADkBdAmL"
             . "RRSAeAMAdVCJyCtFCDHSwfgC93UMOVXkfD4x0otFFInLiVXwi3XwO3UcdDyLVeyJ3gHCiVXgi1XgOdBzFIB4AwB0BosWORB1D4PA"
             . "BIPGBOvl/0XwAfvrzIPBBOuSi0UQD6/HA0UIicGDxBSJyFteX13D"
+            : "QVdBVkFVQVRVV1ZTSIPsGEUx20SLpCSYAAAAi4QkgAAAAESLlCSQAAAASIu8JIgAAABEKeBBD6/BSInLidZMicFNjSyARInIRCnQ"
+            . "iUQkDEqNBJUAAAAASIkEJEw56XN0iwc5AXQGgH8DAHViSInIMdJMKcBIwfgCQffxOVQkDHxNSIn4Me0x0kQ54nQyTIs8JEGJ7k6N"
+            . "NLFJAcdMOfhzGIB4AwB0CEWLFkQ5EHUgSIPABEmDxgTr4//CRAHN68lBOfNzB0SJ2EiJDMNB/8NIg8EE64dEidhIg8QYW15fXUFc"
+            . "QV1BXkFfww==")
+
+         imagesearchall2 := this.Base64Code((A_PtrSize == 4)
+            ? ""
             : "QVdBVkFVQVRVV1ZTSIPsSIuEJNAAAACLtCTIAAAARImMJKgAAABED7eMJNgAAABIiYwkkAAAAImUJJgAAABMiYQkoAAAAIXAD4Xa"
             . "AwAARIuUJMAAAACJ8kSLnCTAAAAAweoCD6+UJMAAAACLjCTAAAAARA+v1kHB6wJIi7wkuAAAAESJ2EgBwkWJ0EiNFJdMAcFIjRyP"
             . "SDnaD4MOAwAARIuEJMAAAABB0ehJweACSo0MAkg50XcW6ZMDAAAPH0AASIPCBEg50Q+G1AIAAIB6AwB07UiJ0EgrhCS4AAAAMdJI"
@@ -2922,49 +2946,44 @@ class ImagePut {
             . "AY0ECWYP1gSCg0QkLAFJAfsDnCTAAAAA6Uv///9MAcJIOdMPhwH9//9Ii7wkuAAAADHJRTHAMdJmRIlEJDCAfA8DAIlUJDQPhTv9"
             . "//+LjCTAAAAAQY1T/0QrlCTAAAAASMHgAkwB0kj32EQp2UiNFJdIweECSPfZSYnQSQHAchXrUWYuDx+EAAAAAABIg+oESTnQcz6A"
             . "egMAdPHpr/z//w8fQABBicBBwegQZkSJRCQw6br8///HRCQsAAAAAEiLtCSQAAAA6c/+//9IicrpTf///0gByuug")
-            ;: "QVdBVkFVQVRVV1ZTSIPsGEUx20SLpCSYAAAAi4QkgAAAAESLlCSQAAAASIu8JIgAAABEKeBBD6/BSInLidZMicFNjSyARInIRCnQ"
-            ;. "iUQkDEqNBJUAAAAASIkEJEw56XN0iwc5AXQGgH8DAHViSInIMdJMKcBIwfgCQffxOVQkDHxNSIn4Me0x0kQ54nQyTIs8JEGJ7k6N"
-            ;. "NLFJAcdMOfhzGIB4AwB0CEWLFkQ5EHUgSIPABEmDxgTr4//CRAHN68lBOfNzB0SJ2EiJDMNB/8NIg8EE64dEidhIg8QYW15fXUFc"
-            ;. "QV1BXkFfww==")
 
-         ; Convert image to a buffer object.
-         if !(IsObject(image) && ObjHasOwnProp(image, "ptr") && ObjHasOwnProp(image, "size"))
-            image := ImagePutBuffer(image)
+         ; --------------------------------------------------------------------------------------------------------
 
-         ; Check if the object has the coordinates.
-         coord_focus := ObjHasOwnProp(image, "coord_focus") ? image.coord_focus : 0
+         ; Global number of addresses (matching searches) to allocate.
+         limit := 256
+
+         ; If the limit is exceeded, the following routine will be run again.
+         redo:
+         result := Buffer(A_PtrSize * limit) ; Allocate buffer for addresses.
 
          ; Search for the address of the first matching image.
-         capacity := 256
-         result := Buffer(2 * 4 * capacity + 4)
-         count := DllCall(code, "ptr", result, "uint", capacity
-                           , "ptr", this.ptr, "uint", this.width, "uint", this.height
-                           , "ptr", image.ptr, "uint", image.width, "uint", image.height
-                           , "UInt", coord_focus, "UShort", variation, "cdecl uint")
+         count := DllCall(imagesearchall1, "ptr", result, "uint", limit
+                  , "ptr", this.ptr, "uint", this.width, "uint", this.height
+                  , "ptr", image.ptr, "uint", image.width, "uint", image.height
+                  , "uint", x, "uint", y, "cdecl uint")
 
-         ; Prevent another search for focused pixel
-         image.coord_focus := NumGet(result, 2*4*count, "UInt")
-         coord_focus := image.coord_focus
+         count := DllCall(imagesearchall2, "ptr", result, "uint", limit
+                  , "ptr", this.ptr, "uint", this.width, "uint", this.height
+                  , "ptr", image.ptr, "uint", image.width, "uint", image.height
+                  , "uint", x, "uint", y,  "ushort", variation, "cdecl uint")
+
+         ; If the default 256 results is exceeded, run the machine code again.
+         if (count > limit) {
+            limit := count
+            goto redo
+         }
 
          ; Check if any matches are found.
          if (count = 0)
             return False
 
-         ; If more than 256 results, run the function with the true capacity.
-         if (count > capacity) {
-            result.Size := 2 * 4 * count + 4
-            count := DllCall(code, "ptr", result, "uint", count
-                           , "ptr", this.ptr, "uint", this.width, "uint", this.height
-                           , "ptr", image.ptr, "uint", image.width, "uint", image.height
-                           , "UInt", coord_focus, "UShort", variation, "cdecl uint")
-         }
-
          ; Create an array of [x, y] coordinates.
          xys := []
+         xys.count := count
          loop count {
-            xy := [NumGet(result, 2*4*(A_Index-1), "UInt"),
-               NumGet(result, 2*4*(A_Index-1) + 4, "UInt")]
-            xys.push(xy)
+            address := NumGet(result, A_PtrSize * (A_Index-1), "ptr")
+            offset := (address - this.ptr) // 4
+            xys.push([mod(offset, this.width), offset // this.width])
          }
          return xys
       }
