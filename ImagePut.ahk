@@ -2838,10 +2838,10 @@ class ImagePut {
          return xys
       }
 
-      ImageSearch(image) {
-         ; FIXME Since I haven't install the GCC libraries for 32bit libraries and build 32bit binary, it won't work on 32-bit systems, Thank you for your understanding!
+      ImageSearch(image, variation := 0) {
+         ; FIXME Since I haven't installed the GCC libraries for 32bit libraries and build 32bit binary, it won't work on 32-bit systems, Thank you for your understanding!
          if ( A_PtrSize == 4 ) {
-           MsgBox("Since I haven't install the GCC libraries for 32bit libraries and build 32bit binary, it won't work on 32-bit systems, Thank you for your understanding!")
+           MsgBox("Since I haven't installed the GCC libraries for 32bit libraries and build 32bit binary, it won't work on 32-bit systems, Thank you for your understanding!")
            return False
          }
 
@@ -2850,33 +2850,54 @@ class ImagePut {
             ? "VYnlV1ZTg+wgi0Uki1UYi30Ui00gD6/Qi3UIix8Pr0UMAcqJXeSLHJeLfQwByItVECtVHIlF7MHnAold4ItdDA+v1ytdGANVCIlV"
             . "3Ild2ItF3DnGc3CLReyLTeA5DIZ1YInwK0UIMdLB+AL3dQw5VdhyTotF5DkGdUeLRRgx0onxiVXwweACiUXoi0UUi13wO10cdDyL"
             . "VeiJywHCiVXUi1XUOdBzFIB4AwB0BosTORB1D4PABIPDBOvl/0XwAfnrzIPGBOuJi0UQD6/HA0UIicaDxCCJ8FteX13D"
-            : "QVdBVkFVQVRVV1ZTSIPsKIuEJKgAAACLnCSQAAAARYshQYnSicJJicuLjCSgAAAAD6/TRInXQQ+vwinfiXwkHEgBykWLLJFEicIr"
-            . "lCSYAAAASAHIQQ+v0kiJRCQITInZSY0sk0g56Q+DgAAAAEiLRCQIRDksgXVsSInIMdJMKdhIwfgCQffyOVQkHHJXRDkhdVKJ3jH/"
-            . "MdJIjQS1AAAAAEiJRCQQTInIO5QkmAAAAHRESIt0JBBBif5OjTSxTI08MEw5+HMXgHgDAHQHQYs2OTB1EUiDwARJg8YE6+T/wkQB"
-            . "1+vESIPBBOl3////RQ+vwkuNDINIichIg8QoW15fXUFcQV1BXkFfww==")
+            : "QVdBVkFVQVRVV1ZTSIPsOIuEJLgAAACLrCSwAAAARA+3lCTAAAAASImMJIAAAACLjCSoAAAASImUJIgAAABEiYQkkAAAAIXAD4Va"
+            . "AwAAiehBicxIi7wkoAAAAInKwegCQcHsAkiLnCSgAAAAD6/BRInmSAHwSI0Eh4nPD6/9QYn4TAHCTI0ck0w52A+DqwIAAEGJyEHR"
+            . "6EnB4AJKjRQASDnCdxnpHwMAAA8fgAAAAABIg8AESDnCD4ZzAgAAgHgDAHTtSCuEJKAAAAAx0kGJyEjB+AL38Q+32kGJ0w+30EQP"
+            . "r8KJ0EkB2EnB4AJBweMQQSnpSIu8JIgAAABEi7wkkAAAAEQPr4wkkAAAAEEJw0iLhCSAAAAAQSnPRIlYCEiLhCSgAAAATo00j0KL"
+            . "BABMOfcPg54BAAAPr5QkkAAAAEWJ00H320gB2kiLnCSIAAAASI08lQAAAACJykiNdwFIiXwkCEiDxwJMjSSVAAAAAEiJdCQQi7Qk"
+            . "kAAAAEiJfCQYD7b4SYn1Zol8JCQPtvzB6BBJKdWNUf9IiXQkKA+2wEiNNJUAAAAAiXwkIEnB5QJIiTQkMfZmiUQkJusTDx9AAEgD"
+            . "HCQx9kw58w+DBgEAAEQ5/nfsSItEJAgPthQDD7dEJCQp0GZBOcJzCmZEOdgPgsUAAABIi0QkEA+2FAMPt0QkICnQZkE5wnMKZkQ5"
+            . "2A+CpQAAAEiLRCQYD7YUAw+3RCQmKdBmQTnCcwpmRDnYD4KFAAAAhe0PhLIAAABIi4QkoAAAAEiJ2jH/To0EIEk5wHcb6ZcAAABm"
+            . "Dx+EAAAAAABIg8AESIPCBEk5wHZzgHgDAHTtD7YIRA+2CkQpyWZBOcpzBmZEOdlyMA+2SAFED7ZKAUQpyWZBOcpzBmZEOdlyGA+2"
+            . "SAJED7ZKAkQpyWZBOcpzrWZEOdlzp4PGATHASIPDBDu0JJAAAAAPQ/BMOfMPgvr+//8xwOtGDx+AAAAAAIPHAUwB6jnvD4Vb////"
+            . "SInYSCuEJIgAAABIwfgCSJlI93wkKGYPbsJmDzoiwAFIi4QkgAAAAGYP1gC4AQAAAEiDxDhbXl9dQVxBXUFeQV/DTAHASTnDD4df"
+            . "/f//TIu0JKAAAABFMcAx2zHASYnbicJDgHwGAwAPhZD9//9BichBjUQk/ynPRSngSAH4SI0UtQAAAABJweACSY0Ehkj32kn32EmJ"
+            . "w0kB03IP60QPH0AASIPoBEk5w3M3gHgDAHTx6R/9//8PH0AAD7fQicNBidDB6xCJ0EQPr8FBidtJAdhJweAC6ST9//9IidDpY///"
+            . "/0wBwOut")
+            ;: "QVdBVkFVQVRVV1ZTSIPsKIuEJKgAAACLnCSQAAAARYshQYnSicJJicuLjCSgAAAAD6/TRInXQQ+vwinfiXwkHEgBykWLLJFEicIr"
+            ;. "lCSYAAAASAHIQQ+v0kiJRCQITInZSY0sk0g56Q+DgAAAAEiLRCQIRDksgXVsSInIMdJMKdhIwfgCQffyOVQkHHJXRDkhdVKJ3jH/"
+            ;. "MdJIjQS1AAAAAEiJRCQQTInIO5QkmAAAAHRESIt0JBBBif5OjTSxTI08MEw5+HMXgHgDAHQHQYs2OTB1EUiDwARJg8YE6+T/wkQB"
+            ;. "1+vESIPBBOl3////RQ+vwkuNDINIichIg8QoW15fXUFcQV1BXkFfww==")
 
          ; Convert image to a buffer object.
          if !(IsObject(image) && ObjHasOwnProp(image, "ptr") && ObjHasOwnProp(image, "size"))
             image := ImagePutBuffer(image)
 
-         ; Search for the address of the first matching image.
-         address := DllCall(code, "ptr", this.ptr, "uint", this.width, "uint", this.height
-            , "ptr", image.ptr, "uint", image.width, "uint", image.height, "uint", image.width//2, "uint", image.height//2
-            , "cdecl ptr")
+         ; Check if the object has the coordinates.
+         coord_focus := ObjHasOwnProp(image, "coord_focus") ? image.coord_focus : 0
 
-         ; Compare the address to the out-of-bounds limit.
-         if (address == this.ptr + this.size)
-            return False
+         ; Search for the coordinates of the first matching image.
+         count := DllCall(code, "ptr", this.ptr, "uint", this.width, "uint", this.height
+            , "ptr", image.ptr, "uint", image.width, "uint", image.height,
+            , "UInt", coord_focus, "UShort", variation, "cdecl ptr")
+
+         ; Prevent another search for focused pixel
+         image.coord_focus := NumGet(result, 4*2, "UInt")
+         coord_focus := image.coord_focus
+
+         if (count = 0)
+            return false
 
          ; Return an [x, y] array.
-         offset := (address - this.ptr) // 4
-         return [mod(offset, this.width), offset // this.width]
+         xy := [NumGet(result, 4*0, "UInt"),
+            NumGet(result, 4*1, "UInt")]
+         return xy;
       }
 
       ImageSearchAll(image, variation := 0) {
-         ; FIXME Since I haven't install the GCC libraries for 32bit libraries and build 32bit binary, it won't work on 32-bit systems, Thank you for your understanding!
+         ; FIXME Since I haven't installed the GCC libraries for 32bit libraries and build 32bit binary, it won't work on 32-bit systems, Thank you for your understanding!
          if ( A_PtrSize == 4 ) {
-           MsgBox("Since I haven't install the GCC libraries for 32bit libraries and build 32bit binary, it won't work on 32-bit systems, Thank you for your understanding!")
+           MsgBox("Since I haven't installed the GCC libraries for 32bit libraries and build 32bit binary, it won't work on 32-bit systems, Thank you for your understanding!")
            return False
          }
 
