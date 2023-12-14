@@ -2839,6 +2839,12 @@ class ImagePut {
       }
 
       ImageSearch(image) {
+         ; FIXME Since I haven't install the GCC libraries for 32bit libraries and build 32bit binary, it won't work on 32-bit systems, Thank you for your understanding!
+         if ( A_PtrSize == 4 ) {
+           MsgBox("Since I haven't install the GCC libraries for 32bit libraries and build 32bit binary, it won't work on 32-bit systems, Thank you for your understanding!")
+           return False
+         }
+
          ; C source code - https://godbolt.org/z/cKxrrT4ss
          code := this.Base64Code((A_PtrSize == 4)
             ? "VYnlV1ZTg+wgi0Uki1UYi30Ui00gD6/Qi3UIix8Pr0UMAcqJXeSLHJeLfQwByItVECtVHIlF7MHnAold4ItdDA+v1ytdGANVCIlV"
@@ -2867,47 +2873,75 @@ class ImagePut {
          return [mod(offset, this.width), offset // this.width]
       }
 
-      ImageSearchAll(image) {
+      ImageSearchAll(image, variation := 0) {
+         ; FIXME Since I haven't install the GCC libraries for 32bit libraries and build 32bit binary, it won't work on 32-bit systems, Thank you for your understanding!
+         if ( A_PtrSize == 4 ) {
+           MsgBox("Since I haven't install the GCC libraries for 32bit libraries and build 32bit binary, it won't work on 32-bit systems, Thank you for your understanding!")
+           return False
+         }
+
          ; C source code - https://godbolt.org/z/qPodGdP1d
          code := this.Base64Code((A_PtrSize == 4)
             ? "VYnlV1ZTg+wUi0UMi1UYi00IjTyFAAAAAItFECtFHA+vxwNFCIlF6ItFDCnQiUXkjQSVAAAAAIlF7ItF6DnBc2eLRRSLADkBdAmL"
             . "RRSAeAMAdVCJyCtFCDHSwfgC93UMOVXkfD4x0otFFInLiVXwi3XwO3UcdDyLVeyJ3gHCiVXgi1XgOdBzFIB4AwB0BosWORB1D4PA"
             . "BIPGBOvl/0XwAfvrzIPBBOuSi0UQD6/HA0UIicGDxBSJyFteX13D"
-            : "QVdBVkFVQVRVV1ZTSIPsGEUx20SLpCSYAAAAi4QkgAAAAESLlCSQAAAASIu8JIgAAABEKeBBD6/BSInLidZMicFNjSyARInIRCnQ"
-            . "iUQkDEqNBJUAAAAASIkEJEw56XN0iwc5AXQGgH8DAHViSInIMdJMKcBIwfgCQffxOVQkDHxNSIn4Me0x0kQ54nQyTIs8JEGJ7k6N"
-            . "NLFJAcdMOfhzGIB4AwB0CEWLFkQ5EHUgSIPABEmDxgTr4//CRAHN68lBOfNzB0SJ2EiJDMNB/8NIg8EE64dEidhIg8QYW15fXUFc"
-            . "QV1BXkFfww==")
+            : "QVdBVkFVQVRVV1ZTSIPsSIuEJNAAAACLtCTIAAAARImMJKgAAABED7eMJNgAAABIiYwkkAAAAImUJJgAAABMiYQkoAAAAIXAD4Xa"
+            . "AwAARIuUJMAAAACJ8kSLnCTAAAAAweoCD6+UJMAAAACLjCTAAAAARA+v1kHB6wJIi7wkuAAAAESJ2EgBwkWJ0EiNFJdMAcFIjRyP"
+            . "SDnaD4MOAwAARIuEJMAAAABB0ehJweACSo0MAkg50XcW6ZMDAAAPH0AASIPCBEg50Q+G1AIAAIB6AwB07UiJ0EgrhCS4AAAAMdJI"
+            . "wfgC97QkwAAAAGaJVCQwRA+3wg+30InRD6+MJMAAAACJVCQ0TAHBSMHhAkiLhCS4AAAASIu8JKAAAABEi6wkqAAAAEQrrCTAAAAA"
+            . "iwQIi4wksAAAACnxD6+MJKgAAABIjSyPSDnvD4PtAgAAD6+UJKgAAABJiftFicrHRCQsAAAAAEH32kwBwkiNPJUAAAAAi5QkwAAA"
+            . "AEiNXwFIiXwkCEiDxwJIiVwkEIucJKgAAABIiXwkIEiNPJUAAAAASYncSIlcJDiLnCTAAAAASSnUjVP/ScHkAkiNHJUAAAAAD7bQ"
+            . "ZolUJCgPttTB6BAPtsBIiRwkMduJVCQcZolEJCrrFg8fgAAAAABMAxwkMdtJOesPgwoBAABEOet37EiLRCQIQQ+2FAMPt0QkKCnQ"
+            . "ZkE5wXMKZkQ50A+CyAAAAEiLRCQQQQ+2FAMPt0QkHCnQZkE5wXMKZkQ50A+CpwAAAEiLRCQgQQ+2FAMPt0QkKinQZkE5wXMKZkQ5"
+            . "0A+ChgAAAEiLhCS4AAAATInaRTH/hfYPhNsAAABMjQQ4STnAdxvpzQAAAA8fRAAASIPABEiDwgRJOcAPhqcAAACAeAMAdOkPtghE"
+            . "D7YyRCnxZkE5yXMGZkQ50XIwD7ZIAUQPtnIBRCnxZkE5yXMGZkQ50XIYD7ZIAkQPtnICRCnxZkE5yXOpZkQ50XOjSYPDBIPDATHA"
+            . "O5wkqAAAAA9D2Ek56w+C9v7//4tEJCxIi7QkkAAAAAHASI0EhkiJhCSQAAAASInGi0QkMMHgEAtEJDSJBotEJCxIg8RIW15fXUFc"
+            . "QV1BXkFfw0GDxwFMAeJEOf4PhSX///+LTCQsOYwkmAAAAHYwTInYSCuEJKAAAABIwfgCSJlI93wkOGYPbsJIi5QkkAAAAGYPOiLA"
+            . "AY0ECWYP1gSCg0QkLAFJAfsDnCTAAAAA6Uv///9MAcJIOdMPhwH9//9Ii7wkuAAAADHJRTHAMdJmRIlEJDCAfA8DAIlUJDQPhTv9"
+            . "//+LjCTAAAAAQY1T/0QrlCTAAAAASMHgAkwB0kj32EQp2UiNFJdIweECSPfZSYnQSQHAchXrUWYuDx+EAAAAAABIg+oESTnQcz6A"
+            . "egMAdPHpr/z//w8fQABBicBBwegQZkSJRCQw6br8///HRCQsAAAAAEiLtCSQAAAA6c/+//9IicrpTf///0gByuug")
+            ;: "QVdBVkFVQVRVV1ZTSIPsGEUx20SLpCSYAAAAi4QkgAAAAESLlCSQAAAASIu8JIgAAABEKeBBD6/BSInLidZMicFNjSyARInIRCnQ"
+            ;. "iUQkDEqNBJUAAAAASIkEJEw56XN0iwc5AXQGgH8DAHViSInIMdJMKcBIwfgCQffxOVQkDHxNSIn4Me0x0kQ54nQyTIs8JEGJ7k6N"
+            ;. "NLFJAcdMOfhzGIB4AwB0CEWLFkQ5EHUgSIPABEmDxgTr4//CRAHN68lBOfNzB0SJ2EiJDMNB/8NIg8EE64dEidhIg8QYW15fXUFc"
+            ;. "QV1BXkFfww==")
 
          ; Convert image to a buffer object.
          if !(IsObject(image) && ObjHasOwnProp(image, "ptr") && ObjHasOwnProp(image, "size"))
             image := ImagePutBuffer(image)
 
+         ; Check if the object has the coordinates.
+         coord_focus := ObjHasOwnProp(image, "coord_focus") ? image.coord_focus : 0
+
          ; Search for the address of the first matching image.
          capacity := 256
-         result := Buffer(A_PtrSize * capacity)
+         result := Buffer(2 * 4 * capacity + 4)
          count := DllCall(code, "ptr", result, "uint", capacity
                            , "ptr", this.ptr, "uint", this.width, "uint", this.height
-                           , "ptr", image.ptr, "uint", image.width, "uint", image.height, "cdecl uint")
+                           , "ptr", image.ptr, "uint", image.width, "uint", image.height
+                           , "UInt", coord_focus, "UShort", variation, "cdecl uint")
 
-         ; If more than 256 results, run the function with the true capacity.
-         if (count > capacity) {
-            result.size := A_PtrSize * count
-            count := DllCall(code, "ptr", result, "uint", capacity
-                           , "ptr", this.ptr, "uint", this.width, "uint", this.height
-                           , "ptr", image.ptr, "uint", image.width, "uint", image.height, "cdecl uint")
-         }
+         ; Prevent another search for focused pixel
+         image.coord_focus := NumGet(result, 2*4*count, "UInt")
+         coord_focus := image.coord_focus
 
          ; Check if any matches are found.
          if (count = 0)
             return False
 
+         ; If more than 256 results, run the function with the true capacity.
+         if (count > capacity) {
+            result.Size := 2 * 4 * count + 4
+            count := DllCall(code, "ptr", result, "uint", count
+                           , "ptr", this.ptr, "uint", this.width, "uint", this.height
+                           , "ptr", image.ptr, "uint", image.width, "uint", image.height
+                           , "UInt", coord_focus, "UShort", variation, "cdecl uint")
+         }
+
          ; Create an array of [x, y] coordinates.
          xys := []
-         xys.count := count
          loop count {
-            address := NumGet(result, A_PtrSize*(A_Index-1), "ptr")
-            offset := (address - this.ptr) // 4
-            xy := [mod(offset, this.width), offset // this.width]
+            xy := [NumGet(result, 2*4*(A_Index-1), "UInt"),
+               NumGet(result, 2*4*(A_Index-1) + 4, "UInt")]
             xys.push(xy)
          }
          return xys
