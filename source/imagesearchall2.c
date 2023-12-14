@@ -158,7 +158,7 @@ unsigned int imagesearchall2(unsigned int * restrict result, unsigned int capaci
         }
     }
 
-    // Hide the coordinates of the focused pixel
+    // Stash the coordinates of the focused pixel
     *(result + count * 2) = x << sizeof(x)*8 | y;
 
 // TODO Remove the comment below for clean code

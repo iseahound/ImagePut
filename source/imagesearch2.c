@@ -53,7 +53,7 @@ unsigned int imagesearch2(unsigned int * restrict result, unsigned int * start, 
 
     focus_determined:;
 
-    // Hide the coordinates of the focused pixel
+    // Stash the coordinates of the focused pixel
     *(result + 2) = x << sizeof(x)*8 | y;
 
 
