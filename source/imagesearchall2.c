@@ -94,12 +94,20 @@ unsigned int imagesearchall2(unsigned int * restrict result, unsigned int capaci
         // Focused Pixel
         unsigned int * color;
         color = current + x + y * width;
-        for (int b = 0; b < 3; b++) {
-            unsigned short diff = *((unsigned char *)&cf + b) - *((unsigned char *)color + b);
-            if ( diff > variation && diff < (unsigned short)(0 - variation) ) {
+        if ( variation == 0 ) {
+            if ( cf != *color ) {
                 current++;
                 left++;
                 goto next;
+            }
+        } else {
+            for (int b = 0; b < 3; b++) {
+                unsigned short diff = *((unsigned char *)&cf + b) - *((unsigned char *)color + b);
+                if ( diff > variation && diff < (unsigned short)(0 - variation) ) {
+                    current++;
+                    left++;
+                    goto next;
+                }
             }
         }
 
@@ -110,12 +118,20 @@ unsigned int imagesearchall2(unsigned int * restrict result, unsigned int capaci
             unsigned int * e = c + w;
             while (c < e) {
                 if ( *((unsigned char *) c + 3) ) {  // Skip transparent pixels
-                    for (int b = 0; b < 3; b++) {
-                        unsigned short diff = *((unsigned char *) c + b) - *((unsigned char *) color + b);
-                        if ( diff > variation && diff < (unsigned short)(0 - variation) ) {
+                    if ( variation == 0 ) {
+                        if ( *c  != *color ) {
                             current++;
                             left++;
                             goto next;
+                        }
+                    } else {
+                        for (int b = 0; b < 3; b++) {
+                            unsigned short diff = *((unsigned char *) c + b) - *((unsigned char *) color + b);
+                            if ( diff > variation && diff < (unsigned short)(0 - variation) ) {
+                                current++;
+                                left++;
+                                goto next;
+                            }
                         }
                     }
                 }
