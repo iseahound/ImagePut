@@ -2883,7 +2883,6 @@ class ImagePut {
 
          ; Prevent another search for focused pixel
          image.coord_focus := NumGet(result, 4*2, "UInt")
-         coord_focus := image.coord_focus
 
          if (count = 0)
             return false
