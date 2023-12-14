@@ -36,19 +36,17 @@ unsigned int imagesearch2(unsigned int * restrict result, unsigned int * start, 
 
     // This falls into an infinite loop if somehow the sprite doesn't have any
     // non-transparent pixel in the leftmost quarter.
-    if ( *((unsigned char *)(s + x + y * w) + 3) == 0 ) {
-        unsigned int * c = s + (w/4-1) + (h-1) * w;
-        while(-1) {
-            for (unsigned int * e = c - w / 4; c > e; c--) {
-                if ( *((unsigned char *) c + 3) ) {
-                    unsigned int offset = (c - s);
-                    x = offset % w;
-                    y = offset / w;
-                    goto focus_determined;
-                }
+    c = s + (w/4-1) + (h-1) * w;
+    while(-1) {
+        for (unsigned int * e = c - w / 4; c > e; c--) {
+            if ( *((unsigned char *) c + 3) ) {
+                unsigned int offset = (c - s);
+                x = offset % w;
+                y = offset / w;
+                goto focus_determined;
             }
-            c -= w - w / 4;
         }
+        c -= w - w / 4;
     }
 
     focus_determined:;
@@ -113,7 +111,7 @@ unsigned int imagesearch2(unsigned int * restrict result, unsigned int * start, 
         }
 
         // Subimage loop.
-        unsigned int * c = s;
+        c = s;
         color = current;
         for (int i = 0; i < h; i++) {
             unsigned int * e = c + w;
