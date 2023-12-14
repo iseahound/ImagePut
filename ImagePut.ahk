@@ -2877,9 +2877,11 @@ class ImagePut {
          coord_focus := ObjHasOwnProp(image, "coord_focus") ? image.coord_focus : 0
 
          ; Search for the coordinates of the first matching image.
-         count := DllCall(code, "ptr", this.ptr, "uint", this.width, "uint", this.height
-            , "ptr", image.ptr, "uint", image.width, "uint", image.height,
-            , "UInt", coord_focus, "UShort", variation, "cdecl ptr")
+         result := Buffer(2 * 4 + 4)
+         count := DllCall(code, "ptr", result
+            , "ptr", this.ptr, "uint", this.width, "uint", this.height
+            , "ptr", image.ptr, "uint", image.width, "uint", image.height
+            , "UInt", coord_focus, "UShort", variation, "cdecl uint")
 
          ; Prevent another search for focused pixel
          image.coord_focus := NumGet(result, 4*2, "UInt")
@@ -2890,7 +2892,7 @@ class ImagePut {
          ; Return an [x, y] array.
          xy := [NumGet(result, 4*0, "UInt"),
             NumGet(result, 4*1, "UInt")]
-         return xy;
+         return xy
       }
 
       ImageSearchAll(image, variation := 0) {
