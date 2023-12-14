@@ -2838,7 +2838,7 @@ class ImagePut {
          return xys
       }
 
-      ImageSearch(image, variation := 0) {
+      ImageSearch(image, variation := 0, option := "") {
 
          ; Convert image to a buffer object.
          if !(IsObject(image) && ObjHasOwnProp(image, "ptr") && ObjHasOwnProp(image, "size"))
@@ -2848,36 +2848,26 @@ class ImagePut {
          x := ObjHasOwnProp(image, "x") ? image.x : image.width//2
          y := ObjHasOwnProp(image, "y") ? image.y : image.height//2
 
-         if (variation == 0)
-            option := 1
-         else
-            option := 2
+         if (option == "") {
+            if (variation == 0)
+               option := 1
+            else
+               option := 2
+         }
 
          ; ------------------------ Machine code generated with MCode4GCC using gcc 13.2.0 ------------------------
 
-         ; C source code - https://godbolt.org/z/cKxrrT4ss
+         ; C source code - https://godbolt.org/z/ej3YEWjfc
          imagesearch1 := this.Base64Code((A_PtrSize == 4)
             ? "VYnlV1ZTg+wgi0Uki1UYi30Ui00gD6/Qi3UIix8Pr0UMAcqJXeSLHJeLfQwByItVECtVHIlF7MHnAold4ItdDA+v1ytdGANVCIlV"
             . "3Ild2ItF3DnGc3CLReyLTeA5DIZ1YInwK0UIMdLB+AL3dQw5VdhyTotF5DkGdUeLRRgx0onxiVXwweACiUXoi0UUi13wO10cdDyL"
             . "VeiJywHCiVXUi1XUOdBzFIB4AwB0BosTORB1D4PABIPDBOvl/0XwAfnrzIPGBOuJi0UQD6/HA0UIicaDxCCJ8FteX13D"
             : "QVdBVkFVQVRVV1ZTSIPsGEWLIUSJw0SLhCSYAAAAQYnSi5QkkAAAAESJ1UiJzyusJIAAAABEicAPr4QkgAAAAEgB0EGLNIGJ2CuEJIgAAACDwAFBD6/CTI0cgUw52Q+DtAAAAEUPr8JJAdDrEA8fAEiDwQRMOdkPg5sAAABCOTSBde1Iicgx0kgp+EjB+AJB9/I51XLaRDkhddWLhCSIAAAAhcB0eouEJIAAAABFMfZFMf9IweACSIlEJAhMichMi2wkCESJ8kiNFJFJAcVMOehzTUSJdCQEDx+EAAAAAACAeAMAdAhEizJEOTB1gkiDwARIg8IETDnocuVEi3QkBEGDxwFEO7wkiAAAAHQSRQHW66wPH0QAAEEPr9pIjQyfSInISIPEGFteX11BXEFdQV5BX8M=")
 
+         ; C source code - https://godbolt.org/z/qGexdGqMn
          imagesearch2 := this.Base64Code((A_PtrSize == 4)
             ? ""
-            : "QVdBVkFVQVRVV1ZTSIPsOIuEJLgAAACLrCSwAAAARA+3lCTAAAAASImMJIAAAACLjCSoAAAASImUJIgAAABEiYQkkAAAAIXAD4Va"
-            . "AwAAiehBicxIi7wkoAAAAInKwegCQcHsAkiLnCSgAAAAD6/BRInmSAHwSI0Eh4nPD6/9QYn4TAHCTI0ck0w52A+DqwIAAEGJyEHR"
-            . "6EnB4AJKjRQASDnCdxnpHwMAAA8fgAAAAABIg8AESDnCD4ZzAgAAgHgDAHTtSCuEJKAAAAAx0kGJyEjB+AL38Q+32kGJ0w+30EQP"
-            . "r8KJ0EkB2EnB4AJBweMQQSnpSIu8JIgAAABEi7wkkAAAAEQPr4wkkAAAAEEJw0iLhCSAAAAAQSnPRIlYCEiLhCSgAAAATo00j0KL"
-            . "BABMOfcPg54BAAAPr5QkkAAAAEWJ00H320gB2kiLnCSIAAAASI08lQAAAACJykiNdwFIiXwkCEiDxwJMjSSVAAAAAEiJdCQQi7Qk"
-            . "kAAAAEiJfCQYD7b4SYn1Zol8JCQPtvzB6BBJKdWNUf9IiXQkKA+2wEiNNJUAAAAAiXwkIEnB5QJIiTQkMfZmiUQkJusTDx9AAEgD"
-            . "HCQx9kw58w+DBgEAAEQ5/nfsSItEJAgPthQDD7dEJCQp0GZBOcJzCmZEOdgPgsUAAABIi0QkEA+2FAMPt0QkICnQZkE5wnMKZkQ5"
-            . "2A+CpQAAAEiLRCQYD7YUAw+3RCQmKdBmQTnCcwpmRDnYD4KFAAAAhe0PhLIAAABIi4QkoAAAAEiJ2jH/To0EIEk5wHcb6ZcAAABm"
-            . "Dx+EAAAAAABIg8AESIPCBEk5wHZzgHgDAHTtD7YIRA+2CkQpyWZBOcpzBmZEOdlyMA+2SAFED7ZKAUQpyWZBOcpzBmZEOdlyGA+2"
-            . "SAJED7ZKAkQpyWZBOcpzrWZEOdlzp4PGATHASIPDBDu0JJAAAAAPQ/BMOfMPgvr+//8xwOtGDx+AAAAAAIPHAUwB6jnvD4Vb////"
-            . "SInYSCuEJIgAAABIwfgCSJlI93wkKGYPbsJmDzoiwAFIi4QkgAAAAGYP1gC4AQAAAEiDxDhbXl9dQVxBXUFeQV/DTAHASTnDD4df"
-            . "/f//TIu0JKAAAABFMcAx2zHASYnbicJDgHwGAwAPhZD9//9BichBjUQk/ynPRSngSAH4SI0UtQAAAABJweACSY0Ehkj32kn32EmJ"
-            . "w0kB03IP60QPH0AASIPoBEk5w3M3gHgDAHTx6R/9//8PH0AAD7fQicNBidDB6xCJ0EQPr8FBidtJAdhJweAC6ST9//9IidDpY///"
-            . "/0wBwOut")
+            : "QVdBVkFVQVRVV1ZTSIPsOESLnCSgAAAAi7wkqAAAAEGJ1EmJyouUJLgAAACLjCSwAAAAQSn4TImMJJgAAABIi7QkmAAAAEQPt4wkwAAAAInQRQ+vxEEPr8NPjTSCSAHIiwSGRInmRCneiXQkLE058g+DcAEAAEEPr9QPtthEieVmiVwkKA+23MHoEA+2wIlcJBxIAcpmiUQkKkiNDJUAAAAARInaSI1xAUgp1UyNLJUAAAAASIl0JBBBjVP/SI1xAkWJy0iJdCQgSMHlAjH2QffbTI08lQAAAABmDx9EAABBD7YUCg+3RCQoKdBmQTnBcwpmRDnYD4LTAAAASItEJBBBD7YUAg+3RCQcKdBmQTnBcwpmRDnYD4KyAAAASItEJCBBD7YUAg+3RCQqKdBmQTnBcwpmRDnYD4KRAAAAhf8PhKMAAABIi4QkmAAAAEyJfCQITInSMdtJic9OjQQoTDnAD4OBAAAAiVwkGOsTZpBIg8AESIPCBEw5wA+DfwAAAIB4AwB06Q+2CA+2GinZZkE5yXMGZkQ52XIsD7ZIAQ+2WgEp2WZBOclzBmZEOdlyFg+2SAIPtloCKdlmQTnJc69mRDnZc6lMiflMi3wkCIPGAUmDwgREOeZyPTH2TTnyD4L6/v//RTHSTInQSIPEOFteX11BXEFdQV5BX8MPHwCLXCQYSAHqg8MBOfsPhUn////r1Q8fQABNOfJzyTl0JCwPg7n+//9NAfpNOfJztzH26ar+//8=")
 
          ; --------------------------------------------------------------------------------------------------------
 
