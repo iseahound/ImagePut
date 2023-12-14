@@ -2839,9 +2839,9 @@ class ImagePut {
       }
 
       ImageSearch(image, variation := 0) {
-         ; FIXME Since I haven't installed the GCC libraries for 32bit libraries and build 32bit binary, it won't work on 32-bit systems, Thank you for your understanding!
+         ; FIXME Since I haven't installed the GCC libraries for 32bit libraries and built 32bit binary, it won't work on 32-bit systems, Thank you for your understanding!
          if ( A_PtrSize == 4 ) {
-           MsgBox("Since I haven't installed the GCC libraries for 32bit libraries and build 32bit binary, it won't work on 32-bit systems, Thank you for your understanding!")
+           MsgBox("Since I haven't installed the GCC libraries for 32bit libraries and built 32bit binary, it won't work on 32-bit systems, Thank you for your understanding!")
            return False
          }
 
@@ -2896,9 +2896,9 @@ class ImagePut {
       }
 
       ImageSearchAll(image, variation := 0) {
-         ; FIXME Since I haven't installed the GCC libraries for 32bit libraries and build 32bit binary, it won't work on 32-bit systems, Thank you for your understanding!
+         ; FIXME Since I haven't installed the GCC libraries for 32bit libraries and built 32bit binary, it won't work on 32-bit systems, Thank you for your understanding!
          if ( A_PtrSize == 4 ) {
-           MsgBox("Since I haven't installed the GCC libraries for 32bit libraries and build 32bit binary, it won't work on 32-bit systems, Thank you for your understanding!")
+           MsgBox("Since I haven't installed the GCC libraries for 32bit libraries and built 32bit binary, it won't work on 32-bit systems, Thank you for your understanding!")
            return False
          }
 
