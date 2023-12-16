@@ -2,7 +2,7 @@
 
 unsigned int pixelsearchall3x(unsigned int ** result, unsigned int limit, unsigned int * start, unsigned int * end, unsigned int * colors, unsigned int length) {
 
-    // Number of 32-bit integers the register can hold.
+    // Number of 32-bit integers the register can iterate over.
     int iter = 4;
 
     // Track number of matching searches.
