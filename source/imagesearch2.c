@@ -18,7 +18,7 @@ unsigned int imagesearch2(unsigned int * restrict result, unsigned int * start, 
 
     // Try to locate the focused pixel in the middle of the sprite
     unsigned int * c = s + w/4 + h/4 * w;
-    unsigned int * last_pixel = s + w + h * w;
+    unsigned int * last_pixel = s + h * w;
     while(c < last_pixel) {
         for (unsigned int * e = c + w / 2; c < e; c++) {
             if ( *((unsigned char *) c + 3) ) {
