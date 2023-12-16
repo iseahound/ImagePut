@@ -1,5 +1,5 @@
 unsigned int * imagesearch1(unsigned int * start, unsigned int width, unsigned int height, unsigned int * s, unsigned int w, unsigned int h, unsigned int x, unsigned int y) {
-    // source: left, top, width, height, start, current, end refer to the haystack (main image) 
+    // source: left, top, width, height, start, current, end refer to the haystack (main image)
     // target: x, y, w, h, s, c, e refer to the needle (search or template image)
 
     int trans = (*((unsigned char *) s + 3) == 0);  // Check if top-left pixel is transparent
@@ -8,7 +8,7 @@ unsigned int * imagesearch1(unsigned int * start, unsigned int width, unsigned i
     unsigned int c2 = *(s + x);                     // c1 — c2
     unsigned int c3 = *(s + y * w);                 // |     |
     unsigned int c4 = *(s + x + y * w);             // c3 — c4 ← Focused pixel
-    
+
     unsigned int x_domain = width - w;              // Avoid search of the narrow edge on the right-hand side
     unsigned int y_domain = height - h + 1;         // Add 1 to search at least one row
 
