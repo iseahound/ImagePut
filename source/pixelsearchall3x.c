@@ -3,7 +3,7 @@
 unsigned int pixelsearchall3x(unsigned int ** result, unsigned int limit, unsigned int * start, unsigned int * end, unsigned int * colors, unsigned int length) {
 
     // Number of 32-bit integers the register can hold.
-    int pack = 4;
+    int iter = 4;
 
     // Track number of matching searches.
     unsigned int count = 0;
@@ -97,17 +97,17 @@ unsigned int pixelsearchall3x(unsigned int ** result, unsigned int limit, unsign
     // Clean up any remaining elements.
     exit:
     while (start < end) {
-        if (pack > 0) {
+        if (iter > 0) {
             for (int j = 0; j < check; j++)
                 if (*start == colors[i + j]) {
                     if (count < limit)
                         *(result + count) = start;
                     count++;
                 }
-            pack--;
+            iter--;
         }
         else {
-            pack = 4;
+            iter = 4;
             goto loop;
         }
         start++;

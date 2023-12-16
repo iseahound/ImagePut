@@ -7,8 +7,8 @@
 
 unsigned int pixelsearchall4x(unsigned int ** result, unsigned int limit, unsigned int * start, unsigned int * end, unsigned int * high, unsigned int * low, unsigned int length) {
 
-    // Number of 32-bit integers the register can hold.
-    int pack = 4;
+    // Number of 32-bit integers the register can iterate over.
+    int iter = 4;
 
     // Track number of matching searches.
     unsigned int count = 0;
@@ -136,7 +136,7 @@ unsigned int pixelsearchall4x(unsigned int ** result, unsigned int limit, unsign
     exit:
     unsigned char r, g, b, rh, gh, bh, rl, gl, bl;
     while (start < end) {
-        if (pack > 0) {
+        if (iter > 0) {
             r = *((unsigned char *) start + 2);
             g = *((unsigned char *) start + 1);
             b = *((unsigned char *) start + 0);
@@ -156,10 +156,10 @@ unsigned int pixelsearchall4x(unsigned int ** result, unsigned int limit, unsign
                     count++;
                 }
             }
-            pack--;
+            iter--;
         }
         else {
-            pack = 4;
+            iter = 4;
             goto loop;
         }
         start++;
