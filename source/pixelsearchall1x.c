@@ -2,8 +2,8 @@
 
 unsigned int pixelsearchall1x(unsigned int ** result, unsigned int limit, unsigned int * start, unsigned int * end, unsigned int color) {
 
-    // Number of 32-bit integers the register can hold.
-    int pack = 4;
+    // Number of 32-bit integers the register can iterate over.
+    int iter = 4;
 
     // Track number of matching searches.
     unsigned int count = 0;
@@ -34,16 +34,16 @@ unsigned int pixelsearchall1x(unsigned int ** result, unsigned int limit, unsign
 
     // Clean up any remaining elements.
     while (start < end) {
-        if (pack > 0) {
+        if (iter > 0) {
             if (*start == color) {
                 if (count < limit)
                     *(result + count) = start;
                 count++;
             }
-            pack--;
+            iter--;
         }
         else {
-            pack = 4;
+            iter = 4;
             goto loop;
         }
         start++;
