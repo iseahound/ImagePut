@@ -71,7 +71,7 @@ unsigned int imagesearch2(unsigned int * restrict result, unsigned int * start, 
 
     // Start the search.
     unsigned int left = 0;
-    while ( current <= end ) {
+    while ( current < end ) {
 
         unsigned int offset = current - start;
         //unsigned int left = offset % width;
