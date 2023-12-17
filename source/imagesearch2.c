@@ -67,7 +67,7 @@ unsigned int imagesearch2(unsigned int * restrict result, unsigned int * start, 
     unsigned int range_height = height - h;
 
     unsigned int * current = start;
-    unsigned int * end = start + width * range_height;
+    unsigned int * end = start + width * range_height + width;
 
     // Start the search.
     unsigned int left = 0;
