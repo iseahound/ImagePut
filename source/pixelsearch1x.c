@@ -22,7 +22,7 @@ unsigned int * pixelsearch1x(unsigned int * start, unsigned int * end, unsigned 
             __m128i vcmp = _mm_cmpeq_epi32(vstart, vcolor);
 
             // Create a mask from each dword (using the most significant bit) in vcmp.
-            mask[i] = _mm_movemask_ps(vcmp);
+            mask[i] = _mm_movemask_ps((__m128) vcmp);
         }
 
         for ( int i = 0; i < NR_VEC; i++ ) {
