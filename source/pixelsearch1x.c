@@ -21,7 +21,7 @@ unsigned int * pixelsearch1x(unsigned int * start, unsigned int * end, unsigned 
             // Compare vstart and vcolor for equality.
             __m128i vcmp = _mm_cmpeq_epi32(vstart, vcolor);
 
-            // Create a mask from each byte (using the most significant bit) in vcmp.
+            // Create a mask from each dword (using the most significant bit) in vcmp.
             mask[i] = _mm_movemask_ps(vcmp);
         }
 
