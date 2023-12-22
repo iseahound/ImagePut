@@ -1,8 +1,10 @@
 #include <emmintrin.h>
+#include <smmintrin.h>
 
 // The number of vector registors to utilize in each innermost loop
-#define NR_VEC 2
+#define NR_VEC 4
 
+__attribute__ ((target ("sse4.2")))
 unsigned int * pixelsearch1x(unsigned int * start, unsigned int * end, unsigned int color) {
     // The number of elements in each vector register
     size_t nr_elems_in_vec = sizeof(__m128i) / sizeof(*start);
@@ -12,24 +14,30 @@ unsigned int * pixelsearch1x(unsigned int * start, unsigned int * end, unsigned 
 
     // Loop over start pointer with a step of four unsigned integers.
     while ( start <  end - (nr_elems_in_vec * NR_VEC) + 1 ) {
-        int mask[NR_VEC];
+        __m128i vcmp[NR_VEC];
 
         for ( int i = 0; i < NR_VEC; i++ ) {
             // Load four unsigned integers from start into a vector.
             __m128i vstart = _mm_loadu_si128( ((__m128i *) start) + i );
 
             // Compare vstart and vcolor for equality.
-            __m128i vcmp = _mm_cmpeq_epi32(vstart, vcolor);
-
-            // Create a mask from each dword (using the most significant bit) in vcmp.
-            mask[i] = _mm_movemask_ps((__m128) vcmp);
+            vcmp[i] = _mm_cmpeq_epi32(vstart, vcolor);
         }
 
-        for ( int i = 0; i < NR_VEC; i++ ) {
-            // If the mask is nonzero, there is at least one match.
+        __m128i vmask = _mm_or_si128(vcmp[0], vcmp[1]);
+        for ( int i = 2; i < NR_VEC; i++ ) {
+            vmask = _mm_or_si128(vmask, vcmp[i]);
+        }
+
+        // If the result of cmpeq is nonzero, there is at least one match.
+        if (! _mm_testz_si128(vmask, vmask) ) {
+            int mask = 0;
+            for ( int i = 0; i < NR_VEC; i++ ) {
+                // Create a mask from each dword (using the most significant bit) in vcmp.
+                mask |= _mm_movemask_ps((__m128) vcmp[i]) << nr_elems_in_vec * i;
+            }
             // _tzcnt_u32 can be used instead of __builtin_ctz since they're basically same.
-            if (mask[i] != 0)
-                return start + i * nr_elems_in_vec + __builtin_ctz(mask[i]);
+            return start + __builtin_ctz(mask);
         }
 
         // Increment start for the next batch.
