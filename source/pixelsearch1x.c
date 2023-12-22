@@ -32,7 +32,7 @@ unsigned int * pixelsearch1x(unsigned int * start, unsigned int * end, unsigned 
         }
 
         // Increment start by four unsigned integers.
-        start += sizeof(__m128i) / sizeof(*start) * NR_VEC;
+        start += nr_elems_in_vec * NR_VEC;
     }
 end_vector_loop:
 
