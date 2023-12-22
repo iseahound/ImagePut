@@ -31,7 +31,7 @@ unsigned int * pixelsearch1x(unsigned int * start, unsigned int * end, unsigned 
                 goto end_vector_loop;
         }
 
-        // Increment start by four unsigned integers.
+        // Increment start for the next batch.
         start += nr_elems_in_vec * NR_VEC;
     }
 end_vector_loop:
