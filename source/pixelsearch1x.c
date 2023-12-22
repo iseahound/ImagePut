@@ -22,19 +22,19 @@ unsigned int * pixelsearch1x(unsigned int * start, unsigned int * end, unsigned 
             __m128i vcmp = _mm_cmpeq_epi32(vstart, vcolor);
 
             // Create a mask from each byte (using the most significant bit) in vcmp.
-            mask[i] = _mm_movemask_epi8(vcmp);
+            mask[i] = _mm_movemask_ps(vcmp);
         }
 
         for ( int i = 0; i < NR_VEC; i++ ) {
             // If the mask is nonzero, there is at least one match.
+            // _tzcnt_u32 can be used instead of __builtin_ctz since they're basically same.
             if (mask[i] != 0)
-                goto end_vector_loop;
+                return start + i * nr_elems_in_vec + __builtin_ctz(mask[i]);
         }
 
         // Increment start for the next batch.
         start += nr_elems_in_vec * NR_VEC;
     }
-end_vector_loop:
 
     // Clean up any remaining elements.
     while (start < end) {
