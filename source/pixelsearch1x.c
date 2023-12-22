@@ -4,7 +4,7 @@
 // The number of vector registors to utilize in each innermost loop
 #define NR_VEC 4
 
-__attribute__ ((target ("sse4.2")))
+__attribute__ ((target ("sse4")))  // for ptest
 unsigned int * pixelsearch1x(unsigned int * start, unsigned int * end, unsigned int color) {
     // The number of elements in each vector register
     size_t nr_elems_in_vec = sizeof(__m128i) / sizeof(*start);
