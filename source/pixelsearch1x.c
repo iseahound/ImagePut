@@ -1,10 +1,8 @@
 #include <emmintrin.h>
-#include <smmintrin.h>
 
 // The number of vector registors to utilize in each innermost loop
 #define NR_VEC 4
 
-__attribute__ ((target ("sse4")))  // for ptest
 unsigned int * pixelsearch1x(unsigned int * start, unsigned int * end, unsigned int color) {
     // The number of elements in each vector register
     size_t nr_elems_in_vec = sizeof(__m128i) / sizeof(*start);
@@ -24,18 +22,13 @@ unsigned int * pixelsearch1x(unsigned int * start, unsigned int * end, unsigned 
             vcmp[i] = _mm_cmpeq_epi32(vstart, vcolor);
         }
 
-        __m128i vmask = _mm_or_si128(vcmp[0], vcmp[1]);
-        for ( int i = 2; i < NR_VEC; i++ ) {
-            vmask = _mm_or_si128(vmask, vcmp[i]);
+        int mask = 0;
+        for ( int i = 0; i < NR_VEC; i++ ) {
+            // Create a mask from each dword (using the most significant bit) in vcmp.
+            mask |= _mm_movemask_ps((__m128) vcmp[i]) << nr_elems_in_vec * i;
         }
-
         // If the result of cmpeq is nonzero, there is at least one match.
-        if (! _mm_testz_si128(vmask, vmask) ) {
-            int mask = 0;
-            for ( int i = 0; i < NR_VEC; i++ ) {
-                // Create a mask from each dword (using the most significant bit) in vcmp.
-                mask |= _mm_movemask_ps((__m128) vcmp[i]) << nr_elems_in_vec * i;
-            }
+        if ( mask ) {
             // _tzcnt_u32 can be used instead of __builtin_ctz since they're basically same.
             return start + __builtin_ctz(mask);
         }
