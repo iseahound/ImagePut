@@ -22,15 +22,24 @@ unsigned int * pixelsearch1x(unsigned int * start, unsigned int * end, unsigned 
             vcmp[i] = _mm_cmpeq_epi32(vstart, vcolor);
         }
 
-        int mask = 0;
-        for ( int i = 0; i < NR_VEC; i++ ) {
-            // Create a mask from each dword (using the most significant bit) in vcmp.
-            mask |= _mm_movemask_ps((__m128) vcmp[i]) << nr_elems_in_vec * i;
+        // Use POR because it has fast throughput
+        __m128i vmask = _mm_or_si128(vcmp[0], vcmp[1]);
+        for ( int i = 2; i < NR_VEC; i++ ) {
+            vmask = _mm_or_si128(vmask, vcmp[i]);
         }
-        // If the result of cmpeq is nonzero, there is at least one match.
-        if ( mask ) {
-            // _tzcnt_u32 can be used instead of __builtin_ctz since they're basically same.
-            return start + __builtin_ctz(mask);
+
+        if ( _mm_movemask_ps((__m128) vmask) ) {
+            int mask = 0;
+            for ( int i = 0; i < NR_VEC; i++ ) {
+                // Create a mask from each dword (using the most significant bit) in vcmp.
+                mask |= _mm_movemask_ps((__m128) vcmp[i]) << nr_elems_in_vec * i;
+            }
+
+            // If the result of cmpeq is nonzero, there is at least one match.
+            if ( mask ) {
+                // _tzcnt_u32 can be used instead of __builtin_ctz since they're basically same.
+                return start + __builtin_ctz(mask);
+            }
         }
 
         // Increment start for the next batch.
