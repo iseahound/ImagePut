@@ -178,8 +178,8 @@ ImageEqual(images*) {
 
 class ImagePut {
 
-   static decode := False   ; Forces conversion using a bitmap. The original file encoding will be lost.
-   static validate := False ; Always copies image data into memory instead of passing references.
+   static decode := False   ; Decompresses image to a pixel buffer. Any encoding such as JPG will be lost.
+   static validate := False ; Always copies pixels to new memory immediately instead of copy-on-read/write.
 
    static call(cotype, image, p*) {
 
@@ -218,8 +218,9 @@ class ImagePut {
       ; #2 - Fallback to GDI+ bitmap as the intermediate.
       else {
          ; GdipImageForceValidation must be called immediately or it fails without any errors.
-         ; It load the image pixels to the bitmap buffer, increasing memory usage and prevents
-         ; changes to the pixels while bypassing any copy-on-write and copy on LockBits(read) behavior.
+         ; Doing so loads the pixels to the bitmap buffer. Increases memory usage.
+         ; Prevents future changes to the original pixels from altering any copies.
+         ; Without validation, it preforms copy-on-write and copy on LockBits(read).
 
          ; Convert via GDI+ bitmap intermediate.
          if !(pBitmap := this.ToBitmap(type, image, keywords))
