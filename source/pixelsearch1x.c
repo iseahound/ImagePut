@@ -22,7 +22,7 @@ unsigned int * pixelsearch1x(unsigned int * start, unsigned int * end, unsigned 
             vcmp[i] = _mm_cmpeq_epi32(vstart, vcolor);
         }
 
-        // Use POR because it has big a throughput
+        // Use POR because it has a big throughput
         __m128i vmask = _mm_or_si128(vcmp[0], vcmp[1]);
         for ( int i = 2; i < NR_VEC; i++ ) {
             vmask = _mm_or_si128(vmask, vcmp[i]);
