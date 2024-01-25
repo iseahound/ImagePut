@@ -329,7 +329,8 @@ class ImagePut {
       if IsObject(image) {
          ; A "object" has a pBitmap property that points to an internal GDI+ bitmap.
          if image.HasKey("pBitmap")
-            return "object"
+            try if !DllCall("gdiplus\GdipGetImageType", "ptr", image.pBitmap, "ptr*", type:=0) && (type == 1)
+               return "object"
 
          ; A "buffer" is an object with ptr and size properties.
          if image.HasKey("ptr") && image.HasKey("size")
