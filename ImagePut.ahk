@@ -332,8 +332,11 @@ class ImagePut {
             try if !DllCall("gdiplus\GdipGetImageType", "ptr", image.pBitmap, "ptr*", &type:=0) && (type == 1)
                return "object"
 
-         ; A "buffer" is an object with ptr and size properties.
-         if image.HasOwnProp("ptr") && image.HasOwnProp("size")
+         ; A "buffer" is an object with a pointer to bytes and properties to determine its 2-D shape.
+         if image.HasOwnProp("ptr") and (
+               image.HasOwnProp("width") && image.HasOwnProp("height") 
+            or image.HasOwnProp("stride") && image.HasOwnProp("height")
+            or image.HasOwnProp("stride") && image.HasOwnProp("size"))
             return "buffer"
 
          ; A "window" is an object with an hwnd property.
@@ -900,7 +903,7 @@ class ImagePut {
    }
 
    static from_buffer(image) {
-      ; to do
+      MsgBox "Not implemented yet!"
    }
 
    static read_screen() {
