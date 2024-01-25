@@ -313,8 +313,8 @@ class ImagePut {
          throw Error("Image data is an empty string.")
 
       if IsObject(image) {
-         if (image.HasOwnProp("prototype") && image.prototype.HasOwnProp("__class") && image.prototype.__class == "ClipboardAll"
-         || image.base.HasOwnProp("__class") && image.base.__class == "ClipboardAll") {
+         if (image.HasOwnProp("prototype") && image.prototype.HasOwnProp("__class") && image.prototype.__class == "ClipboardAll")
+         or (image.base.HasOwnProp("__class") && image.base.__class == "ClipboardAll") {
 
             ; A "clipboard_png" is a pointer to a PNG stream saved as the "png" clipboard format.
             if DllCall("IsClipboardFormatAvailable", "uint", DllCall("RegisterClipboardFormat", "str", "png", "uint"))
@@ -4308,7 +4308,7 @@ class ImagePut {
 
       ; Create a filepath based on the timestamp.
       if (filename == "") {
-         filename := FormatTime(, "yyyy-MM-dd HH꞉mm꞉ss")
+         filename := FormatTime(, "yyyy-MM-dd HH?mm?ss")
          filepath := directory "\" filename "." extension
          while FileExist(filepath)
             filepath := directory "\" filename " (" A_Index ")." extension
