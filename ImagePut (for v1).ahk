@@ -308,6 +308,10 @@ class ImagePut {
    }
 
    ImageType(image) {
+
+      if not IsObject(image)
+         goto string
+
       ; Throw if the image is an empty string.
       if (image == "") {
 
@@ -315,120 +319,127 @@ class ImagePut {
 
 
 
+         ; A "clipboard_png" is a pointer to a PNG stream saved as the "png" clipboard format.
+         if DllCall("IsClipboardFormatAvailable", "uint", DllCall("RegisterClipboardFormat", "str", "png", "uint"))
+            return "clipboard_png"
 
-            ; A "clipboard_png" is a pointer to a PNG stream saved as the "png" clipboard format.
-            if DllCall("IsClipboardFormatAvailable", "uint", DllCall("RegisterClipboardFormat", "str", "png", "uint"))
-               return "clipboard_png"
+         ; A "clipboard" is a handle to a GDI bitmap saved as CF_BITMAP.
+         if DllCall("IsClipboardFormatAvailable", "uint", 2)
+            return "clipboard"
 
-            ; A "clipboard" is a handle to a GDI bitmap saved as CF_BITMAP.
-            if DllCall("IsClipboardFormatAvailable", "uint", 2)
-               return "clipboard"
-
-            throw Exception("Image data is an empty string.")
-         }
-      if IsObject(image) {
-         ; A "object" has a pBitmap property that points to an internal GDI+ bitmap.
-         if image.HasKey("pBitmap")
-            try if !DllCall("gdiplus\GdipGetImageType", "ptr", image.pBitmap, "ptr*", type:=0) && (type == 1)
-               return "object"
-
-         ; A "buffer" is an object with a pointer to bytes and properties to determine its 2-D shape.
-         if image.HasKey("ptr") and (
-               image.HasKey("width") && image.HasKey("height") 
-            or image.HasKey("stride") && image.HasKey("height")
-            or image.HasKey("stride") && image.HasKey("size"))
-            return "buffer"
-
-         ; A "window" is an object with an hwnd property.
-         if image.HasKey("hwnd")
-            return "window"
-
-         ; A "screenshot" is an array of 4 numbers.
-         if (image[1] ~= "^-?\d+$" && image[2] ~= "^-?\d+$" && image[3] ~= "^-?\d+$" && image[4] ~= "^-?\d+$")
-            return "screenshot"
-
-         throw Exception("Image type could not be identified.")
+         throw Exception("Image data is an empty string.")
       }
-         SysGet MonitorGetCount, MonitorCount ; A non-zero "monitor" number identifies each display uniquely; and 0 refers to the entire virtual screen.
-         if (image ~= "^\d+$" && image >= 0 && image <= MonitorGetCount)
-            return "monitor"
 
-         ; A "desktop" is a hidden window behind the desktop icons created by ImagePutDesktop.
-         if (image = "desktop")
-            return "desktop"
+      ; A "object" has a pBitmap property that points to an internal GDI+ bitmap.
+      if image.HasKey("pBitmap")
+         try if !DllCall("gdiplus\GdipGetImageType", "ptr", image.pBitmap, "ptr*", type:=0) && (type == 1)
+            return "object"
 
-         ; A "wallpaper" is the desktop wallpaper.
-         if (image = "wallpaper")
-            return "wallpaper"
+      ; A "window" is an object with an hwnd property.
+      if image.HasKey("hwnd")
+         return "window"
 
-         ; A "cursor" is the name of a known cursor name.
-         if (image ~= "(?i)^A_Cursor|Unknown|(IDC_)?(AppStarting|Arrow|Cross|Hand(writing)?|"
-         . "Help|IBeam|No|Pin|Person|SizeAll|SizeNESW|SizeNS|SizeNWSE|SizeWE|UpArrow|Wait)$")
-            return "cursor"
+      ; A "screenshot" is an array of 4 numbers.
+      if (image[1] ~= "^-?\d+$" && image[2] ~= "^-?\d+$" && image[3] ~= "^-?\d+$" && image[4] ~= "^-?\d+$")
+         return "screenshot"
 
-         ; A "pdf" is either a file or url with a .pdf extension.
-         if (image ~= "\.pdf$") && (FileExist(image) || this.is_url(image))
-            return "pdf"
+      ; A "buffer" is an object with a pointer to bytes and properties to determine its 2-D shape.
+      if image.HasKey("ptr")
+         and (image.HasKey("width") && image.HasKey("height")
+         or image.HasKey("stride") && image.HasKey("height")
+         or image.HasKey("stride") && image.HasKey("size"))
+         return "buffer"
 
-         ; A "url" satisfies the url format.
-         if this.is_url(image)
-            return "url"
+      if image.HasKey("ptr") {
+         image := image.ptr
+         goto pointer
+      } else
+         goto end
 
-         ; A "file" is stored on the disk or network.
-         if FileExist(image)
-            return "file"
+      string:
+      SysGet MonitorGetCount, MonitorCount ; A non-zero "monitor" number identifies each display uniquely; and 0 refers to the entire virtual screen.
+      if (image ~= "^\d+$" && image >= 0 && image <= MonitorGetCount)
+         return "monitor"
 
-         ; A "window" is anything considered a Window Title including ahk_class and "A".
-         if WinExist(image) || DllCall("IsWindow", "ptr", image)
-            return "window"
+      ; A "desktop" is a hidden window behind the desktop icons created by ImagePutDesktop.
+      if (image = "desktop")
+         return "desktop"
 
-         ; A "hex" string is binary image data encoded into text using hexadecimal.
-         if (StrLen(image) >= 48) && (image ~= "^\s*(?:[A-Fa-f0-9]{2})*+\s*$")
-            return "hex"
+      ; A "wallpaper" is the desktop wallpaper.
+      if (image = "wallpaper")
+         return "wallpaper"
 
-         ; A "base64" string is binary image data encoded into text using standard 64 characters.
-         if (StrLen(image) >= 32) && (image ~= "^\s*(?:data:image\/[a-z]+;base64,)?"
-         . "(?:[A-Za-z0-9+\/]{4})*+(?:[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{2}==)?\s*$")
-            return "base64"
+      ; A "cursor" is the name of a known cursor name.
+      if (image ~= "(?i)^A_Cursor|Unknown|(IDC_)?(AppStarting|Arrow|Cross|Hand(writing)?|"
+      . "Help|IBeam|No|Pin|Person|SizeAll|SizeNESW|SizeNS|SizeNWSE|SizeWE|UpArrow|Wait)$")
+         return "cursor"
 
-      if (image ~= "^-?\d+$") {
-         ; A "dc" is a handle to a GDI device context.
-         if (DllCall("GetObjectType", "ptr", image, "uint") == 3 || DllCall("GetObjectType", "ptr", image, "uint") == 10)
-            return "dc"
+      ; A "pdf" is either a file or url with a .pdf extension.
+      if (image ~= "\.pdf$") && (FileExist(image) || this.is_url(image))
+         return "pdf"
 
-         ; An "hBitmap" is a handle to a GDI Bitmap.
-         if (DllCall("GetObjectType", "ptr", image, "uint") == 7)
-            return "hBitmap"
+      ; A "url" satisfies the url format.
+      if this.is_url(image)
+         return "url"
 
-         ; An "hIcon" is a handle to a GDI icon.
-         if DllCall("DestroyIcon", "ptr", DllCall("CopyIcon", "ptr", image, "ptr"))
-            return "hIcon"
+      ; A "file" is stored on the disk or network.
+      if FileExist(image)
+         return "file"
 
-         ; A "bitmap" is a pointer to a GDI+ Bitmap.
-         try if !DllCall("gdiplus\GdipGetImageType", "ptr", image, "ptr*", type:=0) && (type == 1)
-            return "bitmap"
+      ; A "window" is anything considered a Window Title including ahk_class and "A".
+      if WinExist(image) || DllCall("IsWindow", "ptr", image)
+         return "window"
 
-         ; Note 1: All GDI+ functions add 1 to the reference count of COM objects.
-         ; Note 2: GDI+ pBitmaps that are queried cease to stay pBitmaps.
-         ; Note 3: Critical error for ranges 0-4095 on v1 and 0-65535 on v2.
-         ObjRelease(image) ; Therefore do not move this, it has been tested.
+      ; A "hex" string is binary image data encoded into text using hexadecimal.
+      if (StrLen(image) >= 48) && (image ~= "^\s*(?:[A-Fa-f0-9]{2})*+\s*$")
+         return "hex"
 
-         ; A "stream" is a pointer to the IStream interface.
-         try if ComObjQuery(image, "{0000000C-0000-0000-C000-000000000046}")
-            return "stream", ObjRelease(image)
+      ; A "base64" string is binary image data encoded into text using standard 64 characters.
+      if (StrLen(image) >= 32) && (image ~= "^\s*(?:data:image\/[a-z]+;base64,)?"
+      . "(?:[A-Za-z0-9+\/]{4})*+(?:[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{2}==)?\s*$")
+         return "base64"
 
-         ; A "RandomAccessStream" is a pointer to the IRandomAccessStream interface.
-         try if ComObjQuery(image, "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}")
-            return "RandomAccessStream", ObjRelease(image)
+      if not (image ~= "^-?\d+$")
+         goto end
 
-         ; A "wicBitmap" is a pointer to a IWICBitmapSource.
-         try if ComObjQuery(image, "{00000120-A8F2-4877-BA0A-FD2B6645FB94}")
-            return "wicBitmap", ObjRelease(image)
+      handle:
+      ; A "dc" is a handle to a GDI device context.
+      if (DllCall("GetObjectType", "ptr", image, "uint") == 3 || DllCall("GetObjectType", "ptr", image, "uint") == 10)
+         return "dc"
 
-         ; A "d2dBitmap" is a pointer to a ID2D1Bitmap.
-         try if ComObjQuery(image, "{A2296057-EA42-4099-983B-539FB6505426}")
-            return "d2dBitmap", ObjRelease(image)
-      }
+      ; An "hBitmap" is a handle to a GDI Bitmap.
+      if (DllCall("GetObjectType", "ptr", image, "uint") == 7)
+         return "hBitmap"
+
+      ; An "hIcon" is a handle to a GDI icon.
+      if DllCall("DestroyIcon", "ptr", DllCall("CopyIcon", "ptr", image, "ptr"))
+         return "hIcon"
+
+      ; A "bitmap" is a pointer to a GDI+ Bitmap.
+      try if !DllCall("gdiplus\GdipGetImageType", "ptr", image, "ptr*", type:=0) && (type == 1)
+         return "bitmap"
+
+      ; Note 1: All GDI+ functions add 1 to the reference count of COM objects.
+      ; Note 2: GDI+ pBitmaps that are queried cease to stay pBitmaps.
+      ; Note 3: Critical error for ranges 0-4095 on v1 and 0-65535 on v2.
+      ObjRelease(image) ; Therefore do not move this, it has been tested.
+
+      pointer:
+      ; A "stream" is a pointer to the IStream interface.
+      try if ComObjQuery(image, "{0000000C-0000-0000-C000-000000000046}")
+         return "stream", ObjRelease(image)
+
+      ; A "RandomAccessStream" is a pointer to the IRandomAccessStream interface.
+      try if ComObjQuery(image, "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}")
+         return "RandomAccessStream", ObjRelease(image)
+
+      ; A "wicBitmap" is a pointer to a IWICBitmapSource.
+      try if ComObjQuery(image, "{00000120-A8F2-4877-BA0A-FD2B6645FB94}")
+         return "wicBitmap", ObjRelease(image)
+
+      ; A "d2dBitmap" is a pointer to a ID2D1Bitmap.
+      try if ComObjQuery(image, "{A2296057-EA42-4099-983B-539FB6505426}")
+         return "d2dBitmap", ObjRelease(image)
 
 
       ; For more helpful error messages: Catch file names without extensions!
@@ -436,6 +447,7 @@ class ImagePut {
          if FileExist(image "." extension)
             throw Exception("A ." extension " file extension is required!", -4)
 
+      end:
       throw Exception("Image type could not be identified.")
    }
 
