@@ -340,7 +340,7 @@ class ImagePut {
             return "window"
 
          ; A "screenshot" is an array of 4 numbers.
-         if (image[1] ~= "^-?\d+$" && image[2] ~= "^-?\d+$" && image[3] ~= "^-?\d+$" && image[4] ~= "^-?\d+$")
+         if (HasMethod(image, "__Item") && image[1] ~= "^-?\d+$" && image[2] ~= "^-?\d+$" && image[3] ~= "^-?\d+$" && image[4] ~= "^-?\d+$")
             return "screenshot"
 
          throw Error("Image type could not be identified.")
