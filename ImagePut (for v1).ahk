@@ -346,7 +346,7 @@ class ImagePut {
       if image.HasKey("ptr")
          and (image.HasKey("width") && image.HasKey("height")
          or image.HasKey("stride") && image.HasKey("height")
-         or image.HasKey("stride") && image.HasKey("size"))
+         or image.HasKey("size") && (image.HasKey("stride") || image.HasKey("width") || image.HasKey("height")))
          return "buffer"
 
       if image.HasKey("ptr") {

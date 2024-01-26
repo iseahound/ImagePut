@@ -346,7 +346,7 @@ class ImagePut {
       if image.HasOwnProp("ptr")
          and (image.HasOwnProp("width") && image.HasOwnProp("height")
          or image.HasOwnProp("stride") && image.HasOwnProp("height")
-         or image.HasOwnProp("stride") && image.HasOwnProp("size"))
+         or image.HasOwnProp("size") && (image.HasOwnProp("stride") || image.HasOwnProp("width") || image.HasOwnProp("height")))
          return "buffer"
 
       if image.HasOwnProp("ptr") {
@@ -917,7 +917,15 @@ class ImagePut {
    }
 
    static from_buffer(image) {
-      MsgBox "Not implemented yet!"
+      if image.HasOwnProp("stride") && image.HasOwnProp("size")
+         stride := image.stride, width := image.stride, height := image.height
+      if image.HasOwnProp("stride") && image.HasOwnProp("height")
+         width := image.stride, height := image.height
+      if image.HasOwnProp("width") && image.HasOwnProp("height")
+         width := image.width, height := image.height
+
+
+
    }
 
    static read_screen() {
