@@ -917,7 +917,46 @@ class ImagePut {
    }
 
    from_buffer(image) {
-      MsgBox % "Not implemented yet!"
+
+      if image.HasKey("stride")
+         stride := image.stride
+      else if image.HasKey("width")
+         stride := image.width * 4
+      else if image.HasKey("height") && image.HasKey("size")
+         stride := image.size // image.height
+      else throw Exception("Buffer must have a stride property.")
+
+      if image.HasKey("width")
+         width := image.width
+      else if image.HasKey("stride")
+         width := image.stride // 4
+      else if image.HasKey("height") && image.HasKey("size")
+         width := image.size // (4 * image.height)
+      else throw Exception("Buffer must have a width property.")
+
+      if image.HasKey("height")
+         height := image.height
+      else if image.HasKey("stride") && image.HasKey("size")
+         height := image.size // image.stride
+      else if image.HasKey("width") && image.HasKey("size")
+         height := image.size // (4 * image.width)
+      else throw Exception("Buffer must have a height property.")
+
+      ; Could assert a few assumptions, such as stride * height = size.
+      ; However, I'd like for the pointer and its size to be as flexable as possible.
+      ; So permit underflow for now.
+
+      ; Check for buffer overflow errors.
+      if image.HasKey("size") && (abs(stride * height) > image.size)
+         throw Exception("Image dimensions exceed the size of the buffer.")
+
+      ; Create a pBitmap from the current pointer.
+      DllCall("gdiplus\GdipCreateBitmapFromScan0"
+               , "int", width, "int", height, "int", stride, "int", 0x26200A, "ptr", image.ptr, "ptr*", pBitmap:=0)
+
+      ; Todo: what happens if the backing data is destroyed?
+
+      return pBitmap
    }
 
 

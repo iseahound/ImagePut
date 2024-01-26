@@ -915,17 +915,48 @@ class ImagePut {
    static from_object(image) {
       return this.from_bitmap(image.pBitmap)
    }
-
+   
    static from_buffer(image) {
-      if image.HasOwnProp("stride") && image.HasOwnProp("size")
-         stride := image.stride, width := image.stride, height := image.height
-      if image.HasOwnProp("stride") && image.HasOwnProp("height")
-         width := image.stride, height := image.height
-      if image.HasOwnProp("width") && image.HasOwnProp("height")
-         width := image.width, height := image.height
 
+      if image.HasOwnProp("stride")
+         stride := image.stride
+      else if image.HasOwnProp("width")
+         stride := image.width * 4
+      else if image.HasOwnProp("height") && image.HasOwnProp("size")
+         stride := image.size // image.height
+      else throw Error("Buffer must have a stride property.")
 
+      if image.HasOwnProp("width")
+         width := image.width
+      else if image.HasOwnProp("stride")
+         width := image.stride // 4
+      else if image.HasOwnProp("height") && image.HasOwnProp("size")
+         width := image.size // (4 * image.height)
+      else throw Error("Buffer must have a width property.")
 
+      if image.HasOwnProp("height")
+         height := image.height
+      else if image.HasOwnProp("stride") && image.HasOwnProp("size")
+         height := image.size // image.stride
+      else if image.HasOwnProp("width") && image.HasOwnProp("size")
+         height := image.size // (4 * image.width)
+      else throw Error("Buffer must have a height property.")
+
+      ; Could assert a few assumptions, such as stride * height = size.
+      ; However, I'd like for the pointer and its size to be as flexable as possible.
+      ; So permit underflow for now.
+
+      ; Check for buffer overflow errors.
+      if image.HasOwnProp("size") && (abs(stride * height) > image.size)
+         throw Error("Image dimensions exceed the size of the buffer.")
+
+      ; Create a pBitmap from the current pointer.
+      DllCall("gdiplus\GdipCreateBitmapFromScan0"
+               , "int", width, "int", height, "int", stride, "int", 0x26200A, "ptr", image.ptr, "ptr*", &pBitmap:=0)
+
+      ; Todo: what happens if the backing data is destroyed?
+
+      return pBitmap
    }
 
    static read_screen() {

@@ -1,4 +1,4 @@
-#include ..\ImagePut.ahk
+﻿#include ..\ImagePut.ahk
 test_image := "https://i.pinimg.com/474x/9a/ba/60/9aba6040f5c0af8c93b388f5df24c121.jpg"
 ImagePut.gdiplusStartup()
 MsgBox "Ready?"
