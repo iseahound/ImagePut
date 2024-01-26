@@ -11,18 +11,29 @@
 * [Load](https://github.com/iseahound/ImagePut/wiki/Read-an-Image-From-Memory) images from blocks of memory
 * Highly robust code that has undergone extensive testing
 
-## Documentation
-
-#### Click the [Wiki](https://github.com/iseahound/ImagePut/wiki) tab above for more documentation.
+## Beginner
 
 * [Quick Start](https://github.com/iseahound/ImagePut/wiki/Quick-Start)
-* [Input Types & Output Functions](https://github.com/iseahound/ImagePut/wiki/Input-Types-&-Output-Functions)
 * Chinese Documentation (中文) - [这里有一个中文版的使用教程](https://www.autoahk.com/archives/37246)
 
-Misc
+## Intermediate
 
+#### Documentation
+* [Input Types & Output Functions](https://github.com/iseahound/ImagePut/wiki/Input-Types-&-Output-Functions)
+* [Crop, Scale, & Other Flags](https://github.com/iseahound/ImagePut/wiki/Crop,-Scale,-&-Other-Flags)
+* [PixelSearch & ImageSearch](https://github.com/iseahound/ImagePut/wiki/PixelSearch-and-ImageSearch)
+
+#### Tutorials
+* [Add Image to AutoHotkey GUI](https://github.com/iseahound/ImagePut/wiki/Add-Image-to-AutoHotkey-GUI)
+* [Uploading Images API POST Request](https://github.com/iseahound/ImagePut/wiki/Uploading-Images-API-POST-Request)
+* [Read an Image From Memory](https://github.com/iseahound/ImagePut/wiki/Read-an-Image-From-Memory)
+
+#### Misc
+* [Enumerate Pixels Using For Loops](https://github.com/iseahound/ImagePut/wiki/Enumerate-Pixels-Using-For-Loops) (AutoHotkey v2 only)
+
+## Advanced
 * [Engineering Challenges Q&A](https://github.com/iseahound/ImagePut/wiki/Engineering-Challenges-Q&A) - Click here to read some interesting stuff. 
-* [PaddleOCR-AutoHotkey](https://github.com/telppa/PaddleOCR-AutoHotkey) - Check out this Image to text project using ImagePut
+* [Internal Documentation](https://github.com/iseahound/ImagePut/wiki/Internal-Documentation) - Understanding how ImagePut works.  
 
 ## So you want to convert an image?
 
