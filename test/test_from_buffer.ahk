@@ -1,15 +1,8 @@
-#include *i ImagePut%A_TrayMenu%.ahk
-#include *i ImagePut (for v%true%).ahk
+#include *i ..\ImagePut%A_TrayMenu%.ahk
+#include *i ..\ImagePut (for v%true%).ahk
 #singleinstance force
 
-/*
-
-pStream := ImagePutStream("https://picsum.photos/800")
-DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "ptr*", &hMemory:=0)
-size   := DllCall("GlobalSize", "ptr", hMemory, "uptr")
-ptr    := DllCall("GlobalLock", "ptr", hMemory, "ptr")
-
-*/
+; SUCCESS: Generates 8 different images. Images 7, 8 have a smaller width.
 
 ; Perfect Information
 
