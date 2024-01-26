@@ -13,17 +13,14 @@
 
 ## Documentation
 
-* [Quick Start](https://github.com/iseahound/ImagePut/wiki/Quick-Start)
-* [Input Types & Output Functions](https://github.com/iseahound/ImagePut/wiki/Input-Types-&-Output-Functions)
-* [Crop, Scale, & Other Flags](https://github.com/iseahound/ImagePut/wiki/Crop,-Scale,-&-Other-Flags)
-* Chinese Documentation (中文) - [这里有一个中文版的使用教程](https://www.autoahk.com/archives/37246)
-* [Engineering Challenges Q&A](https://github.com/iseahound/ImagePut/wiki/Engineering-Challenges-Q&A) - Click here to read some interesting stuff. 
-
 #### Click the [Wiki](https://github.com/iseahound/ImagePut/wiki) tab above for more documentation.
 
-Sample Projects:
+* [Quick Start](https://github.com/iseahound/ImagePut/wiki/Quick-Start)
+* [Input Types & Output Functions](https://github.com/iseahound/ImagePut/wiki/Input-Types-&-Output-Functions)
+* Chinese Documentation (中文) - [这里有一个中文版的使用教程](https://www.autoahk.com/archives/37246)
 
-* [PaddleOCR-AutoHotkey](https://github.com/telppa/PaddleOCR-AutoHotkey) - Image to text
+* [Engineering Challenges Q&A](https://github.com/iseahound/ImagePut/wiki/Engineering-Challenges-Q&A) - Click here to read some interesting stuff. 
+* [PaddleOCR-AutoHotkey](https://github.com/telppa/PaddleOCR-AutoHotkey) - Check out this Image to text project using ImagePut
 
 ## So you want to convert an image?
 
