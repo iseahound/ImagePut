@@ -6,9 +6,9 @@
 * Decipher over [20+ image types](https://github.com/iseahound/ImagePut/wiki/Quick-Start#accepts)
 * Supports newer formats **WEBP** and **HEIC**.
 * View and debug your image functions with `ImagePutWindow(image)`
-* [Add animated GIFs to AutoHotkey GUIs](https://github.com/iseahound/ImagePut/wiki/Add-Image-to-AutoHotkey-GUI)
-* [Upload images using website apis](https://github.com/iseahound/ImagePut/wiki/Uploading-Images-API-POST-Request)
-* [Load images from blocks of memory](https://github.com/iseahound/ImagePut/wiki/Read-an-Image-From-Memory)
+* [Add](https://github.com/iseahound/ImagePut/wiki/Add-Image-to-AutoHotkey-GUI) animated GIFs to AutoHotkey GUIs
+* [Upload](https://github.com/iseahound/ImagePut/wiki/Uploading-Images-API-POST-Request) images using website apis
+* [Load](https://github.com/iseahound/ImagePut/wiki/Read-an-Image-From-Memory) images from blocks of memory
 * Highly robust code that has undergone extensive testing
 
 ## Documentation
