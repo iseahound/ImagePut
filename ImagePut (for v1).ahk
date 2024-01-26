@@ -805,7 +805,7 @@ class ImagePut {
 
       ; Draw Image.
       DllCall("gdiplus\GdipCreateImageAttributes", "ptr*", ImageAttr:=0)
-      DllCall("gdiplus\GdipSetImageAttributesWrapMode", "ptr", ImageAttr, "int", 3) ; WrapModeTileFlipXY
+      DllCall("gdiplus\GdipSetImageAttributesWrapMode", "ptr", ImageAttr, "int", 3, "uint", 0, "int", 0) ; WrapModeTileFlipXY
       DllCall("gdiplus\GdipDrawImageRectRectI"
                ,    "ptr", pGraphics
                ,    "ptr", pBitmap
@@ -3212,7 +3212,7 @@ class ImagePut {
 
          ; Draw Image.
          DllCall("gdiplus\GdipCreateImageAttributes", "ptr*", ImageAttr:=0)
-         DllCall("gdiplus\GdipSetImageAttributesWrapMode", "ptr", ImageAttr, "int", 3) ; WrapModeTileFlipXY
+         DllCall("gdiplus\GdipSetImageAttributesWrapMode", "ptr", ImageAttr, "int", 3, "uint", 0, "int", 0) ; WrapModeTileFlipXY
          DllCall("gdiplus\GdipDrawImageRectRectI"
                   ,    "ptr", pGraphics
                   ,    "ptr", pBitmap
