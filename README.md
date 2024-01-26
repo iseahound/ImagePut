@@ -2,6 +2,8 @@
 
 #### A core library for images in AutoHotkey
 
+![image](https://github.com/iseahound/ImagePut/assets/9779668/65a563a6-3d95-4819-9ea6-64d5ab00d993)
+
 * Screen capture with fast [PixelSearch](https://github.com/iseahound/ImagePut/wiki/PixelSearch-and-ImageSearch#pixelsearch) and [ImageSearch](https://github.com/iseahound/ImagePut/wiki/PixelSearch-and-ImageSearch#imagesearch)
 * Decipher over [20+ image types](https://github.com/iseahound/ImagePut/wiki/Quick-Start#accepts)
 * Supports newer formats **webp** and **heic**
