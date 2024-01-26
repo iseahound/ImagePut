@@ -4,6 +4,7 @@
 
 ; SUCCESS: Generates 8 different images. Images 7, 8 have a smaller width.
 
+
 ; Perfect Information
 
 buf := ImagePutBuffer("https://picsum.photos/800")
