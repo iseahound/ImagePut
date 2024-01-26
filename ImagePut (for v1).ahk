@@ -4346,7 +4346,7 @@ class ImagePut {
          DllCall("LoadLibrary", "str", "gdiplus")
          VarSetCapacity(si, A_PtrSize = 4 ? 20:32, 0) ; sizeof(GdiplusStartupInputEx) = 20, 32
             NumPut(0x2, si, "uint")
-            NumPut(0x4, si, "uint", A_PtrSize = 4 ? 16:24)
+            NumPut(0x4, si, A_PtrSize = 4 ? 16:24, "uint")
          DllCall("gdiplus\GdiplusStartup", "ptr*", pToken:=0, "ptr", &si, "ptr", 0)
 
       }
