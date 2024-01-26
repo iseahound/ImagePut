@@ -4,9 +4,11 @@
 
 * Screen capture with fast [PixelSearch](https://github.com/iseahound/ImagePut/wiki/PixelSearch-and-ImageSearch#pixelsearch) and [ImageSearch](https://github.com/iseahound/ImagePut/wiki/PixelSearch-and-ImageSearch#imagesearch)
 * Decipher over [20+ image types](https://github.com/iseahound/ImagePut/wiki/Quick-Start#accepts)
-* Convert from one image format to another
+* Supports newer formats **WEBP** and **HEIC**.
 * View and debug your image functions with `ImagePutWindow(image)`
-* The magical `image` parameter supports [all image types](https://github.com/iseahound/ImagePut/wiki/Input-Types-&-Output-Functions#input-types) through type inference
+* [Add animated GIFs to AutoHotkey GUIs](https://github.com/iseahound/ImagePut/wiki/Add-Image-to-AutoHotkey-GUI)
+* [Upload images using website apis](https://github.com/iseahound/ImagePut/wiki/Uploading-Images-API-POST-Request)
+* [Load images from blocks of memory](https://github.com/iseahound/ImagePut/wiki/Read-an-Image-From-Memory)
 * Highly robust code that has undergone extensive testing
 
 ## Documentation
