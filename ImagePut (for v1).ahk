@@ -326,7 +326,7 @@ class ImagePut {
          throw Exception("Image data is an empty string.")
       }
 
-      if not IsObject(image)      
+      if not IsObject(image)
          goto string
 
       ; A "object" has a pBitmap property that points to an internal GDI+ bitmap.
@@ -465,7 +465,7 @@ class ImagePut {
          return this.from_clipboard()
 
       if (type = "object")
-         return this.from_object(image)
+         return this.from_bitmap(image.pBitmap)
 
       if (type = "buffer")
          return this.from_buffer(image)
@@ -910,10 +910,6 @@ class ImagePut {
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", False, "ptr*", pStream:=0, "uint")
       DllCall("CloseClipboard")
       return pStream
-   }
-
-   from_object(image) {
-      return this.from_bitmap(image.pBitmap)
    }
 
    from_buffer(image) {

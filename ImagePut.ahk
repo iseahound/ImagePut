@@ -465,7 +465,7 @@ class ImagePut {
          return this.from_clipboard()
 
       if (type = "object")
-         return this.from_object(image)
+         return this.from_bitmap(image.pBitmap)
 
       if (type = "buffer")
          return this.from_buffer(image)
@@ -912,10 +912,6 @@ class ImagePut {
       return pStream
    }
 
-   static from_object(image) {
-      return this.from_bitmap(image.pBitmap)
-   }
-   
    static from_buffer(image) {
 
       if image.HasOwnProp("stride")
