@@ -911,7 +911,7 @@ class ImagePut {
       DllCall("CloseClipboard")
       return pStream
    }
-
+   
    static from_buffer(image) {
 
       if image.HasOwnProp("stride")
@@ -4399,8 +4399,9 @@ class ImagePut {
       if (instances = 0 && vary = 1) {
 
          DllCall("LoadLibrary", "str", "gdiplus")
-         si := Buffer(A_PtrSize = 4 ? 16:24, 0) ; sizeof(GdiplusStartupInput) = 16, 24
-            NumPut("uint", 0x1, si)
+         si := Buffer(A_PtrSize = 4 ? 20:32, 0) ; sizeof(GdiplusStartupInputEx) = 20, 32
+            NumPut("uint", 0x2, si)
+            NumPut("uint", 0x4, si, A_PtrSize = 4 ? 16:24)
          DllCall("gdiplus\GdiplusStartup", "ptr*", &pToken:=0, "ptr", si, "ptr", 0)
 
       }
