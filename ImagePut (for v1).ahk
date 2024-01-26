@@ -309,14 +309,10 @@ class ImagePut {
 
    ImageType(image) {
 
-      if not IsObject(image)
-         goto string
+
 
       ; Throw if the image is an empty string.
       if (image == "") {
-
-
-
 
 
          ; A "clipboard_png" is a pointer to a PNG stream saved as the "png" clipboard format.
@@ -329,6 +325,9 @@ class ImagePut {
 
          throw Exception("Image data is an empty string.")
       }
+
+      if not IsObject(image)      
+         goto string
 
       ; A "object" has a pBitmap property that points to an internal GDI+ bitmap.
       if image.HasKey("pBitmap")
@@ -357,6 +356,9 @@ class ImagePut {
          goto end
 
       string:
+      if (image == "")
+         throw Exception("Image data is an empty string.")
+
       SysGet MonitorGetCount, MonitorCount ; A non-zero "monitor" number identifies each display uniquely; and 0 refers to the entire virtual screen.
       if (image ~= "^\d+$" && image >= 0 && image <= MonitorGetCount)
          return "monitor"

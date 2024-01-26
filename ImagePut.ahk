@@ -312,10 +312,6 @@ class ImagePut {
       if not IsObject(image)
          goto string
 
-      ; Throw if the image is an empty string.
-      if (image == "")
-         throw Error("Image data is an empty string.")
-
       if (image.HasOwnProp("prototype") && image.prototype.HasOwnProp("__class") && image.prototype.__class == "ClipboardAll")
       or (image.base.HasOwnProp("__class") && image.base.__class == "ClipboardAll") {
 
@@ -329,6 +325,9 @@ class ImagePut {
 
          throw Error("Clipboard format not supported.")
       }
+
+
+
 
       ; A "object" has a pBitmap property that points to an internal GDI+ bitmap.
       if image.HasOwnProp("pBitmap")
@@ -357,6 +356,9 @@ class ImagePut {
          goto end
 
       string:
+      if (image == "")
+         throw Error("Image data is an empty string.")
+
       ; A non-zero "monitor" number identifies each display uniquely; and 0 refers to the entire virtual screen.
       if (image ~= "^\d+$" && image >= 0 && image <= MonitorGetCount())
          return "monitor"
