@@ -221,7 +221,140 @@ class ImagePut {
          ; Doing so loads the pixels to the bitmap buffer. Increases memory usage.
          ; Prevents future changes to the original pixels from altering any copies.
          ; Without validation, it preforms copy-on-write and copy on LockBits(read).
+         set := False
 
+         if (type ~= "^(?i:clipboard_png|pdf|url|file|stream|RandomAccessStream|hex|base64)$") {
+
+
+
+            size := 12
+            bin := Buffer(size)
+
+            pStream := this.ToStream(type, image, keywords)
+            DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", bin, "uint", size, "hresult")
+
+            length := 2 * size + (size - 1) + 1
+            VarSetStrCapacity(&str, length)
+
+            flags := 0x40000004 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_HEXRAW
+            DllCall("crypt32\CryptBinaryToString", "ptr", bin, "uint", size, "uint", flags, "str", str, "uint*", &length)
+
+            ;MsgBox str
+                        ;   RIFF....WEBP
+            if str ~= "^52 49 46 46 .. .. .. .. 57 45 42 50" {
+               ;MsgBox "match!"
+            }
+            else goto otherwise
+            ; Gets the size of the stream.
+            DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &remaining:=0, "hresult")
+
+
+
+
+            ; Create FourCC binary buffer and a general purpose uint32 buffer.
+            fourcc := Buffer(4)
+            offset := 0
+            uint24 := Buffer(4, 0)
+            current := 0
+
+            ; Create the VP8X FourCC.
+            StrPut("VP8X", VP8X := Buffer(4), "cp1252")
+            DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", fourcc, "uint", 4, "hresult")
+            DllCall("shlwapi\IStream_Read", "ptr", pStream, "uint*", &offset, "uint", 4, "hresult")
+            ;MsgBox StrGet(fourcc, 4, "cp1252") ", " offset
+            if 4 != DllCall("ntdll\RtlCompareMemory", "ptr", fourcc, "ptr", VP8X, "uptr", 4, "uptr")
+               goto otherwise
+
+            ; Check the animation bit.
+            ;ComCall(5, pStream, "uint64", 4, "uint", 1, "uint64*", &current)
+            DllCall("shlwapi\IStream_Read", "ptr", pStream, "uchar*", &flags:=0, "uint", 1, "hresult")
+            ;MsgBox "Animation Bit: " (flags & 0x2), Format("{:x}", flags)
+            if not flags & 0x2
+               goto otherwise
+
+            ; Goto the ANIM FourCC.
+            StrPut("ANIM", ANIM := Buffer(4), "cp1252")
+            ComCall(5, pStream, "uint64", offset - 1, "uint", 1, "uint64*", &current)
+            DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", fourcc, "uint", 4, "hresult")
+            DllCall("shlwapi\IStream_Read", "ptr", pStream, "uint*", &offset, "uint", 4, "hresult")
+            ;MsgBox StrGet(fourcc, 4, "cp1252") ", " offset
+            if 4 != DllCall("ntdll\RtlCompareMemory", "ptr", fourcc, "ptr", ANIM, "uptr", 4, "uptr")
+               goto otherwise
+
+            ; Get the loop count
+            ComCall(5, pStream, "uint64", 4, "uint", 1, "uint64*", &current)
+            DllCall("shlwapi\IStream_Read", "ptr", pStream, "ushort*", &loop_count:=0, "uint", 2, "hresult")
+            ComCall(5, pStream, "uint64", offset - 6, "uint", 1, "uint64*", &current)
+
+
+            ; Before going to the ANMF fourcc, initialize some structures.
+            StrPut("ANMF", ANMF := Buffer(4), "cp1252")
+            hDelays := DllCall("GlobalAlloc", "uint", 0x2, "uptr", 0, "ptr")
+            DllCall("ole32\CreateStreamOnHGlobal", "ptr", hDelays, "int", False, "ptr*", &sDelays:=0, "hresult")
+
+
+
+            ; Iterate through the stream.
+            ; The first tick should pick up a four cc. of VP8.
+            x := 1
+            delay := 0
+            next:
+            ;MsgBox current " out of " remaining, x++
+
+            if current >= remaining
+               goto set
+
+            DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", fourcc, "uint", 4, "hresult")
+            DllCall("shlwapi\IStream_Read", "ptr", pStream, "uint*", &offset, "uint", 4, "hresult")
+            ;MsgBox StrGet(fourcc, 4, "cp1252") ", " offset
+            if 4 == DllCall("ntdll\RtlCompareMemory", "ptr", fourcc, "ptr", ANMF, "uptr", 4, "uptr") {
+
+               ; Skip to the Frame Duration
+               ComCall(5, pStream, "uint64", 12, "uint", 1, "uint64*", &current)
+
+               ; Copy the Frame Duration from the webp stream to the delays stream.
+               ;DllCall("shlwapi\IStream_Copy", "ptr", pStream, "ptr", sDelays, "uint", 3, "hresult")
+               ; Advance the delays stream by 1 byte as a cast from uint24 to uint32.
+               ;ComCall(5, sDelays, "uint64", 1, "uint", 1, "ptr", 0)
+
+               ; Read the Frame Duration
+               DllCall("shlwapi\IStream_Read", "ptr", pStream, "uint*", &delay, "uint", 3, "hresult")
+
+               ; Convert the Frame Duration to a uint32
+               ;MsgBox "delay: " delay
+               ; Converts milliseconds to centiseconds.
+               delay := delay / 10
+
+               DllCall("shlwapi\IStream_Write", "ptr", sDelays, "uint*", &delay, "uint", 4, "hresult")
+
+               ; Skip to the next location. Note we subtract 15 because we already read 15 bytes.
+               ComCall(5, pStream, "uint64", offset - 15, "uint", 1, "uint64*", &current)
+            }
+            else
+            ; Jump to the next location.
+               ComCall(5, pStream, "uint64", offset&1 ? offset + 1 : offset, "uint", 1, "uint64*", &current)
+            goto next
+
+
+            set:
+            set := True
+            ObjRelease(sDelays)
+            ItemSize := DllCall("GlobalSize", "ptr", hDelays, "uptr")
+            Item := DllCall("GlobalAlloc", "uint", 0, "uptr", 8 + 2*A_PtrSize + ItemSize, "ptr")
+            NumPut(   "uint", 0x5100
+                  ,   "uint", ItemSize
+                  , "uptr", 7                            ; WTF??????? WHY DOESN'T USHORT WORK HERE?????
+                  ,    "ptr", Item + 8 + 2*A_PtrSize
+                  , Item)
+            ;MsgBox "loop delays: " Format("{:x}",  NumGet(Item, "uint"))
+            ;MsgBox "frames: " NumGet(Item + 4, "uint") // 4
+            ;MsgBox "delays pointer: "  NumGet(Item + 8 + A_PtrSize, "ptr"), Item
+
+            pDelays := DllCall("GlobalLock", "ptr", hDelays, "ptr")
+            DllCall("RtlMoveMemory", "ptr", Item + 8 + 2*A_PtrSize, "ptr", pDelays, "uptr", ItemSize)
+         }
+
+         otherwise:
          ; Convert via GDI+ bitmap intermediate.
          if !(pBitmap := this.ToBitmap(type, image, keywords))
             throw Error("pBitmap cannot be zero.")
@@ -230,6 +363,10 @@ class ImagePut {
          (scale) && this.BitmapScale(&pBitmap, scale)
          (upscale) && this.BitmapScale(&pBitmap, upscale, 1)
          (downscale) && this.BitmapScale(&pBitmap, downscale, -1)
+
+         if set
+            DllCall("gdiplus\GdipSetPropertyItem", "ptr", pBitmap, "ptr", Item)
+
          coimage := this.BitmapToCoimage(cotype, pBitmap, p*)
 
          ; Clean up the pBitmap copy. Export raw pointers if requested.
@@ -911,7 +1048,7 @@ class ImagePut {
       DllCall("CloseClipboard")
       return pStream
    }
-   
+
    static from_buffer(image) {
 
       if image.HasOwnProp("stride")
@@ -3590,8 +3727,14 @@ class ImagePut {
             Item         := NumGet(ptr + 4*A_PtrSize, "ptr")
             pTimeProc    := NumGet(ptr + 5*A_PtrSize, "ptr")
 
-            ; Get next frame.
-            frames := NumGet(Item + 4, "uint") // 4            ; Total number of frames
+            ; Check frame count.
+            DllCall("gdiplus\GdipImageGetFrameDimensionsCount", "ptr", pBitmap, "uint*", &dims:=0)
+            DllCall("gdiplus\GdipImageGetFrameDimensionsList", "ptr", pBitmap, "ptr", dimIDs := Buffer(16*dims), "uint", dims)
+            DllCall("gdiplus\GdipImageGetFrameCount", "ptr", pBitmap, "ptr", dimIDs, "uint*", &frames:=0)
+            if frames != NumGet(Item + 4, "uint") // 4         ; Both methods should return the same value.
+               throw Error("Animation Error: Frame count is different from number of frame delays.")
+
+            ; Get next frame number.
             frame := mod(frame + 1, frames)                    ; Loop back to zero
 
             ; Get delay. See: https://www.biphelps.com/blog/The-Fastest-GIF-Does-Not-Exist
@@ -3633,8 +3776,6 @@ class ImagePut {
             */
 
             ; Select frame to show.
-            DllCall("gdiplus\GdipImageGetFrameDimensionsCount", "ptr", pBitmap, "uint*", &dims:=0)
-            DllCall("gdiplus\GdipImageGetFrameDimensionsList", "ptr", pBitmap, "ptr", dimIDs := Buffer(16*dims), "uint", dims)
             DllCall("gdiplus\GdipImageSelectActiveFrame", "ptr", pBitmap, "ptr", dimIDs, "uint", frame)
 
             ; Get pBits from hBitmap currently selected onto the device context.
