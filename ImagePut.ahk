@@ -224,9 +224,7 @@ class ImagePut {
          set := False
 
          if (type ~= "^(?i:clipboard_png|pdf|url|file|stream|RandomAccessStream|hex|base64)$") {
-
-
-
+            
             size := 12
             bin := Buffer(size)
 
@@ -239,17 +237,12 @@ class ImagePut {
             flags := 0x40000004 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_HEXRAW
             DllCall("crypt32\CryptBinaryToString", "ptr", bin, "uint", size, "uint", flags, "str", str, "uint*", &length)
 
-            ;MsgBox str
-                        ;   RIFF....WEBP
-            if str ~= "^52 49 46 46 .. .. .. .. 57 45 42 50" {
-               ;MsgBox "match!"
-            }
-            else goto otherwise
+            ; WEBP Signature: RIFF....WEBP
+            if not str ~= "^52 49 46 46 .. .. .. .. 57 45 42 50"
+               goto otherwise
+
             ; Gets the size of the stream.
             DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &remaining:=0, "hresult")
-
-
-
 
             ; Create FourCC binary buffer and a general purpose uint32 buffer.
             fourcc := Buffer(4)
@@ -352,12 +345,18 @@ class ImagePut {
 
             pDelays := DllCall("GlobalLock", "ptr", hDelays, "ptr")
             DllCall("RtlMoveMemory", "ptr", Item + 8 + 2*A_PtrSize, "ptr", pDelays, "uptr", ItemSize)
-         }
 
-         otherwise:
+            DllCall("GlobalFree", "ptr", hDelays)
+
+            otherwise:
+            ObjRelease(pStream)
+         }
+         
+
          ; Convert via GDI+ bitmap intermediate.
          if !(pBitmap := this.ToBitmap(type, image, keywords))
             throw Error("pBitmap cannot be zero.")
+
          (validate) && DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmap)
          (crop) && this.BitmapCrop(&pBitmap, crop)
          (scale) && this.BitmapScale(&pBitmap, scale)
@@ -1956,13 +1955,19 @@ class ImagePut {
    }
 
    static from_stream(image) {
-      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", image, "ptr*", &pBitmap:=0)
+      ; A temporary stream bypasses the downsides of GDI+ controlling the stream.
+      ComCall(IStream_Clone := 13, image, "ptr*", &pStream:=0)
+      ; Completely ignores the seek pointer and sets the seek position to 4096.
+      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
+      ObjRelease(pStream)
       return pBitmap
    }
 
    static get_stream(image) {
       ; Creates a new, separate stream. Necessary to separate reference counting through a clone.
       ComCall(IStream_Clone := 13, image, "ptr*", &pStream:=0)
+      ; Ensures that a duplicated stream does not inherit the original seek position.
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
       return pStream
    }
 
@@ -1978,7 +1983,10 @@ class ImagePut {
       ; Note that the returned stream shares a reference count with the original RandomAccessStream's internal stream.
       DllCall("ole32\CLSIDFromString", "wstr", "{0000000C-0000-0000-C000-000000000046}", "ptr", CLSID := Buffer(16), "hresult")
       DllCall("ShCore\CreateStreamOverRandomAccessStream", "ptr", image, "ptr", CLSID, "ptr*", &pStream:=0, "hresult")
-      return pStream
+      ; Cloning the stream ensures that each call to "GetStreamFromRandomAccessStream" returns a new stream.
+      ; ^ That's what the function should be named, because that's what it actually does!
+      ComCall(IStream_Clone := 13, pStream, "ptr*", &pStreamClone:=0)
+      return pStreamClone
    }
 
    static from_wicBitmap(image) {
