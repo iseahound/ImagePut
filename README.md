@@ -4,7 +4,7 @@
 
 ![image](https://github.com/iseahound/ImagePut/assets/9779668/65a563a6-3d95-4819-9ea6-64d5ab00d993)
 
-Imagine a scenario where you have a file but you're trying to get it uploaded into an API. Or you have a function that returns some strange image format, is there any way you can *just* get it to show its contents? If you pass anything, literally anything you believe is an image to `ImagePutWindow()` it will show up on screen.
+Imagine a scenario where you have a file but you're trying to get it uploaded into an API. Or you have a function that returns some strange image format, is there any way you can *just* get it to show its contents? If you pass anything, literally anything you believe is an image to `ImagePutWindow()` it will show up on screen. And then you can magically transform it to any other image type to fit a specific use case.
 
 ## Features
 
