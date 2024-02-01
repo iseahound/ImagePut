@@ -4,6 +4,10 @@
 
 ![image](https://github.com/iseahound/ImagePut/assets/9779668/65a563a6-3d95-4819-9ea6-64d5ab00d993)
 
+Imagine a scenario where you have a file but you're trying to get it uploaded into an API. Or you have a function that returns some strange image format, is there any way you can *just* get it to show its contents? If you pass anything, literally anything you believe is an image to `ImagePutWindow()` it will show up on screen.
+
+## Features
+
 * Screen capture with fast [PixelSearch](https://github.com/iseahound/ImagePut/wiki/PixelSearch-and-ImageSearch#pixelsearch) and [ImageSearch](https://github.com/iseahound/ImagePut/wiki/PixelSearch-and-ImageSearch#imagesearch)
 * Decipher over [20+ image types](https://github.com/iseahound/ImagePut/wiki/Quick-Start#accepts)
 * Supports newer formats **webp** and **heic**
