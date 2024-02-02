@@ -88,6 +88,7 @@ Finally, there are several advanced features. The first is the ability to specif
 
 ## Design Philosophy
 
+* 100% Compatibility with Gdip_All.ahk
 * ImagePut is designed to be the fastest
 * ImagePut should serve as a reference implementation
 * Specific conversions between formats like PNG file to hIcon are not considered
