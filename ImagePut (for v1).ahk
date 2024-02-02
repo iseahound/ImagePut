@@ -1169,6 +1169,16 @@ class ImagePut {
 
 
 
+
+
+
+
+
+
+
+
+
+
    from_screenshot(image) {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
 
@@ -1819,13 +1829,19 @@ class ImagePut {
    }
 
    from_stream(image) {
-      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", image, "ptr*", pBitmap:=0)
+      ; Cloning a temporary stream bypasses the downsides of GDI+ controlling the stream.
+      DllCall(IStream_Clone := NumGet(NumGet(image+0)+13*A_PtrSize), "ptr", image, "ptr*", pStream:=0)
+      ; Completely ignores the seek pointer and sets the seek position to 4096.
+      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", pBitmap:=0)
+      ObjRelease(pStream)
       return pBitmap
    }
 
    get_stream(image) {
       ; Creates a new, separate stream. Necessary to separate reference counting through a clone.
       DllCall(IStream_Clone := NumGet(NumGet(image+0)+13*A_PtrSize), "ptr", image, "ptr*", pStream:=0)
+      ; Ensures that a duplicated stream does not inherit the original seek position.
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
       return pStream
    }
 
@@ -1841,7 +1857,10 @@ class ImagePut {
       ; Note that the returned stream shares a reference count with the original RandomAccessStream's internal stream.
       DllCall("ole32\CLSIDFromString", "wstr", "{0000000C-0000-0000-C000-000000000046}", "ptr", &CLSID := VarSetCapacity(CLSID, 16), "uint")
       DllCall("ShCore\CreateStreamOverRandomAccessStream", "ptr", image, "ptr", &CLSID, "ptr*", pStream:=0, "uint")
-      return pStream
+      ; Cloning the stream ensures that each call to "GetStreamFromRandomAccessStream" returns a new stream.
+      ; ^ That's what the function should be named, because that's what it actually does!
+      DllCall(IStream_Clone := NumGet(NumGet(image+0)+13*A_PtrSize), "ptr", pStream, "ptr*", pStreamClone:=0)
+      return pStreamClone
    }
 
    from_wicBitmap(image) {
@@ -2479,7 +2498,7 @@ class ImagePut {
                   option := 7
             else throw Exception("Invalid variation parameter.")
 
-         ; ----------------------- Machine code generated with MCode4GCC using gcc 13.2.0 -----------------------
+         ; ------------------------ Machine code generated with MCode4GCC using gcc 13.2.0 ------------------------
 
          ; C source code - https://godbolt.org/z/zr71creqn
          pixelsearch1 := this.Base64Code((A_PtrSize == 4)
@@ -2532,7 +2551,7 @@ class ImagePut {
             . "QTp0CQJy00E4fAgBcsxBOnwJAXLFQTgsCHK/QTosCXK56wNMidgPKDQkDyh8JBBEDyhEJCBEDyhMJDBEDyhUJEBIg8RQW15fXUFc"
             . "ww==")
 
-         ; ------------------------------------------------------------------------------------------------------
+         ; --------------------------------------------------------------------------------------------------------
 
          ; When doing pointer arithmetic, *Scan0 + 1 is actually adding 4 bytes.
          if (option == 1)
@@ -2688,7 +2707,7 @@ class ImagePut {
                   option := 7
             else throw Exception("Invalid variation parameter.")
 
-         ; ----------------------- Machine code generated with MCode4GCC using gcc 13.2.0 -----------------------
+         ; ------------------------ Machine code generated with MCode4GCC using gcc 13.2.0 ------------------------
 
          ; C source code - https://godbolt.org/z/GYMPYv4qT
          pixelsearchall1 := this.Base64Code((A_PtrSize == 4)
@@ -2745,7 +2764,7 @@ class ImagePut {
             . "cj1BOmwJAnI2RThkCAFyL0U6ZAkBcihFOCwIciJFOiwJchxEO5QkyAAAAHMPSIu8JMAAAABFiddKiQT/Qf/C/0QkDEiDwQTrnw8o"
             . "dCQgDyh8JDBEidBEDyhEJEBEDyhMJFBEDyhUJGBIg8R4W15fXUFcQV1BXkFfww==")
 
-         ; ------------------------------------------------------------------------------------------------------
+         ; --------------------------------------------------------------------------------------------------------
 
          ; Global number of addresses (matching searches) to allocate.
          limit := 256
@@ -2808,8 +2827,8 @@ class ImagePut {
 
             ; Fill the struct by iterating through the input array.
             for i, c in color {
-                  (c >> 24) || c |= 0xFF000000             ; Lift colors to 32-bit ARGB.
-                  NumPut(c, colors, 4*(A_Index-1), "uint") ; Place the unsigned int at each offset.
+               (c >> 24) || c |= 0xFF000000             ; Lift colors to 32-bit ARGB.
+               NumPut(c, colors, 4*(A_Index-1), "uint") ; Place the unsigned int at each offset.
             }
 
             count := DllCall(pixelsearchall3, "ptr", &result, "uint", limit, "ptr", this.ptr, "ptr", this.ptr + this.size, "ptr", &colors, "uint", color.length(), "cdecl ptr")
@@ -2885,7 +2904,7 @@ class ImagePut {
          xys := []
          xys.count := count
          loop % count {
-            address := NumGet(result, A_PtrSize*(A_Index-1), "ptr")
+            address := NumGet(result, A_PtrSize * (A_Index-1), "ptr")
             offset := (address - this.ptr) // 4
             xys.push([mod(offset, this.width), offset // this.width])
          }
@@ -2959,7 +2978,7 @@ class ImagePut {
          xys := []
          xys.count := count
          loop % count {
-            address := NumGet(result, A_PtrSize*(A_Index-1), "ptr")
+            address := NumGet(result, A_PtrSize * (A_Index-1), "ptr")
             offset := (address - this.ptr) // 4
             xy := [mod(offset, this.width), offset // this.width]
             xys.push(xy)
@@ -3787,7 +3806,7 @@ class ImagePut {
       else
          directory := default
 
-      return this.to_file(pStream, directory)
+      return this.set_file(pStream, directory)
    }
 
    to_file(pBitmap, filepath := "", quality := "") {

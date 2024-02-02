@@ -1305,6 +1305,14 @@ class ImagePut {
       return pBitmap
    }
 
+
+
+
+
+
+
+
+
    static from_screenshot(image) {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
 
@@ -1955,7 +1963,7 @@ class ImagePut {
    }
 
    static from_stream(image) {
-      ; A temporary stream bypasses the downsides of GDI+ controlling the stream.
+      ; Cloning a temporary stream bypasses the downsides of GDI+ controlling the stream.
       ComCall(IStream_Clone := 13, image, "ptr*", &pStream:=0)
       ; Completely ignores the seek pointer and sets the seek position to 4096.
       DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
@@ -2174,7 +2182,7 @@ class ImagePut {
       size := 4 * width * height
       ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr")
 
-      ; Fill a pixel buffer.
+      ; Create a pixel buffer.
       Rect := Buffer(16, 0)                  ; sizeof(Rect) = 16
          NumPut(  "uint",   width, Rect,  8) ; Width
          NumPut(  "uint",  height, Rect, 12) ; Height
