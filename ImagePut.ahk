@@ -323,22 +323,20 @@ class ImagePut {
                ComCall(5, pStream, "uint64", offset + alignment, "uint", 1, "uint64*", &current)
             }
 
-            set := True
+
             ObjRelease(sDelays)
             ItemSize := DllCall("GlobalSize", "ptr", hDelays, "uptr")
             Item := DllCall("GlobalAlloc", "uint", 0, "uptr", 8 + 2*A_PtrSize + ItemSize, "ptr")
-            NumPut(   "uint",   0x5100, Item, 0)
-            NumPut(   "uint", ItemSize, Item, 4)
+            NumPut(   "uint",   0x5100, Item, 0) ; PropertyTagFrameDelay
+            NumPut(   "uint", ItemSize, Item, 4) ; Size
             NumPut( "ushort",   0x8008, Item, 8) ; My custom tag for milliseconds.
             NumPut(    "ptr", Item + 8 + 2*A_PtrSize, Item, 8 + A_PtrSize)
-            ;MsgBox "loop delays: " Format("{:x}",  NumGet(Item, "uint"))
-            ;MsgBox "frames: " NumGet(Item + 4, "uint") // 4
-            ;MsgBox "delays pointer: "  NumGet(Item + 8 + A_PtrSize, "ptr"), Item
 
             pDelays := DllCall("GlobalLock", "ptr", hDelays, "ptr")
             DllCall("RtlMoveMemory", "ptr", Item + 8 + 2*A_PtrSize, "ptr", pDelays, "uptr", ItemSize)
-
             DllCall("GlobalFree", "ptr", hDelays)
+
+            set := True
 
             otherwise:
             ObjRelease(pStream)
