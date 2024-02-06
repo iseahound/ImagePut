@@ -283,20 +283,22 @@ class ImagePut {
             ComCall(5, pStream, "uint64", offset - 6, "uint", 1, "uint64*", &current)
 
 
-            ; Before going to the ANMF fourcc, initialize some structures.
+            ; ANMF fourcc.
             StrPut("ANMF", ANMF := Buffer(4), "cp1252")
-            hDelays := DllCall("GlobalAlloc", "uint", 0x2, "uptr", 0, "ptr")
+
+            ; Create the custom delays struct.
+            hDelays := DllCall("GlobalAlloc", "uint", 0x42, "uptr", 8 + 2*A_PtrSize, "ptr")
+            pDelays := DllCall("GlobalLock", "ptr", hDelays, "ptr")
+            NumPut(   "uint",   0x5100, pDelays, 0) ; PropertyTagFrameDelay
+            NumPut( "ushort",   0x8008, pDelays, 8) ; My custom tag for milliseconds.
+            ; The size and the pointer will be filled in after all ANMF chunks are found.
+
+            ; Create the delays stream.
+            DllCall("GlobalUnlock", "ptr", hDelays)
             DllCall("ole32\CreateStreamOnHGlobal", "ptr", hDelays, "int", False, "ptr*", &sDelays:=0, "hresult")
+            ComCall(5, sDelays, "uint64", 0, "uint", 2, "ptr", 0) ; Advance to end.
 
-
-
-            ; Iterate through the stream.
-            ; The first tick should pick up a four cc. of VP8.
-            x := 1
-            delay := 0
-
-            ;MsgBox current " out of " remaining, x++
-
+            ; Search for each RIFF-type ANMF chunk header (fourcc followed by its chunk size).
             while current < remaining {
 
                ; Get fourcc and chunk size.
@@ -323,26 +325,17 @@ class ImagePut {
                ComCall(5, pStream, "uint64", offset + alignment, "uint", 1, "uint64*", &current)
             }
 
-
+            ; Fill in the size of the delays array and pointer position.
             ObjRelease(sDelays)
-            ItemSize := DllCall("GlobalSize", "ptr", hDelays, "uptr")
-            Item := DllCall("GlobalAlloc", "uint", 0, "uptr", 8 + 2*A_PtrSize + ItemSize, "ptr")
-            NumPut(   "uint",   0x5100, Item, 0) ; PropertyTagFrameDelay
-            NumPut(   "uint", ItemSize, Item, 4) ; Size
-            NumPut( "ushort",   0x8008, Item, 8) ; My custom tag for milliseconds.
-            NumPut(    "ptr", Item + 8 + 2*A_PtrSize, Item, 8 + A_PtrSize)
-
+            DelaySize := DllCall("GlobalSize", "ptr", hDelays, "uptr") - 8 - 2*A_PtrSize
             pDelays := DllCall("GlobalLock", "ptr", hDelays, "ptr")
-            DllCall("RtlMoveMemory", "ptr", Item + 8 + 2*A_PtrSize, "ptr", pDelays, "uptr", ItemSize)
-            DllCall("GlobalFree", "ptr", hDelays)
-
-            set := True
+            NumPut(   "uint", DelaySize, pDelays, 4) ; Size
+            NumPut(    "ptr", pDelays + 8 + 2*A_PtrSize, pDelays, 8 + A_PtrSize)
 
             otherwise:
             ObjRelease(pStream)
          }
          
-
          ; Convert via GDI+ bitmap intermediate.
          if !(pBitmap := this.ToBitmap(type, image, keywords))
             throw Error("pBitmap cannot be zero.")
@@ -353,8 +346,7 @@ class ImagePut {
          (upscale) && this.BitmapScale(&pBitmap, upscale, 1)
          (downscale) && this.BitmapScale(&pBitmap, downscale, -1)
 
-         if set
-            DllCall("gdiplus\GdipSetPropertyItem", "ptr", pBitmap, "ptr", Item)
+         IsSet(pDelays) && DllCall("gdiplus\GdipSetPropertyItem", "ptr", pBitmap, "ptr", pDelays)
 
          coimage := this.BitmapToCoimage(cotype, pBitmap, p*)
 
