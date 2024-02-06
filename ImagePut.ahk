@@ -225,15 +225,19 @@ class ImagePut {
 
          if (type ~= "^(?i:clipboard_png|pdf|url|file|stream|RandomAccessStream|hex|base64)$") {
             
+            ; Check the file signature for magic numbers.
             size := 12
             bin := Buffer(size)
 
+            ; Get the first few bytes of the image.
             pStream := this.ToStream(type, image, keywords)
             DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", bin, "uint", size, "hresult")
 
+            ; Allocate enough space for a hexadecimal string with spaces and a null terminator.
             length := 2 * size + (size - 1) + 1
             VarSetStrCapacity(&str, length)
 
+            ; Lift the binary representation to hex.
             flags := 0x40000004 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_HEXRAW
             DllCall("crypt32\CryptBinaryToString", "ptr", bin, "uint", size, "uint", flags, "str", str, "uint*", &length)
 
@@ -247,14 +251,13 @@ class ImagePut {
             ; Create FourCC binary buffer and a general purpose uint32 buffer.
             fourcc := Buffer(4)
             offset := 0
-            uint24 := Buffer(4, 0)
             current := 0
+
+            DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", fourcc, "uint", 4, "hresult")
+            DllCall("shlwapi\IStream_Read", "ptr", pStream, "uint*", &offset, "uint", 4, "hresult")
 
             ; Create the VP8X FourCC.
             StrPut("VP8X", VP8X := Buffer(4), "cp1252")
-            DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", fourcc, "uint", 4, "hresult")
-            DllCall("shlwapi\IStream_Read", "ptr", pStream, "uint*", &offset, "uint", 4, "hresult")
-            ;MsgBox StrGet(fourcc, 4, "cp1252") ", " offset
             if 4 != DllCall("ntdll\RtlCompareMemory", "ptr", fourcc, "ptr", VP8X, "uptr", 4, "uptr")
                goto otherwise
 
@@ -291,54 +294,50 @@ class ImagePut {
             ; The first tick should pick up a four cc. of VP8.
             x := 1
             delay := 0
-            next:
+
             ;MsgBox current " out of " remaining, x++
 
-            if current >= remaining
-               goto set
+            while current < remaining {
 
-            DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", fourcc, "uint", 4, "hresult")
-            DllCall("shlwapi\IStream_Read", "ptr", pStream, "uint*", &offset, "uint", 4, "hresult")
-            ;MsgBox StrGet(fourcc, 4, "cp1252") ", " offset
-            if 4 == DllCall("ntdll\RtlCompareMemory", "ptr", fourcc, "ptr", ANMF, "uptr", 4, "uptr") {
+               DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", fourcc, "uint", 4, "hresult")
+               DllCall("shlwapi\IStream_Read", "ptr", pStream, "uint*", &offset, "uint", 4, "hresult")
+               ;MsgBox StrGet(fourcc, 4, "cp1252") ", " offset
+               if 4 == DllCall("ntdll\RtlCompareMemory", "ptr", fourcc, "ptr", ANMF, "uptr", 4, "uptr") {
 
-               ; Skip to the Frame Duration
-               ComCall(5, pStream, "uint64", 12, "uint", 1, "uint64*", &current)
+                  ; Skip to the Frame Duration
+                  ComCall(5, pStream, "uint64", 12, "uint", 1, "uint64*", &current)
 
-               ; Copy the Frame Duration from the webp stream to the delays stream.
-               ;DllCall("shlwapi\IStream_Copy", "ptr", pStream, "ptr", sDelays, "uint", 3, "hresult")
-               ; Advance the delays stream by 1 byte as a cast from uint24 to uint32.
-               ;ComCall(5, sDelays, "uint64", 1, "uint", 1, "ptr", 0)
+                  ; Copy the Frame Duration from the webp stream to the delays stream.
+                  ;DllCall("shlwapi\IStream_Copy", "ptr", pStream, "ptr", sDelays, "uint", 3, "hresult")
+                  ; Advance the delays stream by 1 byte as a cast from uint24 to uint32.
+                  ;ComCall(5, sDelays, "uint64", 1, "uint", 1, "ptr", 0)
 
-               ; Read the Frame Duration
-               DllCall("shlwapi\IStream_Read", "ptr", pStream, "uint*", &delay, "uint", 3, "hresult")
+                  ; Read the Frame Duration
+                  DllCall("shlwapi\IStream_Read", "ptr", pStream, "uint*", &delay, "uint", 3, "hresult")
 
-               ; Convert the Frame Duration to a uint32
-               ;MsgBox "delay: " delay
-               ; Converts milliseconds to centiseconds.
-               delay := delay / 10
+                  ; Convert the Frame Duration to a uint32
+                  ;MsgBox "delay: " delay
+                  ; Converts milliseconds to centiseconds.
+                  delay := delay / 10
 
-               DllCall("shlwapi\IStream_Write", "ptr", sDelays, "uint*", &delay, "uint", 4, "hresult")
+                  DllCall("shlwapi\IStream_Write", "ptr", sDelays, "uint*", &delay, "uint", 4, "hresult")
 
-               ; Skip to the next location. Note we subtract 15 because we already read 15 bytes.
-               ComCall(5, pStream, "uint64", offset - 15, "uint", 1, "uint64*", &current)
+                  ; Skip to the next location. Note we subtract 15 because we already read 15 bytes.
+                  ComCall(5, pStream, "uint64", offset - 15, "uint", 1, "uint64*", &current)
+               }
+               else
+                  ; Seek to the next fourcc, which must be aligned to 2 bytes.
+                  ComCall(5, pStream, "uint64", offset&1 ? offset + 1 : offset, "uint", 1, "uint64*", &current)
             }
-            else
-            ; Jump to the next location.
-               ComCall(5, pStream, "uint64", offset&1 ? offset + 1 : offset, "uint", 1, "uint64*", &current)
-            goto next
 
-
-            set:
             set := True
             ObjRelease(sDelays)
             ItemSize := DllCall("GlobalSize", "ptr", hDelays, "uptr")
             Item := DllCall("GlobalAlloc", "uint", 0, "uptr", 8 + 2*A_PtrSize + ItemSize, "ptr")
-            NumPut(   "uint", 0x5100
-                  ,   "uint", ItemSize
-                  , "uptr", 7                            ; WTF??????? WHY DOESN'T USHORT WORK HERE?????
-                  ,    "ptr", Item + 8 + 2*A_PtrSize
-                  , Item)
+            NumPut(   "uint",   0x5100, Item, 0)
+            NumPut(   "uint", ItemSize, Item, 4)
+            NumPut( "ushort",        7, Item, 8)
+            NumPut(    "ptr", Item + 8 + 2*A_PtrSize, Item, 8 + A_PtrSize)
             ;MsgBox "loop delays: " Format("{:x}",  NumGet(Item, "uint"))
             ;MsgBox "frames: " NumGet(Item + 4, "uint") // 4
             ;MsgBox "delays pointer: "  NumGet(Item + 8 + A_PtrSize, "ptr"), Item
