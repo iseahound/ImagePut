@@ -253,11 +253,10 @@ class ImagePut {
             offset := 0
             current := 0
 
-            DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", fourcc, "uint", 4, "hresult")
-            DllCall("shlwapi\IStream_Read", "ptr", pStream, "uint*", &offset, "uint", 4, "hresult")
-
             ; Create the VP8X FourCC.
             StrPut("VP8X", VP8X := Buffer(4), "cp1252")
+            DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", fourcc, "uint", 4, "hresult")
+            DllCall("shlwapi\IStream_Read", "ptr", pStream, "uint*", &offset, "uint", 4, "hresult")
             if 4 != DllCall("ntdll\RtlCompareMemory", "ptr", fourcc, "ptr", VP8X, "uptr", 4, "uptr")
                goto otherwise
 
@@ -273,30 +272,38 @@ class ImagePut {
             ComCall(5, pStream, "uint64", offset - 1, "uint", 1, "uint64*", &current)
             DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", fourcc, "uint", 4, "hresult")
             DllCall("shlwapi\IStream_Read", "ptr", pStream, "uint*", &offset, "uint", 4, "hresult")
-            ;MsgBox StrGet(fourcc, 4, "cp1252") ", " offset
             if 4 != DllCall("ntdll\RtlCompareMemory", "ptr", fourcc, "ptr", ANIM, "uptr", 4, "uptr")
                goto otherwise
 
-            ; Get the loop count
-            ComCall(5, pStream, "uint64", 4, "uint", 1, "uint64*", &current)
-            DllCall("shlwapi\IStream_Read", "ptr", pStream, "ushort*", &loop_count:=0, "uint", 2, "hresult")
-            ComCall(5, pStream, "uint64", offset - 6, "uint", 1, "uint64*", &current)
+
+
+            ; Create the custom loop count struct.
+            pCount := DllCall("GlobalAlloc", "uint", 0, "uptr", 8 + 3*A_PtrSize, "ptr")
+            NumPut(   "uint",    0x5101, pCount, 0) ; PropertyTagLoopCount
+            NumPut(   "uint",         1, pCount, 4) ; Size
+            NumPut( "ushort",         3, pCount, 8) ; PropertyTagTypeShort
+            NumPut(    "ptr", pCount + 8 + 2*A_PtrSize, pCount, 8 + A_PtrSize)
+
+            ; Save the loop count into the struct.
+            ComCall(Seek := 5, pStream, "uint64", 4, "uint", 1, "uint64*", &current)
+            DllCall("shlwapi\IStream_Read", "ptr", pStream, "ushort*", pCount + 8 + 2*A_PtrSize, "uint", 2, "hresult")
+            ComCall(Seek := 5, pStream, "uint64", offset - 6, "uint", 1, "uint64*", &current)
 
 
             ; ANMF fourcc.
             StrPut("ANMF", ANMF := Buffer(4), "cp1252")
 
-            ; Create the custom delays struct.
+            ; Create the custom frame delays struct.
             hDelays := DllCall("GlobalAlloc", "uint", 0x42, "uptr", 8 + 2*A_PtrSize, "ptr")
             pDelays := DllCall("GlobalLock", "ptr", hDelays, "ptr")
-            NumPut(   "uint",   0x5100, pDelays, 0) ; PropertyTagFrameDelay
-            NumPut( "ushort",   0x8008, pDelays, 8) ; My custom tag for milliseconds.
+            NumPut(   "uint",    0x5100, pDelays, 0) ; PropertyTagFrameDelay
+            NumPut( "ushort",    0x8008, pDelays, 8) ; My custom tag for milliseconds.
             ; The size and the pointer will be filled in after all ANMF chunks are found.
 
             ; Create the delays stream.
             DllCall("GlobalUnlock", "ptr", hDelays)
             DllCall("ole32\CreateStreamOnHGlobal", "ptr", hDelays, "int", False, "ptr*", &sDelays:=0, "hresult")
-            ComCall(5, sDelays, "uint64", 0, "uint", 2, "ptr", 0) ; Advance to end.
+            ComCall(Seek := 5, sDelays, "uint64", 0, "uint", 2, "ptr", 0) ; Advance to end.
 
             ; Search for each RIFF-type ANMF chunk header (fourcc followed by its chunk size).
             while current < remaining {
@@ -305,13 +312,13 @@ class ImagePut {
                DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", fourcc, "uint", 4, "hresult")
                DllCall("shlwapi\IStream_Read", "ptr", pStream, "uint*", &offset, "uint", 4, "hresult")
 
-               ; Check if offset is odd, and align to 2 bytes if it is.
-               alignment := offset&1
+               ; Rounds up to a even number. Odd numbers are +1, and even numbers are +0.
+               alignment := offset&1 ; Use this as offset + alignment.
 
                if 4 == DllCall("ntdll\RtlCompareMemory", "ptr", fourcc, "ptr", ANMF, "uptr", 4, "uptr") {
 
                   ; Seek to the Frame Duration.
-                  ComCall(5, pStream, "uint64", 12, "uint", 1, "uint64*", &current)
+                  ComCall(Seek := 5, pStream, "uint64", 12, "uint", 1, "uint64*", &current)
 
                   ; Cast the Frame Delay from uint24 to uint32 and write it to the delays stream.
                   DllCall("shlwapi\IStream_Copy", "ptr", pStream, "ptr", sDelays, "uint", 3, "hresult")
@@ -322,7 +329,7 @@ class ImagePut {
                }
 
                ; Seek to the next fourcc which must be aligned to 2 bytes.
-               ComCall(5, pStream, "uint64", offset + alignment, "uint", 1, "uint64*", &current)
+               ComCall(Seek := 5, pStream, "uint64", offset + alignment, "uint", 1, "uint64*", &current)
             }
 
             ; Fill in the size of the delays array and pointer position.
@@ -347,6 +354,7 @@ class ImagePut {
          (downscale) && this.BitmapScale(&pBitmap, downscale, -1)
 
          IsSet(pDelays) && DllCall("gdiplus\GdipSetPropertyItem", "ptr", pBitmap, "ptr", pDelays)
+         IsSet(pCount) && DllCall("gdiplus\GdipSetPropertyItem", "ptr", pBitmap, "ptr", pCount)
 
          coimage := this.BitmapToCoimage(cotype, pBitmap, p*)
 
