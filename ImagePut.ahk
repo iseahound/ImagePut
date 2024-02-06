@@ -299,35 +299,28 @@ class ImagePut {
 
             while current < remaining {
 
+               ; Get fourcc and chunk size.
                DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", fourcc, "uint", 4, "hresult")
                DllCall("shlwapi\IStream_Read", "ptr", pStream, "uint*", &offset, "uint", 4, "hresult")
-               ;MsgBox StrGet(fourcc, 4, "cp1252") ", " offset
+
+               ; Check if offset is odd, and align to 2 bytes if it is.
+               alignment := offset&1
+
                if 4 == DllCall("ntdll\RtlCompareMemory", "ptr", fourcc, "ptr", ANMF, "uptr", 4, "uptr") {
 
-                  ; Skip to the Frame Duration
+                  ; Seek to the Frame Duration.
                   ComCall(5, pStream, "uint64", 12, "uint", 1, "uint64*", &current)
 
-                  ; Copy the Frame Duration from the webp stream to the delays stream.
-                  ;DllCall("shlwapi\IStream_Copy", "ptr", pStream, "ptr", sDelays, "uint", 3, "hresult")
-                  ; Advance the delays stream by 1 byte as a cast from uint24 to uint32.
-                  ;ComCall(5, sDelays, "uint64", 1, "uint", 1, "ptr", 0)
+                  ; Cast the Frame Delay from uint24 to uint32 and write it to the delays stream.
+                  DllCall("shlwapi\IStream_Copy", "ptr", pStream, "ptr", sDelays, "uint", 3, "hresult")
+                  DllCall("shlwapi\IStream_Write", "ptr", sDelays, "uchar*", 0, "uint", 1, "hresult")
 
-                  ; Read the Frame Duration
-                  DllCall("shlwapi\IStream_Read", "ptr", pStream, "uint*", &delay, "uint", 3, "hresult")
-
-                  ; Convert the Frame Duration to a uint32
-                  ;MsgBox "delay: " delay
-                  ; Converts milliseconds to centiseconds.
-                  delay := delay / 10
-
-                  DllCall("shlwapi\IStream_Write", "ptr", sDelays, "uint*", &delay, "uint", 4, "hresult")
-
-                  ; Skip to the next location. Note we subtract 15 because we already read 15 bytes.
-                  ComCall(5, pStream, "uint64", offset - 15, "uint", 1, "uint64*", &current)
+                  ; Subtract the 15 bytes that have already been read.
+                  offset -= 15
                }
-               else
-                  ; Seek to the next fourcc, which must be aligned to 2 bytes.
-                  ComCall(5, pStream, "uint64", offset&1 ? offset + 1 : offset, "uint", 1, "uint64*", &current)
+
+               ; Seek to the next fourcc which must be aligned to 2 bytes.
+               ComCall(5, pStream, "uint64", offset + alignment, "uint", 1, "uint64*", &current)
             }
 
             set := True
@@ -336,7 +329,7 @@ class ImagePut {
             Item := DllCall("GlobalAlloc", "uint", 0, "uptr", 8 + 2*A_PtrSize + ItemSize, "ptr")
             NumPut(   "uint",   0x5100, Item, 0)
             NumPut(   "uint", ItemSize, Item, 4)
-            NumPut( "ushort",        7, Item, 8)
+            NumPut( "ushort",   0x8008, Item, 8) ; My custom tag for milliseconds.
             NumPut(    "ptr", Item + 8 + 2*A_PtrSize, Item, 8 + A_PtrSize)
             ;MsgBox "loop delays: " Format("{:x}",  NumGet(Item, "uint"))
             ;MsgBox "frames: " NumGet(Item + 4, "uint") // 4
@@ -3746,17 +3739,21 @@ class ImagePut {
             DllCall("gdiplus\GdipImageGetFrameDimensionsCount", "ptr", pBitmap, "uint*", &dims:=0)
             DllCall("gdiplus\GdipImageGetFrameDimensionsList", "ptr", pBitmap, "ptr", dimIDs := Buffer(16*dims), "uint", dims)
             DllCall("gdiplus\GdipImageGetFrameCount", "ptr", pBitmap, "ptr", dimIDs, "uint*", &frames:=0)
+
             if frames != NumGet(Item + 4, "uint") // 4         ; Both methods should return the same value.
                throw Error("Animation Error: Frame count is different from number of frame delays.")
-
             ; Get next frame number.
             frame := mod(frame + 1, frames)                    ; Loop back to zero
 
             ; Get delay. See: https://www.biphelps.com/blog/The-Fastest-GIF-Does-Not-Exist
             delays := NumGet(Item + 8 + A_PtrSize, "ptr")      ; Array of delays
-            delay := 10 * NumGet(delays + 4*frame, "uint")     ; Delay of next frame
+            delay := NumGet(delays + 4*frame, "uint")          ; Delay of next frame
+
+            if 0x8008 != NumGet(Item + 8, "ushort")            ; Check for my custom milliseconds tag
+               delay *= 10                                     ; Convert centiseconds to milliseconds
+
             delay := max(delay, 10)                            ; Minimum delay is 10ms
-            (delay == 10) && delay := 100                      ; 10 ms is actually 100 ms
+            (delay <= 10) && delay := 100                      ; 10 ms is actually 100 ms
 
             ; Check delay.
             current += 10                                      ; Add resolution of timer
