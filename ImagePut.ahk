@@ -3477,7 +3477,7 @@ class ImagePut {
          DllCall("gdiplus\GdipGetPropertyItem", "ptr", pBitmap, "uint", 0x5100, "uint", pDelaysSize, "ptr", pDelays)
 
          ; Check PropertyTagTypeLong if WEBP or GIF.
-         type := NumGet(pDelays + 8, "ushort") == 7 ? "gif" : "webp"
+         type := NumGet(pDelays + 8, "ushort") == 4 ? "gif" : "webp"
 
          ; Save frame delays because they are slow enough to impact timing.
          delays := []
@@ -3658,7 +3658,7 @@ class ImagePut {
                ; Exit GIF Animation loop.
                DllCall("gdiplus\GdipDisposeImage", "ptr", obj.pBitmap)
                DllCall("GlobalFree", "ptr", obj.pTimeProc)
-               
+
                ; Exit GDI+ conditionally due to the ImagePut class being destroyed first.
                ImagePut.gdiplusShutdown()
 
