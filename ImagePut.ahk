@@ -3535,63 +3535,6 @@ class ImagePut {
       return hwnd
    }
 
-   static SyncWindowProc(hwnd, msg, ParamCount := 0) {
-      hModule := DllCall("GetModuleHandle", "str", "user32.dll", "ptr")
-      SendMessageW := DllCall("GetProcAddress", "ptr", hModule, "astr", "SendMessageW", "ptr")
-
-      pcb := DllCall("GlobalAlloc", "uint", 0, "ptr", 96, "ptr")
-      DllCall("VirtualProtect", "ptr", pcb, "ptr", 96, "uint", 0x40, "uint*", 0)
-
-      p := pcb
-      if (A_PtrSize = 8) {
-                     /*
-                     48 89 4c 24 08  ; mov [rsp+8], rcx
-                     48 89 54'24 10  ; mov [rsp+16], rdx
-                     4c 89 44 24 18  ; mov [rsp+24], r8
-                     4c'89 4c 24 20  ; mov [rsp+32], r9
-                     48 83 ec 28'    ; sub rsp, 40
-                     4c 8d 44 24 30  ; lea r8, [rsp+48]  (arg 3, &params)
-                     49 b9 ..        ; mov r9, .. (arg 4, operand to follow)
-                     */
-         p := NumPut("ptr"  , 0x54894808244c8948,
-                     "ptr"  , 0x4c182444894c1024,
-                     "ptr"  , 0x28ec834820244c89,
-                     "ptr"  , 0x00b9493024448d4c, p) - 1
-         lParamPtr := p, p += 8
-
-         p := NumPut("char" , 0xba,        ; mov edx, nmsg
-                     "int"  , msg,
-                     "char" , 0xb9,        ; mov ecx, hwnd
-                     "int"  , hwnd,
-                     "short", 0xb848,      ; mov rax, SendMessageW
-                     "ptr"  , SendMessageW,
-                     /*
-                     ff d0        ; call rax
-                     48 83 c4 28  ; add rsp, 40
-                     c3           ; ret
-                     */
-                     "ptr"  , 0x00c328c48348d0ff, p)
-      } else {
-         p := NumPut("char" , 0x68, p)     ; push ... (lParam data)
-         lParamPtr := p, p += 4
-         p := NumPut("int"  , 0x0824448d,  ; lea eax, [esp+8]
-                     "char" , 0x50,        ; push eax
-                     "char" , 0x68,        ; push nmsg
-                     "int"  , msg,
-                     "char" , 0x68,        ; push hwnd
-                     "int"  , hwnd,
-                     "char" , 0xb8,        ; mov eax, &SendMessageW
-                     "int"  , SendMessageW,
-                     "short", 0xd0ff,      ; call eax
-                     "char" , 0xc2,        ; ret argsize
-                     "short", ParamCount*4, p) ; InStr(Options, "C") ? 0
-      }
-      NumPut("ptr", p, lParamPtr)          ; To be passed as lParam.
-      p := NumPut("ptr", 0, p)             ; There isn't a function object here so...
-      p := NumPut("int", ParamCount, p)
-      return pcb
-   }
-
    static WindowClass(style := 0) {
       ; The window class shares the name of this class.
       cls := this.prototype.__class
@@ -3874,6 +3817,63 @@ class ImagePut {
          default:
          return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
       }
+   }
+
+   static SyncWindowProc(hwnd, msg, ParamCount := 0) {
+      hModule := DllCall("GetModuleHandle", "str", "user32.dll", "ptr")
+      SendMessageW := DllCall("GetProcAddress", "ptr", hModule, "astr", "SendMessageW", "ptr")
+
+      pcb := DllCall("GlobalAlloc", "uint", 0, "ptr", 96, "ptr")
+      DllCall("VirtualProtect", "ptr", pcb, "ptr", 96, "uint", 0x40, "uint*", 0)
+
+      p := pcb
+      if (A_PtrSize = 8) {
+                     /*
+                     48 89 4c 24 08  ; mov [rsp+8], rcx
+                     48 89 54'24 10  ; mov [rsp+16], rdx
+                     4c 89 44 24 18  ; mov [rsp+24], r8
+                     4c'89 4c 24 20  ; mov [rsp+32], r9
+                     48 83 ec 28'    ; sub rsp, 40
+                     4c 8d 44 24 30  ; lea r8, [rsp+48]  (arg 3, &params)
+                     49 b9 ..        ; mov r9, .. (arg 4, operand to follow)
+                     */
+         p := NumPut("ptr"  , 0x54894808244c8948,
+                     "ptr"  , 0x4c182444894c1024,
+                     "ptr"  , 0x28ec834820244c89,
+                     "ptr"  , 0x00b9493024448d4c, p) - 1
+         lParamPtr := p, p += 8
+
+         p := NumPut("char" , 0xba,        ; mov edx, nmsg
+                     "int"  , msg,
+                     "char" , 0xb9,        ; mov ecx, hwnd
+                     "int"  , hwnd,
+                     "short", 0xb848,      ; mov rax, SendMessageW
+                     "ptr"  , SendMessageW,
+                     /*
+                     ff d0        ; call rax
+                     48 83 c4 28  ; add rsp, 40
+                     c3           ; ret
+                     */
+                     "ptr"  , 0x00c328c48348d0ff, p)
+      } else {
+         p := NumPut("char" , 0x68, p)     ; push ... (lParam data)
+         lParamPtr := p, p += 4
+         p := NumPut("int"  , 0x0824448d,  ; lea eax, [esp+8]
+                     "char" , 0x50,        ; push eax
+                     "char" , 0x68,        ; push nmsg
+                     "int"  , msg,
+                     "char" , 0x68,        ; push hwnd
+                     "int"  , hwnd,
+                     "char" , 0xb8,        ; mov eax, &SendMessageW
+                     "int"  , SendMessageW,
+                     "short", 0xd0ff,      ; call eax
+                     "char" , 0xc2,        ; ret argsize
+                     "short", ParamCount*4, p) ; InStr(Options, "C") ? 0
+      }
+      NumPut("ptr", p, lParamPtr)          ; To be passed as lParam.
+      p := NumPut("ptr", 0, p)             ; There isn't a function object here so...
+      p := NumPut("int", ParamCount, p)
+      return pcb
    }
 
    static to_desktop(pBitmap) {
