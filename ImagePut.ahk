@@ -3517,7 +3517,7 @@ class ImagePut {
                      , "uint", factor    ; uDelay
                      , "uint", factor    ; uResolution
                      ,  "ptr", pTimeProc ; lpTimeProc
-                     , "uint", 0         ; dwUser
+                     , "uptr", 0         ; dwUser
                      , "uint", 1         ; fuEvent
                      , "uint")
             DllCall("SetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr", timer)
@@ -3865,7 +3865,7 @@ class ImagePut {
                      , "uint", factor    ; uDelay
                      , "uint", factor    ; uResolution
                      ,  "ptr", pTimeProc ; lpTimeProc
-                     , "uint", 0         ; dwUser
+                     , "uptr", 0         ; dwUser
                      , "uint", 1         ; fuEvent
                      , "uint")
             DllCall("SetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr", timer)
