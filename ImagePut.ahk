@@ -3863,6 +3863,13 @@ class ImagePut {
             DllCall("SetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr", timer)
          }
 
+         ; STOP - Pause playback.
+         if (uMsg = 0x8002) {
+            ; Stop GIF Animation loop.
+            timer := DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
+            DllCall("winmm\timeKillEvent", "uint", timer)
+         }
+
          ; Must return
          default:
          return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
