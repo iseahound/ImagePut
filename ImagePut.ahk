@@ -3383,7 +3383,7 @@ class ImagePut {
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
       ; Case 1: Image is not scaled.
-      if (s = 1) {
+      if (w == width && h == height) {
          ; Transfer data from source pBitmap to an hBitmap manually.
          Rect := Buffer(16, 0)                  ; sizeof(Rect) = 16
             NumPut(  "uint",   width, Rect,  8) ; Width
