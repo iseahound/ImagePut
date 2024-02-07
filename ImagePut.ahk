@@ -141,8 +141,9 @@ ImagePutWICBitmap(image) {
 ;   style      -  Window Style            |  uint     ->   WS_VISIBLE
 ;   styleEx    -  Window Extended Style   |  uint     ->   WS_EX_LAYERED
 ;   parent     -  Window Parent           |  ptr      ->   hwnd
-ImagePutWindow(image, title := "", pos := "", style := 0x82C80000, styleEx := 0x9, parent := "") {
-   return ImagePut("window", image, title, pos, style, styleEx, parent)
+;   playback   -  Window Animation        |  bool     ->   True
+ImagePutWindow(image, title := "", pos := "", style := 0x82C80000, styleEx := 0x9, parent := "", playback := True) {
+   return ImagePut("window", image, title, pos, style, styleEx, parent, playback)
 }
 
 
@@ -151,8 +152,9 @@ ImagePutWindow(image, title := "", pos := "", style := 0x82C80000, styleEx := 0x
 ;   style      -  Window Style            |  uint     ->   WS_VISIBLE
 ;   styleEx    -  Window Extended Style   |  uint     ->   WS_EX_LAYERED
 ;   parent     -  Window Parent           |  ptr      ->   hwnd
-ImageShow(image, title := "", pos := "", style := 0x90000000, styleEx := 0x80088, parent := "") {
-   return ImagePut("show", image, title, pos, style, styleEx, parent)
+;   playback   -  Window Animation        |  bool     ->   True
+ImageShow(image, title := "", pos := "", style := 0x90000000, styleEx := 0x80088, parent := "", playback := True) {
+   return ImagePut("show", image, title, pos, style, styleEx, parent, playback)
 }
 
 ImageDestroy(image) {
@@ -656,7 +658,7 @@ class ImagePut {
       throw Error("Conversion from " type " to bitmap is not supported.")
    }
 
-   static BitmapToCoimage(cotype, pBitmap, p1:="", p2:="", p3:="", p4:="", p5:="", p*) {
+   static BitmapToCoimage(cotype, pBitmap, p1:="", p2:="", p3:="", p4:="", p5:="", p6:="", p*) {
       ; BitmapToCoimage("clipboard", pBitmap)
       if (cotype = "clipboard" || cotype = "clipboard_png")
          return this.to_clipboard(pBitmap)
@@ -673,13 +675,13 @@ class ImagePut {
       if (cotype = "screenshot")
          return this.to_screenshot(pBitmap, p1, p2)
 
-      ; BitmapToCoimage("show", pBitmap, title, pos, style, styleEx, parent)
+      ; BitmapToCoimage("show", pBitmap, title, pos, style, styleEx, parent, playback)
       if (cotype = "show")
-         return this.show(pBitmap, p1, p2, p3, p4, p5)
+         return this.show(pBitmap, p1, p2, p3, p4, p5, p6)
 
-      ; BitmapToCoimage("window", pBitmap, title, pos, style, styleEx, parent)
+      ; BitmapToCoimage("window", pBitmap, title, pos, style, styleEx, parent, playback)
       if (cotype = "window")
-         return this.to_window(pBitmap, p1, p2, p3, p4, p5)
+         return this.to_window(pBitmap, p1, p2, p3, p4, p5, p6)
 
       ; BitmapToCoimage("desktop", pBitmap)
       if (cotype = "desktop")
@@ -3204,7 +3206,7 @@ class ImagePut {
       return [x,y,w,h]
    }
 
-   static to_window(pBitmap, title := "", pos := "", style := 0x82C80000, styleEx := 0x9, parent := "") {
+   static to_window(pBitmap, title := "", pos := "", style := 0x82C80000, styleEx := 0x9, parent := "", playback := "") {
       ; Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
       ; Extended Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/extended-window-styles
 
@@ -3298,7 +3300,7 @@ class ImagePut {
       DllCall("SetLayeredWindowAttributes", "ptr", hwnd, "uint", 0xF0F0F0, "uchar", 0, "int", 1)
 
       ; A layered child window is only available on Windows 8+.
-      child := this.show(pBitmap, title, [0, 0, w, h], WS_CHILD | WS_VISIBLE, WS_EX_LAYERED, hwnd)
+      child := this.show(pBitmap, title, [0, 0, w, h], WS_CHILD | WS_VISIBLE, WS_EX_LAYERED, hwnd, playback)
 
       ; Store extra data inside window struct (cbWndExtra).
       DllCall("SetWindowLong", "ptr", hwnd, "int", 0*A_PtrSize, "ptr", hwnd) ; parent window
@@ -3312,7 +3314,7 @@ class ImagePut {
       return hwnd
    }
 
-   static show(pBitmap, title := "", pos := "", style := 0x90000000, styleEx := 0x80088, parent := "") {
+   static show(pBitmap, title := "", pos := "", style := 0x90000000, styleEx := 0x80088, parent := "", playback := "") {
       ; Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
       WS_POPUP                  := 0x80000000   ; Allow small windows.
       WS_VISIBLE                := 0x10000000   ; Show on creation.
@@ -3472,6 +3474,19 @@ class ImagePut {
          DllCall("gdiplus\GdipGetPropertyItemSize", "ptr", pBitmap, "uint", 0x5100, "uint*", &ItemSize:=0) ; PropertyTagFrameDelay
          Item := DllCall("GlobalAlloc", "uint", 0, "uptr", ItemSize, "ptr")
          DllCall("gdiplus\GdipGetPropertyItem", "ptr", pBitmap, "uint", 0x5100, "uint", ItemSize, "ptr", Item)
+         
+         ; Calculate the greatest common factor of all frame delays.
+         delays := NumGet(Item + 8 + A_PtrSize, "ptr")      ; Array of delays
+         factor := NumGet(delays, "uint") 
+         loop frames - 1 {
+            delay := NumGet(delays + 4*A_Index, "uint")     ; Delay of next frame
+            while delay {
+               temp := mod(factor, delay)
+               factor := delay
+               delay := temp
+            }
+         }
+         NumGet(Item + 8, "ushort") != 0x8008 && factor *= 10 ; Convert to milliseconds.
 
          ; Clone bitmap to avoid disposal.
          DllCall("gdiplus\GdipCloneImage", "ptr", pBitmap, "ptr*", &pBitmapClone:=0)
@@ -3482,27 +3497,33 @@ class ImagePut {
          pTimeProc := this.SyncWindowProc(hwnd, 0x8000, 5) ; ParamCount = 5
 
          ; Store extra data inside window struct (cbWndExtra).
-         ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", 6*A_PtrSize, "ptr")
+         ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", 7*A_PtrSize, "ptr")
             NumPut("int",           32, ptr + 0*A_PtrSize) ; custom struct id
             NumPut("int",           -1, ptr + 1*A_PtrSize) ; frame number
             NumPut("int",            0, ptr + 2*A_PtrSize) ; current delay
             NumPut("ptr", pBitmapClone, ptr + 3*A_PtrSize) ; GIF storage
             NumPut("ptr",         Item, ptr + 4*A_PtrSize) ; Item (max frames & delays)
             NumPut("ptr",    pTimeProc, ptr + 5*A_PtrSize) ; callback address
+            NumPut("int",       factor, ptr + 6*A_PtrSize) ; greatest common factor
          DllCall("SetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr", ptr)
 
          ; Preserve GDI+ scope.
          ImagePut.gdiplusStartup()
 
          ; Start GIF Animation loop.
-         timer := DllCall("winmm\timeSetEvent"
-                  , "uint", 10        ; uDelay
-                  , "uint", 10        ; uResolution
-                  ,  "ptr", pTimeProc ; lpTimeProc
-                  , "uint", 0         ; dwUser
-                  , "uint", 1         ; fuEvent
-                  , "uint")
-         DllCall("SetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr", timer)
+         (playback == "") && playback := True
+         if playback {
+            timer := DllCall("winmm\timeSetEvent"
+                     , "uint", factor    ; uDelay
+                     , "uint", factor    ; uResolution
+                     ,  "ptr", pTimeProc ; lpTimeProc
+                     , "uint", 0         ; dwUser
+                     , "uint", 1         ; fuEvent
+                     , "uint")
+            DllCall("SetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr", timer)
+         } 
+         else ; Save the pTimeProc for later use.
+            DllCall("SetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr", pTimeProc)
       }
 
       return hwnd
@@ -3732,6 +3753,7 @@ class ImagePut {
             pBitmap      := NumGet(ptr + 3*A_PtrSize, "ptr")
             Item         := NumGet(ptr + 4*A_PtrSize, "ptr")
             pTimeProc    := NumGet(ptr + 5*A_PtrSize, "ptr")
+            factor       := NumGet(ptr + 6*A_PtrSize, "int")
 
             ; Check frame count.
             DllCall("gdiplus\GdipImageGetFrameDimensionsCount", "ptr", pBitmap, "uint*", &dims:=0)
@@ -3747,14 +3769,20 @@ class ImagePut {
             delays := NumGet(Item + 8 + A_PtrSize, "ptr")      ; Array of delays
             delay := NumGet(delays + 4*frame, "uint")          ; Delay of next frame
 
-            if 0x8008 != NumGet(Item + 8, "ushort")            ; Check for my custom milliseconds tag
+            ; GIF
+            if 0x8008 != NumGet(Item + 8, "ushort") {          ; Check for my custom milliseconds tag
                delay *= 10                                     ; Convert centiseconds to milliseconds
+               delay := max(delay, 10)                         ; Minimum delay is 10ms
+               (delay <= 10) && delay := 100                   ; 10 ms is actually 100 ms
+            }
 
-            delay := max(delay, 10)                            ; Minimum delay is 10ms
-            (delay <= 10) && delay := 100                      ; 10 ms is actually 100 ms
+            ; WEBP
+            else {
 
+            }
+            
             ; Check delay.
-            current += 10                                      ; Add resolution of timer
+            current += factor                                      ; Add resolution of timer
             NumPut("int", current, ptr + 2*A_PtrSize)          ; Save the current delay
 
             ; Check if the current tick is equal to the delay.
@@ -3826,6 +3854,23 @@ class ImagePut {
                      ,   "uint", 2)                       ; dwFlags
          }
 
+         ; WM_APP +1 - Kickstart playback.
+         if (uMsg = 0x8001) {
+
+            ; Start GIF Animation loop.
+            pTimeProc := DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
+            ptr := DllCall("GetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
+            factor := NumGet(ptr + 6*A_PtrSize, "int")
+            timer := DllCall("winmm\timeSetEvent"
+                     , "uint", factor    ; uDelay
+                     , "uint", factor    ; uResolution
+                     ,  "ptr", pTimeProc ; lpTimeProc
+                     , "uint", 0         ; dwUser
+                     , "uint", 1         ; fuEvent
+                     , "uint")
+            DllCall("SetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr", timer)
+
+         }
          ; Must return
          default:
          return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
