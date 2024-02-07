@@ -299,7 +299,7 @@ class ImagePut {
             hDelays := DllCall("GlobalAlloc", "uint", 0x42, "uptr", 8 + 2*A_PtrSize, "ptr")
             pDelays := DllCall("GlobalLock", "ptr", hDelays, "ptr")
             NumPut(   "uint",    0x5100, pDelays, 0) ; PropertyTagFrameDelay
-            NumPut( "ushort",    0x8008, pDelays, 8) ; My custom tag for milliseconds.
+            NumPut( "ushort",    0xCAFE, pDelays, 8) ; My custom tag for milliseconds.
             ; The size and the pointer will be filled in after all ANMF chunks are found.
 
             ; Create the delays stream.
@@ -3486,7 +3486,7 @@ class ImagePut {
                delay := temp
             }
          }
-         NumGet(Item + 8, "ushort") != 0x8008 && factor *= 10 ; Convert to milliseconds.
+         NumGet(Item + 8, "ushort") != 0xCAFE && factor *= 10 ; Convert to milliseconds.
 
          ; Clone bitmap to avoid disposal.
          DllCall("gdiplus\GdipCloneImage", "ptr", pBitmap, "ptr*", &pBitmapClone:=0)
@@ -3770,7 +3770,7 @@ class ImagePut {
             delay := NumGet(delays + 4*frame, "uint")          ; Delay of next frame
 
             ; GIF
-            if 0x8008 != NumGet(Item + 8, "ushort") {          ; Check for my custom milliseconds tag
+            if 0xCAFE != NumGet(Item + 8, "ushort") {          ; Check for my custom milliseconds tag
                delay *= 10                                     ; Convert centiseconds to milliseconds
                delay := max(delay, 10)                         ; Minimum delay is 10ms
                (delay <= 10) && delay := 100                   ; 10 ms is actually 100 ms
