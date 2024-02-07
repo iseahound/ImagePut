@@ -226,7 +226,7 @@ class ImagePut {
          set := False
 
          if (type ~= "^(?i:clipboard_png|pdf|url|file|stream|RandomAccessStream|hex|base64)$") {
-            
+
             ; Check the file signature for magic numbers.
             size := 12
             bin := Buffer(size)
@@ -344,7 +344,7 @@ class ImagePut {
             otherwise:
             ObjRelease(pStream)
          }
-         
+
          ; Convert via GDI+ bitmap intermediate.
          if !(pBitmap := this.ToBitmap(type, image, keywords))
             throw Error("pBitmap cannot be zero.")
@@ -3475,7 +3475,7 @@ class ImagePut {
          DllCall("gdiplus\GdipGetPropertyItemSize", "ptr", pBitmap, "uint", 0x5100, "uint*", &pDelaysSize:=0)
          pDelays := DllCall("GlobalAlloc", "uint", 0, "uptr", pDelaysSize, "ptr")
          DllCall("gdiplus\GdipGetPropertyItem", "ptr", pBitmap, "uint", 0x5100, "uint", pDelaysSize, "ptr", pDelays)
-         
+
          ; Check PropertyTagTypeLong if WEBP or GIF.
          type := NumGet(pDelays + 8, "ushort") == 7 ? "gif" : "webp"
 
@@ -3494,7 +3494,7 @@ class ImagePut {
                   interval := delay
                   delay := temp
                }
-      
+
          ; Convert centiseconds to milliseconds.
          if type = "gif"
             interval *= 10
@@ -3523,20 +3523,12 @@ class ImagePut {
          ; Preserve GDI+ scope.
          ImagePut.gdiplusStartup()
 
-         ; Start GIF Animation loop.
+         ; Defaults to immediate playback.
          (playback == "") && playback := True
-         if playback {
-            timer := DllCall("winmm\timeSetEvent"
-                     , "uint", interval  ; uDelay
-                     , "uint", interval  ; uResolution
-                     ,  "ptr", pTimeProc ; lpTimeProc
-                     , "uptr", 0         ; dwUser
-                     , "uint", 1         ; fuEvent
-                     , "uint")
-            DllCall("SetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr", timer)
-         } 
-         else ; Save the pTimeProc for later use.
-            DllCall("SetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr", pTimeProc)
+
+         ; Start GIF Animation loop.
+         if (playback)
+            DllCall("PostMessage", "ptr", hwnd, "uint", 0x8001, "uptr", 0, "ptr", 0)
       }
 
       return hwnd
@@ -3783,7 +3775,7 @@ class ImagePut {
                delay := max(delay, 10)                         ; Minimum delay is 10ms
                (delay == 10) && delay := 100                   ; 10 ms is actually 100 ms
             }
-            
+
             ; Check delay.
             accumulate += interval                             ; Add resolution of timer
             obj.accumulate := accumulate                       ; Save the current delay
@@ -3861,19 +3853,20 @@ class ImagePut {
          if (uMsg = 0x8001) {
 
             ; Start GIF Animation loop.
-            pTimeProc := DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
             ptr := DllCall("GetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
-            factor := NumGet(ptr + 6*A_PtrSize, "int")
+            obj := ObjFromPtrAddRef(ptr)
             timer := DllCall("winmm\timeSetEvent"
-                     , "uint", factor    ; uDelay
-                     , "uint", factor    ; uResolution
-                     ,  "ptr", pTimeProc ; lpTimeProc
-                     , "uptr", 0         ; dwUser
-                     , "uint", 1         ; fuEvent
+                     , "uint", obj.interval  ; uDelay
+                     , "uint", obj.interval  ; uResolution
+                     ,  "ptr", obj.pTimeProc ; lpTimeProc
+                     , "uptr", 0             ; dwUser
+                     , "uint", 1             ; fuEvent
                      , "uint")
-            DllCall("SetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr", timer)
 
+            ; Store the timer ID.
+            DllCall("SetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr", timer)
          }
+
          ; Must return
          default:
          return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
