@@ -3640,7 +3640,7 @@ class ImagePut {
 
          ; WM_DESTROY
          if (uMsg = 0x2) {
-            ; Cleanup the hBitmap and device contexts.
+            ; Cleanup the device context and its selected hBitmap.
             hdc := DllCall("GetWindowLong", "ptr", hwnd, "int", 2*A_PtrSize, "ptr")
             obm := DllCall("CreateBitmap", "int", 0, "int", 0, "uint", 1, "uint", 1, "ptr", 0, "ptr")
             hbm := DllCall("SelectObject", "ptr", hdc, "ptr", obm, "ptr")
@@ -3648,27 +3648,22 @@ class ImagePut {
             DllCall("DeleteDC", "ptr", hdc)
 
             if ptr := DllCall("GetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr") {
-               id := NumGet(ptr, 0, "int")
+
+               ; There's no need to add a reference because it will be released soon.
+               obj := ObjFromPtr(ptr) ; Self-destruct at end of scope.
+
+               timer := DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
+               DllCall("winmm\timeKillEvent", "uint", timer)
 
                ; Exit GIF Animation loop.
-               if (id == 32) {
-                  pBitmap      := NumGet(ptr + 3*A_PtrSize, "ptr")
-                  Item         := NumGet(ptr + 4*A_PtrSize, "ptr")
-                  pTimeProc    := NumGet(ptr + 5*A_PtrSize, "ptr")
-                  timer        := DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
+               DllCall("gdiplus\GdipDisposeImage", "ptr", obj.pBitmap)
+               DllCall("GlobalFree", "ptr", obj.pTimeProc)
+               
+               ; Exit GDI+ conditionally due to the ImagePut class being destroyed first.
+               ImagePut.gdiplusShutdown()
 
-                  DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
-                  DllCall("GlobalFree", "ptr", Item)
-                  DllCall("GlobalFree", "ptr", pTimeProc)
-                  DllCall("winmm\timeKillEvent", "uint", timer)
-
-                  ; Exit GDI+ conditionally due to the ImagePut class being destroyed first.
-                  ImagePut.gdiplusShutdown()
-
-                  ; Exit the window procedure.
-                  DllCall("GlobalFree", "ptr", ptr)
-                  DllCall("SetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr", 0) ; Exit loop
-               }
+               ; Hmm... DO some more research here...
+               DllCall("SetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr", 0)
             }
 
             Persistent(--active_windows)
@@ -3849,7 +3844,7 @@ class ImagePut {
                      ,   "uint", 2)                       ; dwFlags
          }
 
-         ; WM_APP +1 - Kickstart playback.
+         ; START - Kickstart playback.
          if (uMsg = 0x8001) {
 
             ; Start GIF Animation loop.
