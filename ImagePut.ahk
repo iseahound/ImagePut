@@ -3480,9 +3480,10 @@ class ImagePut {
          type := NumGet(pDelays + 8, "ushort") == 4 ? "gif" : "webp"
 
          ; Save frame delays because they are slow enough to impact timing.
-         delays := []
+         p := NumGet(pDelays + 8 + A_PtrSize, "ptr")
+         delays := Map(0, NumGet(p, "uint"))
          loop number ; Remember the pointer to the array of delays should be dereferenced.
-            delays.push(NumGet(NumGet(pDelays + 8 + A_PtrSize, "ptr") + 4*(A_Index-1), "uint"))
+            delays[A_Index] := NumGet(p + 4*A_Index, "uint")
 
          ; Calculate the greatest common factor of all frame delays.
          for delay in delays
@@ -3761,19 +3762,19 @@ class ImagePut {
             dimIDs := obj.dimIDs
 
             ; Get next frame number and delay.
-            frame := mod(frame + 1, number)                    ; Loop back to zero
-            delay := delays[frame + 1]                         ; Delay of next frame
+            frame := mod(frame + 1, number)     ; Increment and loop back to zero
+            delay := delays[frame]              ; Zero-based array
 
             ; See: https://www.biphelps.com/blog/The-Fastest-GIF-Does-Not-Exist
             if type = "gif" {
-               delay *= 10                                     ; Convert centiseconds to milliseconds
-               delay := max(delay, 10)                         ; Minimum delay is 10ms
-               (delay == 10) && delay := 100                   ; 10 ms is actually 100 ms
+               delay *= 10                      ; Convert centiseconds to milliseconds
+               delay := max(delay, 10)          ; Minimum delay is 10ms
+               (delay == 10) && delay := 100    ; 10 ms is actually 100 ms
             }
 
             ; Check delay.
-            accumulate += interval                             ; Add resolution of timer
-            obj.accumulate := accumulate                       ; Save the current delay
+            accumulate += interval              ; Add resolution of timer
+            obj.accumulate := accumulate        ; Save the current delay
 
             ; Check if the current tick is equal to the delay.
             ; Will execute by frame number rather than timing, which is more accurate,
@@ -3783,8 +3784,8 @@ class ImagePut {
             if (accumulate != delay)
                return
 
-            obj.frame := frame                                 ; Save the frame number
-            obj.accumulate := 0                                ; Reset the current delay
+            obj.frame := frame                  ; Save the frame number
+            obj.accumulate := 0                 ; Reset the current delay
 
             /*
             ; Debug code
