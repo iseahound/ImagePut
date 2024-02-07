@@ -248,7 +248,7 @@ class ImagePut {
                goto otherwise
 
             ; Gets the size of the stream.
-            DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &remaining:=0, "hresult")
+            DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &end:=0, "hresult")
 
             ; Create FourCC binary buffer and a general purpose uint32 buffer.
             fourcc := Buffer(4)
@@ -308,7 +308,7 @@ class ImagePut {
             ComCall(Seek := 5, sDelays, "uint64", 0, "uint", 2, "ptr", 0) ; Advance to end.
 
             ; Search for each RIFF-type ANMF chunk header (fourcc followed by its chunk size).
-            while current < remaining {
+            while current < end {
 
                ; Get fourcc and chunk size.
                DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", fourcc, "uint", 4, "hresult")
@@ -3461,51 +3461,64 @@ class ImagePut {
       ; For 64 -> 32-bit: https://learn.microsoft.com/en-us/windows/win32/winprog64/interprocess-communication
       DllCall("SetWindowLong", "ptr", hwnd, "int", 0*A_PtrSize, "ptr", hwnd) ; parent window (same, only 1 window for now)
       DllCall("SetWindowLong", "ptr", hwnd, "int", 1*A_PtrSize, "ptr", hwnd) ; child window  (same, only 1 window for now)
-      DllCall("SetWindowLong", "ptr", hwnd, "int", 2*A_PtrSize, "ptr", hdc)  ; contains a pixel buffer
+      DllCall("SetWindowLong", "ptr", hwnd, "int", 2*A_PtrSize, "ptr", hdc)  ; hdc contains a pixel buffer too!
 
-      ; Check for multiple frames.
+      ; Check for multiple frames. This can be in either the page (WEBP) or time (GIF) dimension.
       DllCall("gdiplus\GdipImageGetFrameDimensionsCount", "ptr", pBitmap, "uint*", &dims:=0)
       DllCall("gdiplus\GdipImageGetFrameDimensionsList", "ptr", pBitmap, "ptr", dimIDs := Buffer(16*dims), "uint", dims)
-      DllCall("gdiplus\GdipImageGetFrameCount", "ptr", pBitmap, "ptr", dimIDs, "uint*", &frames:=0)
+      DllCall("gdiplus\GdipImageGetFrameCount", "ptr", pBitmap, "ptr", dimIDs, "uint*", &number:=0)
 
-      ; GIF Animations!
-      if (frames > 1) {
-         ; Save frame delays because they are slow enough to impact timing.
-         DllCall("gdiplus\GdipGetPropertyItemSize", "ptr", pBitmap, "uint", 0x5100, "uint*", &ItemSize:=0) ; PropertyTagFrameDelay
-         Item := DllCall("GlobalAlloc", "uint", 0, "uptr", ItemSize, "ptr")
-         DllCall("gdiplus\GdipGetPropertyItem", "ptr", pBitmap, "uint", 0x5100, "uint", ItemSize, "ptr", Item)
+      ; Animations!
+      if (number > 1) {
+
+         ; Get the frame delays from PropertyTagFrameDelay.
+         DllCall("gdiplus\GdipGetPropertyItemSize", "ptr", pBitmap, "uint", 0x5100, "uint*", &pDelaysSize:=0)
+         pDelays := DllCall("GlobalAlloc", "uint", 0, "uptr", pDelaysSize, "ptr")
+         DllCall("gdiplus\GdipGetPropertyItem", "ptr", pBitmap, "uint", 0x5100, "uint", pDelaysSize, "ptr", pDelays)
          
+         ; Check PropertyTagTypeLong if WEBP or GIF.
+         type := NumGet(pDelays + 8, "ushort") == 7 ? "gif" : "webp"
+
+         ; Save frame delays because they are slow enough to impact timing.
+         delays := []
+         loop number ; Remember the pointer to the array of delays should be dereferenced.
+            delays.push(NumGet(NumGet(pDelays + 8 + A_PtrSize, "ptr") + 4*(A_Index-1), "uint"))
+
          ; Calculate the greatest common factor of all frame delays.
-         delays := NumGet(Item + 8 + A_PtrSize, "ptr")      ; Array of delays
-         factor := NumGet(delays, "uint") 
-         loop frames - 1 {
-            delay := NumGet(delays + 4*A_Index, "uint")     ; Delay of next frame
-            while delay {
-               temp := mod(factor, delay)
-               factor := delay
-               delay := temp
-            }
-         }
-         NumGet(Item + 8, "ushort") != 0xCAFE && factor *= 10 ; Convert to milliseconds.
+         for delay in delays
+            if A_Index = 1
+               interval := delay
+            else
+               while delay {
+                  temp := mod(interval, delay)
+                  interval := delay
+                  delay := temp
+               }
+      
+         ; Convert centiseconds to milliseconds.
+         if type = "gif"
+            interval *= 10
 
          ; Clone bitmap to avoid disposal.
          DllCall("gdiplus\GdipCloneImage", "ptr", pBitmap, "ptr*", &pBitmapClone:=0)
-         DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmapClone)
+         DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmapClone) ; Load to memory.
 
          ; Because timeSetEvent calls in a seperate thread, redirect to main thread.
          ; LPTIMECALLBACK: (uTimerID, uMsg, dwUser, dw1, dw2)
          pTimeProc := this.SyncWindowProc(hwnd, 0x8000, 5) ; ParamCount = 5
 
-         ; Store extra data inside window struct (cbWndExtra).
-         ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", 7*A_PtrSize, "ptr")
-            NumPut("int",           32, ptr + 0*A_PtrSize) ; custom struct id
-            NumPut("int",           -1, ptr + 1*A_PtrSize) ; frame number
-            NumPut("int",            0, ptr + 2*A_PtrSize) ; current delay
-            NumPut("ptr", pBitmapClone, ptr + 3*A_PtrSize) ; GIF storage
-            NumPut("ptr",         Item, ptr + 4*A_PtrSize) ; Item (max frames & delays)
-            NumPut("ptr",    pTimeProc, ptr + 5*A_PtrSize) ; callback address
-            NumPut("int",       factor, ptr + 6*A_PtrSize) ; greatest common factor
-         DllCall("SetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr", ptr)
+         ; Create an object to hold all the extra data.
+         obj := {pBitmap : pBitmapClone
+               , type : type             ; Either "gif" or "webp"
+               , frame : -1              ; current frame (will be incremented to 0)
+               , number : number         ; max frames
+               , accumulate : 0          ; accumulated delay
+               , delays : delays         ; array of frame delays
+               , interval : interval     ; timer resolution
+               , pTimeProc : pTimeProc   ; callback address
+               , dimIDs : dimIDs}        ; frame dimension guid (Time or Page)
+         ObjAddRef(ObjPtr(obj))          ; Hold onto this object for dear life!
+         DllCall("SetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr", ObjPtr(obj))
 
          ; Preserve GDI+ scope.
          ImagePut.gdiplusStartup()
@@ -3514,8 +3527,8 @@ class ImagePut {
          (playback == "") && playback := True
          if playback {
             timer := DllCall("winmm\timeSetEvent"
-                     , "uint", factor    ; uDelay
-                     , "uint", factor    ; uResolution
+                     , "uint", interval  ; uDelay
+                     , "uint", interval  ; uResolution
                      ,  "ptr", pTimeProc ; lpTimeProc
                      , "uptr", 0         ; dwUser
                      , "uint", 1         ; fuEvent
@@ -3748,53 +3761,43 @@ class ImagePut {
             if !ptr
                return
 
-            frame        := NumGet(ptr + 1*A_PtrSize, "int")
-            current      := NumGet(ptr + 2*A_PtrSize, "int")
-            pBitmap      := NumGet(ptr + 3*A_PtrSize, "ptr")
-            Item         := NumGet(ptr + 4*A_PtrSize, "ptr")
-            pTimeProc    := NumGet(ptr + 5*A_PtrSize, "ptr")
-            factor       := NumGet(ptr + 6*A_PtrSize, "int")
+            ; Get variables.
+            obj := ObjFromPtrAddRef(ptr)
+            pBitmap := obj.pBitmap
+            type := obj.type
+            frame := obj.frame
+            number := obj.number
+            accumulate := obj.accumulate
+            delays := obj.delays
+            interval := obj.interval
+            pTimeProc := obj.pTimeProc
+            dimIDs := obj.dimIDs
 
-            ; Check frame count.
-            DllCall("gdiplus\GdipImageGetFrameDimensionsCount", "ptr", pBitmap, "uint*", &dims:=0)
-            DllCall("gdiplus\GdipImageGetFrameDimensionsList", "ptr", pBitmap, "ptr", dimIDs := Buffer(16*dims), "uint", dims)
-            DllCall("gdiplus\GdipImageGetFrameCount", "ptr", pBitmap, "ptr", dimIDs, "uint*", &frames:=0)
+            ; Get next frame number and delay.
+            frame := mod(frame + 1, number)                    ; Loop back to zero
+            delay := delays[frame + 1]                         ; Delay of next frame
 
-            if frames != NumGet(Item + 4, "uint") // 4         ; Both methods should return the same value.
-               throw Error("Animation Error: Frame count is different from number of frame delays.")
-            ; Get next frame number.
-            frame := mod(frame + 1, frames)                    ; Loop back to zero
-
-            ; Get delay. See: https://www.biphelps.com/blog/The-Fastest-GIF-Does-Not-Exist
-            delays := NumGet(Item + 8 + A_PtrSize, "ptr")      ; Array of delays
-            delay := NumGet(delays + 4*frame, "uint")          ; Delay of next frame
-
-            ; GIF
-            if 0xCAFE != NumGet(Item + 8, "ushort") {          ; Check for my custom milliseconds tag
+            ; See: https://www.biphelps.com/blog/The-Fastest-GIF-Does-Not-Exist
+            if type = "gif" {
                delay *= 10                                     ; Convert centiseconds to milliseconds
                delay := max(delay, 10)                         ; Minimum delay is 10ms
-               (delay <= 10) && delay := 100                   ; 10 ms is actually 100 ms
-            }
-
-            ; WEBP
-            else {
-
+               (delay == 10) && delay := 100                   ; 10 ms is actually 100 ms
             }
             
             ; Check delay.
-            current += factor                                      ; Add resolution of timer
-            NumPut("int", current, ptr + 2*A_PtrSize)          ; Save the current delay
+            accumulate += interval                             ; Add resolution of timer
+            obj.accumulate := accumulate                       ; Save the current delay
 
             ; Check if the current tick is equal to the delay.
             ; Will execute by frame number rather than timing, which is more accurate,
             ; because the timing will rely take into account the above overhead,
             ; whereas the frame number will always form an even distribution.
             ; Note that the variance (jitter) is additive, yet reverts to zero over time.
-            if (current != delay)
+            if (accumulate != delay)
                return
 
-            NumPut("int",   frame, ptr + 1*A_PtrSize)          ; Save the frame number
-            NumPut("int",       0, ptr + 2*A_PtrSize)          ; Reset the current delay
+            obj.frame := frame                                 ; Save the frame number
+            obj.accumulate := 0                                ; Reset the current delay
 
             /*
             ; Debug code
