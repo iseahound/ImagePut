@@ -3486,9 +3486,9 @@ class ImagePut {
             delays[A_Index] := NumGet(p + 4*A_Index, "uint")
 
          ; Calculate the greatest common factor of all frame delays.
-         for delay in delays
+         for each, delay in delays
             if A_Index = 1
-               interval := delay
+               interval := delay ; Initalize the interval.
             else
                while delay {
                   temp := mod(interval, delay)
@@ -3739,10 +3739,14 @@ class ImagePut {
             if (time < 10000) {
                sum += time
                count += 1
-               ;if (mod(count, 10) = 0) ; Prevent the tooltip from impacting timings
+               ; Prevents the tooltip from impacting timings by showing every 10 frames.
+               if (mod(count, 10) = 0)
                   Tooltip   "Current Delay:`t" Round(time, 4)
                      . "`n" "Average Delay:`t" Round(sum / count, 4)
                      . "`n" "Planned Delay:`t" (delay ?? "unknown")
+                     . "`n" "Timer Resolution:`t" interval
+                     . "`n" "Average FPS:`t" Round(count / (sum / 1000), 4)
+                     . "`n" "Frame Number:`t" frame " of " number
             }
             start := now
             */
