@@ -2304,8 +2304,7 @@ class ImagePut {
       Crop(x, y, w, h) {
          DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", this.pBitmap, "int*", format:=0)
          DllCall("gdiplus\GdipCloneBitmapAreaI", "int", x, "int", y, "int", w, "int", h, "int", format, "ptr", this.pBitmap, "ptr*", pBitmap:=0)
-         try return ImagePut.to_buffer(pBitmap)
-         finally DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
+         return ImagePut.to_buffer(pBitmap)
       }
 
       Show(window_border := False, title := "", pos := "", style := "", styleEx := "", parent := "") {

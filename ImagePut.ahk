@@ -2430,8 +2430,7 @@ class ImagePut {
       Crop(x, y, w, h) {
          DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", this.pBitmap, "int*", &format:=0)
          DllCall("gdiplus\GdipCloneBitmapAreaI", "int", x, "int", y, "int", w, "int", h, "int", format, "ptr", this.pBitmap, "ptr*", &pBitmap:=0)
-         try return ImagePut.to_buffer(pBitmap)
-         finally DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
+         return ImagePut.to_buffer(pBitmap)
       }
 
       Show(window_border := False, title := "", pos := "", style := "", styleEx := "", parent := "") {
@@ -3689,11 +3688,11 @@ class ImagePut {
             hdc := DllCall("GetWindowLong", "ptr", hwnd, "int", 2*A_PtrSize, "ptr")
             ptr := DllCall("GetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
 
-            ; Exit GIF animation loop.
+            ; Exit GIF animation loop. Set by WM_Destroy.
             if !ptr
                return
 
-            ; Get variables.
+            ; Get variables. ObjRelease is automatically called at the end of the scope.
             obj := ObjFromPtrAddRef(ptr)
             pBitmap := obj.pBitmap
             type := obj.type
@@ -3705,7 +3704,7 @@ class ImagePut {
             pTimeProc := obj.pTimeProc
             dimIDs := obj.dimIDs
 
-            ; Get next frame number and delay.
+            ; Get next frame number and next delay.
             frame := mod(frame + 1, number)     ; Increment and loop back to zero
             delay := delays[frame]              ; Zero-based array
 
@@ -3716,20 +3715,26 @@ class ImagePut {
                (delay == 10) && delay := 100    ; 10 ms is actually 100 ms
             }
 
-            ; Check delay.
+            ; The current wait time is advanced by one interval.
             accumulate += interval              ; Add resolution of timer
-            obj.accumulate := accumulate        ; Save the current delay
+            obj.accumulate := accumulate        ; Save the current wait time
 
-            ; Check if the current tick is equal to the delay.
-            ; Will execute by frame number rather than timing, which is more accurate,
-            ; because the timing will rely take into account the above overhead,
-            ; whereas the frame number will always form an even distribution.
-            ; Note that the variance (jitter) is additive, yet reverts to zero over time.
+            ; Checks if the current wait time is equal to the frame delay.
+            ; Executing via frame number rather than timing is more accurate.
+            ; Either a oneshot timer or a periodic timer can be used.
+            ; A oneshot timer will always take into account the above overhead.
+            ; Whereas the periodic timer will always form an even distribution.
+            ; Note that the variance (jitter) is additive. It reverts to zero
+            ; over time only when a periodic timer is used.
+            ; Clever thinking also determined that setting the timer resolution
+            ; or interval to the greatest common factor of all frame delays
+            ; would reduce overhead as well. This is because the timer would
+            ; always be divisible by the frame delays.
             if (accumulate != delay)
                return
 
-            obj.frame := frame                  ; Save the frame number
-            obj.accumulate := 0                 ; Reset the current delay
+            obj.frame := frame                  ; Update to next frame number
+            obj.accumulate := 0                 ; Resets the wait time
 
             /*
             ; Debug code
