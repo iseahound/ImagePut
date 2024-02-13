@@ -3059,17 +3059,17 @@ class ImagePut {
 
       ; If both dimensions exceed the screen boundaries, compare the aspect ratio of the image
       ; to the aspect ratio of the screen to determine the scale factor. Default scale is 1.
-      s  := (width > ScreenWidth) && (width / height > ScreenWidth / ScreenHeight) ? ScreenWidth / width
-         : (height > ScreenHeight) && (width / height <= ScreenWidth / ScreenHeight) ? ScreenHeight / height
-         : IsObject(pos) && pos.HasKey(3) && pos[3] ~= "^(?!0+$)\d+$" ? pos[3] / width
+      s := IsObject(pos) && pos.HasKey(3) && pos[3] ~= "^(?!0+$)\d+$" ? pos[3] / width
          : IsObject(pos) && pos.HasKey(4) && pos[4] ~= "^(?!0+$)\d+$" ? pos[4] / height
+         : (width > ScreenWidth) && (width / height > ScreenWidth / ScreenHeight) ? ScreenWidth / width
+         : (height > ScreenHeight) && (width / height <= ScreenWidth / ScreenHeight) ? ScreenHeight / height
          : 1
 
-      w  := IsObject(pos) && pos.HasKey(3) && pos[3] ~= "^(?!0+$)\d+$" ? pos[3] : s * width
-      h  := IsObject(pos) && pos.HasKey(4) && pos[4] ~= "^(?!0+$)\d+$" ? pos[4] : s * height
+      w := IsObject(pos) && pos.HasKey(3) && pos[3] ~= "^(?!0+$)\d+$" ? pos[3] : s * width
+      h := IsObject(pos) && pos.HasKey(4) && pos[4] ~= "^(?!0+$)\d+$" ? pos[4] : s * height
 
-      x  := IsObject(pos) && pos.HasKey(1) && pos[1] ~= "^-?\d+$" ? pos[1] : 0.5*(ScreenWidth - w)
-      y  := IsObject(pos) && pos.HasKey(2) && pos[2] ~= "^-?\d+$" ? pos[2] : 0.5*(ScreenHeight - h)
+      x := IsObject(pos) && pos.HasKey(1) && pos[1] ~= "^-?\d+$" ? pos[1] : 0.5*(ScreenWidth - w)
+      y := IsObject(pos) && pos.HasKey(2) && pos[2] ~= "^-?\d+$" ? pos[2] : 0.5*(ScreenHeight - h)
 
       ; Adjust x and y if a relative to window position is given.
       if IsObject(pos) && pos.HasKey(5) && (WinExist(pos[5]) || DllCall("IsWindow", "ptr", pos[5])) {
@@ -3162,17 +3162,17 @@ class ImagePut {
 
       ; If both dimensions exceed the screen boundaries, compare the aspect ratio of the image
       ; to the aspect ratio of the screen to determine the scale factor. Default scale is 1.
-      s  := (width > ScreenWidth) && (width / height > ScreenWidth / ScreenHeight) ? ScreenWidth / width
-         : (height > ScreenHeight) && (width / height <= ScreenWidth / ScreenHeight) ? ScreenHeight / height
-         : IsObject(pos) && pos.HasKey(3) && pos[3] ~= "^(?!0+$)\d+$" ? pos[3] / width
+      s := IsObject(pos) && pos.HasKey(3) && pos[3] ~= "^(?!0+$)\d+$" ? pos[3] / width
          : IsObject(pos) && pos.HasKey(4) && pos[4] ~= "^(?!0+$)\d+$" ? pos[4] / height
+         : (width > ScreenWidth) && (width / height > ScreenWidth / ScreenHeight) ? ScreenWidth / width
+         : (height > ScreenHeight) && (width / height <= ScreenWidth / ScreenHeight) ? ScreenHeight / height
          : 1
 
-      w  := IsObject(pos) && pos.HasKey(3) && pos[3] ~= "^(?!0+$)\d+$" ? pos[3] : s * width
-      h  := IsObject(pos) && pos.HasKey(4) && pos[4] ~= "^(?!0+$)\d+$" ? pos[4] : s * height
+      w := IsObject(pos) && pos.HasKey(3) && pos[3] ~= "^(?!0+$)\d+$" ? pos[3] : s * width
+      h := IsObject(pos) && pos.HasKey(4) && pos[4] ~= "^(?!0+$)\d+$" ? pos[4] : s * height
 
-      x  := IsObject(pos) && pos.HasKey(1) && pos[1] ~= "^-?\d+$" ? pos[1] : 0.5*(ScreenWidth - w)
-      y  := IsObject(pos) && pos.HasKey(2) && pos[2] ~= "^-?\d+$" ? pos[2] : 0.5*(ScreenHeight - h)
+      x := IsObject(pos) && pos.HasKey(1) && pos[1] ~= "^-?\d+$" ? pos[1] : 0.5*(ScreenWidth - w)
+      y := IsObject(pos) && pos.HasKey(2) && pos[2] ~= "^-?\d+$" ? pos[2] : 0.5*(ScreenHeight - h)
 
       ; Adjust x and y if a relative to window position is given.
       if IsObject(pos) && pos.HasKey(5) && (WinExist(pos[5]) || DllCall("IsWindow", "ptr", pos[5])) {
