@@ -3251,7 +3251,7 @@ class ImagePut {
 
       x := IsObject(pos) && pos.Has(1) && pos[1] ~= "^-?\d+$" ? pos[1] : 0.5*(ScreenWidth - w)
       y := IsObject(pos) && pos.Has(2) && pos[2] ~= "^-?\d+$" ? pos[2] : 0.5*(ScreenHeight - h)
-      
+
       ; Adjust x and y if a relative to window position is given.
       if IsObject(pos) && pos.Has(5) && WinExist(pos[5]) {
          try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
@@ -3513,7 +3513,6 @@ class ImagePut {
          obj := {type : type             ; Either "gif" or "webp"
                , w : w                   ; width
                , h : h                   ; height
-               , s : s                   ; scale factor
                , frame : -1              ; current frame (will be incremented to 0)
                , number : number         ; max frames
                , accumulate : 0          ; current wait time
@@ -3534,7 +3533,7 @@ class ImagePut {
             obj.pBitmap := pBitmapClone
             obj.pBits := pBits
 
-            ; Preserve GDI+ scope due to active pBitmap above.
+            ; Preserve GDI+ scope due to the active pBitmap above.
             ImagePut.gdiplusStartup()
          }
 
@@ -3600,11 +3599,8 @@ class ImagePut {
             obj.cache := cache
          }
 
-         ; Defaults to immediate playback.
-         (playback == "") && playback := True
-
-         ; Start GIF Animation loop.
-         if (playback)
+         ; Start GIF Animation loop. Defaults to immediate playback.
+         if (playback == "" || playback == True)
             DllCall("PostMessage", "ptr", hwnd, "uint", 0x8001, "uptr", 0, "ptr", 0)
       }
 
@@ -3670,7 +3666,7 @@ class ImagePut {
             ; There's no need to add a reference because it will be released soon.
             if ptr := DllCall("GetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr") {
                obj := ObjFromPtr(ptr) ; Self-destruct at end of scope.
-               DllCall("SetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr", 0) ; Exit last loop.
+               DllCall("SetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr", 0) ; Exit
 
                ; Stop Animation loop.
                timer := DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
