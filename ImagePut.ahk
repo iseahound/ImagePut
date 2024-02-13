@@ -3505,20 +3505,18 @@ class ImagePut {
          if type = "gif"
             interval *= 10
 
-         ; Clone bitmap to avoid disposal.
-         DllCall("gdiplus\GdipCloneImage", "ptr", pBitmap, "ptr*", &pBitmapClone:=0)
-         DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmapClone) ; Load to memory.
-
          ; Because timeSetEvent calls in a seperate thread, redirect to main thread.
          ; LPTIMECALLBACK: (uTimerID, uMsg, dwUser, dw1, dw2)
          pTimeProc := this.SyncWindowProc(hwnd, 0x8000, 5) ; ParamCount = 5
 
          ; Create an object to hold all the extra data.
-         obj := {pBitmap : pBitmapClone
-               , type : type             ; Either "gif" or "webp"
+         obj := {type : type             ; Either "gif" or "webp"
+               , w : w                   ; width
+               , h : h                   ; height
+               , s : s                   ; scale factor
                , frame : -1              ; current frame (will be incremented to 0)
                , number : number         ; max frames
-               , accumulate : 0          ; accumulated delay
+               , accumulate : 0          ; current wait time
                , delays : delays         ; array of frame delays
                , interval : interval     ; timer resolution
                , pTimeProc : pTimeProc   ; callback address
@@ -3526,8 +3524,81 @@ class ImagePut {
          ObjAddRef(ObjPtr(obj))          ; Hold onto this object for dear life!
          DllCall("SetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr", ObjPtr(obj))
 
-         ; Preserve GDI+ scope.
-         ImagePut.gdiplusStartup()
+         ; Case 1: Image is not scaled.
+         if (w == width && h == height) {
+            ; Clone bitmap to avoid disposal.
+            DllCall("gdiplus\GdipCloneImage", "ptr", pBitmap, "ptr*", &pBitmapClone:=0)
+            DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmapClone) ; Load to memory.
+
+            ; Save the cloned bitmap and pixel buffer.
+            obj.pBitmap := pBitmapClone
+            obj.pBits := pBits
+
+            ; Preserve GDI+ scope due to active pBitmap above.
+            ImagePut.gdiplusStartup()
+         }
+
+         ; Case 2: Image is scaled.
+         else {
+
+            ; Create a cache of pre-rendered frames. Note: This can be very slow.
+            ; Fixes problems with the animation being paused when dragged by the user.
+            cache := Map()
+
+            ; Overwrites the hdc and pBits variables.
+            loop number {
+               ; Select frame to show.
+               frame := A_Index - 1
+               DllCall("gdiplus\GdipImageSelectActiveFrame", "ptr", pBitmap, "ptr", dimIDs, "uint", frame)
+
+               ; Get Bitmap width and height.
+               DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
+               DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
+               
+               ; Convert the source pBitmap into a hBitmap manually.
+               ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
+               hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
+               bi := Buffer(40, 0)                    ; sizeof(bi) = 40
+                  NumPut(  "uint",        40, bi,  0) ; Size
+                  NumPut(   "int",         w, bi,  4) ; Width
+                  NumPut(   "int",        -h, bi,  8) ; Height - Negative so (0, 0) is top-left.
+                  NumPut("ushort",         1, bi, 12) ; Planes
+                  NumPut("ushort",        32, bi, 14) ; BitCount / BitsPerPixel
+               hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", bi, "uint", 0, "ptr*", &pBits:=0, "ptr", 0, "uint", 0, "ptr")
+               obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
+
+               ; Create a graphics context from the device context.
+               DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc , "ptr*", &pGraphics:=0)
+
+               ; Set settings in graphics context.
+               DllCall("gdiplus\GdipSetPixelOffsetMode",    "ptr", pGraphics, "int", 2) ; Half pixel offset.
+               DllCall("gdiplus\GdipSetCompositingMode",    "ptr", pGraphics, "int", 1) ; Overwrite/SourceCopy.
+               DllCall("gdiplus\GdipSetInterpolationMode",  "ptr", pGraphics, "int", 7) ; HighQualityBicubic
+
+               ; Draw Image.
+               DllCall("gdiplus\GdipCreateImageAttributes", "ptr*", &ImageAttr:=0)
+               DllCall("gdiplus\GdipSetImageAttributesWrapMode", "ptr", ImageAttr, "int", 3, "uint", 0, "int", 0) ; WrapModeTileFlipXY
+               DllCall("gdiplus\GdipDrawImageRectRectI"
+                        ,    "ptr", pGraphics
+                        ,    "ptr", pBitmap
+                        ,    "int", 0, "int", 0, "int", w,     "int", h      ; destination rectangle
+                        ,    "int", 0, "int", 0, "int", width, "int", height ; source rectangle
+                        ,    "int", 2
+                        ,    "ptr", ImageAttr
+                        ,    "ptr", 0
+                        ,    "ptr", 0)
+               DllCall("gdiplus\GdipDisposeImageAttributes", "ptr", ImageAttr)
+
+               ; Clean up the graphics context.
+               DllCall("gdiplus\GdipDeleteGraphics", "ptr", pGraphics)
+
+               ; Save rendered frame.
+               cache[frame] := hdc
+            }
+
+            ; Send cache to WM_APP.
+            obj.cache := cache
+         }
 
          ; Defaults to immediate playback.
          (playback == "") && playback := True
@@ -3596,23 +3667,27 @@ class ImagePut {
             DllCall("DeleteObject", "ptr", hbm)
             DllCall("DeleteDC", "ptr", hdc)
 
+            ; There's no need to add a reference because it will be released soon.
             if ptr := DllCall("GetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr") {
-
-               ; There's no need to add a reference because it will be released soon.
                obj := ObjFromPtr(ptr) ; Self-destruct at end of scope.
+               DllCall("SetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr", 0) ; Exit last loop.
 
+               ; Stop Animation loop.
                timer := DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
                DllCall("winmm\timeKillEvent", "uint", timer)
-
-               ; Exit GIF Animation loop.
-               DllCall("gdiplus\GdipDisposeImage", "ptr", obj.pBitmap)
                DllCall("GlobalFree", "ptr", obj.pTimeProc)
 
-               ; Exit GDI+ conditionally due to the ImagePut class being destroyed first.
-               ImagePut.gdiplusShutdown()
+               if obj.HasProp("pBitmap") {
+                  DllCall("gdiplus\GdipDisposeImage", "ptr", obj.pBitmap)
+                  ImagePut.gdiplusShutdown()
+               }
 
-               ; Hmm... DO some more research here...
-               DllCall("SetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr", 0)
+               if obj.HasProp("cache")
+                  for each, hdc in obj.cache { ; Overwrites the hdc and hbm variables.
+                     hbm := DllCall("SelectObject", "ptr", hdc, "ptr", obm, "ptr")
+                     DllCall("DeleteObject", "ptr", hbm)
+                     DllCall("DeleteDC", "ptr", hdc)
+                  }
             }
 
             Persistent(--active_windows)
@@ -3690,7 +3765,6 @@ class ImagePut {
             Critical
 
             ; Get variables.
-            hdc := DllCall("GetWindowLong", "ptr", hwnd, "int", 2*A_PtrSize, "ptr")
             ptr := DllCall("GetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
 
             ; Exit GIF animation loop. Set by WM_Destroy.
@@ -3699,8 +3773,9 @@ class ImagePut {
 
             ; Get variables. ObjRelease is automatically called at the end of the scope.
             obj := ObjFromPtrAddRef(ptr)
-            pBitmap := obj.pBitmap
             type := obj.type
+            w := obj.w
+            h := obj.h
             frame := obj.frame
             number := obj.number
             accumulate := obj.accumulate
@@ -3708,6 +3783,9 @@ class ImagePut {
             interval := obj.interval
             pTimeProc := obj.pTimeProc
             dimIDs := obj.dimIDs
+            try pBitmap := obj.pBitmap ; not scaled
+            try pBits := obj.pBits     ; not scaled
+            try cache := obj.cache     ; is scaled
 
             ; Get next frame number and next delay.
             frame := mod(frame + 1, number)     ; Increment and loop back to zero
@@ -3762,40 +3840,44 @@ class ImagePut {
             start := now
             */
 
-            ; Select frame to show.
-            DllCall("gdiplus\GdipImageSelectActiveFrame", "ptr", pBitmap, "ptr", dimIDs, "uint", frame)
+            ; Case 1: Image is not scaled.
+            if IsSet(pBitmap) {
+               ; Select frame to show.
+               DllCall("gdiplus\GdipImageSelectActiveFrame", "ptr", pBitmap, "ptr", dimIDs, "uint", frame)
 
-            ; Get pBits from hBitmap currently selected onto the device context.
-            ; struct DIBSECTION - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-dibsection
-            ; struct BITMAP - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmap
-            hbm := DllCall("GetCurrentObject", "ptr", hdc, "uint", 7)
-            dib := Buffer(64+5*A_PtrSize) ; sizeof(DIBSECTION) = 84, 104
-            DllCall("GetObject", "ptr", hbm, "int", dib.size, "ptr", dib)
-               , width  := NumGet(dib, 4, "uint")
-               , height := NumGet(dib, 8, "uint")
-               , pBits  := NumGet(dib, A_PtrSize = 4 ? 20:24, "ptr")
+               ; Get Bitmap width and height.
+               DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
+               DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
 
-            ; Transfer data from source pBitmap to an hBitmap manually.
-            Rect := Buffer(16, 0)                  ; sizeof(Rect) = 16
-               NumPut(  "uint",   width, Rect,  8) ; Width
-               NumPut(  "uint",  height, Rect, 12) ; Height
-            BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
-               NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
-               NumPut(   "ptr",      pBits, BitmapData, 16) ; Scan0
-            DllCall("gdiplus\GdipBitmapLockBits"
-                     ,    "ptr", pBitmap
-                     ,    "ptr", Rect
-                     ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
-                     ,    "int", 0xE200B      ; Format32bppPArgb
-                     ,    "ptr", BitmapData)  ; Contains the pointer (pBits) to the hbm.
-            DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
+               ; Transfer data from source pBitmap to an hBitmap manually.
+               Rect := Buffer(16, 0)                  ; sizeof(Rect) = 16
+                  NumPut(  "uint",   width, Rect,  8) ; Width
+                  NumPut(  "uint",  height, Rect, 12) ; Height
+               BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
+                  NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
+                  NumPut(   "ptr",      pBits, BitmapData, 16) ; Scan0
+               DllCall("gdiplus\GdipBitmapLockBits"
+                        ,    "ptr", pBitmap
+                        ,    "ptr", Rect
+                        ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
+                        ,    "int", 0xE200B      ; Format32bppPArgb
+                        ,    "ptr", BitmapData)  ; Contains the pointer (pBits) to the hbm.
+               DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
+
+               ; Use the saved device context for rendering.
+               hdc := DllCall("GetWindowLong", "ptr", hwnd, "int", 2*A_PtrSize, "ptr")
+            }
+
+            ; Case 2: Image is scaled.
+            else
+               hdc := cache[frame]
 
             ; Render to window.
             DllCall("UpdateLayeredWindow"
                      ,    "ptr", hwnd                     ; hWnd
                      ,    "ptr", 0                        ; hdcDst
                      ,    "ptr", 0                        ; *pptDst
-                     ,"uint64*", width | height << 32     ; *psize
+                     ,"uint64*", w | h << 32              ; *psize
                      ,    "ptr", hdc                      ; hdcSrc
                      , "int64*", 0                        ; *pptSrc
                      ,   "uint", 0                        ; crKey
@@ -3806,9 +3888,17 @@ class ImagePut {
          ; START - Kickstart playback.
          if (uMsg = 0x8001) {
 
-            ; Start GIF Animation loop.
+            ; Get variables.
             ptr := DllCall("GetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
             obj := ObjFromPtrAddRef(ptr)
+            
+            ; Start as if new?
+            if (wParam) {
+               obj.frame := -1
+               obj.accumulate := 0
+            }
+
+            ; Start Animation loop.
             timer := DllCall("winmm\timeSetEvent"
                      , "uint", obj.interval  ; uDelay
                      , "uint", obj.interval  ; uResolution
@@ -3823,7 +3913,7 @@ class ImagePut {
 
          ; STOP - Pause playback.
          if (uMsg = 0x8002) {
-            ; Stop GIF Animation loop.
+            ; Stop Animation loop.
             timer := DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
             DllCall("winmm\timeKillEvent", "uint", timer)
          }
