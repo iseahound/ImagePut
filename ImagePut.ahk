@@ -3887,18 +3887,9 @@ class ImagePut {
 
          ; START - Kickstart playback.
          if (uMsg = 0x8001) {
-
-            ; Get variables.
+            ; Start Animation loop.
             ptr := DllCall("GetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
             obj := ObjFromPtrAddRef(ptr)
-            
-            ; Start as if new?
-            if (wParam) {
-               obj.frame := -1
-               obj.accumulate := 0
-            }
-
-            ; Start Animation loop.
             timer := DllCall("winmm\timeSetEvent"
                      , "uint", obj.interval  ; uDelay
                      , "uint", obj.interval  ; uResolution
@@ -3911,8 +3902,16 @@ class ImagePut {
             DllCall("SetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr", timer)
          }
 
-         ; STOP - Pause playback.
+         ; STOP - Stop or Pause playback.
          if (uMsg = 0x8002) {
+            ; Start as if new?
+            if (wParam) {
+               ptr := DllCall("GetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
+               obj := ObjFromPtrAddRef(ptr)
+               obj.frame := -1
+               obj.accumulate := 0
+            }
+
             ; Stop Animation loop.
             timer := DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
             DllCall("winmm\timeKillEvent", "uint", timer)
