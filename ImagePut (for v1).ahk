@@ -3061,13 +3061,15 @@ class ImagePut {
       ; to the aspect ratio of the screen to determine the scale factor. Default scale is 1.
       s  := (width > ScreenWidth) && (width / height > ScreenWidth / ScreenHeight) ? ScreenWidth / width
          : (height > ScreenHeight) && (width / height <= ScreenWidth / ScreenHeight) ? ScreenHeight / height
+         : IsObject(pos) && pos.HasKey(3) && pos[3] ~= "^\d+$" ? pos[3] / width
+         : IsObject(pos) && pos.HasKey(4) && pos[4] ~= "^\d+$" ? pos[4] / height
          : 1
 
-      w  := IsObject(pos) && pos.HasKey(3) ? pos[3] : s * width
-      h  := IsObject(pos) && pos.HasKey(4) ? pos[4] : s * height
+      w  := IsObject(pos) && pos.HasKey(3) && pos[3] ~= "^\d+$" ? pos[3] : s * width
+      h  := IsObject(pos) && pos.HasKey(4) && pos[4] ~= "^\d+$" ? pos[4] : s * height
 
-      x  := IsObject(pos) && pos.HasKey(1) ? pos[1] : 0.5*(ScreenWidth - w)
-      y  := IsObject(pos) && pos.HasKey(2) ? pos[2] : 0.5*(ScreenHeight - h)
+      x  := IsObject(pos) && pos.HasKey(1) && pos[1] ~= "^\d+$" ? pos[1] : 0.5*(ScreenWidth - w)
+      y  := IsObject(pos) && pos.HasKey(2) && pos[2] ~= "^\d+$" ? pos[2] : 0.5*(ScreenHeight - h)
 
       ; Adjust x and y if a relative to window position is given.
       if IsObject(pos) && pos.HasKey(5) && (WinExist(pos[5]) || DllCall("IsWindow", "ptr", pos[5])) {
@@ -3162,13 +3164,15 @@ class ImagePut {
       ; to the aspect ratio of the screen to determine the scale factor. Default scale is 1.
       s  := (width > ScreenWidth) && (width / height > ScreenWidth / ScreenHeight) ? ScreenWidth / width
          : (height > ScreenHeight) && (width / height <= ScreenWidth / ScreenHeight) ? ScreenHeight / height
+         : IsObject(pos) && pos.HasKey(3) && pos[3] ~= "^\d+$" ? pos[3] / width
+         : IsObject(pos) && pos.HasKey(4) && pos[4] ~= "^\d+$" ? pos[4] / height
          : 1
 
-      w  := IsObject(pos) && pos.HasKey(3) ? pos[3] : s * width
-      h  := IsObject(pos) && pos.HasKey(4) ? pos[4] : s * height
+      w  := IsObject(pos) && pos.HasKey(3) && pos[3] ~= "^\d+$" ? pos[3] : s * width
+      h  := IsObject(pos) && pos.HasKey(4) && pos[4] ~= "^\d+$" ? pos[4] : s * height
 
-      x  := IsObject(pos) && pos.HasKey(1) ? pos[1] : 0.5*(ScreenWidth - w)
-      y  := IsObject(pos) && pos.HasKey(2) ? pos[2] : 0.5*(ScreenHeight - h)
+      x  := IsObject(pos) && pos.HasKey(1) && pos[1] ~= "^\d+$" ? pos[1] : 0.5*(ScreenWidth - w)
+      y  := IsObject(pos) && pos.HasKey(2) && pos[2] ~= "^\d+$" ? pos[2] : 0.5*(ScreenHeight - h)
 
       ; Adjust x and y if a relative to window position is given.
       if IsObject(pos) && pos.HasKey(5) && (WinExist(pos[5]) || DllCall("IsWindow", "ptr", pos[5])) {
@@ -3195,15 +3199,15 @@ class ImagePut {
       hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
       VarSetCapacity(bi, 40, 0)              ; sizeof(bi) = 40
          NumPut(       40, bi,  0,   "uint") ; Size
-         NumPut(    width, bi,  4,   "uint") ; Width
-         NumPut(  -height, bi,  8,    "int") ; Height - Negative so (0, 0) is top-left.
+         NumPut(        w, bi,  4,   "uint") ; Width
+         NumPut(       -h, bi,  8,    "int") ; Height - Negative so (0, 0) is top-left.
          NumPut(        1, bi, 12, "ushort") ; Planes
          NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
       hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
       ; Case 1: Image is not scaled.
-      if (s = 1) {
+      if (w == width && h == height) {
          ; Transfer data from source pBitmap to an hBitmap manually.
          VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
             NumPut(  width, Rect,  8,   "uint") ; Width

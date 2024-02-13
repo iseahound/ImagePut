@@ -3242,13 +3242,15 @@ class ImagePut {
       ; to the aspect ratio of the screen to determine the scale factor. Default scale is 1.
       s  := (width > ScreenWidth) && (width / height > ScreenWidth / ScreenHeight) ? ScreenWidth / width
          : (height > ScreenHeight) && (width / height <= ScreenWidth / ScreenHeight) ? ScreenHeight / height
+         : IsObject(pos) && pos.Has(3) && pos[3] ~= "^\d+$" ? pos[3] / width
+         : IsObject(pos) && pos.Has(4) && pos[4] ~= "^\d+$" ? pos[4] / height
          : 1
 
-      w  := IsObject(pos) && pos.Has(3) ? pos[3] : s * width
-      h  := IsObject(pos) && pos.Has(4) ? pos[4] : s * height
+      w  := IsObject(pos) && pos.Has(3) && pos[3] ~= "^\d+$" ? pos[3] : s * width
+      h  := IsObject(pos) && pos.Has(4) && pos[4] ~= "^\d+$" ? pos[4] : s * height
 
-      x  := IsObject(pos) && pos.Has(1) ? pos[1] : 0.5*(ScreenWidth - w)
-      y  := IsObject(pos) && pos.Has(2) ? pos[2] : 0.5*(ScreenHeight - h)
+      x  := IsObject(pos) && pos.Has(1) && pos[1] ~= "^\d+$" ? pos[1] : 0.5*(ScreenWidth - w)
+      y  := IsObject(pos) && pos.Has(2) && pos[2] ~= "^\d+$" ? pos[2] : 0.5*(ScreenHeight - h)
 
       ; Adjust x and y if a relative to window position is given.
       if IsObject(pos) && pos.Has(5) && WinExist(pos[5]) {
@@ -3343,13 +3345,15 @@ class ImagePut {
       ; to the aspect ratio of the screen to determine the scale factor. Default scale is 1.
       s  := (width > ScreenWidth) && (width / height > ScreenWidth / ScreenHeight) ? ScreenWidth / width
          : (height > ScreenHeight) && (width / height <= ScreenWidth / ScreenHeight) ? ScreenHeight / height
+         : IsObject(pos) && pos.Has(3) && pos[3] ~= "^\d+$" ? pos[3] / width
+         : IsObject(pos) && pos.Has(4) && pos[4] ~= "^\d+$" ? pos[4] / height
          : 1
 
-      w  := IsObject(pos) && pos.Has(3) ? pos[3] : s * width
-      h  := IsObject(pos) && pos.Has(4) ? pos[4] : s * height
+      w  := IsObject(pos) && pos.Has(3) && pos[3] ~= "^\d+$" ? pos[3] : s * width
+      h  := IsObject(pos) && pos.Has(4) && pos[4] ~= "^\d+$" ? pos[4] : s * height
 
-      x  := IsObject(pos) && pos.Has(1) ? pos[1] : 0.5*(ScreenWidth - w)
-      y  := IsObject(pos) && pos.Has(2) ? pos[2] : 0.5*(ScreenHeight - h)
+      x  := IsObject(pos) && pos.Has(1) && pos[1] ~= "^\d+$" ? pos[1] : 0.5*(ScreenWidth - w)
+      y  := IsObject(pos) && pos.Has(2) && pos[2] ~= "^\d+$" ? pos[2] : 0.5*(ScreenHeight - h)
 
       ; Adjust x and y if a relative to window position is given.
       if IsObject(pos) && pos.Has(5) && WinExist(pos[5]) {
