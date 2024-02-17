@@ -1896,9 +1896,12 @@ class ImagePut {
 
    from_sprite(image) {
       ; Create a source pBitmap.
-      if !(pBitmap := this.from_file(image))
-         if !(pBitmap := this.from_url(image))
-            throw Exception("Could not be loaded from a valid file path or URL.")
+      if this.is_url(image)
+         pBitmap := this.from_url(image)
+      else if FileExist(image)
+         pBitmap := this.from_file(image)
+      else
+         throw Exception("Could not be loaded from a valid file path or URL.")
 
       ; Get Bitmap width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
