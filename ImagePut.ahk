@@ -3521,7 +3521,7 @@ class ImagePut {
                , pTimeProc : pTimeProc   ; callback address
                , dimIDs : dimIDs}        ; frame dimension guid (Time or Page)
          ObjAddRef(ObjPtr(obj))          ; Hold onto this object for dear life!
-         DllCall("SetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr", ObjPtr(obj))
+         DllCall("SetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", 3*A_PtrSize, "ptr", ObjPtr(obj))
 
          ; Case 1: Image is not scaled.
          if (w == width && h == height) {
@@ -3664,9 +3664,9 @@ class ImagePut {
             DllCall("DeleteDC", "ptr", hdc)
 
             ; There's no need to add a reference because it will be released soon.
-            if ptr := DllCall("GetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr") {
+            if ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", 3*A_PtrSize, "ptr") {
                obj := ObjFromPtr(ptr) ; Self-destruct at end of scope.
-               DllCall("SetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr", 0) ; Exit
+               DllCall("SetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", 3*A_PtrSize, "ptr", 0) ; Exit
 
                ; Stop Animation loop.
                timer := DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
@@ -3761,7 +3761,7 @@ class ImagePut {
             Critical
 
             ; Get variables.
-            ptr := DllCall("GetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
+            ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
 
             ; Exit GIF animation loop. Set by WM_Destroy.
             if !ptr
@@ -3884,7 +3884,7 @@ class ImagePut {
          ; START - Kickstart playback.
          if (uMsg = 0x8001) {
             ; Start Animation loop.
-            ptr := DllCall("GetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
+            ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
             obj := ObjFromPtrAddRef(ptr)
             timer := DllCall("winmm\timeSetEvent"
                      , "uint", obj.interval  ; uDelay
@@ -3902,7 +3902,7 @@ class ImagePut {
          if (uMsg = 0x8002) {
             ; Start as if new?
             if (wParam) {
-               ptr := DllCall("GetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
+               ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
                obj := ObjFromPtrAddRef(ptr)
                obj.frame := -1
                obj.accumulate := 0
