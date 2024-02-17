@@ -3597,7 +3597,7 @@ class ImagePut {
       hModule := DllCall("GetModuleHandle", "str", "user32.dll", "ptr")
       SendMessageW := DllCall("GetProcAddress", "ptr", hModule, "astr", "SendMessageW", "ptr")
 
-      pcb := DllCall("GlobalAlloc", "uint", 0, "ptr", 96, "ptr")
+      pcb := DllCall("GlobalAlloc", "uint", 0, "uptr", 96, "ptr")
       DllCall("VirtualProtect", "ptr", pcb, "ptr", 96, "uint", 0x40, "uint*", 0)
 
       p := pcb
