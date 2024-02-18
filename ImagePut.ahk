@@ -3659,21 +3659,32 @@ class ImagePut {
 
          ; WM_DESTROY
          if (uMsg = 0x2) {
-            ; Cleanup the device context and its selected hBitmap.
-            hdc := DllCall("GetWindowLong", "ptr", hwnd, "int", 2*A_PtrSize, "ptr")
-            obm := DllCall("CreateBitmap", "int", 0, "int", 0, "uint", 1, "uint", 1, "ptr", 0, "ptr")
-            hbm := DllCall("SelectObject", "ptr", hdc, "ptr", obm, "ptr")
-            DllCall("DeleteObject", "ptr", hbm)
-            DllCall("DeleteDC", "ptr", hdc)
+            Persistent(--active_windows)
 
-            ; There's no need to add a reference because it will be released soon.
+            ; The child window contains all of the assets to be freed.
+            if hwnd != DllCall("GetWindowLong", "ptr", hwnd, "int", 1*A_PtrSize, "ptr")
+               return
+
+            ; Get stock bitmap.
+            obm := DllCall("CreateBitmap", "int", 0, "int", 0, "uint", 1, "uint", 1, "ptr", 0, "ptr")
+
+            ; Cleanup the device context and its selected hBitmap.
+            if hdc := DllCall("GetWindowLong", "ptr", hwnd, "int", 2*A_PtrSize, "ptr") {
+               hbm := DllCall("SelectObject", "ptr", hdc, "ptr", obm, "ptr")
+               DllCall("DeleteObject", "ptr", hbm)
+               DllCall("DeleteDC", "ptr", hdc)
+            }
+
+            ; The object will self-destruct at end of scope. No need to add a reference!
             if ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", 3*A_PtrSize, "ptr") {
-               obj := ObjFromPtr(ptr) ; Self-destruct at end of scope.
-               DllCall("SetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", 3*A_PtrSize, "ptr", 0) ; Exit
+               obj := ObjFromPtr(ptr)
+
+               ; Exit GIF animation loop. Ends any triggered WM_APP.
+               DllCall("SetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", 3*A_PtrSize, "ptr", 0)
 
                ; Stop Animation loop.
-               timer := DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
-               DllCall("winmm\timeKillEvent", "uint", timer)
+               if timer := DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
+                  DllCall("winmm\timeKillEvent", "uint", timer)
                DllCall("GlobalFree", "ptr", obj.pTimeProc)
 
                if obj.HasProp("pBitmap") {
@@ -3688,8 +3699,6 @@ class ImagePut {
                      DllCall("DeleteDC", "ptr", hdc)
                   }
             }
-
-            Persistent(--active_windows)
          }
 
          ; For some reason using DefWindowProc or PostMessage to reroute WM_LBUTTONDOWN to WM_NCLBUTTONDOWN
@@ -3705,7 +3714,7 @@ class ImagePut {
             return DllCall("DefWindowProc", "ptr", parent, "uint", 0xA1, "uptr", 2, "ptr", 0, "ptr")
          }
 
-         ; WM_LBUTTONUP - Toggle between play and pause.
+         ; WM_LBUTTONUP - Double Click to toggle between play and pause.
          if (uMsg = 0x202) {
             child := DllCall("GetWindowLong", "ptr", hwnd, "int", 1*A_PtrSize, "ptr")
             DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
