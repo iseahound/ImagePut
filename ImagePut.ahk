@@ -3884,6 +3884,12 @@ class ImagePut {
                      ,   "uint", 2)                       ; dwFlags
          }
 
+         ; Toggle between play and pause.
+         if (uMsg = 0x8003)
+            DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
+            ? uMsg := 0x8002 ; Pause
+            : uMsg := 0x8001 ; Play
+
          ; Clears the frame number and wait time.
          if (uMsg = 0x8001 || uMsg = 0x8002) {
             if (wParam) {
@@ -3894,13 +3900,11 @@ class ImagePut {
             }
          }
 
-         ; START - Kickstart playback.
+         ; Start Animation loop.
          if (uMsg = 0x8001) {
-            ; The timer should only be instantiated once.
             if DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
                return
 
-            ; Start Animation loop.
             ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
             obj := ObjFromPtrAddRef(ptr)
             timer := DllCall("winmm\timeSetEvent"
@@ -3913,20 +3917,13 @@ class ImagePut {
             DllCall("SetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr", timer)
          }
 
-         ; STOP - Stop or Pause playback.
+         ; Stop Animation loop.
          if (uMsg = 0x8002) {
-            ; Stop Animation loop.
             if (timer := DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")) {
                DllCall("winmm\timeKillEvent", "uint", timer)
                DllCall("SetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr", 0)
             }
          }
-
-         ; TOGGLE PLAYBACK - Toggle between play and pause.
-         if (uMsg = 0x8003)
-            DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
-            ? DllCall("PostMessage", "ptr", hwnd, "uint", 0x8002, "uptr", wParam, "ptr", lParam)
-            : DllCall("PostMessage", "ptr", hwnd, "uint", 0x8001, "uptr", wParam, "ptr", lParam)
 
          ; Must return
          default:
