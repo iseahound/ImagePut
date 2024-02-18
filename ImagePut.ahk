@@ -3896,7 +3896,7 @@ class ImagePut {
 
          ; START - Kickstart playback.
          if (uMsg = 0x8001) {
-            ; The timer should only be instansiated once.
+            ; The timer should only be instantiated once.
             if DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
                return
 
@@ -3921,6 +3921,12 @@ class ImagePut {
                DllCall("SetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr", 0)
             }
          }
+
+         ; TOGGLE PLAYBACK - Toggle between play and pause.
+         if (uMsg = 0x8003)
+            DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
+            ? DllCall("PostMessage", "ptr", hwnd, "uint", 0x8002, "uptr", wParam, "ptr", lParam)
+            : DllCall("PostMessage", "ptr", hwnd, "uint", 0x8001, "uptr", wParam, "ptr", lParam)
 
          ; Must return
          default:
