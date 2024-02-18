@@ -3547,7 +3547,7 @@ class ImagePut {
             ; Fixes problems with the animation being paused when dragged by the user.
             cache := Map()
 
-            ; Overwrites the hdc and pBits variables.
+            ; --------- Overwrites the hdc, hbm, and pBits variables!!!!!! ---------
             loop number {
                ; Select frame to show.
                frame := A_Index - 1
@@ -3891,8 +3891,15 @@ class ImagePut {
             }
 
             ; Case 2: Image is scaled.
-            else
+            else {
+               ; Define the device context for rendering.
                hdc := cache[frame]
+
+               ; Swap the currently active device context for WM_MBUTTONDOWN.
+               _hdc := DllCall("GetWindowLong", "ptr", child, "int", 2*A_PtrSize, "ptr")
+               DllCall("SetWindowLong", "ptr", child, "int", 2*A_PtrSize, "ptr", hdc)
+               cache[frame] := _hdc
+            }
 
             ; Render to window.
             DllCall("UpdateLayeredWindow"
