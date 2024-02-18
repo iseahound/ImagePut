@@ -3692,6 +3692,13 @@ class ImagePut {
             Persistent(--active_windows)
          }
 
+         ; For some reason using DefWindowProc or PostMessage to reroute WM_LBUTTONDOWN to WM_NCLBUTTONDOWN
+         ; will always disable the complementary WM_LBUTTONUP. However, if the CS_DBLCLKS window style is set,
+         ; then a single WM_RBUTTONUP will be received as double-clicking generates a sequence of four messages: 
+         ; WM_LBUTTONDOWN, WM_LBUTTONUP, WM_LBUTTONDBLCLK, and WM_LBUTTONUP.
+         ;                 ^ This message is lost when 0x201 → 0xA1.
+         ;                               ^ Only happens when 0x8 is set in RegisterClass.
+
          ; WM_LBUTTONDOWN - Drag to move the window.
          if (uMsg = 0x201) {
             parent := DllCall("GetWindowLong", "ptr", hwnd, "int", 0*A_PtrSize, "ptr")
