@@ -158,7 +158,7 @@ ImageShow(image, title := "", pos := "", style := 0x90000000, styleEx := 0x80088
 }
 
 ImageDestroy(image) {
-   return ImagePut.Destroy(image)
+   return ImagePut.S(image)
 }
 
 ImageWidth(image) {
@@ -3884,8 +3884,22 @@ class ImagePut {
                      ,   "uint", 2)                       ; dwFlags
          }
 
+         ; Clears the frame number and wait time.
+         if (uMsg = 0x8001 || uMsg = 0x8002) {
+            if (wParam) {
+               ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
+               obj := ObjFromPtrAddRef(ptr)
+               obj.frame := -1
+               obj.accumulate := 0
+            }
+         }
+
          ; START - Kickstart playback.
          if (uMsg = 0x8001) {
+            ; The timer should only be instansiated once.
+            if DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
+               return
+
             ; Start Animation loop.
             ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
             obj := ObjFromPtrAddRef(ptr)
@@ -3896,24 +3910,16 @@ class ImagePut {
                      , "uptr", 0             ; dwUser
                      , "uint", 1             ; fuEvent
                      , "uint")
-
-            ; Store the timer ID.
             DllCall("SetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr", timer)
          }
 
          ; STOP - Stop or Pause playback.
          if (uMsg = 0x8002) {
-            ; Start as if new?
-            if (wParam) {
-               ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
-               obj := ObjFromPtrAddRef(ptr)
-               obj.frame := -1
-               obj.accumulate := 0
-            }
-
             ; Stop Animation loop.
-            timer := DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
-            DllCall("winmm\timeKillEvent", "uint", timer)
+            if (timer := DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")) {
+               DllCall("winmm\timeKillEvent", "uint", timer)
+               DllCall("SetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr", 0)
+            }
          }
 
          ; Must return
