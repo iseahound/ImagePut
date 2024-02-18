@@ -4449,6 +4449,7 @@ class ImagePut {
             DllCall("InvalidateRect", "ptr", 0, "ptr", 0, "int", 0)
 
          case "window":
+            image := (hwnd := WinExist(image)) ? hwnd : image
             DllCall("DestroyWindow", "ptr", image)
 
          case "wallpaper":

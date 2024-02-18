@@ -158,7 +158,7 @@ ImageShow(image, title := "", pos := "", style := 0x90000000, styleEx := 0x80088
 }
 
 ImageDestroy(image) {
-   return ImagePut.S(image)
+   return ImagePut.Destroy(image)
 }
 
 ImageWidth(image) {
@@ -4781,6 +4781,7 @@ class ImagePut {
             DllCall("InvalidateRect", "ptr", 0, "ptr", 0, "int", 0)
 
          case "window":
+            image := WinExist(image)
             DllCall("DestroyWindow", "ptr", image)
 
          case "wallpaper":
