@@ -3610,7 +3610,7 @@ class ImagePut {
       return hwnd
    }
 
-   static WindowClass(style := 0) {
+   static WindowClass(style := 0x8) {
       ; The window class shares the name of this class.
       cls := this.prototype.__class
       wc := Buffer(A_PtrSize = 4 ? 48:80) ; sizeof(WNDCLASSEX) = 48, 80
@@ -3698,6 +3698,14 @@ class ImagePut {
             return DllCall("DefWindowProc", "ptr", parent, "uint", 0xA1, "uptr", 2, "ptr", 0, "ptr")
          }
 
+         ; WM_LBUTTONUP - Toggle between play and pause.
+         if (uMsg = 0x202) {
+            child := DllCall("GetWindowLong", "ptr", hwnd, "int", 1*A_PtrSize, "ptr")
+            DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
+            ? uMsg := 0x8002 ; Pause
+            : uMsg := 0x8001 ; Play
+         }
+
          ; WM_RBUTTONUP - Destroy the window.
          if (uMsg = 0x205) {
             parent := DllCall("GetWindowLong", "ptr", hwnd, "int", 0*A_PtrSize, "ptr")
@@ -3740,7 +3748,7 @@ class ImagePut {
             background_color := RegExReplace(c, "^0x..(..)(..)(..)$", "0x$3$2$1")
             text_color := (0.3*(255&c>>16) + 0.59*(255&c>>8) + 0.11*(255&c)) >= 128 ? 0x000000 : 0xFFFFFF
 
-            ; Show tooltip.
+            ; Show tooltip. Use Tooltip #16.
             tt := Tooltip(" (" x ", " y ") `n " SubStr(c, 3) " ",,, 16)
 
 
@@ -3883,12 +3891,6 @@ class ImagePut {
                      ,  "uint*", 0xFF << 16 | 0x01 << 24  ; *pblend
                      ,   "uint", 2)                       ; dwFlags
          }
-
-         ; Toggle between play and pause.
-         if (uMsg = 0x8003)
-            DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
-            ? uMsg := 0x8002 ; Pause
-            : uMsg := 0x8001 ; Play
 
          ; Clears the frame number and wait time.
          if (uMsg = 0x8001 || uMsg = 0x8002) {
