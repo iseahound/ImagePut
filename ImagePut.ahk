@@ -3701,6 +3701,14 @@ class ImagePut {
             }
          }
 
+         ; Let's start using custom defined parameters from the window struct.
+         if (uMsg = 0x1 || uMsg = 0x2)
+            goto default
+
+         ; Remember the child window contains all the assets.
+         parent := DllCall("GetWindowLong", "ptr", hwnd, "int", 0*A_PtrSize, "ptr")
+         child := DllCall("GetWindowLong", "ptr", hwnd, "int", 1*A_PtrSize, "ptr")
+
          ; For some reason using DefWindowProc or PostMessage to reroute WM_LBUTTONDOWN to WM_NCLBUTTONDOWN
          ; will always disable the complementary WM_LBUTTONUP. However, if the CS_DBLCLKS window style is set,
          ; then a single WM_RBUTTONUP will be received as double-clicking generates a sequence of four messages: 
@@ -3709,30 +3717,21 @@ class ImagePut {
          ;                               ^ Only happens when 0x8 is set in RegisterClass.
 
          ; WM_LBUTTONDOWN - Drag to move the window.
-         if (uMsg = 0x201) {
-            parent := DllCall("GetWindowLong", "ptr", hwnd, "int", 0*A_PtrSize, "ptr")
+         if (uMsg = 0x201)
             return DllCall("DefWindowProc", "ptr", parent, "uint", 0xA1, "uptr", 2, "ptr", 0, "ptr")
-         }
 
          ; WM_LBUTTONUP - Double Click to toggle between play and pause.
-         if (uMsg = 0x202) {
-            child := DllCall("GetWindowLong", "ptr", hwnd, "int", 1*A_PtrSize, "ptr")
-            DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
+         if (uMsg = 0x202)
+            DllCall("GetWindowLong", "ptr", child, "int", 4*A_PtrSize, "ptr")
             ? uMsg := 0x8002 ; Pause
             : uMsg := 0x8001 ; Play
-         }
 
          ; WM_RBUTTONUP - Destroy the window.
-         if (uMsg = 0x205) {
-            parent := DllCall("GetWindowLong", "ptr", hwnd, "int", 0*A_PtrSize, "ptr")
-            DllCall("DestroyWindow", "ptr", parent)
-            return 0
-         }
+         if (uMsg = 0x205)
+            return DllCall("DestroyWindow", "ptr", parent)
 
          ; WM_MBUTTONDOWN - Show x, y, and color.
          if (uMsg = 0x207) {
-            ; Force the child hwnd as transparent pixels could redirect to the parent hwnd.
-            child := DllCall("GetWindowLong", "ptr", hwnd, "int", 1*A_PtrSize, "ptr")
             hdc := DllCall("GetWindowLong", "ptr", child, "int", 2*A_PtrSize, "ptr")
 
             ; Get pBits from hBitmap currently selected onto the device context.
@@ -3788,7 +3787,7 @@ class ImagePut {
             Critical
 
             ; Get variables.
-            ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
+            ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", child, "int", 3*A_PtrSize, "ptr")
 
             ; Exit GIF animation loop. Set by WM_Destroy.
             if !ptr
@@ -3888,7 +3887,7 @@ class ImagePut {
                DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
 
                ; Use the saved device context for rendering.
-               hdc := DllCall("GetWindowLong", "ptr", hwnd, "int", 2*A_PtrSize, "ptr")
+               hdc := DllCall("GetWindowLong", "ptr", child, "int", 2*A_PtrSize, "ptr")
             }
 
             ; Case 2: Image is scaled.
@@ -3911,7 +3910,7 @@ class ImagePut {
          ; Clears the frame number and wait time.
          if (uMsg = 0x8001 || uMsg = 0x8002) {
             if (wParam) {
-               ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
+               ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", child, "int", 3*A_PtrSize, "ptr")
                obj := ObjFromPtrAddRef(ptr)
                obj.frame := -1
                obj.accumulate := 0
@@ -3920,10 +3919,10 @@ class ImagePut {
 
          ; Start Animation loop.
          if (uMsg = 0x8001) {
-            if DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
+            if DllCall("GetWindowLong", "ptr", child, "int", 4*A_PtrSize, "ptr")
                return
 
-            ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
+            ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", child, "int", 3*A_PtrSize, "ptr")
             obj := ObjFromPtrAddRef(ptr)
             timer := DllCall("winmm\timeSetEvent"
                      , "uint", obj.interval  ; uDelay
@@ -3932,14 +3931,14 @@ class ImagePut {
                      , "uptr", 0             ; dwUser
                      , "uint", 1             ; fuEvent
                      , "uint")
-            DllCall("SetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr", timer)
+            DllCall("SetWindowLong", "ptr", child, "int", 4*A_PtrSize, "ptr", timer)
          }
 
          ; Stop Animation loop.
          if (uMsg = 0x8002) {
-            if (timer := DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")) {
+            if (timer := DllCall("GetWindowLong", "ptr", child, "int", 4*A_PtrSize, "ptr")) {
                DllCall("winmm\timeKillEvent", "uint", timer)
-               DllCall("SetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr", 0)
+               DllCall("SetWindowLong", "ptr", child, "int", 4*A_PtrSize, "ptr", 0)
             }
          }
 
