@@ -1101,16 +1101,16 @@ class ImagePut {
 
       ; Get monitor?
       loop {
-         ComCall(IDXGIFactory_EnumAdapters := 7, IDXGIFactory, "uint", A_Index-1, "ptr*", &IDXGIAdapter:=0)
+         ComCall(EnumAdapters := 7, IDXGIFactory, "uint", A_Index-1, "ptr*", &IDXGIAdapter:=0)
 
          loop {
-            try ComCall(IDXGIAdapter_EnumOutputs := 7, IDXGIAdapter, "uint", A_Index-1, "ptr*", &IDXGIOutput:=0)
+            try ComCall(EnumOutputs := 7, IDXGIAdapter, "uint", A_Index-1, "ptr*", &IDXGIOutput:=0)
             catch OSError as e
                if e.number = 0x887A0002 ; DXGI_ERROR_NOT_FOUND
                   break
                else throw
 
-            ComCall(IDXGIOutput_GetDesc := 7, IDXGIOutput, "ptr", DXGI_OUTPUT_DESC := Buffer(88+A_PtrSize, 0))
+            ComCall(GetDesc := 7, IDXGIOutput, "ptr", DXGI_OUTPUT_DESC := Buffer(88+A_PtrSize, 0))
             Width             := NumGet(DXGI_OUTPUT_DESC, 72, "int")
             Height            := NumGet(DXGI_OUTPUT_DESC, 76, "int")
             AttachedToDesktop := NumGet(DXGI_OUTPUT_DESC, 80, "int")
@@ -1138,8 +1138,8 @@ class ImagePut {
 
       ; Retrieve the desktop duplication API
       IDXGIOutput1 := ComObjQuery(IDXGIOutput, "{00cddea8-939b-4b83-a340-a685226666cc}")
-      ComCall(IDXGIOutput1_DuplicateOutput := 22, IDXGIOutput1, "ptr", d3d_device, "ptr*", &Duplication:=0)
-      ComCall(IDXGIOutputDuplication_GetDesc := 7, Duplication, "ptr", DXGI_OUTDUPL_DESC := Buffer(36, 0))
+      ComCall(DuplicateOutput := 22, IDXGIOutput1, "ptr", d3d_device, "ptr*", &Duplication:=0)
+      ComCall(GetDesc := 7, Duplication, "ptr", DXGI_OUTDUPL_DESC := Buffer(36, 0))
       DesktopImageInSystemMemory := NumGet(DXGI_OUTDUPL_DESC, 32, "uint")
       Sleep 50   ; As I understand - need some sleep for successful connecting to IDXGIOutputDuplication interface
 
@@ -1156,7 +1156,7 @@ class ImagePut {
          NumPut("uint",                                0, D3D11_TEXTURE2D_DESC, 32)   ; BindFlags
          NumPut("uint", D3D11_CPU_ACCESS_READ := 0x20000, D3D11_TEXTURE2D_DESC, 36)   ; CPUAccessFlags
          NumPut("uint",                                0, D3D11_TEXTURE2D_DESC, 40)   ; MiscFlags
-      ComCall(ID3D11Device_CreateTexture2D := 5, d3d_device, "ptr", D3D11_TEXTURE2D_DESC, "ptr", 0, "ptr*", &staging_tex:=0)
+      ComCall(CreateTexture2D := 5, d3d_device, "ptr", D3D11_TEXTURE2D_DESC, "ptr", 0, "ptr*", &staging_tex:=0)
 
 
       ; Persist the concept of a desktop_resource as a closure???
@@ -1173,7 +1173,7 @@ class ImagePut {
             ; The following loop structure repeatedly checks for a new frame.
             loop {
                ; Ask if there is a new frame available immediately.
-               try ComCall(IDXGIOutputDuplication_AcquireNextFrame := 8, Duplication, "uint", 0, "ptr", DXGI_OUTDUPL_FRAME_INFO, "ptr*", &desktop_resource:=0)
+               try ComCall(AcquireNextFrame := 8, Duplication, "uint", 0, "ptr", DXGI_OUTDUPL_FRAME_INFO, "ptr*", &desktop_resource:=0)
                catch OSError as e
                   if e.number = 0x887A0027 ; DXGI_ERROR_WAIT_TIMEOUT
                      continue
@@ -1185,10 +1185,10 @@ class ImagePut {
 
                ; Continue the loop by releasing resources.
                ObjRelease(desktop_resource)
-               ComCall(IDXGIOutputDuplication_ReleaseFrame := 14, Duplication)
+               ComCall(ReleaseFrame := 14, Duplication)
             }
          } else {
-            try ComCall(IDXGIOutputDuplication_AcquireNextFrame := 8, Duplication, "uint", timeout, "ptr", DXGI_OUTDUPL_FRAME_INFO, "ptr*", &desktop_resource:=0)
+            try ComCall(AcquireNextFrame := 8, Duplication, "uint", timeout, "ptr", DXGI_OUTDUPL_FRAME_INFO, "ptr*", &desktop_resource:=0)
             catch OSError as e
                if e.number = 0x887A0027 ; DXGI_ERROR_WAIT_TIMEOUT
                   return this ; Remember to enable method chaining.
@@ -1201,15 +1201,15 @@ class ImagePut {
          ; map new resources.
          if (DesktopImageInSystemMemory = 1) {
             static DXGI_MAPPED_RECT := Buffer(A_PtrSize*2, 0)
-            ComCall(IDXGIOutputDuplication_MapDesktopSurface := 12, Duplication, "ptr", DXGI_MAPPED_RECT)
+            ComCall(MapDesktopSurface := 12, Duplication, "ptr", DXGI_MAPPED_RECT)
             pitch := NumGet(DXGI_MAPPED_RECT, 0, "int")
             pBits := NumGet(DXGI_MAPPED_RECT, A_PtrSize, "ptr")
          }
          else {
             tex := ComObjQuery(desktop_resource, "{6f15aaf2-d208-4e89-9ab4-489535d34f9c}") ; ID3D11Texture2D
-            ComCall(ID3D11DeviceContext_CopyResource := 47, d3d_context, "ptr", staging_tex, "ptr", tex)
+            ComCall(CopyResource := 47, d3d_context, "ptr", staging_tex, "ptr", tex)
             static D3D11_MAPPED_SUBRESOURCE := Buffer(8+A_PtrSize, 0)
-            ComCall(ID3D11DeviceContext_Map := 14, d3d_context, "ptr", staging_tex, "uint", 0, "uint", D3D11_MAP_READ := 1, "uint", 0, "ptr", D3D11_MAPPED_SUBRESOURCE)
+            ComCall(_Map := 14, d3d_context, "ptr", staging_tex, "uint", 0, "uint", D3D11_MAP_READ := 1, "uint", 0, "ptr", D3D11_MAPPED_SUBRESOURCE)
             pBits := NumGet(D3D11_MAPPED_SUBRESOURCE, 0, "ptr")
             pitch := NumGet(D3D11_MAPPED_SUBRESOURCE, A_PtrSize, "uint")
          }
@@ -1224,12 +1224,12 @@ class ImagePut {
       Unbind() {
          if IsSet(desktop_resource) && desktop_resource != 0 {
             if (DesktopImageInSystemMemory = 1)
-               ComCall(IDXGIOutputDuplication_UnMapDesktopSurface := 13, Duplication)
+               ComCall(UnMapDesktopSurface := 13, Duplication)
             else
-               ComCall(ID3D11DeviceContext_Unmap := 15, d3d_context, "ptr", staging_tex, "uint", 0)
+               ComCall(Unmap := 15, d3d_context, "ptr", staging_tex, "uint", 0)
 
             ObjRelease(desktop_resource)
-            ComCall(IDXGIOutputDuplication_ReleaseFrame := 14, Duplication)
+            ComCall(ReleaseFrame := 14, Duplication)
          }
       }
 
@@ -1542,11 +1542,11 @@ class ImagePut {
       DllCall("combase\WindowsDeleteString", "ptr", hString, "hresult")
 
       ; Create the PDF document.
-      ComCall(IPdfDocumentStatics_LoadFromStreamAsync := 8, PdfDocumentStatics, "ptr", pRandomAccessStream, "ptr*", &PdfDocument:=0)
+      ComCall(LoadFromStreamAsync := 8, PdfDocumentStatics, "ptr", pRandomAccessStream, "ptr*", &PdfDocument:=0)
       this.WaitForAsync(&PdfDocument)
 
       ; Get Page
-      ComCall(IPdfDocument_GetPage := 7, PdfDocument, "uint*", &count:=0)
+      ComCall(get_PageCount := 7, PdfDocument, "uint*", &count:=0)
       index := (index > 0) ? index - 1 : (index < 0) ? count + index : 0 ; Zero indexed.
       if (index > count || index < 0) {
          ObjRelease(PdfDocument)
@@ -1555,13 +1555,13 @@ class ImagePut {
          ObjRelease(pStream)
          throw Error("The maximum number of pages in this pdf is " count ".")
       }
-      ComCall(IPdfDocument_GetPage := 6, PdfDocument, "uint", index, "ptr*", &PdfPage:=0)
+      ComCall(GetPage := 6, PdfDocument, "uint", index, "ptr*", &PdfPage:=0)
 
       ; Render the page to an output stream.
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "uint", True, "ptr*", &pStreamOut:=0)
       DllCall("ole32\CLSIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", CLSID := Buffer(16), "hresult")
       DllCall("ShCore\CreateRandomAccessStreamOverStream", "ptr", pStreamOut, "uint", BSOS_DEFAULT := 0, "ptr", CLSID, "ptr*", &pRandomAccessStreamOut:=0)
-      ComCall(IPdfPage_RenderToStreamAsync := 6, PdfPage, "ptr", pRandomAccessStreamOut, "ptr*", &AsyncInfo:=0)
+      ComCall(RenderToStreamAsync := 6, PdfPage, "ptr", pRandomAccessStreamOut, "ptr*", &AsyncInfo:=0)
       this.WaitForAsync(&AsyncInfo)
 
       ; Cleanup
@@ -1579,27 +1579,27 @@ class ImagePut {
 
    static WaitForAsync(&Object) {
       AsyncInfo := ComObjQuery(Object, IAsyncInfo := "{00000036-0000-0000-C000-000000000046}")
-      while !ComCall(IAsyncInfo_Status := 7, AsyncInfo, "uint*", &status:=0)
+      while !ComCall(Status := 7, AsyncInfo, "uint*", &status:=0)
          and (status = 0)
             Sleep 10
 
       if (status != 1) {
-         ComCall(IAsyncInfo_ErrorCode := 8, AsyncInfo, "uint*", &ErrorCode:=0)
+         ComCall(ErrorCode := 8, AsyncInfo, "uint*", &ErrorCode:=0)
          throw Error("AsyncInfo status error: " ErrorCode)
       }
 
-      ComCall(8, Object, "ptr*", &ObjectResult:=0, "cdecl") ; GetResults
+      ComCall(GetResults := 8, Object, "ptr*", &ObjectResult:=0, "cdecl")
       ObjRelease(Object)
       Object := ObjectResult
 
-      ComCall(IAsyncInfo_Close := 10, AsyncInfo)
+      ComCall(Close := 10, AsyncInfo)
       AsyncInfo := ""
    }
 
    static ObjReleaseClose(&Object) {
       if Object {
          if (Close := ComObjQuery(Object, IClosable := "{30D5A829-7FA4-4026-83BB-D75BAE4EA99E}")) {
-            ComCall(IClosable_Close := 6, Close)
+            ComCall(_Close := 6, Close)
             Close := ""
          }
          try return ObjRelease(Object)
@@ -1944,7 +1944,7 @@ class ImagePut {
 
    static from_stream(image) {
       ; Cloning a temporary stream bypasses the downsides of GDI+ controlling the stream.
-      ComCall(IStream_Clone := 13, image, "ptr*", &pStream:=0)
+      ComCall(Clone := 13, image, "ptr*", &pStream:=0)
       ; Completely ignores the seek pointer and sets the seek position to 4096.
       DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
       ObjRelease(pStream)
@@ -1953,7 +1953,7 @@ class ImagePut {
 
    static get_stream(image) {
       ; Creates a new, separate stream. Necessary to separate reference counting through a clone.
-      ComCall(IStream_Clone := 13, image, "ptr*", &pStream:=0)
+      ComCall(Clone := 13, image, "ptr*", &pStream:=0)
       ; Ensures that a duplicated stream does not inherit the original seek position.
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
       return pStream
@@ -1973,13 +1973,13 @@ class ImagePut {
       DllCall("ShCore\CreateStreamOverRandomAccessStream", "ptr", image, "ptr", CLSID, "ptr*", &pStream:=0, "hresult")
       ; Cloning the stream ensures that each call to "GetStreamFromRandomAccessStream" returns a new stream.
       ; ^ That's what the function should be named, because that's what it actually does!
-      ComCall(IStream_Clone := 13, pStream, "ptr*", &pStreamClone:=0)
+      ComCall(Clone := 13, pStream, "ptr*", &pStreamClone:=0)
       return pStreamClone
    }
 
    static from_wicBitmap(image) {
       ; IWICBitmapSource::GetSize - https://github.com/iseahound/10/blob/win/10.0.16299.0/um/wincodec.h#L1304
-      ComCall(3, image, "uint*", &width:=0, "uint*", &height:=0)
+      ComCall(GetSize := 3, image, "uint*", &width:=0, "uint*", &height:=0)
 
       ; Intialize an empty pBitmap using managed memory.
       DllCall("gdiplus\GdipCreateBitmapFromScan0"
@@ -2000,7 +2000,7 @@ class ImagePut {
       stride := NumGet(BitmapData, 8, "int")
 
       ; IWICBitmapSource::CopyPixels - https://github.com/iseahound/10/blob/win/10.0.16299.0/um/wincodec.h#L1322
-      ComCall(7, image, "ptr", Rect, "uint", stride, "uint", stride * height, "ptr", Scan0)
+      ComCall(CopyPixels := 7, image, "ptr", Rect, "uint", stride, "uint", stride * height, "ptr", Scan0)
 
       ; Write pixels to bitmap.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
@@ -4499,17 +4499,17 @@ class ImagePut {
       ; WICBitmapNoCache  must be 1!
       ; IWICImagingFactory::CreateBitmap - https://github.com/iseahound/10/blob/win/10.0.16299.0/um/wincodec.h#L6447
       DllCall("ole32\CLSIDFromString", "wstr", GUID_WICPixelFormat32bppBGRA := "{6fddc324-4e03-4bfe-b185-3d77768dc90f}", "ptr", CLSID := Buffer(16), "hresult")
-      ComCall(17, IWICImagingFactory, "uint", width, "uint", height, "ptr", CLSID, "int", 1, "ptr*", &wicBitmap:=0)
+      ComCall(CreateBitmap := 17, IWICImagingFactory, "uint", width, "uint", height, "ptr", CLSID, "int", 1, "ptr*", &wicBitmap:=0)
 
       Rect := Buffer(16, 0)                  ; sizeof(Rect) = 16
          NumPut(  "uint",   width, Rect,  8) ; Width
          NumPut(  "uint",  height, Rect, 12) ; Height
 
       ; IWICBitmap::Lock - https://github.com/iseahound/10/blob/win/10.0.16299.0/um/wincodec.h#L2232
-      ComCall(8, wicBitmap, "ptr", Rect, "uint", 0x1, "ptr*", &Lock:=0)
+      ComCall(_Lock := 8, wicBitmap, "ptr", Rect, "uint", 0x1, "ptr*", &Lock:=0)
 
       ; IWICBitmapLock::GetDataPointer - https://github.com/iseahound/10/blob/win/10.0.16299.0/um/wincodec.h#L2104
-      ComCall(5, Lock, "uint*", &size:=0, "ptr*", &Scan0:=0)
+      ComCall(GetDataPointer := 5, Lock, "uint*", &size:=0, "ptr*", &Scan0:=0)
 
       BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
          NumPut(   "int",  4 * width, BitmapData,  8) ; Stride

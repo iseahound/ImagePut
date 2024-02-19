@@ -268,7 +268,7 @@ class ImagePut {
 
             ; Goto the ANIM FourCC.
             StrPut("ANIM", &ANIM := VarSetCapacity(ANIM, 4), "cp1252")
-            DllCall(NumGet(NumGet(pStream+0) + A_PtrSize*5), "ptr", pStream, "uint64", offset - 1, "uint", 1, "uint64*", current)
+            DllCall(NumGet(NumGet(pStream+0)+A_PtrSize* 5), "ptr", pStream, "uint64", offset - 1, "uint", 1, "uint64*", current)
             DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", &fourcc, "uint", 4, "uint")
             DllCall("shlwapi\IStream_Read", "ptr", pStream, "uint*", offset, "uint", 4, "uint")
             if (4 != DllCall("ntdll\RtlCompareMemory", "ptr", &fourcc, "ptr", &ANIM, "uptr", 4, "uptr"))
@@ -284,9 +284,9 @@ class ImagePut {
             NumPut(pCount + 8 + 2*A_PtrSize, pCount + 8 + A_PtrSize, "ptr")
 
             ; Save the loop count into the struct.
-            DllCall(NumGet(NumGet(pStream+0) + A_PtrSize*5), "ptr", pStream, "uint64", 4, "uint", 1, "uint64*", current)
+            DllCall(NumGet(NumGet(pStream+0)+A_PtrSize* 5), "ptr", pStream, "uint64", 4, "uint", 1, "uint64*", current)
             DllCall("shlwapi\IStream_Read", "ptr", pStream, "ushort*", pCount + 8 + 2*A_PtrSize, "uint", 2, "uint")
-            DllCall(NumGet(NumGet(pStream+0) + A_PtrSize*5), "ptr", pStream, "uint64", offset - 6, "uint", 1, "uint64*", current)
+            DllCall(NumGet(NumGet(pStream+0)+A_PtrSize* 5), "ptr", pStream, "uint64", offset - 6, "uint", 1, "uint64*", current)
 
             ; ANMF fourcc.
             StrPut("ANMF", &ANMF := VarSetCapacity(ANMF, 4), "cp1252")
@@ -301,7 +301,7 @@ class ImagePut {
             ; Create the delays stream.
             DllCall("GlobalUnlock", "ptr", hDelays)
             DllCall("ole32\CreateStreamOnHGlobal", "ptr", hDelays, "int", False, "ptr*", sDelays:=0, "uint")
-            DllCall(NumGet(NumGet(sDelays+0) + A_PtrSize*5), "ptr", sDelays, "uint64", 0, "uint", 2, "ptr", 0) ; Advance to end.
+            DllCall(NumGet(NumGet(sDelays+0)+A_PtrSize* 5), "ptr", sDelays, "uint64", 0, "uint", 2, "ptr", 0) ; Advance to end.
 
             ; Search for each RIFF-type ANMF chunk header (fourcc followed by its chunk size).
             while current < end {
@@ -316,7 +316,7 @@ class ImagePut {
                if (4 == DllCall("ntdll\RtlCompareMemory", "ptr", &fourcc, "ptr", &ANMF, "uptr", 4, "uptr")) {
 
                   ; Seek to the Frame Duration.
-                  DllCall(NumGet(NumGet(sDelays+0) + A_PtrSize*5), "ptr", pStream, "uint64", 12, "uint", 1, "uint64*", current)
+                  DllCall(NumGet(NumGet(pStream+0)+A_PtrSize* 5), "ptr", pStream, "uint64", 12, "uint", 1, "uint64*", current)
 
                   ; Cast the Frame Delay from uint24 to uint32 and write it to the delays stream.
                   DllCall("shlwapi\IStream_Copy", "ptr", pStream, "ptr", sDelays, "uint", 3, "uint")
@@ -327,7 +327,7 @@ class ImagePut {
                }
 
                ; Seek to the next fourcc which must be aligned to 2 bytes.
-               DllCall(NumGet(NumGet(sDelays+0) + A_PtrSize*5), "ptr", pStream, "uint64", offset + alignment, "uint", 1, "uint64*", current)
+               DllCall(NumGet(NumGet(pStream+0)+A_PtrSize* 5), "ptr", pStream, "uint64", offset + alignment, "uint", 1, "uint64*", current)
             }
 
             ; Fill in the size of the delays array and pointer position.
@@ -1542,11 +1542,11 @@ class ImagePut {
       DllCall("combase\WindowsDeleteString", "ptr", hString, "uint")
 
       ; Create the PDF document.
-      DllCall(IPdfDocumentStatics_LoadFromStreamAsync := NumGet(NumGet(PdfDocumentStatics+0)+8*A_PtrSize), "ptr", PdfDocumentStatics, "ptr", pRandomAccessStream, "ptr*", PdfDocument:=0)
+      DllCall(NumGet(NumGet(PdfDocumentStatics+0)+A_PtrSize* 8), "ptr", PdfDocumentStatics, "ptr", pRandomAccessStream, "ptr*", PdfDocument:=0)
       this.WaitForAsync(PdfDocument)
 
       ; Get Page
-      DllCall(IPdfDocument_GetPage := NumGet(NumGet(PdfDocument+0)+7*A_PtrSize), "ptr", PdfDocument, "uint*", count:=0)
+      DllCall(NumGet(NumGet(PdfDocument+0)+A_PtrSize* 7), "ptr", PdfDocument, "uint*", count:=0)
       index := (index > 0) ? index - 1 : (index < 0) ? count + index : 0 ; Zero indexed.
       if (index > count || index < 0) {
          ObjRelease(PdfDocument)
@@ -1555,13 +1555,13 @@ class ImagePut {
          ObjRelease(pStream)
          throw Exception("The maximum number of pages in this pdf is " count ".")
       }
-      DllCall(IPdfDocument_GetPage := NumGet(NumGet(PdfDocument+0)+6*A_PtrSize), "ptr", PdfDocument, "uint", index, "ptr*", PdfPage:=0)
+      DllCall(NumGet(NumGet(PdfDocument+0)+A_PtrSize* 6), "ptr", PdfDocument, "uint", index, "ptr*", PdfPage:=0)
 
       ; Render the page to an output stream.
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "uint", True, "ptr*", pStreamOut:=0)
       DllCall("ole32\CLSIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", &CLSID := VarSetCapacity(CLSID, 16), "uint")
       DllCall("ShCore\CreateRandomAccessStreamOverStream", "ptr", pStreamOut, "uint", BSOS_DEFAULT := 0, "ptr", &CLSID, "ptr*", pRandomAccessStreamOut:=0)
-      DllCall(IPdfPage_RenderToStreamAsync := NumGet(NumGet(PdfPage+0)+6*A_PtrSize), "ptr", PdfPage, "ptr", pRandomAccessStreamOut, "ptr*", AsyncInfo:=0)
+      DllCall(NumGet(NumGet(PdfPage+0)+A_PtrSize* 6), "ptr", PdfPage, "ptr", pRandomAccessStreamOut, "ptr*", AsyncInfo:=0)
       this.WaitForAsync(AsyncInfo)
 
       ; Cleanup
@@ -1579,27 +1579,27 @@ class ImagePut {
 
    WaitForAsync(ByRef Object) {
       AsyncInfo := ComObjQuery(Object, IAsyncInfo := "{00000036-0000-0000-C000-000000000046}")
-      while !DllCall(IAsyncInfo_Status := NumGet(NumGet(AsyncInfo+0)+7*A_PtrSize), "ptr", AsyncInfo, "uint*", status:=0)
+      while !DllCall(NumGet(NumGet(AsyncInfo+0)+A_PtrSize* 7), "ptr", AsyncInfo, "uint*", status:=0)
          and (status = 0)
             Sleep 10
 
       if (status != 1) {
-         DllCall(IAsyncInfo_ErrorCode := NumGet(NumGet(AsyncInfo+0)+8*A_PtrSize), "ptr", AsyncInfo, "uint*", ErrorCode:=0)
+         DllCall(NumGet(NumGet(AsyncInfo+0)+A_PtrSize* 8), "ptr", AsyncInfo, "uint*", ErrorCode:=0)
          throw Exception("AsyncInfo status error: " ErrorCode)
       }
 
-      DllCall(NumGet(NumGet(Object+0)+8*A_PtrSize), "ptr", Object, "ptr*", ObjectResult:=0, "cdecl") ; GetResults
+      DllCall(NumGet(NumGet(Object+0)+A_PtrSize* 8), "ptr", Object, "ptr*", ObjectResult:=0, "cdecl")
       ObjRelease(Object)
       Object := ObjectResult
 
-      DllCall(IAsyncInfo_Close := NumGet(NumGet(AsyncInfo+0)+10*A_PtrSize), "ptr", AsyncInfo)
+      DllCall(NumGet(NumGet(AsyncInfo+0)+A_PtrSize* 10), "ptr", AsyncInfo)
       ObjRelease(AsyncInfo)
    }
 
    ObjReleaseClose(ByRef Object) {
       if Object {
          if (Close := ComObjQuery(Object, IClosable := "{30D5A829-7FA4-4026-83BB-D75BAE4EA99E}")) {
-            DllCall(IClosable_Close := NumGet(NumGet(Close+0)+6*A_PtrSize), "ptr", Close)
+            DllCall(NumGet(NumGet(Close+0)+A_PtrSize* 6), "ptr", Close)
             ObjRelease(Close)
          }
          try return ObjRelease(Object)
@@ -1944,7 +1944,7 @@ class ImagePut {
 
    from_stream(image) {
       ; Cloning a temporary stream bypasses the downsides of GDI+ controlling the stream.
-      DllCall(IStream_Clone := NumGet(NumGet(image+0)+13*A_PtrSize), "ptr", image, "ptr*", pStream:=0)
+      DllCall(NumGet(NumGet(image+0)+A_PtrSize* 13), "ptr", image, "ptr*", pStream:=0)
       ; Completely ignores the seek pointer and sets the seek position to 4096.
       DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", pBitmap:=0)
       ObjRelease(pStream)
@@ -1953,7 +1953,7 @@ class ImagePut {
 
    get_stream(image) {
       ; Creates a new, separate stream. Necessary to separate reference counting through a clone.
-      DllCall(IStream_Clone := NumGet(NumGet(image+0)+13*A_PtrSize), "ptr", image, "ptr*", pStream:=0)
+      DllCall(NumGet(NumGet(image+0)+A_PtrSize* 13), "ptr", image, "ptr*", pStream:=0)
       ; Ensures that a duplicated stream does not inherit the original seek position.
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
       return pStream
@@ -1973,13 +1973,13 @@ class ImagePut {
       DllCall("ShCore\CreateStreamOverRandomAccessStream", "ptr", image, "ptr", &CLSID, "ptr*", pStream:=0, "uint")
       ; Cloning the stream ensures that each call to "GetStreamFromRandomAccessStream" returns a new stream.
       ; ^ That's what the function should be named, because that's what it actually does!
-      DllCall(IStream_Clone := NumGet(NumGet(pStream+0)+13*A_PtrSize), "ptr", pStream, "ptr*", pStreamClone:=0)
+      DllCall(NumGet(NumGet(pStream+0)+A_PtrSize* 13), "ptr", pStream, "ptr*", pStreamClone:=0)
       return pStreamClone
    }
 
    from_wicBitmap(image) {
       ; IWICBitmapSource::GetSize - https://github.com/iseahound/10/blob/win/10.0.16299.0/um/wincodec.h#L1304
-      DllCall(NumGet(NumGet(image + 0) + A_PtrSize*3), "ptr", image, "uint*", width:=0, "uint*", height:=0)
+      DllCall(NumGet(NumGet(image+0)+A_PtrSize* 3), "ptr", image, "uint*", width:=0, "uint*", height:=0)
 
       ; Intialize an empty pBitmap using managed memory.
       DllCall("gdiplus\GdipCreateBitmapFromScan0"
@@ -2000,7 +2000,7 @@ class ImagePut {
       stride := NumGet(BitmapData, 8, "int")
 
       ; IWICBitmapSource::CopyPixels - https://github.com/iseahound/10/blob/win/10.0.16299.0/um/wincodec.h#L1322
-      DllCall(NumGet(NumGet(image + 0) + A_PtrSize*7), "ptr", image, "ptr", &Rect, "uint", stride, "uint", stride * height, "ptr", Scan0)
+      DllCall(NumGet(NumGet(image+0)+A_PtrSize* 7), "ptr", image, "ptr", &Rect, "uint", stride, "uint", stride * height, "ptr", Scan0)
 
       ; Write pixels to bitmap.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
@@ -4500,17 +4500,17 @@ class ImagePut {
       ; WICBitmapNoCache  must be 1!
       ; IWICImagingFactory::CreateBitmap - https://github.com/iseahound/10/blob/win/10.0.16299.0/um/wincodec.h#L6447
       DllCall("ole32\CLSIDFromString", "wstr", GUID_WICPixelFormat32bppBGRA := "{6fddc324-4e03-4bfe-b185-3d77768dc90f}", "ptr", &CLSID := VarSetCapacity(CLSID, 16), "uint")
-      DllCall(NumGet(NumGet(IWICImagingFactory + 0) + A_PtrSize*17), "ptr", IWICImagingFactory, "uint", width, "uint", height, "ptr", &CLSID, "int", 1, "ptr*", wicBitmap:=0)
+      DllCall(NumGet(NumGet(IWICImagingFactory+0)+A_PtrSize* 17), "ptr", IWICImagingFactory, "uint", width, "uint", height, "ptr", &CLSID, "int", 1, "ptr*", wicBitmap:=0)
 
       VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
          NumPut(  width, Rect,  8,   "uint") ; Width
          NumPut( height, Rect, 12,   "uint") ; Height
 
       ; IWICBitmap::Lock - https://github.com/iseahound/10/blob/win/10.0.16299.0/um/wincodec.h#L2232
-      DllCall(NumGet(NumGet(wicBitmap + 0) + A_PtrSize*8), "ptr", wicBitmap, "ptr", &Rect, "uint", 0x1, "ptr*", Lock:=0)
+      DllCall(NumGet(NumGet(wicBitmap+0)+A_PtrSize* 8), "ptr", wicBitmap, "ptr", &Rect, "uint", 0x1, "ptr*", Lock:=0)
 
       ; IWICBitmapLock::GetDataPointer - https://github.com/iseahound/10/blob/win/10.0.16299.0/um/wincodec.h#L2104
-      DllCall(NumGet(NumGet(Lock + 0) + A_PtrSize*5), "ptr", Lock, "uint*", size:=0, "ptr*", Scan0:=0)
+      DllCall(NumGet(NumGet(Lock+0)+A_PtrSize* 5), "ptr", Lock, "uint*", size:=0, "ptr*", Scan0:=0)
 
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
          NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
