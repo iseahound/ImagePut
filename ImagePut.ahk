@@ -3510,7 +3510,7 @@ class ImagePut {
 
          ; Because timeSetEvent calls in a seperate thread, redirect to main thread.
          ; LPTIMECALLBACK: (uTimerID, uMsg, dwUser, dw1, dw2)
-         pTimeProc := this.SyncWindowProc(hwnd, 0x8000, 5) ; ParamCount = 5
+         pTimeProc := this.SyncWindowProc(hwnd, 0x8000)
 
          ; Create an object to hold all the extra data.
          obj := {type : type             ; Either "gif" or "webp"
@@ -3835,9 +3835,12 @@ class ImagePut {
             ; or interval to the greatest common factor of all frame delays
             ; would reduce overhead as well. This is because the timer would
             ; always be divisible by the frame delays.
-            if (accumulate != delay)
-               return
+            if (accumulate == delay)
+               wParam := 1
+         }
 
+         ; WM_APP - Advance to next frame.
+         if (uMsg = 0x8000 && wParam) {
             obj.frame := frame                  ; Update to next frame number
             obj.accumulate := 0                 ; Resets the wait time
 
@@ -3955,60 +3958,57 @@ class ImagePut {
       }
    }
 
-   static SyncWindowProc(hwnd, msg, ParamCount := 0) {
+   static SyncWindowProc(hwnd, uMsg, wParam := 0, lParam := 0) {
       hModule := DllCall("GetModuleHandle", "str", "user32.dll", "ptr")
       SendMessageW := DllCall("GetProcAddress", "ptr", hModule, "astr", "SendMessageW", "ptr")
 
-      pcb := DllCall("GlobalAlloc", "uint", 0, "uptr", 96, "ptr")
-      DllCall("VirtualProtect", "ptr", pcb, "ptr", 96, "uint", 0x40, "uint*", 0)
+      pcb := DllCall("GlobalAlloc", "uint", 0, "uptr", 71, "ptr")
+      DllCall("VirtualProtect", "ptr", pcb, "ptr", 71, "uint", 0x40, "uint*", 0)
 
-      p := pcb
+      ; Retract the hex representation to binary.
       if (A_PtrSize = 8) {
-                     /*
-                     48 89 4c 24 08  ; mov [rsp+8], rcx
-                     48 89 54'24 10  ; mov [rsp+16], rdx
-                     4c 89 44 24 18  ; mov [rsp+24], r8
-                     4c'89 4c 24 20  ; mov [rsp+32], r9
-                     48 83 ec 28'    ; sub rsp, 40
-                     4c 8d 44 24 30  ; lea r8, [rsp+48]  (arg 3, &params)
-                     49 b9 ..        ; mov r9, .. (arg 4, operand to follow)
-                     */
-         p := NumPut("ptr"  , 0x54894808244c8948,
-                     "ptr"  , 0x4c182444894c1024,
-                     "ptr"  , 0x28ec834820244c89,
-                     "ptr"  , 0x00b9493024448d4c, p) - 1
-         lParamPtr := p, p += 8
-
-         p := NumPut("char" , 0xba,        ; mov edx, nmsg
-                     "int"  , msg,
-                     "char" , 0xb9,        ; mov ecx, hwnd
-                     "int"  , hwnd,
-                     "short", 0xb848,      ; mov rax, SendMessageW
-                     "ptr"  , SendMessageW,
-                     /*
-                     ff d0        ; call rax
-                     48 83 c4 28  ; add rsp, 40
-                     c3           ; ret
-                     */
-                     "ptr"  , 0x00c328c48348d0ff, p)
-      } else {
-         p := NumPut("char" , 0x68, p)     ; push ... (lParam data)
-         lParamPtr := p, p += 4
-         p := NumPut("int"  , 0x0824448d,  ; lea eax, [esp+8]
-                     "char" , 0x50,        ; push eax
-                     "char" , 0x68,        ; push nmsg
-                     "int"  , msg,
-                     "char" , 0x68,        ; push hwnd
-                     "int"  , hwnd,
-                     "char" , 0xb8,        ; mov eax, &SendMessageW
-                     "int"  , SendMessageW,
-                     "short", 0xd0ff,      ; call eax
-                     "char" , 0xc2,        ; ret argsize
-                     "short", ParamCount*4, p) ; InStr(Options, "C") ? 0
+         assembly := "
+            ( Join`s Comments
+            48 89 4c 24 08                 ; mov [rsp+8], rcx
+            48 89 54 24 10                 ; mov [rsp+16], rdx
+            4c 89 44 24 18                 ; mov [rsp+24], r8
+            4c 89 4c 24 20                 ; mov [rsp+32], r9
+            48 83 ec 28                    ; sub rsp, 40
+            49 b9 00 00 00 00 00 00 00 00  ; mov r9, .. (lParam)
+            49 b8 00 00 00 00 00 00 00 00  ; mov r8, .. (wParam)
+            ba 00 00 00 00                 ; mov edx, .. (uMsg)
+            b9 00 00 00 00                 ; mov ecx, .. (hwnd)
+            48 b8 00 00 00 00 00 00 00 00  ; mov rax, .. (SendMessageW)
+            ff d0                          ; call rax
+            48 83 c4 28                    ; add rsp, 40
+            c3                             ; ret
+            )"
+         DllCall("crypt32\CryptStringToBinary", "str", assembly, "uint", 0, "uint", 0x4, "ptr", pcb, "uint*", 71, "ptr", 0, "ptr", 0)
+         NumPut("ptr", SendMessageW, pcb + 56)
+         NumPut("int", hwnd, pcb + 50)
+         NumPut("int", uMsg, pcb + 45)
+         NumPut("ptr", wParam, pcb + 36)
+         NumPut("ptr", lParam, pcb + 26)
       }
-      NumPut("ptr", p, lParamPtr)          ; To be passed as lParam.
-      p := NumPut("ptr", 0, p)             ; There isn't a function object here so...
-      p := NumPut("int", ParamCount, p)
+      else {
+         assembly := "
+            ( Join`s Comments
+            68 00 00 00 00                 ; push .. (lParam)
+            68 00 00 00 00                 ; push .. (wParam)
+            68 00 00 00 00                 ; push .. (uMsg)
+            68 00 00 00 00                 ; push .. (hwnd)
+            b8 00 00 00 00                 ; mov eax, &SendMessageW
+            ff d0                          ; call eax
+            c3                             ; ret
+            )"
+         DllCall("crypt32\CryptStringToBinary", "str", assembly, "uint", 0, "uint", 0x4, "ptr", pcb, "uint*", 28, "ptr", 0, "ptr", 0)
+         NumPut("int", SendMessageW, pcb + 21)
+         NumPut("int", hwnd, pcb + 16)
+         NumPut("int", uMsg, pcb + 11)
+         NumPut("int", wParam, pcb + 6)
+         NumPut("int", lParam, pcb + 1)
+      }
+
       return pcb
    }
 
