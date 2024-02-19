@@ -62,7 +62,7 @@ ImagePutFile(image, filepath := "", quality := "") {
 
 ; Puts the image into a multipart/form-data in binary and returns a SafeArray COM Object.
 ;   boundary   -  Content-Type            |  string   ->   multipart/form-data; boundary=something
-ImagePutFormData(image, boundary := "ImagePut-abcdef") {
+ImagePutFormData(image, boundary := "--ImagePut abc 321 xyz--") {
    return ImagePut("formdata", image, boundary)
 }
 
@@ -258,38 +258,35 @@ class ImagePut {
             StrPut("VP8X", VP8X := Buffer(4), "cp1252")
             DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", fourcc, "uint", 4, "hresult")
             DllCall("shlwapi\IStream_Read", "ptr", pStream, "uint*", &offset, "uint", 4, "hresult")
-            if 4 != DllCall("ntdll\RtlCompareMemory", "ptr", fourcc, "ptr", VP8X, "uptr", 4, "uptr")
+            if (4 != DllCall("ntdll\RtlCompareMemory", "ptr", fourcc, "ptr", VP8X, "uptr", 4, "uptr"))
                goto otherwise
 
             ; Check the animation bit.
-            ;ComCall(5, pStream, "uint64", 4, "uint", 1, "uint64*", &current)
             DllCall("shlwapi\IStream_Read", "ptr", pStream, "uchar*", &flags:=0, "uint", 1, "hresult")
-            ;MsgBox "Animation Bit: " (flags & 0x2), Format("{:x}", flags)
             if not flags & 0x2
                goto otherwise
 
             ; Goto the ANIM FourCC.
             StrPut("ANIM", ANIM := Buffer(4), "cp1252")
-            ComCall(5, pStream, "uint64", offset - 1, "uint", 1, "uint64*", &current)
+            ComCall(Seek := 5, pStream, "uint64", offset - 1, "uint", 1, "uint64*", &current)
             DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", fourcc, "uint", 4, "hresult")
             DllCall("shlwapi\IStream_Read", "ptr", pStream, "uint*", &offset, "uint", 4, "hresult")
-            if 4 != DllCall("ntdll\RtlCompareMemory", "ptr", fourcc, "ptr", ANIM, "uptr", 4, "uptr")
+            if (4 != DllCall("ntdll\RtlCompareMemory", "ptr", fourcc, "ptr", ANIM, "uptr", 4, "uptr"))
                goto otherwise
 
 
 
             ; Create the custom loop count struct.
             pCount := DllCall("GlobalAlloc", "uint", 0, "uptr", 8 + 3*A_PtrSize, "ptr")
-            NumPut(   "uint",    0x5101, pCount, 0) ; PropertyTagLoopCount
-            NumPut(   "uint",         1, pCount, 4) ; Size
-            NumPut( "ushort",         3, pCount, 8) ; PropertyTagTypeShort
-            NumPut(    "ptr", pCount + 8 + 2*A_PtrSize, pCount, 8 + A_PtrSize)
+            NumPut(   "uint",    0x5101, pCount + 0) ; PropertyTagLoopCount
+            NumPut(   "uint",         1, pCount + 4) ; Size
+            NumPut( "ushort",         3, pCount + 8) ; PropertyTagTypeShort
+            NumPut(    "ptr", pCount + 8 + 2*A_PtrSize, pCount + 8 + A_PtrSize)
 
             ; Save the loop count into the struct.
             ComCall(Seek := 5, pStream, "uint64", 4, "uint", 1, "uint64*", &current)
             DllCall("shlwapi\IStream_Read", "ptr", pStream, "ushort*", pCount + 8 + 2*A_PtrSize, "uint", 2, "hresult")
             ComCall(Seek := 5, pStream, "uint64", offset - 6, "uint", 1, "uint64*", &current)
-
 
             ; ANMF fourcc.
             StrPut("ANMF", ANMF := Buffer(4), "cp1252")
@@ -297,8 +294,8 @@ class ImagePut {
             ; Create the custom frame delays struct.
             hDelays := DllCall("GlobalAlloc", "uint", 0x42, "uptr", 8 + 2*A_PtrSize, "ptr")
             pDelays := DllCall("GlobalLock", "ptr", hDelays, "ptr")
-            NumPut(   "uint",    0x5100, pDelays, 0) ; PropertyTagFrameDelay
-            NumPut( "ushort",    0xCAFE, pDelays, 8) ; My custom tag for milliseconds.
+            NumPut(   "uint",    0x5100, pDelays + 0) ; PropertyTagFrameDelay
+            NumPut( "ushort",    0xCAFE, pDelays + 8) ; My custom tag for milliseconds.
             ; The size and the pointer will be filled in after all ANMF chunks are found.
 
             ; Create the delays stream.
@@ -316,7 +313,7 @@ class ImagePut {
                ; Rounds up to a even number. Odd numbers are +1, and even numbers are +0.
                alignment := offset&1 ; Use this as offset + alignment.
 
-               if 4 == DllCall("ntdll\RtlCompareMemory", "ptr", fourcc, "ptr", ANMF, "uptr", 4, "uptr") {
+               if (4 == DllCall("ntdll\RtlCompareMemory", "ptr", fourcc, "ptr", ANMF, "uptr", 4, "uptr")) {
 
                   ; Seek to the Frame Duration.
                   ComCall(Seek := 5, pStream, "uint64", 12, "uint", 1, "uint64*", &current)
@@ -337,8 +334,8 @@ class ImagePut {
             ObjRelease(sDelays)
             DelaySize := DllCall("GlobalSize", "ptr", hDelays, "uptr") - 8 - 2*A_PtrSize
             pDelays := DllCall("GlobalLock", "ptr", hDelays, "ptr")
-            NumPut(   "uint", DelaySize, pDelays, 4) ; Size
-            NumPut(    "ptr", pDelays + 8 + 2*A_PtrSize, pDelays, 8 + A_PtrSize)
+            NumPut(   "uint", DelaySize, pDelays + 4) ; Size
+            NumPut(    "ptr", pDelays + 8 + 2*A_PtrSize, pDelays + 8 + A_PtrSize)
 
             otherwise:
             ObjRelease(pStream)
@@ -371,10 +368,12 @@ class ImagePut {
    }
 
    static get(self, name) {
-      return ObjHasOwnProp(self, name) ? self.%name% : ""
+      return self.HasProp(name) ? self.%name% : ""
    }
 
-   static inputs := [
+   static inputs := 
+
+   [
       "clipboard_png",
       "clipboard",
       "object",
@@ -402,8 +401,6 @@ class ImagePut {
    ]
 
 
-
-
    static DontVerifyImageType(&image, &keywords := "") {
 
       ; Sentinel value: Returns the empty string for unknown properties.
@@ -414,7 +411,7 @@ class ImagePut {
          throw Error("Must be an object.")
 
       ; Goto ImageType.
-      if ObjHasOwnProp(image, "image") {
+      if image.HasProp("image") {
          keywords := image
          keywords.base := {__get: (self, name, *) => this.get(self, name)}
          image := image.image
@@ -423,7 +420,7 @@ class ImagePut {
 
       ; Skip ImageType.
       for type in this.inputs
-         if ObjHasOwnProp(image, type) {
+         if image.HasProp(type) {
             keywords := image
             keywords.base := {__get: (self, name, *) => this.get(self, name)}
             image := image.%type%
@@ -439,8 +436,8 @@ class ImagePut {
       if not IsObject(image)
          goto string
 
-      if (image.HasOwnProp("prototype") && image.prototype.HasOwnProp("__class") && image.prototype.__class == "ClipboardAll")
-      or (image.base.HasOwnProp("__class") && image.base.__class == "ClipboardAll") {
+      if (image.HasProp("prototype") && image.prototype.HasProp("__class") && image.prototype.__class == "ClipboardAll")
+      or (image.base.HasProp("__class") && image.base.__class == "ClipboardAll") {
 
          ; A "clipboard_png" is a pointer to a PNG stream saved as the "png" clipboard format.
          if DllCall("IsClipboardFormatAvailable", "uint", DllCall("RegisterClipboardFormat", "str", "png", "uint"))
@@ -457,12 +454,12 @@ class ImagePut {
 
 
       ; A "object" has a pBitmap property that points to an internal GDI+ bitmap.
-      if image.HasOwnProp("pBitmap")
+      if image.HasProp("pBitmap")
          try if !DllCall("gdiplus\GdipGetImageType", "ptr", image.pBitmap, "ptr*", &type:=0) && (type == 1)
             return "object"
 
       ; A "window" is an object with an hwnd property.
-      if image.HasOwnProp("hwnd")
+      if image.HasProp("hwnd")
          return "window"
 
       ; A "screenshot" is an array of 4 numbers.
@@ -470,13 +467,13 @@ class ImagePut {
          return "screenshot"
 
       ; A "buffer" is an object with a pointer to bytes and properties to determine its 2-D shape.
-      if image.HasOwnProp("ptr")
-         and (image.HasOwnProp("width") && image.HasOwnProp("height")
-         or image.HasOwnProp("stride") && image.HasOwnProp("height")
-         or image.HasOwnProp("size") && (image.HasOwnProp("stride") || image.HasOwnProp("width") || image.HasOwnProp("height")))
+      if image.HasProp("ptr")
+         and (image.HasProp("width") && image.HasProp("height")
+         or image.HasProp("stride") && image.HasProp("height")
+         or image.HasProp("size") && (image.HasProp("stride") || image.HasProp("width") || image.HasProp("height")))
          return "buffer"
 
-      if image.HasOwnProp("ptr") {
+      if image.HasProp("ptr") {
          image := image.ptr
          goto pointer
       } else
@@ -1041,27 +1038,27 @@ class ImagePut {
 
    static from_buffer(image) {
 
-      if image.HasOwnProp("stride")
+      if image.HasProp("stride")
          stride := image.stride
-      else if image.HasOwnProp("width")
+      else if image.HasProp("width")
          stride := image.width * 4
-      else if image.HasOwnProp("height") && image.HasOwnProp("size")
+      else if image.HasProp("height") && image.HasProp("size")
          stride := image.size // image.height
       else throw Error("Buffer must have a stride property.")
 
-      if image.HasOwnProp("width")
+      if image.HasProp("width")
          width := image.width
-      else if image.HasOwnProp("stride")
+      else if image.HasProp("stride")
          width := image.stride // 4
-      else if image.HasOwnProp("height") && image.HasOwnProp("size")
+      else if image.HasProp("height") && image.HasProp("size")
          width := image.size // (4 * image.height)
       else throw Error("Buffer must have a width property.")
 
-      if image.HasOwnProp("height")
+      if image.HasProp("height")
          height := image.height
-      else if image.HasOwnProp("stride") && image.HasOwnProp("size")
+      else if image.HasProp("stride") && image.HasProp("size")
          height := image.size // image.stride
-      else if image.HasOwnProp("width") && image.HasOwnProp("size")
+      else if image.HasProp("width") && image.HasProp("size")
          height := image.size // (4 * image.width)
       else throw Error("Buffer must have a height property.")
 
@@ -1070,7 +1067,7 @@ class ImagePut {
       ; So permit underflow for now.
 
       ; Check for buffer overflow errors.
-      if image.HasOwnProp("size") && (abs(stride * height) > image.size)
+      if image.HasProp("size") && (abs(stride * height) > image.size)
          throw Error("Image dimensions exceed the size of the buffer.")
 
       ; Create a pBitmap from the current pointer.
@@ -1295,14 +1292,6 @@ class ImagePut {
 
       return pBitmap
    }
-
-
-
-
-
-
-
-
 
    static from_screenshot(image) {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
@@ -2956,8 +2945,8 @@ class ImagePut {
 
             ; Fill the struct by iterating through the input array.
             for c in color {
-                (c >> 24) || c |= 0xFF000000             ; Lift colors to 32-bit ARGB.
-                NumPut("uint", c, colors, 4*(A_Index-1)) ; Place the unsigned int at each offset.
+               (c >> 24) || c |= 0xFF000000             ; Lift colors to 32-bit ARGB.
+               NumPut("uint", c, colors, 4*(A_Index-1)) ; Place the unsigned int at each offset.
             }
 
             count := DllCall(pixelsearchall3, "ptr", result, "uint", limit, "ptr", this.ptr, "ptr", this.ptr + this.size, "ptr", colors, "uint", color.length, "cdecl ptr")
@@ -3043,12 +3032,12 @@ class ImagePut {
       ImageSearch(image, variation := 0, option := "") {
 
          ; Convert image to a buffer object.
-         if !(IsObject(image) && ObjHasOwnProp(image, "ptr") && ObjHasOwnProp(image, "size"))
+         if !(IsObject(image) && image.HasProp("ptr") && image.HasProp("size"))
             image := ImagePutBuffer(image)
 
          ; Check if the object has the coordinates.
-         x := ObjHasOwnProp(image, "x") ? image.x : image.width//2
-         y := ObjHasOwnProp(image, "y") ? image.y : image.height//2
+         x := image.HasProp("x") ? image.x : image.width//2
+         y := image.HasProp("y") ? image.y : image.height//2
 
          if (option == "") {
             if (variation == 0)
@@ -3101,12 +3090,12 @@ class ImagePut {
       ImageSearchAll(image, variation := 0) {
 
          ; Convert image to a buffer object.
-         if !(IsObject(image) && ObjHasOwnProp(image, "ptr") && ObjHasOwnProp(image, "size"))
+         if !(IsObject(image) && image.HasProp("ptr") && image.HasProp("size"))
             image := ImagePutBuffer(image)
 
          ; Check if the object has the coordinates.
-         x := ObjHasOwnProp(image, "x") ? image.x : image.width//2
-         y := ObjHasOwnProp(image, "y") ? image.y : image.height//2
+         x := image.HasProp("x") ? image.x : image.width//2
+         y := image.HasProp("y") ? image.y : image.height//2
 
          if (variation == 0)
             option := 1
@@ -3494,7 +3483,7 @@ class ImagePut {
 
          ; Calculate the greatest common factor of all frame delays.
          for each, delay in delays
-            if A_Index = 1
+            if (A_Index = 1)
                interval := delay ; Initalize the interval.
             else
                while delay {
@@ -3504,7 +3493,7 @@ class ImagePut {
                }
 
          ; Convert centiseconds to milliseconds.
-         if type = "gif"
+         if (type = "gif")
             interval *= 10
 
          ; Because timeSetEvent calls in a seperate thread, redirect to main thread.
@@ -3813,7 +3802,7 @@ class ImagePut {
             delay := delays[frame]              ; Zero-based array
 
             ; See: https://www.biphelps.com/blog/The-Fastest-GIF-Does-Not-Exist
-            if type = "gif" {
+            if (type = "gif") {
                delay *= 10                      ; Convert centiseconds to milliseconds
                delay := max(delay, 10)          ; Minimum delay is 10ms
                (delay == 10) && delay := 100    ; 10 ms is actually 100 ms
@@ -3867,6 +3856,8 @@ class ImagePut {
             ; Case 1: Image is not scaled.
             if IsSet(pBitmap) {
                ; Select frame to show.
+
+
                DllCall("gdiplus\GdipImageSelectActiveFrame", "ptr", pBitmap, "ptr", dimIDs, "uint", frame)
 
                ; Get Bitmap width and height.
@@ -4959,13 +4950,13 @@ class ImageEqual extends ImagePut {
             throw Error("Cloning Bitmap" A_Index " failed.")
 
       ; struct RECT - https://referencesource.microsoft.com/#System.Drawing/commonui/System/Drawing/Rectangle.cs,32
-      Rect := Buffer(16, 0)                        ; sizeof(Rect) = 16
-         NumPut(  "uint",   width1, Rect,  8)      ; Width
-         NumPut(  "uint",  height1, Rect, 12)      ; Height
+      Rect := Buffer(16, 0)                       ; sizeof(Rect) = 16
+         NumPut(  "uint",   width1, Rect,  8)     ; Width
+         NumPut(  "uint",  height1, Rect, 12)     ; Height
 
       ; Create a BitmapData structure.
-      BitmapData1 := Buffer(16+2*A_PtrSize)        ; sizeof(BitmapData) = 24, 32
-      BitmapData2 := Buffer(16+2*A_PtrSize)        ; sizeof(BitmapData) = 24, 32
+      BitmapData1 := Buffer(16+2*A_PtrSize)       ; sizeof(BitmapData) = 24, 32
+      BitmapData2 := Buffer(16+2*A_PtrSize)       ; sizeof(BitmapData) = 24, 32
 
       ; Transfer the pixels to a read-only buffer. The user can declare a PixelFormat.
       loop 2

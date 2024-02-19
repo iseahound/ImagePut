@@ -141,8 +141,9 @@ ImagePutWICBitmap(image) {
 ;   style      -  Window Style            |  uint     ->   WS_VISIBLE
 ;   styleEx    -  Window Extended Style   |  uint     ->   WS_EX_LAYERED
 ;   parent     -  Window Parent           |  ptr      ->   hwnd
-ImagePutWindow(image, title := "", pos := "", style := 0x82C80000, styleEx := 0x9, parent := "") {
-   return ImagePut("window", image, title, pos, style, styleEx, parent)
+;   playback   -  Window Animation        |  bool     ->   True
+ImagePutWindow(image, title := "", pos := "", style := 0x82C80000, styleEx := 0x9, parent := "", playback := True) {
+   return ImagePut("window", image, title, pos, style, styleEx, parent, playback)
 }
 
 
@@ -151,8 +152,9 @@ ImagePutWindow(image, title := "", pos := "", style := 0x82C80000, styleEx := 0x
 ;   style      -  Window Style            |  uint     ->   WS_VISIBLE
 ;   styleEx    -  Window Extended Style   |  uint     ->   WS_EX_LAYERED
 ;   parent     -  Window Parent           |  ptr      ->   hwnd
-ImageShow(image, title := "", pos := "", style := 0x90000000, styleEx := 0x80088, parent := "") {
-   return ImagePut("show", image, title, pos, style, styleEx, parent)
+;   playback   -  Window Animation        |  bool     ->   True
+ImageShow(image, title := "", pos := "", style := 0x90000000, styleEx := 0x80088, parent := "", playback := True) {
+   return ImagePut("show", image, title, pos, style, styleEx, parent, playback)
 }
 
 ImageDestroy(image) {
@@ -222,11 +224,6 @@ class ImagePut {
          ; Prevents future changes to the original pixels from altering any copies.
          ; Without validation, it preforms copy-on-write and copy on LockBits(read).
 
-         ; GdipImageForceValidation must be called immediately or it fails without any errors.
-         ; Doing so loads the pixels to the bitmap buffer. Increases memory usage.
-         ; Prevents future changes to the original pixels from altering any copies.
-         ; Without validation, it preforms copy-on-write and copy on LockBits(read).
-
          if (type ~= "^(?i:clipboard_png|pdf|url|file|stream|RandomAccessStream|hex|base64)$") {
 
             ; Check the file signature for magic numbers.
@@ -265,9 +262,7 @@ class ImagePut {
                goto otherwise
 
             ; Check the animation bit.
-            ;ComCall(5, pStream, "uint64", 4, "uint", 1, "uint64*", &current)
             DllCall("shlwapi\IStream_Read", "ptr", pStream, "uchar*", flags:=0, "uint", 1, "uint")
-            ;MsgBox "Animation Bit: " (flags & 0x2), Format("{:x}", flags)
             if not flags & 0x2
                goto otherwise
 
@@ -293,7 +288,6 @@ class ImagePut {
             DllCall("shlwapi\IStream_Read", "ptr", pStream, "ushort*", pCount + 8 + 2*A_PtrSize, "uint", 2, "uint")
             DllCall(NumGet(NumGet(pStream+0) + A_PtrSize*5), "ptr", pStream, "uint64", offset - 6, "uint", 1, "uint64*", current)
 
-
             ; ANMF fourcc.
             StrPut("ANMF", &ANMF := VarSetCapacity(ANMF, 4), "cp1252")
 
@@ -311,6 +305,7 @@ class ImagePut {
 
             ; Search for each RIFF-type ANMF chunk header (fourcc followed by its chunk size).
             while current < end {
+
                ; Get fourcc and chunk size.
                DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", &fourcc, "uint", 4, "uint")
                DllCall("shlwapi\IStream_Read", "ptr", pStream, "uint*", offset, "uint", 4, "uint")
@@ -339,17 +334,17 @@ class ImagePut {
             ObjRelease(sDelays)
             DelaySize := DllCall("GlobalSize", "ptr", hDelays, "uptr") - 8 - 2*A_PtrSize
             pDelays := DllCall("GlobalLock", "ptr", hDelays, "ptr")
-            NumPut(DelaySize, pDelays + 4,   "uint") ; Size
+            NumPut(DelaySize, pDelays + 4,    "uint") ; Size
             NumPut(pDelays + 8 + 2*A_PtrSize, pDelays + 8 + A_PtrSize, "ptr")
 
             otherwise:
             ObjRelease(pStream)
          }
 
-
          ; Convert via GDI+ bitmap intermediate.
          if !(pBitmap := this.ToBitmap(type, image, keywords))
             throw Exception("pBitmap cannot be zero.")
+
          (validate) && DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmap)
          (crop) && this.BitmapCrop(pBitmap, crop)
          (scale) && this.BitmapScale(pBitmap, scale)
@@ -377,8 +372,8 @@ class ImagePut {
    }
 
    static inputs :=
-      ( Join
-      [
+   ( Join
+   [
       "clipboard_png",
       "clipboard",
       "object",
@@ -403,8 +398,8 @@ class ImagePut {
       "wicBitmap",
       "d2dBitmap",
       "sprite"
-      ]
-      )
+   ]
+   )
 
    DontVerifyImageType(ByRef image, ByRef keywords := "") {
 
@@ -416,7 +411,7 @@ class ImagePut {
          throw Exception("Must be an object.")
 
       ; Goto ImageType.
-      if ObjHasKey(image, "image") {
+      if image.HasKey("image") {
          keywords := image
          keywords.base := {__get: this.get}
          image := image.image
@@ -425,7 +420,7 @@ class ImagePut {
 
       ; Skip ImageType.
       for i, type in this.inputs
-         if ObjHasKey(image, type) {
+         if image.HasKey(type) {
             keywords := image
             keywords.base := {__get: this.get}
             image := image[type]
@@ -659,7 +654,7 @@ class ImagePut {
       throw Exception("Conversion from " type " to bitmap is not supported.")
    }
 
-   BitmapToCoimage(cotype, pBitmap, p1:="", p2:="", p3:="", p4:="", p5:="", p*) {
+   BitmapToCoimage(cotype, pBitmap, p1:="", p2:="", p3:="", p4:="", p5:="", p6 := "", p*) {
       ; BitmapToCoimage("clipboard", pBitmap)
       if (cotype = "clipboard" || cotype = "clipboard_png")
          return this.to_clipboard(pBitmap)
@@ -676,13 +671,13 @@ class ImagePut {
       if (cotype = "screenshot")
          return this.to_screenshot(pBitmap, p1, p2)
 
-      ; BitmapToCoimage("show", pBitmap, title, pos, style, styleEx, parent)
+      ; BitmapToCoimage("show", pBitmap, title, pos, style, styleEx, parent, playback)
       if (cotype = "show")
-         return this.show(pBitmap, p1, p2, p3, p4, p5)
+         return this.show(pBitmap, p1, p2, p3, p4, p5, p6)
 
-      ; BitmapToCoimage("window", pBitmap, title, pos, style, styleEx, parent)
+      ; BitmapToCoimage("window", pBitmap, title, pos, style, styleEx, parent, playback)
       if (cotype = "window")
-         return this.to_window(pBitmap, p1, p2, p3, p4, p5)
+         return this.to_window(pBitmap, p1, p2, p3, p4, p5, p6)
 
       ; BitmapToCoimage("desktop", pBitmap)
       if (cotype = "desktop")
@@ -1083,16 +1078,6 @@ class ImagePut {
 
       return pBitmap
    }
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1988,7 +1973,7 @@ class ImagePut {
       DllCall("ShCore\CreateStreamOverRandomAccessStream", "ptr", image, "ptr", &CLSID, "ptr*", pStream:=0, "uint")
       ; Cloning the stream ensures that each call to "GetStreamFromRandomAccessStream" returns a new stream.
       ; ^ That's what the function should be named, because that's what it actually does!
-      DllCall(IStream_Clone := NumGet(NumGet(image+0)+13*A_PtrSize), "ptr", pStream, "ptr*", pStreamClone:=0)
+      DllCall(IStream_Clone := NumGet(NumGet(pStream+0)+13*A_PtrSize), "ptr", pStream, "ptr*", pStreamClone:=0)
       return pStreamClone
    }
 
@@ -3056,7 +3041,7 @@ class ImagePut {
             . "1+vESIPBBOl3////RQ+vwkuNDINIichIg8QoW15fXUFcQV1BXkFfww==")
 
          ; Convert image to a buffer object.
-         if !(IsObject(image) && ObjHasKey(image, "ptr") && ObjHasKey(image, "size"))
+         if !(IsObject(image) && image.HasKey("ptr") && image.HasKey("size"))
             image := ImagePutBuffer(image)
 
          ; Search for the address of the first matching image.
@@ -3085,7 +3070,7 @@ class ImagePut {
             . "QV1BXkFfww==")
 
          ; Convert image to a buffer object.
-         if !(IsObject(image) && ObjHasKey(image, "ptr") && ObjHasKey(image, "size"))
+         if !(IsObject(image) && image.HasKey("ptr") && image.HasKey("size"))
             image := ImagePutBuffer(image)
 
          ; Search for the address of the first matching image.
@@ -3119,6 +3104,62 @@ class ImagePut {
          return xys
       }
    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
    to_screenshot(pBitmap, screenshot := "", alpha := "") {
       ; Get Bitmap width and height.
@@ -3158,7 +3199,7 @@ class ImagePut {
       return [x,y,w,h]
    }
 
-   to_window(pBitmap, title := "", pos := "", style := 0x82C80000, styleEx := 0x9, parent := "") {
+   to_window(pBitmap, title := "", pos := "", style := 0x82C80000, styleEx := 0x9, parent := "", playback := "") {
       ; Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
       ; Extended Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/extended-window-styles
 
@@ -3254,7 +3295,7 @@ class ImagePut {
       DllCall("SetLayeredWindowAttributes", "ptr", hwnd, "uint", 0xF0F0F0, "uchar", 0, "int", 1)
 
       ; A layered child window is only available on Windows 8+.
-      child := this.show(pBitmap, title, [0, 0, w, h], WS_CHILD | WS_VISIBLE, WS_EX_LAYERED, hwnd)
+      child := this.show(pBitmap, title, [0, 0, w, h], WS_CHILD | WS_VISIBLE, WS_EX_LAYERED, hwnd, playback)
 
       ; Store extra data inside window struct (cbWndExtra).
       DllCall("SetWindowLong", "ptr", hwnd, "int", 0*A_PtrSize, "ptr", hwnd) ; parent window
@@ -3268,7 +3309,7 @@ class ImagePut {
       return hwnd
    }
 
-   show(pBitmap, title := "", pos := "", style := 0x90000000, styleEx := 0x80088, parent := "") {
+   show(pBitmap, title := "", pos := "", style := 0x90000000, styleEx := 0x80088, parent := "", playback := "") {
       ; Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
       WS_POPUP                  := 0x80000000   ; Allow small windows.
       WS_VISIBLE                := 0x10000000   ; Show on creation.
@@ -3616,7 +3657,7 @@ class ImagePut {
             ; Get stock bitmap.
             obm := DllCall("CreateBitmap", "int", 0, "int", 0, "uint", 1, "uint", 1, "ptr", 0, "ptr")
 
-            ; Cleanup the hBitmap and device contexts.
+            ; Cleanup the device context and its selected hBitmap.
             if hdc := DllCall("GetWindowLong", "ptr", hwnd, "int", 2*A_PtrSize, "ptr") {
                hbm := DllCall("SelectObject", "ptr", hdc, "ptr", obm, "ptr")
                DllCall("DeleteObject", "ptr", hbm)
@@ -3711,7 +3752,7 @@ class ImagePut {
             background_color := RegExReplace(c, "^0x..(..)(..)(..)$", "0x$3$2$1")
             text_color := (0.3*(255&c>>16) + 0.59*(255&c>>8) + 0.11*(255&c)) >= 128 ? 0x000000 : 0xFFFFFF
 
-            ; Show tooltip.
+            ; Show tooltip. Use Tooltip #16.
             Tooltip % " (" x ", " y ") `n " SubStr(c, 3) " ",,, 16
             tt := WinExist("ahk_class tooltips_class32 ahk_exe" A_AhkPath)
 
@@ -3813,7 +3854,6 @@ class ImagePut {
             start := now
             */
 
-
             ; Case 1: Image is not scaled.
             if IsSet(pBitmap) {
                ; Select frame to show.
@@ -3860,7 +3900,7 @@ class ImagePut {
                      ,    "ptr", hwnd                     ; hWnd
                      ,    "ptr", 0                        ; hdcDst
                      ,    "ptr", 0                        ; *pptDst
-                     ,"uint64*", width | height << 32     ; *psize
+                     ,"uint64*", w | h << 32              ; *psize
                      ,    "ptr", hdc                      ; hdcSrc
                      , "int64*", 0                        ; *pptSrc
                      ,   "uint", 0                        ; crKey
@@ -4019,7 +4059,7 @@ class ImagePut {
 
       ; Get the absolute path of the file.
       length := DllCall("GetFullPathName", "str", filepath, "uint", 0, "ptr", 0, "ptr", 0, "uint")
-      VarSetCapacity(buf, length*(A_IsUnicode?2:1))
+      VarSetCapacity(buf, length * A_IsUnicode<<2)
       DllCall("GetFullPathName", "str", filepath, "uint", length, "str", buf, "ptr", 0, "uint")
 
       ; Keep waiting until the file has been created. (It should be instant!)
