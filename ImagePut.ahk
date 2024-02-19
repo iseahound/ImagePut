@@ -223,7 +223,6 @@ class ImagePut {
          ; Doing so loads the pixels to the bitmap buffer. Increases memory usage.
          ; Prevents future changes to the original pixels from altering any copies.
          ; Without validation, it preforms copy-on-write and copy on LockBits(read).
-         set := False
 
          if (type ~= "^(?i:clipboard_png|pdf|url|file|stream|RandomAccessStream|hex|base64)$") {
 
@@ -240,7 +239,7 @@ class ImagePut {
             VarSetStrCapacity(&str, length)
 
             ; Lift the binary representation to hex.
-            flags := 0x40000004 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_HEXRAW
+            flags := 0x40000004 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_HEX
             DllCall("crypt32\CryptBinaryToString", "ptr", bin, "uint", size, "uint", flags, "str", str, "uint*", &length)
 
             ; WEBP Signature: RIFF....WEBP
