@@ -232,7 +232,9 @@ class ImagePut {
 
             ; Get the first few bytes of the image.
             pStream := this.ToStream(type, image, keywords)
-            DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", bin, "uint", size, "hresult")
+            try DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", bin, "uint", size, "hresult")
+            catch ; todo: reset streams...
+               goto otherwise
 
             ; Allocate enough space for a hexadecimal string with spaces and a null terminator.
             length := 2 * size + (size - 1) + 1
@@ -1579,12 +1581,12 @@ class ImagePut {
 
    static WaitForAsync(&Object) {
       AsyncInfo := ComObjQuery(Object, IAsyncInfo := "{00000036-0000-0000-C000-000000000046}")
-      while !ComCall(Status := 7, AsyncInfo, "uint*", &status:=0)
+      while !ComCall(_Status := 7, AsyncInfo, "uint*", &status:=0)
          and (status = 0)
             Sleep 10
 
       if (status != 1) {
-         ComCall(ErrorCode := 8, AsyncInfo, "uint*", &ErrorCode:=0)
+         ComCall(_ErrorCode := 8, AsyncInfo, "uint*", &ErrorCode:=0)
          throw Error("AsyncInfo status error: " ErrorCode)
       }
 

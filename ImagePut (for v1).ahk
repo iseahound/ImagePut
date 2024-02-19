@@ -232,7 +232,9 @@ class ImagePut {
 
             ; Get the first few bytes of the image.
             pStream := this.ToStream(type, image, keywords)
-            DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", &bin, "uint", size, "uint")
+            if DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", &bin, "uint", size, "uint")
+               goto otherwise
+
 
             ; Allocate enough space for a hexadecimal string with spaces and a null terminator.
             length := 2 * size + (size - 1) + 1
