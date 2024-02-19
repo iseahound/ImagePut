@@ -4868,7 +4868,7 @@ class ImageEqual extends ImagePut {
             throw Error("Validation failed. Unable to access and clone the bitmap.")
 
          DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmapClone)
-         goto ImagePut_Good_Ending
+         goto Good_Ending
       }
 
       ; If there are multiple images, compare each subsequent image to the first.
@@ -4885,19 +4885,19 @@ class ImageEqual extends ImagePut {
 
             ; Compare the two images.
             if !this.BitmapEqual(pBitmap1, pBitmap2)
-               goto ImagePut_Bad_Ending ; Exit the loop if the comparison failed.
+               goto Bad_Ending ; Exit the loop if the comparison failed.
 
             ; Cleanup the bitmap.
             DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap2)
          }
       }
 
-      ImagePut_Good_Ending: ; After getting isekai'ed you somehow build a prosperous kingdom and rule the land.
+      Good_Ending: ; After getting isekai'ed you somehow build a prosperous kingdom and rule the land.
       DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap1)
       this.gdiplusShutdown()
       return True
 
-      ImagePut_Bad_Ending: ; Things didn't turn out the way you expected yet everyone seems to be fine despite that.
+      Bad_Ending: ; Things didn't turn out the way you expected yet everyone seems to be fine despite that.
       DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap2)
       DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap1)
       this.gdiplusShutdown()
