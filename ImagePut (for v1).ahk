@@ -3162,7 +3162,6 @@ class ImagePut {
 
 
 
-
    to_screenshot(pBitmap, screenshot := "", alpha := "") {
       ; Get Bitmap width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
@@ -5000,7 +4999,11 @@ class ImageEqual extends ImagePut {
 } ; End of ImageEqual class.
 
 
-ImagePut_dropfiles() {
+; Drag and drop files directly onto this script file.
+if (A_Args.length() > 0 and A_LineFile == A_ScriptFullPath)
+{
+
+
    filepath := ""
    for each, arg in A_Args {
       filepath .= arg . A_Space
@@ -5010,10 +5013,4 @@ ImagePut_dropfiles() {
          filepath := ""
       }
    }
-
-
 }
-
-; Drag and drop files directly onto this script file.
-if (A_Args.length() > 0 and A_LineFile == A_ScriptFullPath)
-   ImagePut_dropfiles()

@@ -4999,7 +4999,11 @@ class ImageEqual extends ImagePut {
 } ; End of ImageEqual class.
 
 
-ImagePut_dropfiles() {
+; Drag and drop files directly onto this script file.
+if (A_Args.length > 0 and A_LineFile == A_ScriptFullPath)
+{
+   ; Avoid SingleInstance checks. Only seems to be necessary on v2.
+   WinSetTitle WinGetTitle(A_ScriptHwnd) . A_ScriptHwnd, A_ScriptHwnd
    filepath := ""
    for each, arg in A_Args {
       filepath .= arg . A_Space
@@ -5009,10 +5013,4 @@ ImagePut_dropfiles() {
          filepath := ""
       }
    }
-   ; Avoid SingleInstance checks. Only seems to be necessary on v2.
-   WinSetTitle WinGetTitle(A_ScriptHwnd) . A_ScriptHwnd, A_ScriptHwnd
 }
-
-; Drag and drop files directly onto this script file.
-if (A_Args.length > 0 and A_LineFile == A_ScriptFullPath)
-   ImagePut_dropfiles()
