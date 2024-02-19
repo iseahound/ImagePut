@@ -3288,56 +3288,148 @@ class ImagePut {
       ; For 64 -> 32-bit: https://learn.microsoft.com/en-us/windows/win32/winprog64/interprocess-communication
       DllCall("SetWindowLong", "ptr", hwnd, "int", 0*A_PtrSize, "ptr", hwnd) ; parent window (same, only 1 window for now)
       DllCall("SetWindowLong", "ptr", hwnd, "int", 1*A_PtrSize, "ptr", hwnd) ; child window  (same, only 1 window for now)
-      DllCall("SetWindowLong", "ptr", hwnd, "int", 2*A_PtrSize, "ptr", hdc)  ; contains a pixel buffer
+      DllCall("SetWindowLong", "ptr", hwnd, "int", 2*A_PtrSize, "ptr", hdc)  ; hdc contains a pixel buffer too!
 
-      ; Check for multiple frames.
+      ; Check for multiple frames. This can be in either the page (WEBP) or time (GIF) dimension.
       DllCall("gdiplus\GdipImageGetFrameDimensionsCount", "ptr", pBitmap, "uint*", dims:=0)
       DllCall("gdiplus\GdipImageGetFrameDimensionsList", "ptr", pBitmap, "ptr", &dimIDs := VarSetCapacity(dimIDs, 16*dims), "uint", dims)
-      DllCall("gdiplus\GdipImageGetFrameCount", "ptr", pBitmap, "ptr", &dimIDs, "uint*", frames:=0)
+      DllCall("gdiplus\GdipImageGetFrameCount", "ptr", pBitmap, "ptr", &dimIDs, "uint*", number:=0)
 
-      ; GIF Animations!
-      if (frames > 1) {
+      ; Animations!
+      if (number > 1) {
+
+         ; Get the frame delays from PropertyTagFrameDelay.
+         DllCall("gdiplus\GdipGetPropertyItemSize", "ptr", pBitmap, "uint", 0x5100, "uint*", pDelaysSize:=0)
+         pDelays := DllCall("GlobalAlloc", "uint", 0, "uptr", pDelaysSize, "ptr")
+         DllCall("gdiplus\GdipGetPropertyItem", "ptr", pBitmap, "uint", 0x5100, "uint", pDelaysSize, "ptr", pDelays)
+
+         ; Check PropertyTagTypeLong if WEBP or GIF.
+         type := NumGet(pDelays + 8, "ushort") == 4 ? "gif" : "webp"
+
          ; Save frame delays because they are slow enough to impact timing.
-         DllCall("gdiplus\GdipGetPropertyItemSize", "ptr", pBitmap, "uint", 0x5100, "uint*", ItemSize:=0) ; PropertyTagFrameDelay
-         Item := DllCall("GlobalAlloc", "uint", 0, "uptr", ItemSize, "ptr")
-         DllCall("gdiplus\GdipGetPropertyItem", "ptr", pBitmap, "uint", 0x5100, "uint", ItemSize, "ptr", Item)
+         p := NumGet(pDelays + 8 + A_PtrSize, "ptr")
+         delays := {0: NumGet(p+0, "uint")}
+         loop % number ; Remember the pointer to the array of delays should be dereferenced.
+            delays[A_Index] := NumGet(p + 4*A_Index, "uint")
 
-         ; Clone bitmap to avoid disposal.
-         DllCall("gdiplus\GdipCloneImage", "ptr", pBitmap, "ptr*", pBitmapClone:=0)
-         DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmapClone)
+         ; Calculate the greatest common factor of all frame delays.
+         for each, delay in delays
+            if (A_Index = 1)
+               interval := delay ; Initalize the interval.
+            else
+               while delay {
+                  temp := mod(interval, delay)
+                  interval := delay
+                  delay := temp
+               }
+
+         ; Convert centiseconds to milliseconds.
+         if (type = "gif")
+            interval *= 10
 
          ; Because timeSetEvent calls in a seperate thread, redirect to main thread.
          ; LPTIMECALLBACK: (uTimerID, uMsg, dwUser, dw1, dw2)
-         pTimeProc := this.SyncWindowProc(hwnd, 0x8000, 5) ; ParamCount = 5
+         pTimeProc := this.SyncWindowProc(hwnd, 0x8000)
 
-         ; Store extra data inside window struct (cbWndExtra).
-         ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", 6*A_PtrSize, "ptr")
-            NumPut(          32, ptr + 0*A_PtrSize, "int") ; custom struct id
-            NumPut(          -1, ptr + 1*A_PtrSize, "int") ; frame number
-            NumPut(           0, ptr + 2*A_PtrSize, "int") ; current delay
-            NumPut(pBitmapClone, ptr + 3*A_PtrSize, "ptr") ; GIF storage
-            NumPut(        Item, ptr + 4*A_PtrSize, "ptr") ; Item (max frames & delays)
-            NumPut(   pTimeProc, ptr + 5*A_PtrSize, "ptr") ; callback address
-         DllCall("SetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr", ptr)
+         ; Create an object to hold all the extra data.
+         obj := {type : type             ; Either "gif" or "webp"
+               , w : w                   ; width
+               , h : h                   ; height
+               , frame : -1              ; current frame (will be incremented to 0)
+               , number : number         ; max frames
+               , accumulate : 0          ; current wait time
+               , delays : delays         ; array of frame delays
+               , interval : interval     ; timer resolution
+               , pTimeProc : pTimeProc   ; callback address
+               , dimIDs : dimIDs}        ; frame dimension guid (Time or Page)
+         ObjAddRef(&obj)                 ; Hold onto this object for dear life!
+         DllCall("SetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", 3*A_PtrSize, "ptr", &obj)
 
-         ; Preserve GDI+ scope.
-         ImagePut.gdiplusStartup()
+         ; Case 1: Image is not scaled.
+         if (w == width && h == height) {
+            ; Clone bitmap to avoid disposal.
+            DllCall("gdiplus\GdipCloneImage", "ptr", pBitmap, "ptr*", pBitmapClone:=0)
+            DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmapClone) ; Load to memory.
 
-         ; Start GIF Animation loop.
-         timer := DllCall("winmm\timeSetEvent"
-                  , "uint", 10        ; uDelay
-                  , "uint", 10        ; uResolution
-                  ,  "ptr", pTimeProc ; lpTimeProc
-                  , "uint", 0         ; dwUser
-                  , "uint", 1         ; fuEvent
-                  , "uint")
-         DllCall("SetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr", timer)
+            ; Save the cloned bitmap and pixel buffer.
+            obj.pBitmap := pBitmapClone
+            obj.pBits := pBits
+
+            ; Preserve GDI+ scope due to the active pBitmap above.
+            ImagePut.gdiplusStartup()
+         }
+
+         ; Case 2: Image is scaled.
+         else {
+
+            ; Create a cache of pre-rendered frames. Note: This can be very slow.
+            ; Fixes problems with the animation being paused when dragged by the user.
+            cache := {}
+
+            ; --------- Overwrites the hdc, hbm, and pBits variables!!!!!! ---------
+            loop % number {
+               ; Select frame to show.
+               frame := A_Index - 1
+               DllCall("gdiplus\GdipImageSelectActiveFrame", "ptr", pBitmap, "ptr", &dimIDs, "uint", frame)
+
+               ; Get Bitmap width and height.
+               DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
+               DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
+               
+               ; Convert the source pBitmap into a hBitmap manually.
+               ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
+               hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
+               VarSetCapacity(bi, 40, 0)              ; sizeof(bi) = 40
+                  NumPut(       40, bi,  0,   "uint") ; Size
+                  NumPut(    width, bi,  4,   "uint") ; Width
+                  NumPut(  -height, bi,  8,    "int") ; Height - Negative so (0, 0) is top-left.
+                  NumPut(        1, bi, 12, "ushort") ; Planes
+                  NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
+               hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
+               obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
+
+               ; Create a graphics context from the device context.
+               DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc , "ptr*", pGraphics:=0)
+
+               ; Set settings in graphics context.
+               DllCall("gdiplus\GdipSetPixelOffsetMode",    "ptr", pGraphics, "int", 2) ; Half pixel offset.
+               DllCall("gdiplus\GdipSetCompositingMode",    "ptr", pGraphics, "int", 1) ; Overwrite/SourceCopy.
+               DllCall("gdiplus\GdipSetInterpolationMode",  "ptr", pGraphics, "int", 7) ; HighQualityBicubic
+
+               ; Draw Image.
+               DllCall("gdiplus\GdipCreateImageAttributes", "ptr*", ImageAttr:=0)
+               DllCall("gdiplus\GdipSetImageAttributesWrapMode", "ptr", ImageAttr, "int", 3, "uint", 0, "int", 0) ; WrapModeTileFlipXY
+               DllCall("gdiplus\GdipDrawImageRectRectI"
+                        ,    "ptr", pGraphics
+                        ,    "ptr", pBitmap
+                        ,    "int", 0, "int", 0, "int", w,     "int", h      ; destination rectangle
+                        ,    "int", 0, "int", 0, "int", width, "int", height ; source rectangle
+                        ,    "int", 2
+                        ,    "ptr", ImageAttr
+                        ,    "ptr", 0
+                        ,    "ptr", 0)
+               DllCall("gdiplus\GdipDisposeImageAttributes", "ptr", ImageAttr)
+
+               ; Clean up the graphics context.
+               DllCall("gdiplus\GdipDeleteGraphics", "ptr", pGraphics)
+
+               ; Save rendered frame.
+               cache[frame] := hdc
+            }
+
+            ; Send cache to WM_APP.
+            obj.cache := cache
+         }
+
+         ; Start GIF Animation loop. Defaults to immediate playback.
+         if (playback == "" || playback == True)
+            DllCall("PostMessage", "ptr", hwnd, "uint", 0x8001, "uptr", 0, "ptr", 0)
       }
 
       return hwnd
    }
 
-   WindowClass(style := 0) {
+   WindowClass(style := 0x8) {
       ; The window class shares the name of this class.
       cls := this.__class
       VarSetCapacity(wc, size := A_PtrSize = 4 ? 48:80) ; sizeof(WNDCLASSEX) = 48, 80
@@ -3386,57 +3478,79 @@ class ImagePut {
 
          ; WM_DESTROY
          if (uMsg = 0x2) {
-            ; Cleanup the hBitmap and device contexts.
-            hdc := DllCall("GetWindowLong", "ptr", hwnd, "int", 2*A_PtrSize, "ptr")
+            Hotkey % "^+F12", % void, Off ; Cannot disable script persistence, does nothing
+
+            ; The child window contains all of the assets to be freed.
+            if hwnd != DllCall("GetWindowLong", "ptr", hwnd, "int", 1*A_PtrSize, "ptr")
+               return
+
+            ; Get stock bitmap.
             obm := DllCall("CreateBitmap", "int", 0, "int", 0, "uint", 1, "uint", 1, "ptr", 0, "ptr")
-            hbm := DllCall("SelectObject", "ptr", hdc, "ptr", obm, "ptr")
-            DllCall("DeleteObject", "ptr", hbm)
-            DllCall("DeleteDC", "ptr", hdc)
 
-            if ptr := DllCall("GetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr") {
-               id := NumGet(ptr, 0, "int")
-
-               ; Exit GIF Animation loop.
-               if (id == 32) {
-                  pBitmap      := NumGet(ptr + 3*A_PtrSize, "ptr")
-                  Item         := NumGet(ptr + 4*A_PtrSize, "ptr")
-                  pTimeProc    := NumGet(ptr + 5*A_PtrSize, "ptr")
-                  timer        := DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
-
-                  DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
-                  DllCall("GlobalFree", "ptr", Item)
-                  DllCall("GlobalFree", "ptr", pTimeProc)
-                  DllCall("winmm\timeKillEvent", "uint", timer)
-
-                  ; Exit GDI+ conditionally due to the ImagePut class being destroyed first.
-                  ImagePut.gdiplusShutdown()
-
-                  ; Exit the window procedure.
-                  DllCall("GlobalFree", "ptr", ptr)
-                  DllCall("SetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr", 0) ; Exit loop
-               }
+            ; Cleanup the hBitmap and device contexts.
+            if hdc := DllCall("GetWindowLong", "ptr", hwnd, "int", 2*A_PtrSize, "ptr") {
+               hbm := DllCall("SelectObject", "ptr", hdc, "ptr", obm, "ptr")
+               DllCall("DeleteObject", "ptr", hbm)
+               DllCall("DeleteDC", "ptr", hdc)
             }
 
-            Hotkey % "^+F12", % void, Off ; Cannot disable script persistence, does nothing
+            ; The object will self-destruct at end of scope. No need to add a reference!
+            if ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", 3*A_PtrSize, "ptr") {
+               obj := Object(ptr) ; Todo: test reference...
+
+               ; Exit GIF animation loop. Ends any triggered WM_APP.
+               DllCall("SetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", 3*A_PtrSize, "ptr", 0)
+
+               ; Stop Animation loop.
+               if timer := DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
+                  DllCall("winmm\timeKillEvent", "uint", timer)
+               DllCall("GlobalFree", "ptr", obj.pTimeProc)
+
+               if obj.HasKey("pBitmap") {
+                  DllCall("gdiplus\GdipDisposeImage", "ptr", obj.pBitmap)
+                  ImagePut.gdiplusShutdown()
+               }
+
+               if obj.HasKey("cache")
+                  for each, hdc in obj.cache { ; Overwrites the hdc and hbm variables.
+                     hbm := DllCall("SelectObject", "ptr", hdc, "ptr", obm, "ptr")
+                     DllCall("DeleteObject", "ptr", hbm)
+                     DllCall("DeleteDC", "ptr", hdc)
+                  }
+            }
          }
+
+         ; Let's start using custom defined parameters from the window struct.
+         if (uMsg = 0x1 || uMsg = 0x2)
+            goto default
+
+         ; Remember the child window contains all the assets.
+         parent := DllCall("GetWindowLong", "ptr", hwnd, "int", 0*A_PtrSize, "ptr")
+         child := DllCall("GetWindowLong", "ptr", hwnd, "int", 1*A_PtrSize, "ptr")
+
+         ; For some reason using DefWindowProc or PostMessage to reroute WM_LBUTTONDOWN to WM_NCLBUTTONDOWN
+         ; will always disable the complementary WM_LBUTTONUP. However, if the CS_DBLCLKS window style is set,
+         ; then a single WM_RBUTTONUP will be received as double-clicking generates a sequence of four messages: 
+         ; WM_LBUTTONDOWN, WM_LBUTTONUP, WM_LBUTTONDBLCLK, and WM_LBUTTONUP.
+         ;                 ^ This message is lost when 0x201 → 0xA1.
+         ;                               ^ Only happens when 0x8 is set in RegisterClass.
 
          ; WM_LBUTTONDOWN - Drag to move the window.
-         if (uMsg = 0x201) {
-            parent := DllCall("GetWindowLong", "ptr", hwnd, "int", 0*A_PtrSize, "ptr")
+         if (uMsg = 0x201)
             return DllCall("DefWindowProc", "ptr", parent, "uint", 0xA1, "uptr", 2, "ptr", 0, "ptr")
-         }
+
+         ; WM_LBUTTONUP - Double Click to toggle between play and pause.
+         if (uMsg = 0x202)
+            DllCall("GetWindowLong", "ptr", child, "int", 4*A_PtrSize, "ptr")
+            ? uMsg := 0x8002 ; Pause
+            : uMsg := 0x8001 ; Play
 
          ; WM_RBUTTONUP - Destroy the window.
-         if (uMsg = 0x205) {
-            parent := DllCall("GetWindowLong", "ptr", hwnd, "int", 0*A_PtrSize, "ptr")
-            DllCall("DestroyWindow", "ptr", parent)
-            return 0
-         }
+         if (uMsg = 0x205)
+            return DllCall("DestroyWindow", "ptr", parent)
 
          ; WM_MBUTTONDOWN - Show x, y, and color.
          if (uMsg = 0x207) {
-            ; Force the child hwnd as transparent pixels could redirect to the parent hwnd.
-            child := DllCall("GetWindowLong", "ptr", hwnd, "int", 1*A_PtrSize, "ptr")
             hdc := DllCall("GetWindowLong", "ptr", child, "int", 2*A_PtrSize, "ptr")
 
             ; Get pBits from hBitmap currently selected onto the device context.
@@ -3492,90 +3606,125 @@ class ImagePut {
             Critical
 
             ; Get variables.
-            hdc := DllCall("GetWindowLong", "ptr", hwnd, "int", 2*A_PtrSize, "ptr")
-            ptr := DllCall("GetWindowLong", "ptr", hwnd, "int", 3*A_PtrSize, "ptr")
+            ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", child, "int", 3*A_PtrSize, "ptr")
 
-            ; Exit GIF animation loop.
+            ; Exit GIF animation loop. Set by WM_Destroy.
             if !ptr
                return
 
-            frame        := NumGet(ptr + 1*A_PtrSize, "int")
-            current      := NumGet(ptr + 2*A_PtrSize, "int")
-            pBitmap      := NumGet(ptr + 3*A_PtrSize, "ptr")
-            Item         := NumGet(ptr + 4*A_PtrSize, "ptr")
-            pTimeProc    := NumGet(ptr + 5*A_PtrSize, "ptr")
+            ; Get variables. ObjRelease is automatically called at the end of the scope.
+            obj := Object(ptr)
+            type := obj.type
+            w := obj.w
+            h := obj.h
+            frame := obj.frame
+            number := obj.number
+            accumulate := obj.accumulate
+            delays := obj.delays
+            interval := obj.interval
+            pTimeProc := obj.pTimeProc
+            dimIDs := obj.dimIDs
+            try pBitmap := obj.pBitmap ; not scaled
+            try pBits := obj.pBits     ; not scaled
+            try cache := obj.cache     ; is scaled
 
-            ; Get next frame.
-            frames := NumGet(Item + 4, "uint") // 4            ; Total number of frames
-            frame := mod(frame + 1, frames)                    ; Loop back to zero
+            ; Get next frame number and next delay.
+            frame := mod(frame + 1, number)     ; Increment and loop back to zero
+            delay := delays[frame]              ; Zero-based array
 
-            ; Get delay. See: https://www.biphelps.com/blog/The-Fastest-GIF-Does-Not-Exist
-            delays := NumGet(Item + 8 + A_PtrSize, "ptr")      ; Array of delays
-            delay := 10 * NumGet(delays + 4*frame, "uint")     ; Delay of next frame
-            delay := max(delay, 10)                            ; Minimum delay is 10ms
-            (delay == 10) && delay := 100                      ; 10 ms is actually 100 ms
+            ; See: https://www.biphelps.com/blog/The-Fastest-GIF-Does-Not-Exist
+            if (type = "gif") {
+               delay *= 10                      ; Convert centiseconds to milliseconds
+               delay := max(delay, 10)          ; Minimum delay is 10ms
+               (delay == 10) && delay := 100    ; 10 ms is actually 100 ms
+            }
 
-            ; Check delay.
-            current += 10                                      ; Add resolution of timer
-            NumPut(current, ptr + 2*A_PtrSize, "int")          ; Save the current delay
+            ; The current wait time is advanced by one interval.
+            accumulate += interval              ; Add resolution of timer
+            obj.accumulate := accumulate        ; Save the current wait time
 
-            ; Check if the current tick is equal to the delay.
-            ; Will execute by frame number rather than timing, which is more accurate,
-            ; because the timing will rely take into account the above overhead,
-            ; whereas the frame number will always form an even distribution.
-            ; Note that the variance (jitter) is additive, yet reverts to zero over time.
-            if (current != delay)
-               return
+            ; Checks if the current wait time is equal to the frame delay.
+            ; Executing via frame number rather than timing is more accurate.
+            ; Either a oneshot timer or a periodic timer can be used.
+            ; A oneshot timer will always take into account the above overhead.
+            ; Whereas the periodic timer will always form an even distribution.
+            ; Note that the variance (jitter) is additive. It reverts to zero
+            ; over time only when a periodic timer is used.
+            ; Clever thinking also determined that setting the timer resolution
+            ; or interval to the greatest common factor of all frame delays
+            ; would reduce overhead as well. This is because the timer would
+            ; always be divisible by the frame delays.
+            if (accumulate == delay)
+               wParam := 1
+         }
 
-            NumPut(  frame, ptr + 1*A_PtrSize, "int")          ; Save the frame number
-            NumPut(      0, ptr + 2*A_PtrSize, "int")          ; Reset the current delay
+         ; WM_APP - Advance to next frame.
+         if (uMsg = 0x8000 && wParam) {
+            obj.frame := frame                  ; Update to next frame number
+            obj.accumulate := 0                 ; Resets the wait time
 
             /*
             ; Debug code
             static start := 0, sum := 0, count := 0
-            DllCall("QueryPerformanceFrequency", "int64*", frequency:=0)
-            DllCall("QueryPerformanceCounter", "int64*", now:=0)
+            DllCall("QueryPerformanceFrequency", "int64*", &frequency:=0)
+            DllCall("QueryPerformanceCounter", "int64*", &now:=0)
             time := (now - start) / frequency * 1000
             if (time < 10000) {
                sum += time
-               count++
-               ;if (mod(count, 10) = 0) ; Prevent the tooltip from impacting timings
+               count += 1
+               ; Prevents the tooltip from impacting timings by showing every 10 frames.
+               if (mod(count, 10) = 0)
                   Tooltip % "Current Delay:`t" Round(time, 4)
                      . "`n" "Average Delay:`t" Round(sum / count, 4)
-                     . "`n" "Planned Delay:`t" (delay ? delay : "unknown")
+                     . "`n" "Planned Delay:`t" (delay ?? "unknown")
+                     . "`n" "Timer Resolution:`t" interval
+                     . "`n" "Average FPS:`t" Round(count / (sum / 1000), 4)
+                     . "`n" "Frame Number:`t" frame " of " number
             }
             start := now
             */
 
-            ; Select frame to show.
-            DllCall("gdiplus\GdipImageGetFrameDimensionsCount", "ptr", pBitmap, "uint*", dims:=0)
-            DllCall("gdiplus\GdipImageGetFrameDimensionsList", "ptr", pBitmap, "ptr", &dimIDs := VarSetCapacity(dimIDs, 16*dims), "uint", dims)
-            DllCall("gdiplus\GdipImageSelectActiveFrame", "ptr", pBitmap, "ptr", &dimIDs, "uint", frame)
 
-            ; Get pBits from hBitmap currently selected onto the device context.
-            ; struct DIBSECTION - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-dibsection
-            ; struct BITMAP - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmap
-            hbm := DllCall("GetCurrentObject", "ptr", hdc, "uint", 7)
-            VarSetCapacity(dib, size := 64+5*A_PtrSize) ; sizeof(DIBSECTION) = 84, 104
-            DllCall("GetObject", "ptr", hbm, "int", size, "ptr", &dib)
-               , width  := NumGet(dib, 4, "uint")
-               , height := NumGet(dib, 8, "uint")
-               , pBits  := NumGet(dib, A_PtrSize = 4 ? 20:24, "ptr")
+            ; Case 1: Image is not scaled.
+            if IsSet(pBitmap) {
+               ; Select frame to show.
+               DllCall("gdiplus\GdipImageGetFrameDimensionsCount", "ptr", pBitmap, "uint*", dims:=0)
+               DllCall("gdiplus\GdipImageGetFrameDimensionsList", "ptr", pBitmap, "ptr", &dimIDs := VarSetCapacity(dimIDs, 16*dims), "uint", dims)
+               DllCall("gdiplus\GdipImageSelectActiveFrame", "ptr", pBitmap, "ptr", &dimIDs, "uint", frame)
 
-            ; Transfer data from source pBitmap to an hBitmap manually.
-            VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
-               NumPut(  width, Rect,  8,   "uint") ; Width
-               NumPut( height, Rect, 12,   "uint") ; Height
-            VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
-               NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
-               NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
-            DllCall("gdiplus\GdipBitmapLockBits"
-                     ,    "ptr", pBitmap
-                     ,    "ptr", &Rect
-                     ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
-                     ,    "int", 0xE200B      ; Format32bppPArgb
-                     ,    "ptr", &BitmapData) ; Contains the pointer (pBits) to the hbm.
-            DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
+               ; Get Bitmap width and height.
+               DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
+               DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
+
+               ; Transfer data from source pBitmap to an hBitmap manually.
+               VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
+                  NumPut(  width, Rect,  8,   "uint") ; Width
+                  NumPut( height, Rect, 12,   "uint") ; Height
+               VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
+                  NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
+                  NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
+               DllCall("gdiplus\GdipBitmapLockBits"
+                        ,    "ptr", pBitmap
+                        ,    "ptr", &Rect
+                        ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
+                        ,    "int", 0xE200B      ; Format32bppPArgb
+                        ,    "ptr", &BitmapData) ; Contains the pointer (pBits) to the hbm.
+               DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
+
+               ; Use the saved device context for rendering.
+               hdc := DllCall("GetWindowLong", "ptr", child, "int", 2*A_PtrSize, "ptr")
+            }
+
+            ; Case 2: Image is scaled.
+            else {
+               ; Define the device context for rendering.
+               hdc := cache[frame]
+
+               ; Swap the currently active device context for WM_MBUTTONDOWN.
+               _hdc := DllCall("GetWindowLong", "ptr", child, "int", 2*A_PtrSize, "ptr")
+               DllCall("SetWindowLong", "ptr", child, "int", 2*A_PtrSize, "ptr", hdc)
+               cache[frame] := _hdc
+            }
 
             ; Render to window.
             DllCall("UpdateLayeredWindow"
@@ -3590,7 +3739,41 @@ class ImagePut {
                      ,   "uint", 2)                       ; dwFlags
          }
 
-         ; Must return
+         ; Clears the frame number and wait time.
+         if (uMsg = 0x8001 || uMsg = 0x8002) {
+            if (wParam) {
+               ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", child, "int", 3*A_PtrSize, "ptr")
+               obj := Object(ptr)
+               obj.frame := -1
+               obj.accumulate := 0
+            }
+         }
+
+         ; Start Animation loop.
+         if (uMsg = 0x8001) {
+            if DllCall("GetWindowLong", "ptr", child, "int", 4*A_PtrSize, "ptr")
+               return
+
+            ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", child, "int", 3*A_PtrSize, "ptr")
+            obj := Object(ptr)
+            timer := DllCall("winmm\timeSetEvent"
+                     , "uint", obj.interval  ; uDelay
+                     , "uint", obj.interval  ; uResolution
+                     ,  "ptr", obj.pTimeProc ; lpTimeProc
+                     , "uptr", 0             ; dwUser
+                     , "uint", 1             ; fuEvent
+                     , "uint")
+            DllCall("SetWindowLong", "ptr", child, "int", 4*A_PtrSize, "ptr", timer)
+         }
+
+         ; Stop Animation loop.
+         if (uMsg = 0x8002) {
+            if (timer := DllCall("GetWindowLong", "ptr", child, "int", 4*A_PtrSize, "ptr")) {
+               DllCall("winmm\timeKillEvent", "uint", timer)
+               DllCall("SetWindowLong", "ptr", child, "int", 4*A_PtrSize, "ptr", 0)
+            }
+         }
+
          default:
          return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
       }

@@ -3952,7 +3952,6 @@ class ImagePut {
             }
          }
 
-         ; Must return
          default:
          return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
       }
