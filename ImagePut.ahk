@@ -1040,13 +1040,16 @@ class ImagePut {
 
    static from_buffer(image) {
 
-      if image.HasProp("stride")
+      if image.HasProp("pitch")
+         stride := image.pitch
+
+      else if image.HasProp("stride")
          stride := image.stride
       else if image.HasProp("width")
          stride := image.width * 4
       else if image.HasProp("height") && image.HasProp("size")
          stride := image.size // image.height
-      else throw Error("Buffer must have a stride property.")
+      else throw Error("Buffer must have a stride or pitch property.")
 
       if image.HasProp("height")
          height := image.height
