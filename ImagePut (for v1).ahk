@@ -1048,14 +1048,6 @@ class ImagePut {
          stride := image.size // image.height
       else throw Exception("Buffer must have a stride property.")
 
-      if image.HasKey("width")
-         width := image.width
-      else if image.HasKey("stride")
-         width := image.stride // 4
-      else if image.HasKey("height") && image.HasKey("size")
-         width := image.size // (4 * image.height)
-      else throw Exception("Buffer must have a width property.")
-
       if image.HasKey("height")
          height := image.height
       else if image.HasKey("stride") && image.HasKey("size")
@@ -1063,6 +1055,14 @@ class ImagePut {
       else if image.HasKey("width") && image.HasKey("size")
          height := image.size // (4 * image.width)
       else throw Exception("Buffer must have a height property.")
+
+      if image.HasKey("width")
+         width := image.width
+      else if image.HasKey("stride")
+         width := image.stride // 4
+      else if image.HasKey("height") && image.HasKey("size")
+         width := image.size // (4 * image.height)
+      else throw Exception("Buffer must have a width property.")
 
       ; Could assert a few assumptions, such as stride * height = size.
       ; However, I'd like for the pointer and its size to be as flexable as possible.
