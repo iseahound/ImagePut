@@ -4218,7 +4218,7 @@ class ImagePut {
       ; Get a pointer to binary data.
       DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "ptr*", hbin:=0, "uint")
       bin := DllCall("GlobalLock", "ptr", hbin, "ptr")
-      size := DllCall("GlobalSize", "ptr", bin, "uptr")
+      size := DllCall("GlobalSize", "ptr", hbin, "uptr")
 
       ; Calculate the length of the hexadecimal string.
       length := 2 * size ; No zero terminator needed.
@@ -4293,7 +4293,7 @@ class ImagePut {
       ; Get a pointer to binary data.
       DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "ptr*", hbin:=0, "uint")
       bin := DllCall("GlobalLock", "ptr", hbin, "ptr")
-      size := DllCall("GlobalSize", "ptr", bin, "uptr")
+      size := DllCall("GlobalSize", "ptr", hbin, "uptr")
 
       ; Calculate the length of the base64 string.
       flags := 0x40000001 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_BASE64
@@ -4558,7 +4558,7 @@ class ImagePut {
 
       ; Get the pointer and size of the IStream's movable memory.
       pData := DllCall("GlobalLock", "ptr", hData, "ptr")
-      size := DllCall("GlobalSize", "ptr", pData, "uptr")
+      size := DllCall("GlobalSize", "ptr", hData, "uptr")
 
       ; Copy the encoded image to a SAFEARRAY.
       safeArray := ComObjArray(0x11, size) ; VT_ARRAY | VT_UI1
