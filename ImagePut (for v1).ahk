@@ -1075,11 +1075,9 @@ class ImagePut {
       if image.HasKey("size") && (abs(stride * height) > image.size)
          throw Exception("Image dimensions exceed the size of the buffer.")
 
-      ; Create a pBitmap from the current pointer.
+      ; User is responsible for ensuring that the pointer remains valid.
       DllCall("gdiplus\GdipCreateBitmapFromScan0"
                , "int", width, "int", height, "int", stride, "int", 0x26200A, "ptr", image.ptr, "ptr*", pBitmap:=0)
-
-      ; Todo: what happens if the backing data is destroyed?
 
       return pBitmap
    }
