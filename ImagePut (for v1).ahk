@@ -3506,7 +3506,7 @@ class ImagePut {
          obj := {type : type             ; Either "gif" or "webp"
                , w : w                   ; width
                , h : h                   ; height
-               , frame : -1              ; current frame (will be incremented to 0)
+               , frame : 0               ; current frame (zero-indexed)
                , number : number         ; max frames
                , accumulate : 0          ; current wait time
                , delays : delays         ; array of frame delays
@@ -3535,12 +3535,12 @@ class ImagePut {
 
             ; Create a cache of pre-rendered frames. Note: This can be very slow.
             ; Fixes problems with the animation being paused when dragged by the user.
-            cache := {}
+            cache := {0: hdc}
 
             ; --------- Overwrites the hdc, hbm, and pBits variables!!!!!! ---------
             loop % number {
                ; Select frame to show.
-               frame := A_Index - 1
+               frame := A_Index
                DllCall("gdiplus\GdipImageSelectActiveFrame", "ptr", pBitmap, "ptr", &dimIDs, "uint", frame)
 
                ; Get Bitmap width and height.
@@ -3552,8 +3552,8 @@ class ImagePut {
                hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
                VarSetCapacity(bi, 40, 0)              ; sizeof(bi) = 40
                   NumPut(       40, bi,  0,   "uint") ; Size
-                  NumPut(    width, bi,  4,   "uint") ; Width
-                  NumPut(  -height, bi,  8,    "int") ; Height - Negative so (0, 0) is top-left.
+                  NumPut(        w, bi,  4,   "uint") ; Width
+                  NumPut(       -h, bi,  8,    "int") ; Height - Negative so (0, 0) is top-left.
                   NumPut(        1, bi, 12, "ushort") ; Planes
                   NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
                hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
@@ -3890,10 +3890,8 @@ class ImagePut {
                ; Define the device context for rendering.
                hdc := cache[frame]
 
-               ; Swap the currently active device context for WM_MBUTTONDOWN.
-               _hdc := DllCall("GetWindowLong", "ptr", child, "int", 2*A_PtrSize, "ptr")
+               ; Sets the currently active device context for WM_MBUTTONDOWN.
                DllCall("SetWindowLong", "ptr", child, "int", 2*A_PtrSize, "ptr", hdc)
-               cache[frame] := _hdc
             }
 
             ; Render to window.
@@ -3914,7 +3912,7 @@ class ImagePut {
             if (wParam) {
                ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", child, "int", 3*A_PtrSize, "ptr")
                obj := Object(ptr)
-               obj.frame := -1
+               obj.frame := 0
                obj.accumulate := 0
             }
          }
