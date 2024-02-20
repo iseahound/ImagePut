@@ -1053,18 +1053,18 @@ class ImagePut {
 
       if image.HasProp("height")
          height := image.height
-      else if image.HasProp("stride") && image.HasProp("size")
-         height := image.size // image.stride
+      else if stride && image.HasProp("size")
+         height := image.size // stride
       else if image.HasProp("width") && image.HasProp("size")
          height := image.size // (4 * image.width)
       else throw Error("Buffer must have a height property.")
 
       if image.HasProp("width")
          width := image.width
-      else if image.HasProp("stride")
-         width := image.stride // 4
-      else if image.HasProp("height") && image.HasProp("size")
-         width := image.size // (4 * image.height)
+      else if stride
+         width := stride // 4
+      else if height && image.HasProp("size")
+         width := image.size // (4 * height)
       else throw Error("Buffer must have a width property.")
 
       ; Could assert a few assumptions, such as stride * height = size.

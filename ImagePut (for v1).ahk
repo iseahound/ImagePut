@@ -1053,18 +1053,18 @@ class ImagePut {
 
       if image.HasKey("height")
          height := image.height
-      else if image.HasKey("stride") && image.HasKey("size")
-         height := image.size // image.stride
+      else if stride && image.HasKey("size")
+         height := image.size // stride
       else if image.HasKey("width") && image.HasKey("size")
          height := image.size // (4 * image.width)
       else throw Exception("Buffer must have a height property.")
 
       if image.HasKey("width")
          width := image.width
-      else if image.HasKey("stride")
-         width := image.stride // 4
-      else if image.HasKey("height") && image.HasKey("size")
-         width := image.size // (4 * image.height)
+      else if stride
+         width := stride // 4
+      else if height && image.HasKey("size")
+         width := image.size // (4 * height)
       else throw Exception("Buffer must have a width property.")
 
       ; Could assert a few assumptions, such as stride * height = size.
