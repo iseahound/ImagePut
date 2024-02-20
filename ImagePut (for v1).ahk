@@ -3795,9 +3795,9 @@ class ImagePut {
             interval := obj.interval
             pTimeProc := obj.pTimeProc
             dimIDs := obj.dimIDs
-            try pBitmap := obj.pBitmap ; not scaled
-            try pBits := obj.pBits     ; not scaled
-            try cache := obj.cache     ; is scaled
+            obj.HasKey("pBitmap")  && pBitmap := obj.pBitmap ; not scaled
+            obj.HasKey("pBits")  && pBits := obj.pBits       ; not scaled
+            obj.HasKey("cache")  && cache := obj.cache       ; is scaled
 
             ; Get next frame number and next delay.
             frame := mod(frame + 1, number)     ; Increment and loop back to zero
@@ -3856,7 +3856,7 @@ class ImagePut {
             */
 
             ; Case 1: Image is not scaled.
-            if IsSet(pBitmap) {
+            if not obj.HasKey("cache") {
                ; Select frame to show.
                DllCall("gdiplus\GdipImageGetFrameDimensionsCount", "ptr", pBitmap, "uint*", dims:=0)
                DllCall("gdiplus\GdipImageGetFrameDimensionsList", "ptr", pBitmap, "ptr", &dimIDs := VarSetCapacity(dimIDs, 16*dims), "uint", dims)
