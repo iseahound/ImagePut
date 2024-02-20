@@ -4589,6 +4589,9 @@ class ImagePut {
       ; Get the pointer to the clsid of the matching encoder.
       pCodec := ci.ptr + idx ; ClassID
 
+      ; Default encoding parameter.
+      ep := 0
+
       ; JPEG default quality is 75. Otherwise set a quality value from [0-100].
       if (quality ~= "^-?\d+$") and ("image/jpeg" = StrGet(NumGet(ci, idx+32+4*A_PtrSize, "ptr"), "UTF-16")) { ; MimeType
          ; Use a separate buffer to store the quality as ValueTypeLong (4).

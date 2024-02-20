@@ -5,7 +5,7 @@
 ; Date:      2023-03-02
 ; Version:   1.10
 
-#Requires AutoHotkey v1.1.33+
+#Requires AutoHotkey v1.1.35+
 
 
 ; Puts the image into a file format and returns a base64 encoded string.
@@ -4588,6 +4588,9 @@ class ImagePut {
 
       ; Get the pointer to the clsid of the matching encoder.
       pCodec := &ci + idx ; ClassID
+
+      ; Default encoding parameter.
+      ep := 0
 
       ; JPEG default quality is 75. Otherwise set a quality value from [0-100].
       if (quality ~= "^-?\d+$") and ("image/jpeg" = StrGet(NumGet(ci, idx+32+4*A_PtrSize, "ptr"), "UTF-16")) { ; MimeType
