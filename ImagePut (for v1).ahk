@@ -238,7 +238,7 @@ class ImagePut {
 
             ; Allocate enough space for a hexadecimal string with spaces and a null terminator.
             length := 2 * size + (size - 1) + 1
-            VarSetCapacity(str, length * A_IsUnicode<<2)
+            VarSetCapacity(str, length * (A_IsUnicode?2:1))
 
             ; Lift the binary representation to hex.
             flags := 0x40000004 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_HEX
@@ -4059,7 +4059,7 @@ class ImagePut {
 
       ; Get the absolute path of the file.
       length := DllCall("GetFullPathName", "str", filepath, "uint", 0, "ptr", 0, "ptr", 0, "uint")
-      VarSetCapacity(buf, length * A_IsUnicode<<2)
+      VarSetCapacity(buf, length * (A_IsUnicode?2:1))
       DllCall("GetFullPathName", "str", filepath, "uint", length, "str", buf, "ptr", 0, "uint")
 
       ; Keep waiting until the file has been created. (It should be instant!)
