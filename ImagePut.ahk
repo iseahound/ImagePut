@@ -1069,7 +1069,7 @@ class ImagePut {
 
       ; Could assert a few assumptions, such as stride * height = size.
       ; However, I'd like for the pointer and its size to be as flexable as possible.
-      ; So permit underflow for now.
+      ; User is responsible for underflow.
 
       ; Check for buffer overflow errors.
       if image.HasProp("size") && (abs(stride * height) > image.size)
