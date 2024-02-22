@@ -3897,7 +3897,7 @@ class ImagePut {
 
             ; Render to window.
             DllCall("UpdateLayeredWindow"
-                     ,    "ptr", hwnd                     ; hWnd
+                     ,    "ptr", child                    ; hWnd
                      ,    "ptr", 0                        ; hdcDst
                      ,    "ptr", 0                        ; *pptDst
                      ,"uint64*", w | h << 32              ; *psize
