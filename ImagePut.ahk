@@ -373,7 +373,7 @@ class ImagePut {
       return self.HasProp(name) ? self.%name% : ""
    }
 
-   static inputs := 
+   static inputs :=
 
    [
       "clipboard_png",
@@ -3547,7 +3547,7 @@ class ImagePut {
                ; Get Bitmap width and height.
                DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
                DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
-               
+
                ; Convert the source pBitmap into a hBitmap manually.
                ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
                hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
@@ -3702,7 +3702,7 @@ class ImagePut {
 
          ; For some reason using DefWindowProc or PostMessage to reroute WM_LBUTTONDOWN to WM_NCLBUTTONDOWN
          ; will always disable the complementary WM_LBUTTONUP. However, if the CS_DBLCLKS window style is set,
-         ; then a single WM_RBUTTONUP will be received as double-clicking generates a sequence of four messages: 
+         ; then a single WM_RBUTTONUP will be received as double-clicking generates a sequence of four messages:
          ; WM_LBUTTONDOWN, WM_LBUTTONUP, WM_LBUTTONDBLCLK, and WM_LBUTTONUP.
          ;                 ^ This message is lost when 0x201 → 0xA1.
          ;                               ^ Only happens when 0x8 is set in RegisterClass.
@@ -3799,10 +3799,13 @@ class ImagePut {
             obj.HasProp("pBitmap") && pBitmap := obj.pBitmap ; not scaled
             obj.HasProp("pBits") && pBits := obj.pBits       ; not scaled
             obj.HasProp("cache") && cache := obj.cache       ; is scaled
+         }
 
-            ; Get next frame number and next delay.
-            frame := mod(frame + 1, number)     ; Increment and loop back to zero
-            delay := delays[frame]              ; Zero-based array
+         ; Each timer interval is the GCF of all frame delays.
+         ; Avoids using oneshot timers to reduce additive jitter from constant overhead.
+         if (uMsg = 0x8000 && wParam == 0) {
+            index := mod(frame + 1, number)     ; Increment and loop back to zero
+            delay := delays[index]              ; Zero-based array
 
             ; See: https://www.biphelps.com/blog/The-Fastest-GIF-Does-Not-Exist
             if (type = "gif") {
@@ -3815,23 +3818,16 @@ class ImagePut {
             accumulate += interval              ; Add resolution of timer
             obj.accumulate := accumulate        ; Save the current wait time
 
-            ; Checks if the current wait time is equal to the frame delay.
-            ; Executing via frame number rather than timing is more accurate.
-            ; Either a oneshot timer or a periodic timer can be used.
-            ; A oneshot timer will always take into account the above overhead.
-            ; Whereas the periodic timer will always form an even distribution.
-            ; Note that the variance (jitter) is additive. It reverts to zero
-            ; over time only when a periodic timer is used.
-            ; Clever thinking also determined that setting the timer resolution
-            ; or interval to the greatest common factor of all frame delays
-            ; would reduce overhead as well. This is because the timer would
-            ; always be divisible by the frame delays.
+            ; Check if enough time has passed to advance to the next frame.
             if (accumulate == delay)
-               wParam := 1
+               wParam := 1                      ; Step size of +1
          }
 
          ; WM_APP - Advance to next frame.
-         if (uMsg = 0x8000 && wParam) {
+         if (uMsg = 0x8000 && wParam != 0) {
+            ; Restrict frame index from 0 to the maximum number of frames - 1.
+            frame := mod(mod(frame + wParam, number) + number, number)
+
             obj.frame := frame                  ; Update to next frame number
             obj.accumulate := 0                 ; Resets the wait time
 
