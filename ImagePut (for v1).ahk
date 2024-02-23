@@ -452,7 +452,7 @@ class ImagePut {
          goto string
 
       ; A "screenshot" is an array of 4 numbers.
-      if (image[1] ~= "^-?\d+$" && image[2] ~= "^-?\d+$" && image[3] ~= "^-?\d+$" && image[4] ~= "^-?\d+$")
+      if (image[1] ~= "^-?\d+$" && image[2] ~= "^-?\d+$" && image[3] ~= "^\d+$" && image[4] ~= "^\d+$")
          return "screenshot"
 
       ; A "object" has a pBitmap property that points to an internal GDI+ bitmap.

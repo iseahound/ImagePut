@@ -452,9 +452,9 @@ class ImagePut {
 
 
       ; A "screenshot" is an array of 4 numbers.
-      if (HasMethod(image, "__Item") && image[1] ~= "^-?\d+$" && image[2] ~= "^-?\d+$" && image[3] ~= "^-?\d+$" && image[4] ~= "^-?\d+$")
+      if (HasMethod(image, "__Item") && image[1] ~= "^-?\d+$" && image[2] ~= "^-?\d+$" && image[3] ~= "^\d+$" && image[4] ~= "^\d+$")
          return "screenshot"
-      
+
       ; A "object" has a pBitmap property that points to an internal GDI+ bitmap.
       if image.HasProp("pBitmap")
          try if !DllCall("gdiplus\GdipGetImageType", "ptr", image.pBitmap, "ptr*", &type:=0) && (type == 1)
