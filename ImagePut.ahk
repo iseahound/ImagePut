@@ -226,14 +226,13 @@ class ImagePut {
          ; Prevents future changes to the original pixels from altering any copies.
          ; Without validation, it preforms copy-on-write and copy on LockBits(read).
 
-         if (type ~= "^(?i:clipboardpng|pdf|url|file|stream|RandomAccessStream|hex|base64)$") {
+         try if pStream := this.ToStream(type, image, keywords) {
 
             ; Check the file signature for magic numbers.
             size := 12
             bin := Buffer(size)
 
             ; Get the first few bytes of the image.
-            pStream := this.ToStream(type, image, keywords)
             try DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", bin, "uint", size, "hresult")
             catch ; todo: reset streams...
                goto otherwise
@@ -376,10 +375,11 @@ class ImagePut {
    [
       "clipboardpng",
       "clipboard",
-      "object",
-      "buffer",
       "screenshot",
+      "object",
       "window",
+      "buffer",
+      "monitor",
       "desktop",
       "wallpaper",
       "cursor",
@@ -388,7 +388,6 @@ class ImagePut {
       "file",
       "hex",
       "base64",
-      "monitor",
       "dc",
       "hBitmap",
       "hIcon",
@@ -400,6 +399,11 @@ class ImagePut {
       "sprite"
    ]
 
+   static StreamInputs := ["clipboard_png", "pdf", "url", "file", "hex", "base64", "stream", "RandomAccessStream"]
+   static BitmapInputs := ["clipboard", "screenshot", "object", "window", "buffer", "monitor", "desktop", "wallpaper"
+                        ,  "cursor", "dc", "hBitmap", "hIcon", "bitmap", "wicBitmap", "d2dBitmap", "sprite"]
+   static StreamOutputs := ["file", "hex", "base64", "uri", "stream", "RandomAccessStream", "explorer", "safeArray", "formData"]
+   static BitmapOutputs := ["clipboard", "buffer", "screenshot", "show", "window", "desktop", "wallpaper", "cursor", "dc", "hBitmap", "hIcon", "bitmap", "stream", "RandomAccessStream"]
 
    static DontVerifyImageType(&image, &keywords := "") {
 
