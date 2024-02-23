@@ -193,10 +193,12 @@ class ImagePut {
       catch
          type := this.ImageType(image)
 
-      crop := keywords.crop
-      scale := keywords.scale, upscale := keywords.upscale, downscale := keywords.downscale
-      decode := (keywords.decode != "") ? keywords.decode : this.decode
-      validate := (keywords.validate != "") ? keywords.validate : this.validate
+      crop      := keywords.HasKey("crop")       ? keywords.crop      : ""
+      scale     := keywords.HasKey("scale")      ? keywords.scale     : ""
+      upscale   := keywords.HasKey("upscale")    ? keywords.upscale   : ""
+      downscale := keywords.HasKey("downscale")  ? keywords.downscale : ""
+      decode    := keywords.HasKey("decode")     ? keywords.decode    : this.decode
+      validate  := keywords.HasKey("validate")   ? keywords.validate  : this.validate
 
       ; #1 - Stream intermediate.
       if not decode and not crop and not (scale || upscale || downscale)
@@ -369,10 +371,6 @@ class ImagePut {
       return coimage
    }
 
-   get(name, p*) {
-      return ObjHasKey(this, name) ? this.name : ""
-   }
-
    static inputs :=
    ( Join
    [
@@ -405,8 +403,8 @@ class ImagePut {
 
    DontVerifyImageType(ByRef image, ByRef keywords := "") {
 
-      ; Sentinel value: Returns the empty string for unknown properties.
-      keywords := {base: {__get: this.get}}
+      ; Sentinel value.
+      keywords := {}
 
       ; Try ImageType.
       if !IsObject(image)
@@ -415,7 +413,6 @@ class ImagePut {
       ; Goto ImageType.
       if image.HasKey("image") {
          keywords := image
-         keywords.base := {__get: this.get}
          image := image.image
          throw Exception("Must catch this error with ImageType.")
       }
@@ -424,7 +421,6 @@ class ImagePut {
       for i, type in this.inputs
          if image.HasKey(type) {
             keywords := image
-            keywords.base := {__get: this.get}
             image := image[type]
             return type
          }
@@ -579,10 +575,9 @@ class ImagePut {
       throw Exception("Image type could not be identified.")
    }
 
-   ToBitmap(type, image, k := "") {
+   ToBitmap(type, image, keywords := "") {
 
-      ; Sentinel value: Returns the empty string for unknown properties.
-      (!k) && k := {base: {__get: this.get}}
+      try index := keywords.index
 
       if (type = "clipboard_png")
          return this.Clipboard_pngToBitmap()
@@ -612,7 +607,7 @@ class ImagePut {
          return this.CursorToBitmap()
 
       if (type = "pdf")
-         return this.PdfToBitmap(image, k.index)
+         return this.PdfToBitmap(image, index)
 
       if (type = "url")
          return this.UrlToBitmap(image)
@@ -756,10 +751,9 @@ class ImagePut {
       throw Exception("Conversion from bitmap to " cotype " is not supported.")
    }
 
-   ToStream(type, image, k := "") {
+   ToStream(type, image, keywords := "") {
 
-      ; Sentinel value: Returns the empty string for unknown properties.
-      (!k) && k := {base: {__get: this.get}}
+      try index := keywords.index
 
       if (type = "clipboard_png")
          return this.Clipboard_pngToStream()
