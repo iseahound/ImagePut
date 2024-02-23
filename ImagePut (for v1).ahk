@@ -451,6 +451,10 @@ class ImagePut {
       if not IsObject(image)
          goto string
 
+      ; A "screenshot" is an array of 4 numbers.
+      if (image[1] ~= "^-?\d+$" && image[2] ~= "^-?\d+$" && image[3] ~= "^-?\d+$" && image[4] ~= "^-?\d+$")
+         return "screenshot"
+
       ; A "object" has a pBitmap property that points to an internal GDI+ bitmap.
       if image.HasKey("pBitmap")
          try if !DllCall("gdiplus\GdipGetImageType", "ptr", image.pBitmap, "ptr*", type:=0) && (type == 1)
@@ -459,10 +463,6 @@ class ImagePut {
       ; A "window" is an object with an hwnd property.
       if image.HasKey("hwnd")
          return "window"
-
-      ; A "screenshot" is an array of 4 numbers.
-      if (image[1] ~= "^-?\d+$" && image[2] ~= "^-?\d+$" && image[3] ~= "^-?\d+$" && image[4] ~= "^-?\d+$")
-         return "screenshot"
 
       ; A "buffer" is an object with a pointer to bytes and properties to determine its 2-D shape.
       if image.HasKey("ptr")
