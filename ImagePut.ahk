@@ -585,73 +585,73 @@ class ImagePut {
       (!k) && k := {__get: (self, name, *) => this.get(self, name)}
 
       if (type = "clipboard_png")
-         return this.from_clipboard_png()
+         return this.Clipboard_pngToBitmap()
 
       if (type = "clipboard")
-         return this.from_clipboard()
+         return this.ClipboardToBitmap()
 
       if (type = "object")
-         return this.from_bitmap(image.pBitmap)
+         return this.BitmapToBitmap(image.pBitmap)
 
       if (type = "buffer")
-         return this.from_buffer(image)
+         return this.BufferToBitmap(image)
 
       if (type = "screenshot")
-         return this.from_screenshot(image)
+         return this.ScreenshotToBitmap(image)
 
       if (type = "window")
-         return this.from_window(image)
+         return this.WindowToBitmap(image)
 
       if (type = "desktop")
-         return this.from_desktop()
+         return this.DesktopToBitmap()
 
       if (type = "wallpaper")
-         return this.from_wallpaper()
+         return this.WallpaperToBitmap()
 
       if (type = "cursor")
-         return this.from_cursor()
+         return this.CursorToBitmap()
 
       if (type = "pdf")
-         return this.from_pdf(image, k.index)
+         return this.PdfToBitmap(image, k.index)
 
       if (type = "url")
-         return this.from_url(image)
+         return this.UrlToBitmap(image)
 
       if (type = "file")
-         return this.from_file(image)
+         return this.FileToBitmap(image)
 
       if (type = "hex")
-         return this.from_hex(image)
+         return this.HexToBitmap(image)
 
       if (type = "base64")
-         return this.from_base64(image)
+         return this.Base64ToBitmap(image)
 
       if (type = "monitor")
-         return this.from_monitor(image)
+         return this.MonitorToBitmap(image)
 
       if (type = "dc")
-         return this.from_dc(image)
+         return this.DcToBitmap(image)
 
       if (type = "hBitmap")
-         return this.from_hBitmap(image)
+         return this.HBitmapToBitmap(image)
 
       if (type = "hIcon")
-         return this.from_hIcon(image)
+         return this.HIconToBitmap(image)
 
       if (type = "bitmap")
-         return this.from_bitmap(image)
+         return this.BitmapToBitmap(image)
 
       if (type = "stream")
-         return this.from_stream(image)
+         return this.StreamToBitmap(image)
 
       if (type = "RandomAccessStream")
-         return this.from_RandomAccessStream(image)
+         return this.RandomAccessStreamToBitmap(image)
 
       if (type = "wicBitmap")
-         return this.from_wicBitmap(image)
+         return this.WicBitmapToBitmap(image)
 
       if (type = "sprite")
-         return this.from_sprite(image)
+         return this.SpriteToBitmap(image)
 
       throw Error("Conversion from " type " to bitmap is not supported.")
    }
@@ -659,19 +659,19 @@ class ImagePut {
    static BitmapToCoimage(cotype, pBitmap, p1:="", p2:="", p3:="", p4:="", p5:="", p6:="", p*) {
       ; BitmapToCoimage("clipboard", pBitmap)
       if (cotype = "clipboard" || cotype = "clipboard_png")
-         return this.to_clipboard(pBitmap)
+         return this.BitmapToClipboard(pBitmap)
 
       ; BitmapToCoimage("buffer", pBitmap)
       if (cotype = "buffer")
-         return this.to_buffer(pBitmap)
+         return this.BitmapToBuffer(pBitmap)
 
       ; BitmapToCoimage("sharedbuffer", pBitmap, p1)
       if (cotype = "sharedbuffer")
-         return this.to_sharedbuffer(pBitmap, p1)
+         return this.BitmapToSharedbuffer(pBitmap, p1)
 
       ; BitmapToCoimage("screenshot", pBitmap, screenshot, alpha)
       if (cotype = "screenshot")
-         return this.to_screenshot(pBitmap, p1, p2)
+         return this.BitmapToScreenshot(pBitmap, p1, p2)
 
       ; BitmapToCoimage("show", pBitmap, title, pos, style, styleEx, parent, playback)
       if (cotype = "show")
@@ -679,51 +679,51 @@ class ImagePut {
 
       ; BitmapToCoimage("window", pBitmap, title, pos, style, styleEx, parent, playback)
       if (cotype = "window")
-         return this.to_window(pBitmap, p1, p2, p3, p4, p5, p6)
+         return this.BitmapToWindow(pBitmap, p1, p2, p3, p4, p5, p6)
 
       ; BitmapToCoimage("desktop", pBitmap)
       if (cotype = "desktop")
-         return this.to_desktop(pBitmap)
+         return this.BitmapToDesktop(pBitmap)
 
       ; BitmapToCoimage("wallpaper", pBitmap)
       if (cotype = "wallpaper")
-         return this.to_wallpaper(pBitmap)
+         return this.BitmapToWallpaper(pBitmap)
 
       ; BitmapToCoimage("cursor", pBitmap, xHotspot, yHotspot)
       if (cotype = "cursor")
-         return this.to_cursor(pBitmap, p1, p2)
+         return this.BitmapToCursor(pBitmap, p1, p2)
 
       ; BitmapToCoimage("url", pBitmap)
       if (cotype = "url")
-         return this.to_url(pBitmap)
+         return this.BitmapToUrl(pBitmap)
 
       ; BitmapToCoimage("file", pBitmap, filepath, quality)
       if (cotype = "file")
-         return this.to_file(pBitmap, p1, p2)
+         return this.BitmapToFile(pBitmap, p1, p2)
 
       ; BitmapToCoimage("hex", pBitmap, extension, quality)
       if (cotype = "hex")
-         return this.to_hex(pBitmap, p1, p2)
+         return this.BitmapToHex(pBitmap, p1, p2)
 
       ; BitmapToCoimage("base64", pBitmap, extension, quality)
       if (cotype = "base64")
-         return this.to_base64(pBitmap, p1, p2)
+         return this.BitmapToBase64(pBitmap, p1, p2)
 
       ; BitmapToCoimage("uri", pBitmap, extension, quality)
       if (cotype = "uri")
-         return this.to_uri(pBitmap, p1, p2)
+         return this.BitmapToUri(pBitmap, p1, p2)
 
       ; BitmapToCoimage("dc", pBitmap, alpha)
       if (cotype = "dc")
-         return this.to_dc(pBitmap, p1)
+         return this.BitmapToDc(pBitmap, p1)
 
       ; BitmapToCoimage("hBitmap", pBitmap, alpha)
       if (cotype = "hBitmap")
-         return this.to_hBitmap(pBitmap, p1)
+         return this.BitmapToHBitmap(pBitmap, p1)
 
       ; BitmapToCoimage("hIcon", pBitmap)
       if (cotype = "hIcon")
-         return this.to_hIcon(pBitmap)
+         return this.BitmapToHIcon(pBitmap)
 
       ; BitmapToCoimage("bitmap", pBitmap)
       if (cotype = "bitmap")
@@ -731,27 +731,27 @@ class ImagePut {
 
       ; BitmapToCoimage("stream", pBitmap, extension, quality)
       if (cotype = "stream")
-         return this.to_stream(pBitmap, p1, p2)
+         return this.BitmapToStream(pBitmap, p1, p2)
 
       ; BitmapToCoimage("RandomAccessStream", pBitmap, extension, quality)
       if (cotype = "RandomAccessStream")
-         return this.to_RandomAccessStream(pBitmap, p1, p2)
+         return this.BitmapToRandomAccessStream(pBitmap, p1, p2)
 
       ; BitmapToCoimage("wicBitmap", pBitmap)
       if (cotype = "wicBitmap")
-         return this.to_wicBitmap(pBitmap)
+         return this.BitmapToWicBitmap(pBitmap)
 
       ; BitmapToCoimage("explorer", pBitmap, default)
       if (cotype = "explorer")
-         return this.to_explorer(pBitmap, p1)
+         return this.BitmapToExplorer(pBitmap, p1)
 
       ; BitmapToCoimage("safeArray", pBitmap, extension, quality)
       if (cotype = "safeArray")
-         return this.to_safeArray(pBitmap, p1, p2)
+         return this.BitmapToSafeArray(pBitmap, p1, p2)
 
       ; BitmapToCoimage("formData", pBitmap, boundary, extension, quality)
       if (cotype = "formData")
-         return this.to_formData(pBitmap, p1, p2, p3)
+         return this.BitmapToFormData(pBitmap, p1, p2, p3)
 
       throw Error("Conversion from bitmap to " cotype " is not supported.")
    }
@@ -762,28 +762,28 @@ class ImagePut {
       (!k) && k := {__get: (self, name, *) => this.get(self, name)}
 
       if (type = "clipboard_png")
-         return this.get_clipboard_png()
+         return this.Clipboard_pngToStream()
 
       if (type = "pdf")
-         return this.get_pdf(image, k.index)
+         return this.PdfToStream(image, k.index)
 
       if (type = "url")
-         return this.get_url(image)
+         return this.UrlToStream(image)
 
       if (type = "file")
-         return this.get_file(image)
+         return this.FileToStream(image)
 
       if (type = "hex")
-         return this.get_hex(image)
+         return this.HexToStream(image)
 
       if (type = "base64")
-         return this.get_base64(image)
+         return this.Base64ToStream(image)
 
       if (type = "stream")
-         return this.get_stream(image)
+         return this.StreamToStream(image)
 
       if (type = "RandomAccessStream")
-         return this.get_RandomAccessStream(image)
+         return this.RandomAccessStreamToStream(image)
 
       throw Error("Conversion from " type " to stream is not supported.")
    }
@@ -791,19 +791,19 @@ class ImagePut {
    static StreamToCoimage(cotype, pStream, p1 := "", p2 := "", p*) {
       ; StreamToCoimage("file", pStream, filepath)
       if (cotype = "file")
-         return this.set_file(pStream, p1)
+         return this.StreamToFile(pStream, p1)
 
       ; StreamToCoimage("hex", pStream)
       if (cotype = "hex")
-         return this.set_hex(pStream)
+         return this.StreamToHex(pStream)
 
       ; StreamToCoimage("base64", pStream)
       if (cotype = "base64")
-         return this.set_base64(pStream)
+         return this.StreamToBase64(pStream)
 
       ; StreamToCoimage("uri", pStream)
       if (cotype = "uri")
-         return this.set_uri(pStream)
+         return this.StreamToUri(pStream)
 
       ; StreamToCoimage("stream", pStream)
       if (cotype = "stream")
@@ -811,19 +811,19 @@ class ImagePut {
 
       ; StreamToCoimage("RandomAccessStream", pStream)
       if (cotype = "RandomAccessStream")
-         return this.set_RandomAccessStream(pStream)
+         return this.StreamToRandomAccessStream(pStream)
 
       ; StreamToCoimage("explorer", pStream, default)
       if (cotype = "explorer")
-         return this.set_explorer(pStream, p1)
+         return this.StreamToExplorer(pStream, p1)
 
       ; StreamToCoimage("safeArray", pStream)
       if (cotype = "safeArray")
-         return this.set_safeArray(pStream)
+         return this.StreamToSafeArray(pStream)
 
       ; StreamToCoimage("formData", pStream, boundary)
       if (cotype = "formData")
-         return this.set_formData(pStream, p1)
+         return this.StreamToFormData(pStream, p1)
 
       throw Error("Conversion from stream to " cotype " is not supported.")
    }
@@ -984,7 +984,7 @@ class ImagePut {
          . "(?:[/?#]\S*)?$" ; resource path (optional)
    }
 
-   static from_clipboard() {
+   static ClipboardToBitmap() {
       ; Open the clipboard with exponential backoff.
       loop
          if DllCall("OpenClipboard", "ptr", A_ScriptHwnd)
@@ -994,7 +994,7 @@ class ImagePut {
                Sleep (2**(A_Index-1) * 30)
             else throw Error("Clipboard could not be opened.")
 
-      ; Fallback to CF_BITMAP. This format does not support transparency even with to_hBitmap().
+      ; Fallback to CF_BITMAP. This format does not support transparency even with BitmapToHBitmap().
       if !DllCall("IsClipboardFormatAvailable", "uint", 2)
          throw Error("Clipboard does not have CF_BITMAP data.")
 
@@ -1007,14 +1007,14 @@ class ImagePut {
       return pBitmap
    }
 
-   static from_clipboard_png() {
-      pStream := this.get_clipboard_png()
+   static Clipboard_pngToBitmap() {
+      pStream := this.Clipboard_pngToStream()
       DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
       ObjRelease(pStream)
       return pBitmap
    }
 
-   static get_clipboard_png() {
+   static Clipboard_pngToStream() {
       ; Open the clipboard with exponential backoff.
       loop
          if DllCall("OpenClipboard", "ptr", A_ScriptHwnd)
@@ -1038,7 +1038,7 @@ class ImagePut {
       return pStream
    }
 
-   static from_buffer(image) {
+   static BufferToBitmap(image) {
 
       if image.HasProp("pitch")
          stride := image.pitch
@@ -1262,7 +1262,7 @@ class ImagePut {
       Cleanup : Cleanup}.update() ; init ptr && size.
    }
 
-   static from_screenshot2(image) {
+   static Screenshot2ToBitmap(image) {
       obj := this.read_screen()
 
       width := obj.width
@@ -1296,7 +1296,7 @@ class ImagePut {
       return pBitmap
    }
 
-   static from_screenshot(image) {
+   static ScreenshotToBitmap(image) {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
 
       ; Allow the image to be a window handle.
@@ -1355,7 +1355,7 @@ class ImagePut {
       return pBitmap
    }
 
-   static from_window(image) {
+   static WindowToBitmap(image) {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
 
       ; Get the handle to the window.
@@ -1407,7 +1407,7 @@ class ImagePut {
       return pBitmap
    }
 
-   static from_desktop() {
+   static DesktopToBitmap() {
       ; Find the child window.
       windows := WinGetList("ahk_class WorkerW")
       if (windows.length == 0)
@@ -1461,7 +1461,7 @@ class ImagePut {
       return pBitmap
    }
 
-   static from_wallpaper() {
+   static WallpaperToBitmap() {
       ; Get the width and height of all monitors.
       try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
       width  := DllCall("GetSystemMetrics", "int", 78, "int")
@@ -1493,7 +1493,7 @@ class ImagePut {
       return pBitmap
    }
 
-   static from_cursor() {
+   static CursorToBitmap() {
       ; Thanks 23W - https://stackoverflow.com/a/13295280
 
       ; struct CURSORINFO - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-cursorinfo
@@ -1506,7 +1506,7 @@ class ImagePut {
          ; yCursor := NumGet(ci, 12+A_PtrSize, "int")
 
       ; Cursors are the same as icons!
-      pBitmap := this.from_hIcon(hCursor)
+      pBitmap := this.HIconToBitmap(hCursor)
 
       ; Cleanup the handle to the cursor. Same as DestroyIcon.
       DllCall("DestroyCursor", "ptr", hCursor)
@@ -1514,19 +1514,19 @@ class ImagePut {
       return pBitmap
    }
 
-   static from_pdf(image, index := "") {
-      pStream := this.get_pdf(image, index)
+   static PdfToBitmap(image, index := "") {
+      pStream := this.PdfToStream(image, index)
       DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
       ObjRelease(pStream)
       return pBitmap
    }
 
-   static get_pdf(image, index := "") {
+   static PdfToStream(image, index := "") {
       ; Thanks malcev - https://www.autohotkey.com/boards/viewtopic.php?t=80735
       (index == "") && index := 1
 
       ; Create a stream from either a url or a file.
-      pStream := this.is_url(image) ? this.get_url(image) : this.get_file(image)
+      pStream := this.is_url(image) ? this.UrlToStream(image) : this.FileToStream(image)
 
       ; Compare the signature of the file with the PDF magic string "%PDF".
       DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", signature := Buffer(4), "uint", 4, "hresult")
@@ -1610,14 +1610,14 @@ class ImagePut {
       }
    }
 
-   static from_url(image) {
-      pStream := this.get_url(image)
+   static UrlToBitmap(image) {
+      pStream := this.UrlToStream(image)
       DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
       ObjRelease(pStream)
       return pBitmap
    }
 
-   static get_url(image) {
+   static UrlToStream(image) {
       req := ComObject("WinHttp.WinHttpRequest.5.1")
       req.Open("GET", image, True)
       req.Send()
@@ -1626,15 +1626,15 @@ class ImagePut {
       return IStream.ptr
    }
 
-   static from_file(image) {
+   static FileToBitmap(image) {
       ; This is faster than GdipCreateBitmapFromFile and does not lock the file.
-      pStream := this.get_file(image)
+      pStream := this.FileToStream(image)
       DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
       ObjRelease(pStream)
       return pBitmap
    }
 
-   static get_file(image) {
+   static FileToStream(image) {
       file := FileOpen(image, "r")
       hData := DllCall("GlobalAlloc", "uint", 0x2, "uptr", file.length, "ptr")
       pData := DllCall("GlobalLock", "ptr", hData, "ptr")
@@ -1645,14 +1645,14 @@ class ImagePut {
       return pStream
    }
 
-   static from_hex(image) {
-      pStream := this.get_hex(image)
+   static HexToBitmap(image) {
+      pStream := this.HexToStream(image)
       DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
       ObjRelease(pStream)
       return pBitmap
    }
 
-   static get_hex(image) {
+   static HexToStream(image) {
       ; Trim whitespace and remove hexadecimal indicator.
       image := Trim(image)
       image := RegExReplace(image, "^(0[xX])")
@@ -1671,14 +1671,14 @@ class ImagePut {
       return pStream
    }
 
-   static from_base64(image) {
-      pStream := this.get_base64(image)
+   static Base64ToBitmap(image) {
+      pStream := this.Base64ToStream(image)
       DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
       ObjRelease(pStream)
       return pBitmap
    }
 
-   static get_base64(image) {
+   static Base64ToStream(image) {
       ; Trim whitespace and remove mime type.
       image := Trim(image)
       image := RegExReplace(image, "(?i)^data:image\/[a-z]+;base64,")
@@ -1697,7 +1697,7 @@ class ImagePut {
       return pStream
    }
 
-   static from_monitor(image) {
+   static MonitorToBitmap(image) {
       try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
       if (image > 0) {
          MonitorGet(image, &Left, &Top, &Right, &Bottom)
@@ -1712,10 +1712,10 @@ class ImagePut {
          h := DllCall("GetSystemMetrics", "int", 79, "int")
       }
       try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
-      return this.from_screenshot([x,y,w,h])
+      return this.ScreenshotToBitmap([x,y,w,h])
    }
 
-   static from_dc(image) {
+   static DcToBitmap(image) {
       ; An application cannot select a single bitmap into more than one DC at a time.
       if !(sbm := DllCall("GetCurrentObject", "ptr", image, "uint", 7))
          throw Error("The device context has no bitmap selected.")
@@ -1785,7 +1785,7 @@ class ImagePut {
       return pBitmap
    }
 
-   static from_hBitmap(image) {
+   static HBitmapToBitmap(image) {
       ; struct DIBSECTION - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-dibsection
       ; struct BITMAP - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmap
       dib := Buffer(64+5*A_PtrSize) ; sizeof(DIBSECTION) = 84, 104
@@ -1862,7 +1862,7 @@ class ImagePut {
       return pBitmap
    }
 
-   static from_hIcon(image) {
+   static HIconToBitmap(image) {
       ; struct ICONINFO - https://docs.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-iconinfo
       ii := Buffer(8+3*A_PtrSize)                       ; sizeof(ICONINFO) = 20, 32
       DllCall("GetIconInfo", "ptr", image, "ptr", ii)
@@ -1929,7 +1929,7 @@ class ImagePut {
       return pBitmap
    }
 
-   static from_bitmap(image) {
+   static BitmapToBitmap(image) {
       ; Retain the current PixelFormat, unlike GdipCloneImage.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", image, "uint*", &width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", image, "uint*", &height:=0)
@@ -1945,7 +1945,7 @@ class ImagePut {
       return pBitmap
    }
 
-   static from_stream(image) {
+   static StreamToBitmap(image) {
       ; Cloning a temporary stream bypasses the downsides of GDI+ controlling the stream.
       ComCall(Clone := 13, image, "ptr*", &pStream:=0)
       ; Completely ignores the seek pointer and sets the seek position to 4096.
@@ -1954,7 +1954,7 @@ class ImagePut {
       return pBitmap
    }
 
-   static get_stream(image) {
+   static StreamToStream(image) {
       ; Creates a new, separate stream. Necessary to separate reference counting through a clone.
       ComCall(Clone := 13, image, "ptr*", &pStream:=0)
       ; Ensures that a duplicated stream does not inherit the original seek position.
@@ -1962,15 +1962,15 @@ class ImagePut {
       return pStream
    }
 
-   static from_RandomAccessStream(image) {
+   static RandomAccessStreamToBitmap(image) {
       ; Creating a Bitmap from stream adds +3 to the reference count until DisposeImage is called.
-      pStream := this.get_RandomAccessStream(image)
+      pStream := this.RandomAccessStreamToStream(image)
       DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
       ObjRelease(pStream)
       return pBitmap
    }
 
-   static get_RandomAccessStream(image) {
+   static RandomAccessStreamToStream(image) {
       ; Note that the returned stream shares a reference count with the original RandomAccessStream's internal stream.
       DllCall("ole32\CLSIDFromString", "wstr", "{0000000C-0000-0000-C000-000000000046}", "ptr", CLSID := Buffer(16), "hresult")
       DllCall("ShCore\CreateStreamOverRandomAccessStream", "ptr", image, "ptr", CLSID, "ptr*", &pStream:=0, "hresult")
@@ -1980,7 +1980,7 @@ class ImagePut {
       return pStreamClone
    }
 
-   static from_wicBitmap(image) {
+   static WicBitmapToBitmap(image) {
       ; IWICBitmapSource::GetSize - https://github.com/iseahound/10/blob/win/10.0.16299.0/um/wincodec.h#L1304
       ComCall(GetSize := 3, image, "uint*", &width:=0, "uint*", &height:=0)
 
@@ -2011,12 +2011,12 @@ class ImagePut {
       return pBitmap
    }
 
-   static from_sprite(image) {
+   static SpriteToBitmap(image) {
       ; Create a source pBitmap.
       if this.is_url(image)
-         pBitmap := this.from_url(image)
+         pBitmap := this.UrlToBitmap(image)
       else if FileExist(image)
-         pBitmap := this.from_file(image)
+         pBitmap := this.FileToBitmap(image)
       else
          throw Error("Could not be loaded from a valid file path or URL.")
 
@@ -2058,7 +2058,7 @@ class ImagePut {
       return pBitmap
    }
 
-   static to_clipboard(pBitmap) {
+   static BitmapToClipboard(pBitmap) {
       ; Standard Clipboard Formats - https://www.codeproject.com/Reference/1091137/Windows-Clipboard-Formats
       ; Synthesized Clipboard Formats - https://docs.microsoft.com/en-us/windows/win32/dataxchg/clipboard-formats
 
@@ -2124,12 +2124,12 @@ class ImagePut {
       return ClipboardAll()
    }
 
-   set_clipboard(pStream) { ; Not yet implemented.
+   StreamToClipboard(pStream) { ; Not yet implemented.
       this.select_extension(pStream, &extension:="")
 
       if !(extension ~= "gif|png") {
          DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
-         this.to_clipboard(pBitmap)
+         this.BitmapToClipboard(pBitmap)
          DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
          return ClipboardAll()
       }
@@ -2159,7 +2159,7 @@ class ImagePut {
       return ClipboardAll()
    }
 
-   static to_buffer(pBitmap) {
+   static BitmapToBuffer(pBitmap) {
       ; Get Bitmap width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
@@ -2210,7 +2210,7 @@ class ImagePut {
       return buf
    }
 
-   static to_sharedbuffer(pBitmap, name := "Alice") {
+   static BitmapToSharedbuffer(pBitmap, name := "Alice") {
       ; Get Bitmap width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
@@ -2424,13 +2424,13 @@ class ImagePut {
       Crop(x, y, w, h) {
          DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", this.pBitmap, "int*", &format:=0)
          DllCall("gdiplus\GdipCloneBitmapAreaI", "int", x, "int", y, "int", w, "int", h, "int", format, "ptr", this.pBitmap, "ptr*", &pBitmap:=0)
-         try return ImagePut.to_buffer(pBitmap)
+         try return ImagePut.BitmapToBuffer(pBitmap)
          finally DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
       }
 
       Show(window_border := False, title := "", pos := "", style := "", styleEx := "", parent := "") {
          return (window_border)
-            ? ImagePut.to_window(this.pBitmap, title, pos, style, styleEx, parent)
+            ? ImagePut.BitmapToWindow(this.pBitmap, title, pos, style, styleEx, parent)
             : ImagePut.show(this.pBitmap, title, pos, style, styleEx, parent)
       }
 
@@ -2442,7 +2442,7 @@ class ImagePut {
 
          ; If extension is not .bmp, use to_file routine.
          if (extension != "bmp")
-            return ImagePut.to_file(this.pBitmap, filepath, quality)
+            return ImagePut.BitmapToFile(this.pBitmap, filepath, quality)
 
          bm := Buffer(54)
 
@@ -3163,7 +3163,7 @@ class ImagePut {
       }
    }
 
-   static to_screenshot(pBitmap, screenshot := "", alpha := "") {
+   static BitmapToScreenshot(pBitmap, screenshot := "", alpha := "") {
       ; Get Bitmap width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
@@ -3175,7 +3175,7 @@ class ImagePut {
 
       ; Convert the Bitmap to a hBitmap and associate a device context for blitting.
       hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
-      hbm := this.to_hBitmap(pBitmap, alpha)
+      hbm := this.BitmapToHBitmap(pBitmap, alpha)
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
       ; Retrieve the device context for the screen.
@@ -3201,7 +3201,7 @@ class ImagePut {
       return [x,y,w,h]
    }
 
-   static to_window(pBitmap, title := "", pos := "", style := 0x82C80000, styleEx := 0x9, parent := "", playback := "") {
+   static BitmapToWindow(pBitmap, title := "", pos := "", style := 0x82C80000, styleEx := 0x9, parent := "", playback := "") {
       ; Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
       ; Extended Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/extended-window-styles
 
@@ -3998,7 +3998,7 @@ class ImagePut {
       return pcb
    }
 
-   static to_desktop(pBitmap) {
+   static BitmapToDesktop(pBitmap) {
       ; Thanks Gerald Degeneve - https://www.codeproject.com/Articles/856020/Draw-Behind-Desktop-Icons-in-Windows-plus
 
       ; Get Bitmap width and height.
@@ -4007,7 +4007,7 @@ class ImagePut {
 
       ; Convert the Bitmap to a hBitmap and associate a device context for blitting.
       hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
-      hbm := this.to_hBitmap(pBitmap)
+      hbm := this.BitmapToHBitmap(pBitmap)
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
       ; Post-Creator's Update Windows 10. WM_SPAWN_WORKER = 0x052C
@@ -4049,9 +4049,9 @@ class ImagePut {
       return "desktop"
    }
 
-   static to_wallpaper(pBitmap) {
+   static BitmapToWallpaper(pBitmap) {
       ; Create a temporary image file.
-      filepath := this.to_file(pBitmap)
+      filepath := this.BitmapToFile(pBitmap)
 
       ; Get the absolute path of the file.
       length := DllCall("GetFullPathName", "str", filepath, "uint", 0, "ptr", 0, "ptr", 0, "uint")
@@ -4077,7 +4077,7 @@ class ImagePut {
       return "wallpaper"
    }
 
-   static to_cursor(pBitmap, xHotspot := "", yHotspot := "") {
+   static BitmapToCursor(pBitmap, xHotspot := "", yHotspot := "") {
       ; Thanks Nick - https://stackoverflow.com/a/550965
 
       ; Creates an icon that can be used as a cursor.
@@ -4112,7 +4112,7 @@ class ImagePut {
       return "A_Cursor"
    }
 
-   static to_explorer(pBitmap, default := "") {
+   static BitmapToExplorer(pBitmap, default := "") {
 
       ; Default directory to desktop.
       (default == "") && default := A_Desktop
@@ -4134,10 +4134,10 @@ class ImagePut {
       else
          directory := default
 
-      return this.to_file(pBitmap, directory)
+      return this.BitmapToFile(pBitmap, directory)
    }
 
-   static set_explorer(pStream, default := "") {
+   static StreamToExplorer(pStream, default := "") {
 
       ; Default directory to desktop.
       (default == "") && default := A_Desktop
@@ -4159,10 +4159,10 @@ class ImagePut {
       else
          directory := default
 
-      return this.set_file(pStream, directory)
+      return this.StreamToFile(pStream, directory)
    }
 
-   static to_file(pBitmap, filepath := "", quality := "") {
+   static BitmapToFile(pBitmap, filepath := "", quality := "") {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
       extension := "png"
       this.select_filepath(&filepath, &extension)
@@ -4180,7 +4180,7 @@ class ImagePut {
       return filepath
    }
 
-   static set_file(pStream, filepath := "") {
+   static StreamToFile(pStream, filepath := "") {
       extension := "png"
       this.select_extension(pStream, &extension)
       this.select_filepath(&filepath, &extension)
@@ -4203,14 +4203,14 @@ class ImagePut {
       return filepath
    }
 
-   static to_hex(pBitmap, extension := "", quality := "") {
+   static BitmapToHex(pBitmap, extension := "", quality := "") {
       ; Thanks noname - https://www.autohotkey.com/boards/viewtopic.php?style=7&p=144247#p144247
 
       ; Default extension is PNG for small sizes!
       if (extension == "")
          extension := "png"
 
-      pStream := this.to_stream(pBitmap, extension, quality)
+      pStream := this.BitmapToStream(pBitmap, extension, quality)
 
       ; Get a pointer to binary data.
       DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "ptr*", &hbin:=0, "hresult")
@@ -4246,7 +4246,7 @@ class ImagePut {
       return StrGet(str, length, "CP0")
    }
 
-   static set_hex(pStream) {
+   static StreamToHex(pStream) {
       ; For compatibility with SHCreateMemStream do not use GetHGlobalFromStream.
       DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "hresult")
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
@@ -4278,14 +4278,14 @@ class ImagePut {
       return StrGet(str, length, "CP0")
    }
 
-   static to_base64(pBitmap, extension := "", quality := "") {
+   static BitmapToBase64(pBitmap, extension := "", quality := "") {
       ; Thanks noname - https://www.autohotkey.com/boards/viewtopic.php?style=7&p=144247#p144247
 
       ; Default extension is PNG for small sizes!
       if (extension == "")
          extension := "png"
 
-      pStream := this.to_stream(pBitmap, extension, quality)
+      pStream := this.BitmapToStream(pBitmap, extension, quality)
 
       ; Get a pointer to binary data.
       DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "ptr*", &hbin:=0, "hresult")
@@ -4308,7 +4308,7 @@ class ImagePut {
       return StrGet(str, length, "CP0")
    }
 
-   static set_base64(pStream) {
+   static StreamToBase64(pStream) {
       ; For compatibility with SHCreateMemStream do not use GetHGlobalFromStream.
       DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "hresult")
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
@@ -4327,15 +4327,15 @@ class ImagePut {
       return StrGet(str, length, "CP0")
    }
 
-   static to_uri(pBitmap, extension := "", quality := "") {
+   static BitmapToUri(pBitmap, extension := "", quality := "") {
       static dict := Map("bmp", "bmp", "dib", "bmp", "rle", "bmp", "jpg", "jpeg", "jpeg", "jpeg", "jpe", "jpeg"
                      , "jfif", "jpeg", "gif", "gif", "tif", "tiff", "tiff", "tiff", "png", "png")
 
       extension := RegExReplace(extension, "^\*?\.?")
-      return "data:image/" dict[StrLower(extension)] ";base64," this.to_base64(pBitmap, extension, quality)
+      return "data:image/" dict[StrLower(extension)] ";base64," this.BitmapToBase64(pBitmap, extension, quality)
    }
 
-   static set_uri(pStream) {
+   static StreamToUri(pStream) {
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
       DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", signature := Buffer(256), "uint", 256, "hresult")
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
@@ -4356,10 +4356,10 @@ class ImagePut {
       MimeType := StrGet(MimeOut, "UTF-16")
       DllCall("ole32\CoTaskMemFree", "ptr", MimeOut)
 
-      return "data:" MimeType ";base64," this.set_base64(pStream)
+      return "data:" MimeType ";base64," this.StreamToBase64(pStream)
    }
 
-   static to_dc(pBitmap, alpha := "") {
+   static BitmapToDc(pBitmap, alpha := "") {
       ; Revert to built in functionality if a replacement color is declared.
       if (alpha != "") { ; This built-in version is about 25% slower and also preserves transparency.
          DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "ptr", pBitmap, "ptr*", &hbm:=0, "uint", alpha)
@@ -4402,7 +4402,7 @@ class ImagePut {
       return hdc
    }
 
-   static to_hBitmap(pBitmap, alpha := "") {
+   static BitmapToHBitmap(pBitmap, alpha := "") {
       ; Revert to built in functionality if a replacement color is declared.
       if (alpha != "") { ; This built-in version is about 25% slower and also preserves transparency.
          DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "ptr", pBitmap, "ptr*", &hbm:=0, "uint", alpha)
@@ -4447,12 +4447,12 @@ class ImagePut {
       return hbm
    }
 
-   static to_hIcon(pBitmap) {
+   static BitmapToHIcon(pBitmap) {
       DllCall("gdiplus\GdipCreateHICONFromBitmap", "ptr", pBitmap, "ptr*", &hIcon:=0)
       return hIcon
    }
 
-   static to_stream(pBitmap, extension := "", quality := "") {
+   static BitmapToStream(pBitmap, extension := "", quality := "") {
       ; Default extension is TIF for fast speeds!
       if (extension == "")
          extension := "tif"
@@ -4466,14 +4466,14 @@ class ImagePut {
       return pStream
    }
 
-   static to_RandomAccessStream(pBitmap, extension := "", quality := "") {
-      pStream := this.to_stream(pBitmap, extension, quality)
-      pRandomAccessStream := this.set_RandomAccessStream(pStream)
+   static BitmapToRandomAccessStream(pBitmap, extension := "", quality := "") {
+      pStream := this.BitmapToStream(pBitmap, extension, quality)
+      pRandomAccessStream := this.StreamToRandomAccessStream(pStream)
       ObjRelease(pStream) ; Decrement the reference count of the IStream interface.
       return pRandomAccessStream
    }
 
-   static set_RandomAccessStream(pStream) {
+   static StreamToRandomAccessStream(pStream) {
       ; Thanks teadrinker - https://www.autohotkey.com/boards/viewtopic.php?f=6&t=72674
       DllCall("ole32\CLSIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", CLSID := Buffer(16), "hresult")
       DllCall("ShCore\CreateRandomAccessStreamOverStream"
@@ -4485,7 +4485,7 @@ class ImagePut {
       return pRandomAccessStream
    }
 
-   static to_wicBitmap(pBitmap) {
+   static BitmapToWicBitmap(pBitmap) {
       ; Get Bitmap width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
@@ -4525,7 +4525,7 @@ class ImagePut {
       return wicBitmap
    }
 
-   static set_safeArray(pStream) {
+   static StreamToSafeArray(pStream) {
       ; Allocate a one-dimensional SAFEARRAY based on the size of the stream.
       DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "hresult")
       safeArray := ComObjArray(0x11, size) ; VT_ARRAY | VT_UI1
@@ -4539,7 +4539,7 @@ class ImagePut {
       return safeArray
    }
 
-   static to_safeArray(pBitmap, extension := "", quality := "") {
+   static BitmapToSafeArray(pBitmap, extension := "", quality := "") {
       ; Thanks tmplinshi - https://www.autohotkey.com/boards/viewtopic.php?p=354007#p354007
 
       ; Create an IStream backed with movable memory.
