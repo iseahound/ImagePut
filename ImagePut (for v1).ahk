@@ -202,7 +202,7 @@ class ImagePut {
 
       ; #1 - Stream intermediate.
       if not decode and not crop and not (scale || upscale || downscale)
-         and (type ~= "^(?i:clipboard_png|pdf|url|file|stream|RandomAccessStream|hex|base64)$")
+         and (type ~= "^(?i:clipboardpng|pdf|url|file|stream|RandomAccessStream|hex|base64)$")
          and (cotype ~= "^(?i:file|stream|RandomAccessStream|hex|base64|uri|explorer|safeArray|formData)$")
          and (p[1] == "") { ; For now, disallow any specification of extensions.
 
@@ -226,7 +226,7 @@ class ImagePut {
          ; Prevents future changes to the original pixels from altering any copies.
          ; Without validation, it preforms copy-on-write and copy on LockBits(read).
 
-         if (type ~= "^(?i:clipboard_png|pdf|url|file|stream|RandomAccessStream|hex|base64)$") {
+         if (type ~= "^(?i:clipboardpng|pdf|url|file|stream|RandomAccessStream|hex|base64)$") {
 
             ; Check the file signature for magic numbers.
             size := 12
@@ -374,7 +374,7 @@ class ImagePut {
    static inputs :=
    ( Join
    [
-      "clipboard_png",
+      "clipboardpng",
       "clipboard",
       "object",
       "buffer",
@@ -437,9 +437,9 @@ class ImagePut {
       if (image == "") {
 
 
-         ; A "clipboard_png" is a pointer to a PNG stream saved as the "png" clipboard format.
+         ; A "clipboardpng" is a pointer to a PNG stream saved as the "png" clipboard format.
          if DllCall("IsClipboardFormatAvailable", "uint", DllCall("RegisterClipboardFormat", "str", "png", "uint"))
-            return "clipboard_png"
+            return "clipboardpng"
 
          ; A "clipboard" is a handle to a GDI bitmap saved as CF_BITMAP.
          if DllCall("IsClipboardFormatAvailable", "uint", 2)
@@ -581,8 +581,8 @@ class ImagePut {
 
       try index := keywords.index
 
-      if (type = "clipboard_png")
-         return this.Clipboard_pngToBitmap()
+      if (type = "clipboardpng")
+         return this.ClipboardPngToBitmap()
 
       if (type = "clipboard")
          return this.ClipboardToBitmap()
@@ -655,7 +655,7 @@ class ImagePut {
 
    BitmapToCoimage(cotype, pBitmap, p1:="", p2:="", p3:="", p4:="", p5:="", p6 := "", p*) {
       ; BitmapToCoimage("clipboard", pBitmap)
-      if (cotype = "clipboard" || cotype = "clipboard_png")
+      if (cotype = "clipboard" || cotype = "clipboardpng")
          return this.BitmapToClipboard(pBitmap)
 
       ; BitmapToCoimage("buffer", pBitmap)
@@ -757,8 +757,8 @@ class ImagePut {
 
       try index := keywords.index
 
-      if (type = "clipboard_png")
-         return this.Clipboard_pngToStream()
+      if (type = "clipboardpng")
+         return this.ClipboardPngToStream()
 
       if (type = "pdf")
          return this.PdfToStream(image, k.index)
@@ -1003,14 +1003,14 @@ class ImagePut {
       return pBitmap
    }
 
-   Clipboard_pngToBitmap() {
-      pStream := this.Clipboard_pngToStream()
+   ClipboardPngToBitmap() {
+      pStream := this.ClipboardPngToStream()
       DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", pBitmap:=0)
       ObjRelease(pStream)
       return pBitmap
    }
 
-   Clipboard_pngToStream() {
+   ClipboardPngToStream() {
       ; Open the clipboard with exponential backoff.
       loop
          if DllCall("OpenClipboard", "ptr", A_ScriptHwnd)
