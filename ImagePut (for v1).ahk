@@ -1298,7 +1298,7 @@ class ImagePut {
       ; Allow the image to be a window handle.
       if !IsObject(image) and WinExist(image) || DllCall("IsWindow", "ptr", image) {
          try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
-         image := (hwnd := WinExist(image)) ? hwnd : image
+         image := (hwnd := IsObject(image) ? image.hwnd : WinExist(image)) ? hwnd : image
          VarSetCapacity(rect, 16, 0)
          DllCall("GetClientRect", "ptr", image, "ptr", &rect)
          DllCall("ClientToScreen", "ptr", image, "ptr", &rect)
@@ -1355,7 +1355,7 @@ class ImagePut {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
 
       ; Get the handle to the window.
-      image := (hwnd := WinExist(image)) ? hwnd : image
+      image := (hwnd := IsObject(image) ? image.hwnd : WinExist(image)) ? hwnd : image
 
       ; Restore the window if minimized! Must be visible for capture.
       if DllCall("IsIconic", "ptr", image)
@@ -4793,7 +4793,7 @@ class ImagePut {
             DllCall("InvalidateRect", "ptr", 0, "ptr", 0, "int", 0)
 
          case "window":
-            image := (hwnd := WinExist(image)) ? hwnd : image
+            image := (hwnd := IsObject(image) ? image.hwnd : WinExist(image)) ? hwnd : image
             DllCall("DestroyWindow", "ptr", image)
 
          case "wallpaper":
