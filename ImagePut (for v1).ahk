@@ -233,9 +233,8 @@ class ImagePut {
             VarSetCapacity(bin, size)
 
             ; Get the first few bytes of the image.
-            if DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", &bin, "uint", size, "uint")
-               goto otherwise
-
+            DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
+            DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", &bin, "uint", size, "uint")
 
             ; Allocate enough space for a hexadecimal string with spaces and a null terminator.
             length := 2 * size + (size - 1) + 1
