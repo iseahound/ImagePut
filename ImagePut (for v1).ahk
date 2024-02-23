@@ -451,9 +451,10 @@ class ImagePut {
       if not IsObject(image)
          goto string
 
-      ; A "screenshot" is an array of 4 numbers.
+      ; A "screenshot" is an array of 4 numbers with an optional window.
       if image.length() ~= "4|5"
       && image[1] ~= "^-?\d+$" && image[2] ~= "^-?\d+$" && image[3] ~= "^\d+$" && image[4] ~= "^\d+$"
+      && (image.HasKey(5) ? WinExist(image[5]) : True)
          return "screenshot"
 
       ; A "object" has a pBitmap property that points to an internal GDI+ bitmap.

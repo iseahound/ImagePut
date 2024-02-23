@@ -451,9 +451,10 @@ class ImagePut {
 
 
 
-      ; A "screenshot" is an array of 4 numbers.
+      ; A "screenshot" is an array of 4 numbers with an optional window.
       if image.HasProp("__Item") && image.HasProp("length") && image.length ~= "4|5"
       && image[1] ~= "^-?\d+$" && image[2] ~= "^-?\d+$" && image[3] ~= "^\d+$" && image[4] ~= "^\d+$"
+      && (image.Has(5) ? WinExist(image[5]) : True)
          return "screenshot"
 
       ; A "object" has a pBitmap property that points to an internal GDI+ bitmap.
