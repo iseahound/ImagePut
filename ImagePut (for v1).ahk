@@ -557,10 +557,10 @@ class ImagePut {
       try if !DllCall("gdiplus\GdipGetImageType", "ptr", image, "ptr*", type:=0) && (type == 1)
          return "bitmap"
 
-      ; Note 1: All GDI+ functions add 1 to the reference count of COM objects.
+      ; Note 1: All GDI+ functions add 1 to the reference count of COM objects on 64-bit systems.
       ; Note 2: GDI+ pBitmaps that are queried cease to stay pBitmaps.
       ; Note 3: Critical error for ranges 0-4095 on v1 and 0-65535 on v2.
-      ObjRelease(image) ; Therefore do not move this, it has been tested.
+      (A_PtrSize == 8) && ObjRelease(image) ; Therefore do not move this, it has been tested.
 
       pointer:
       ; A "stream" is a pointer to the IStream interface.
