@@ -260,7 +260,7 @@ class ImagePut {
       if !(pBitmap := this.ToBitmap(type, image, keywords))
          throw Exception("pBitmap cannot be zero.")
 
-      ; Perform intermediate processing here.
+      ; GdipImageForceValidation must be called immediately or it fails silently.
       (validate) && DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmap)
       (crop) && this.BitmapCrop(pBitmap, crop)
       (scale) && this.BitmapScale(pBitmap, scale)
