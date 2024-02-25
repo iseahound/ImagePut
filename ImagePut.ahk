@@ -236,7 +236,7 @@ class ImagePut {
       ; Perform decoding here.
       ; PDF Signature: %PDF-
       if str ~= "(?i)^25 50 44 46 2D"
-         this.PdfToStream(&pStream, index?)
+         this.RenderPdf(&pStream, index?)
 
       ; Attempt conversion using StreamToCoimage.
       if not weight && cotype ~= "^(?i:file|stream|RandomAccessStream|hex|base64|uri|explorer|safeArray|formData)$" {
@@ -1514,95 +1514,6 @@ class ImagePut {
       DllCall("DestroyCursor", "ptr", hCursor)
 
       return pBitmap
-   }
-
-   static PdfToStream(&image, index := "") {
-      ; Thanks malcev - https://www.autohotkey.com/boards/viewtopic.php?t=80735
-      (index == "") && index := 1
-
-      ; Create a stream from either a url or a file.
-      pStream := image
-
-      ; Compare the signature of the file with the PDF magic string "%PDF".
-      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", signature := Buffer(4), "uint", 4, "hresult")
-      StrPut("%PDF", magic := Buffer(4), "CP0")
-      if 4 > DllCall("ntdll\RtlCompareMemory", "ptr", signature, "ptr", magic, "uptr", 4, "uptr")
-         throw Error("Invalid PDF.")
-
-      ; Create a RandomAccessStream with BSOS_PREFERDESTINATIONSTREAM.
-      DllCall("ole32\CLSIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", CLSID := Buffer(16), "hresult")
-      DllCall("ShCore\CreateRandomAccessStreamOverStream", "ptr", pStream, "uint", 1, "ptr", CLSID, "ptr*", &pRandomAccessStream:=0, "hresult")
-
-      ; Create the "Windows.Data.Pdf.PdfDocument" class using IPdfDocumentStatics.
-      DllCall("combase\WindowsCreateString", "wstr", "Windows.Data.Pdf.PdfDocument", "uint", 28, "ptr*", &hString:=0, "hresult")
-      DllCall("ole32\CLSIDFromString", "wstr", "{433A0B5F-C007-4788-90F2-08143D922599}", "ptr", CLSID := Buffer(16), "hresult")
-      DllCall("combase\RoGetActivationFactory", "ptr", hString, "ptr", CLSID, "ptr*", &PdfDocumentStatics:=0, "hresult")
-      DllCall("combase\WindowsDeleteString", "ptr", hString, "hresult")
-
-      ; Create the PDF document.
-      ComCall(LoadFromStreamAsync := 8, PdfDocumentStatics, "ptr", pRandomAccessStream, "ptr*", &PdfDocument:=0)
-      this.WaitForAsync(&PdfDocument)
-
-      ; Get Page
-      ComCall(get_PageCount := 7, PdfDocument, "uint*", &count:=0)
-      index := (index > 0) ? index - 1 : (index < 0) ? count + index : 0 ; Zero indexed.
-      if (index > count || index < 0) {
-         ObjRelease(PdfDocument)
-         ObjRelease(PdfDocumentStatics)
-         this.ObjReleaseClose(&pRandomAccessStream)
-         ObjRelease(pStream)
-         throw Error("The maximum number of pages in this pdf is " count ".")
-      }
-      ComCall(GetPage := 6, PdfDocument, "uint", index, "ptr*", &PdfPage:=0)
-
-      ; Render the page to an output stream.
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "uint", True, "ptr*", &pStreamOut:=0)
-      DllCall("ole32\CLSIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", CLSID := Buffer(16), "hresult")
-      DllCall("ShCore\CreateRandomAccessStreamOverStream", "ptr", pStreamOut, "uint", BSOS_DEFAULT := 0, "ptr", CLSID, "ptr*", &pRandomAccessStreamOut:=0)
-      ComCall(RenderToStreamAsync := 6, PdfPage, "ptr", pRandomAccessStreamOut, "ptr*", &AsyncInfo:=0)
-      this.WaitForAsync(&AsyncInfo)
-
-      ; Cleanup
-      this.ObjReleaseClose(&pRandomAccessStreamOut)
-      this.ObjReleaseClose(&PdfPage)
-
-      ObjRelease(PdfDocument)
-      ObjRelease(PdfDocumentStatics)
-
-      this.ObjReleaseClose(&pRandomAccessStream)
-      ObjRelease(pStream)
-
-      return image := pStreamOut
-   }
-
-   static WaitForAsync(&Object) {
-      AsyncInfo := ComObjQuery(Object, IAsyncInfo := "{00000036-0000-0000-C000-000000000046}")
-      while !ComCall(_Status := 7, AsyncInfo, "uint*", &status:=0)
-         and (status = 0)
-            Sleep 10
-
-      if (status != 1) {
-         ComCall(_ErrorCode := 8, AsyncInfo, "uint*", &ErrorCode:=0)
-         throw Error("AsyncInfo status error: " ErrorCode)
-      }
-
-      ComCall(GetResults := 8, Object, "ptr*", &ObjectResult:=0, "cdecl")
-      ObjRelease(Object)
-      Object := ObjectResult
-
-      ComCall(Close := 10, AsyncInfo)
-      AsyncInfo := ""
-   }
-
-   static ObjReleaseClose(&Object) {
-      if Object {
-         if (Close := ComObjQuery(Object, IClosable := "{30D5A829-7FA4-4026-83BB-D75BAE4EA99E}")) {
-            ComCall(_Close := 6, Close)
-            Close := ""
-         }
-         try return ObjRelease(Object)
-         finally Object := ""
-      }
    }
 
    static UrlToBitmap(image) {
@@ -4562,6 +4473,95 @@ class ImagePut {
       ObjRelease(pStream)
 
       return safeArray
+   }
+
+   static RenderPdf(&image, index := "") {
+      ; Thanks malcev - https://www.autohotkey.com/boards/viewtopic.php?t=80735
+      (index == "") && index := 1
+
+      ; Create a stream from either a url or a file.
+      pStream := image
+
+      ; Compare the signature of the file with the PDF magic string "%PDF".
+      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", signature := Buffer(4), "uint", 4, "hresult")
+      StrPut("%PDF", magic := Buffer(4), "CP0")
+      if 4 > DllCall("ntdll\RtlCompareMemory", "ptr", signature, "ptr", magic, "uptr", 4, "uptr")
+         throw Error("Invalid PDF.")
+
+      ; Create a RandomAccessStream with BSOS_PREFERDESTINATIONSTREAM.
+      DllCall("ole32\CLSIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", CLSID := Buffer(16), "hresult")
+      DllCall("ShCore\CreateRandomAccessStreamOverStream", "ptr", pStream, "uint", 1, "ptr", CLSID, "ptr*", &pRandomAccessStream:=0, "hresult")
+
+      ; Create the "Windows.Data.Pdf.PdfDocument" class using IPdfDocumentStatics.
+      DllCall("combase\WindowsCreateString", "wstr", "Windows.Data.Pdf.PdfDocument", "uint", 28, "ptr*", &hString:=0, "hresult")
+      DllCall("ole32\CLSIDFromString", "wstr", "{433A0B5F-C007-4788-90F2-08143D922599}", "ptr", CLSID := Buffer(16), "hresult")
+      DllCall("combase\RoGetActivationFactory", "ptr", hString, "ptr", CLSID, "ptr*", &PdfDocumentStatics:=0, "hresult")
+      DllCall("combase\WindowsDeleteString", "ptr", hString, "hresult")
+
+      ; Create the PDF document.
+      ComCall(LoadFromStreamAsync := 8, PdfDocumentStatics, "ptr", pRandomAccessStream, "ptr*", &PdfDocument:=0)
+      this.WaitForAsync(&PdfDocument)
+
+      ; Get Page
+      ComCall(get_PageCount := 7, PdfDocument, "uint*", &count:=0)
+      index := (index > 0) ? index - 1 : (index < 0) ? count + index : 0 ; Zero indexed.
+      if (index > count || index < 0) {
+         ObjRelease(PdfDocument)
+         ObjRelease(PdfDocumentStatics)
+         this.ObjReleaseClose(&pRandomAccessStream)
+         ObjRelease(pStream)
+         throw Error("The maximum number of pages in this pdf is " count ".")
+      }
+      ComCall(GetPage := 6, PdfDocument, "uint", index, "ptr*", &PdfPage:=0)
+
+      ; Render the page to an output stream.
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "uint", True, "ptr*", &pStreamOut:=0)
+      DllCall("ole32\CLSIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", CLSID := Buffer(16), "hresult")
+      DllCall("ShCore\CreateRandomAccessStreamOverStream", "ptr", pStreamOut, "uint", BSOS_DEFAULT := 0, "ptr", CLSID, "ptr*", &pRandomAccessStreamOut:=0)
+      ComCall(RenderToStreamAsync := 6, PdfPage, "ptr", pRandomAccessStreamOut, "ptr*", &AsyncInfo:=0)
+      this.WaitForAsync(&AsyncInfo)
+
+      ; Cleanup
+      this.ObjReleaseClose(&pRandomAccessStreamOut)
+      this.ObjReleaseClose(&PdfPage)
+
+      ObjRelease(PdfDocument)
+      ObjRelease(PdfDocumentStatics)
+
+      this.ObjReleaseClose(&pRandomAccessStream)
+      ObjRelease(pStream)
+
+      return image := pStreamOut
+   }
+
+   static WaitForAsync(&Object) {
+      AsyncInfo := ComObjQuery(Object, IAsyncInfo := "{00000036-0000-0000-C000-000000000046}")
+      while !ComCall(_Status := 7, AsyncInfo, "uint*", &status:=0)
+         and (status = 0)
+            Sleep 10
+
+      if (status != 1) {
+         ComCall(_ErrorCode := 8, AsyncInfo, "uint*", &ErrorCode:=0)
+         throw Error("AsyncInfo status error: " ErrorCode)
+      }
+
+      ComCall(GetResults := 8, Object, "ptr*", &ObjectResult:=0, "cdecl")
+      ObjRelease(Object)
+      Object := ObjectResult
+
+      ComCall(Close := 10, AsyncInfo)
+      AsyncInfo := ""
+   }
+
+   static ObjReleaseClose(&Object) {
+      if Object {
+         if (Close := ComObjQuery(Object, IClosable := "{30D5A829-7FA4-4026-83BB-D75BAE4EA99E}")) {
+            ComCall(_Close := 6, Close)
+            Close := ""
+         }
+         try return ObjRelease(Object)
+         finally Object := ""
+      }
    }
 
    static select_codec(pBitmap, extension, quality, &pCodec, &ep, &ci, &v) {
