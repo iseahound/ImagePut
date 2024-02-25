@@ -1566,8 +1566,7 @@ class ImagePut {
    }
 
    FileToBitmap(image) {
-      ; This is faster than GdipCreateBitmapFromFile and does not lock the file.
-      pStream := this.FileToStream(image)
+      pStream := this.FileToStream(image) ; Faster than GdipCreateBitmapFromFile and does not lock the file.
       DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", pBitmap:=0)
       ObjRelease(pStream)
       return pBitmap
@@ -1885,9 +1884,7 @@ class ImagePut {
    }
 
    StreamToBitmap(image) {
-      ; Cloning a temporary stream bypasses the downsides of GDI+ controlling the stream.
-      DllCall(NumGet(NumGet(image+0)+A_PtrSize* 13), "ptr", image, "ptr*", pStream:=0)
-      ; Completely ignores the seek pointer and sets the seek position to 4096.
+      pStream := this.StreamToStream(image) ; Below adds +3 references and seeks to 4096.
       DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", pBitmap:=0)
       ObjRelease(pStream)
       return pBitmap
@@ -1902,8 +1899,7 @@ class ImagePut {
    }
 
    RandomAccessStreamToBitmap(image) {
-      ; Creating a Bitmap from stream adds +3 to the reference count until DisposeImage is called.
-      pStream := this.RandomAccessStreamToStream(image)
+      pStream := this.RandomAccessStreamToStream(image) ; Below adds +3 to the reference count.
       DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", pBitmap:=0)
       ObjRelease(pStream)
       return pBitmap
