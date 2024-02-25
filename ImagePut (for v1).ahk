@@ -48,6 +48,11 @@ ImagePutDesktop(image) {
    return ImagePut("desktop", image)
 }
 
+; Puts the image as an encoded format into a binary data object.
+ImagePutEncodedBuffer(image) {
+   return ImagePut("EncodedBuffer", image)
+}
+
 ; Puts the image into the most recently active explorer window.
 ImagePutExplorer(image, default := "") {
    return ImagePut("explorer", image, default)
@@ -239,7 +244,7 @@ class ImagePut {
          this.RenderPdf(pStream, index)
 
       ; Attempt conversion using StreamToCoimage.
-      if not weight && cotype ~= "^(?i:file|stream|RandomAccessStream|hex|base64|uri|explorer|safeArray|formData)$" {
+      if not weight && cotype ~= "^(?i:encodedbuffer|file|stream|RandomAccessStream|hex|base64|uri|explorer|safeArray|formData)$" {
 
          coimage := this.StreamToCoimage(cotype, pStream, p*)
 
@@ -622,7 +627,7 @@ class ImagePut {
 
       if (type = "object")
          return this.BitmapToBitmap(image.pBitmap)
-      
+
       if (type = "EncodedBuffer")
          return this.EncodedBufferToBitmap(image)
 
@@ -691,13 +696,17 @@ class ImagePut {
       if (cotype = "clipboard" || cotype = "clipboardpng")
          return this.BitmapToClipboard(pBitmap)
 
+      ; BitmapToEncodedBuffer(pBitmap)
+      if (cotype = "encodedbuffer")
+         return this.BitmapToEncodedBuffer(pBitmap)
+
       ; BitmapToCoimage("buffer", pBitmap)
       if (cotype = "buffer")
          return this.BitmapToBuffer(pBitmap)
 
       ; BitmapToCoimage("sharedbuffer", pBitmap, p1)
       if (cotype = "sharedbuffer")
-         return this.BitmapToSharedbuffer(pBitmap, p1)
+         return this.BitmapToSharedBuffer(pBitmap, p1)
 
       ; BitmapToCoimage("screenshot", pBitmap, screenshot, alpha)
       if (cotype = "screenshot")
@@ -818,6 +827,10 @@ class ImagePut {
    }
 
    StreamToCoimage(cotype, pStream, p1 := "", p2 := "", p*) {
+      ; StreamToEncodedBuffer(pStream)
+      if (cotype = "encodedbuffer")
+         return this.StreamToEncodedBuffer(pStream)
+
       ; StreamToCoimage("file", pStream, filepath)
       if (cotype = "file")
          return this.StreamToFile(pStream, p1)
@@ -2102,6 +2115,15 @@ class ImagePut {
       DllCall("SetClipboardData", "uint", DllCall("RegisterClipboardFormat", "str", extension, "uint"), "ptr", hData)
       DllCall("CloseClipboard")
       return ""
+   }
+
+   StreamToEncodedBuffer(pStream) {
+      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", size:=0, "uint")
+      ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
+      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", ptr, "uint", size, "uint")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
+      return {ptr: ptr, size: size, base: {__Delete: Func("DllCall").bind("GlobalFree", "ptr", ptr)}}
    }
 
    BitmapToBuffer(pBitmap) {
