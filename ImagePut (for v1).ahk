@@ -622,6 +622,9 @@ class ImagePut {
 
       if (type = "object")
          return this.BitmapToBitmap(image.pBitmap)
+      
+      if (type = "EncodedBuffer")
+         return this.EncodedBufferToBitmap(image)
 
       if (type = "buffer")
          return this.BufferToBitmap(image)
