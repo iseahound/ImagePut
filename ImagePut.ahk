@@ -210,7 +210,7 @@ class ImagePut {
 
       ; #1 - Stream as the intermediate.
       stream:
-      if not type ~= "^(?i:clipboardpng|pdf|url|file|stream|RandomAccessStream|hex|base64)$"
+      if not type ~= "^(?i:clipboardpng|encodedbuffer|url|file|stream|RandomAccessStream|hex|base64)$"
          goto bitmap
 
       if !(pStream := this.ToStream(type, image, keywords))
@@ -386,36 +386,31 @@ class ImagePut {
    static Inputs :=
 
    [
-      "clipboardpng",
-      "clipboard",
-      "screenshot",
-      "object",
-      "window",
-      "buffer",
-      "monitor",
-      "desktop",
-      "wallpaper",
-      "cursor",
-      "url",
-      "file",
-      "hex",
-      "base64",
-      "dc",
-      "hBitmap",
-      "hIcon",
-      "bitmap",
-      "stream",
+      "ClipboardPng",
+      "Clipboard",
+      "Object",
+      "EncodedBuffer",
+      "Buffer",
+      "Screenshot",
+      "Window",
+      "Desktop",
+      "Wallpaper",
+      "Cursor",
+      "Url",
+      "File",
+      "Hex",
+      "Base64",
+      "Monitor",
+      "Dc",
+      "HBitmap",
+      "HIcon",
+      "Bitmap",
+      "Stream",
       "RandomAccessStream",
-      "wicBitmap",
-      "d2dBitmap",
-      "sprite"
+      "WicBitmap",
+      "D2dBitmap",
+      "Sprite"
    ]
-
-   static StreamInputs := ["clipboard_png", "pdf", "url", "file", "hex", "base64", "stream", "RandomAccessStream"]
-   static BitmapInputs := ["clipboard", "screenshot", "object", "window", "buffer", "monitor", "desktop", "wallpaper"
-                        ,  "cursor", "dc", "hBitmap", "hIcon", "bitmap", "wicBitmap", "d2dBitmap", "sprite"]
-   static StreamOutputs := ["file", "hex", "base64", "uri", "stream", "RandomAccessStream", "explorer", "safeArray", "formData"]
-   static BitmapOutputs := ["clipboard", "buffer", "screenshot", "show", "window", "desktop", "wallpaper", "cursor", "dc", "hBitmap", "hIcon", "bitmap", "stream", "RandomAccessStream"]
 
    static DontVerifyImageType(&image, &keywords := "") {
 
@@ -795,6 +790,9 @@ class ImagePut {
       if (type = "clipboardpng")
          return this.ClipboardPngToStream()
 
+      if (type = "EncodedBuffer")
+         return this.EncodedBufferToStream(image)
+
       if (type = "url")
          return this.UrlToStream(image)
 
@@ -1063,6 +1061,15 @@ class ImagePut {
       ; Please read: https://devblogs.microsoft.com/oldnewthing/20210930-00/?p=105745
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", False, "ptr*", &pStream:=0, "hresult")
       DllCall("CloseClipboard")
+      return pStream
+   }
+
+   static EncodedBufferToStream(image) {  
+      handle := DllCall("GlobalAlloc", "uint", 0x2, "uptr", image.size, "ptr")
+      pointer := DllCall("GlobalLock", "ptr", handle, "ptr")
+      DllCall("RtlMoveMemory", "ptr", pointer, "ptr", image.ptr, "uptr", image.size)
+      DllCall("GlobalUnlock", "ptr", handle)
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", handle, "int", True, "ptr*", &pStream:=0, "hresult")
       return pStream
    }
 
