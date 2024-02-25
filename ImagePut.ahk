@@ -193,6 +193,7 @@ class ImagePut {
       catch
          type := this.ImageType(image)
 
+      ; Extract parameters for intermediate processing.
       crop      := keywords.HasProp("crop")      ? keywords.crop      : ""
       scale     := keywords.HasProp("scale")     ? keywords.scale     : ""
       upscale   := keywords.HasProp("upscale")   ? keywords.upscale   : ""
@@ -200,77 +201,90 @@ class ImagePut {
       decode    := keywords.HasProp("decode")    ? keywords.decode    : this.decode
       validate  := keywords.HasProp("validate")  ? keywords.validate  : this.validate
 
-      ; #1 - Stream intermediate.
-      if not decode and not crop and not (scale || upscale || downscale)
-         and (type ~= "^(?i:clipboardpng|pdf|url|file|stream|RandomAccessStream|hex|base64)$")
-         and (cotype ~= "^(?i:file|stream|RandomAccessStream|hex|base64|uri|explorer|safeArray|formData)$")
-         and (!p.Has(1) || p[1] == "") { ; For now, disallow any specification of extensions.
+      weight := (decode || crop || scale || upscale || downscale || p.Has(1) && p[1] != "")
 
-         ; Convert via stream intermediate.
-         if !(pStream := this.ToStream(type, image, keywords))
-            throw Error("pStream cannot be zero.")
+      ; Keywords are for ImageToBitmap or ImageToStream.
+      try index := keywords.index
+
+      cleanup := ""
+
+      ; #1 - Stream as the intermediate.
+      stream:
+      if not type ~= "^(?i:clipboardpng|pdf|url|file|stream|RandomAccessStream|hex|base64)$"
+         goto bitmap
+
+      if !(pStream := this.ToStream(type, image, keywords))
+         throw Error("pStream cannot be zero.")
+
+      ; Check the file signature for magic numbers.
+      size := 12
+      bin := Buffer(size)
+
+      ; Get the first few bytes of the image.
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
+      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", bin, "uint", size, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
+
+      ; Allocate enough space for a hexadecimal string with spaces and a null terminator.
+      length := 2 * size + (size - 1) + 1
+      VarSetStrCapacity(&str, length)
+
+      ; Lift the binary representation to hex.
+      flags := 0x40000004 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_HEX
+      DllCall("crypt32\CryptBinaryToString", "ptr", bin, "uint", size, "uint", flags, "str", str, "uint*", &length)
+
+      ; Perform decoding here.
+      ; PDF Signature: %PDF-
+      if str ~= "(?i)^25 50 44 46 2D"
+         this.PdfToStream(&pStream, index?)
+
+      ; Attempt conversion using StreamToCoimage.
+      if not weight && cotype ~= "^(?i:file|stream|RandomAccessStream|hex|base64|uri|explorer|safeArray|formData)$" {
+
          coimage := this.StreamToCoimage(cotype, pStream, p*)
 
-         ; Prevents the stream object from being freed.
-         if (cotype = "stream")
-            ObjAddRef(pStream)
+         ; Clean up the copy. Export raw pointers if requested.
+         if (cotype != "stream")
+            ObjRelease(pStream)
 
-         ; Free the temporary stream object.
-         ObjRelease(pStream)
+         goto exit
       }
+
+      ; Otherwise export the image as a stream.
+      type := "stream"
+      image := pStream
+      cleanup := "stream"
 
       ; #2 - Fallback to GDI+ bitmap as the intermediate.
-      else {
-         ; GdipImageForceValidation must be called immediately or it fails without any errors.
-         ; Doing so loads the pixels to the bitmap buffer. Increases memory usage.
-         ; Prevents future changes to the original pixels from altering any copies.
-         ; Without validation, it preforms copy-on-write and copy on LockBits(read).
+      bitmap:
+      if !(pBitmap := this.ToBitmap(type, image, keywords))
+         throw Error("pBitmap cannot be zero.")
 
-         try if pStream := this.ToStream(type, image, keywords) {
+      ; Perform intermediate processing here.
+      (validate) && DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmap)
+      (crop) && this.BitmapCrop(&pBitmap, crop)
+      (scale) && this.BitmapScale(&pBitmap, scale)
+      (upscale) && this.BitmapScale(&pBitmap, upscale, 1)
+      (downscale) && this.BitmapScale(&pBitmap, downscale, -1)
 
-            ; Check the file signature for magic numbers.
-            size := 12
-            bin := Buffer(size)
-
-            ; Get the first few bytes of the image.
-            DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
-            DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", bin, "uint", size, "hresult")
-
-            ; Allocate enough space for a hexadecimal string with spaces and a null terminator.
-            length := 2 * size + (size - 1) + 1
-            VarSetStrCapacity(&str, length)
-
-            ; Lift the binary representation to hex.
-            flags := 0x40000004 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_HEX
-            DllCall("crypt32\CryptBinaryToString", "ptr", bin, "uint", size, "uint", flags, "str", str, "uint*", &length)
-
-            ; WEBP Signature: RIFF....WEBP
-            if str ~= "^52 49 46 46 .. .. .. .. 57 45 42 50"
-               this.webp(pStream, &pDelays, &pCount)
-
-            ObjRelease(pStream)
-         }
-
-         ; Convert via GDI+ bitmap intermediate.
-         if !(pBitmap := this.ToBitmap(type, image, keywords))
-            throw Error("pBitmap cannot be zero.")
-
-         (validate) && DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmap)
-         (crop) && this.BitmapCrop(&pBitmap, crop)
-         (scale) && this.BitmapScale(&pBitmap, scale)
-         (upscale) && this.BitmapScale(&pBitmap, upscale, 1)
-         (downscale) && this.BitmapScale(&pBitmap, downscale, -1)
-
-         IsSet(pDelays) && DllCall("gdiplus\GdipSetPropertyItem", "ptr", pBitmap, "ptr", pDelays)
-         IsSet(pCount) && DllCall("gdiplus\GdipSetPropertyItem", "ptr", pBitmap, "ptr", pCount)
-
-         coimage := this.BitmapToCoimage(cotype, pBitmap, p*)
-
-         ; Clean up the pBitmap copy. Export raw pointers if requested.
-         if !(cotype = "bitmap")
-            DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
+      ; WEBP Signature: RIFF....WEBP
+      if cotype ~= "^(?i:show|window)$" && type = "stream" && str ~= "(?i)^52 49 46 46 .. .. .. .. 57 45 42 50" {
+         this.webp(pStream, &pDelays, &pCount)
+         DllCall("gdiplus\GdipSetPropertyItem", "ptr", pBitmap, "ptr", pDelays)
+         DllCall("gdiplus\GdipSetPropertyItem", "ptr", pBitmap, "ptr", pCount)
       }
 
+      ; Attempt conversion using BitmapToCoimage.
+      coimage := this.BitmapToCoimage(cotype, pBitmap, p*)
+
+      ; Clean up the copy. Export raw pointers if requested.
+      if (cotype != "bitmap")
+         DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
+
+      if cleanup = "stream"
+         ObjRelease(pStream)
+
+      exit:
       ; Check for dangling pointers.
       this.gdiplusShutdown(cotype)
 
@@ -288,6 +302,7 @@ class ImagePut {
 
       ; Create the VP8X FourCC.
       StrPut("VP8X", VP8X := Buffer(4), "cp1252")
+      ComCall(Seek := 5, pStream, "uint64", 12, "uint", 0, "uint64*", &current)
       DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", fourcc, "uint", 4, "hresult")
       DllCall("shlwapi\IStream_Read", "ptr", pStream, "uint*", &offset, "uint", 4, "hresult")
       if (4 != DllCall("ntdll\RtlCompareMemory", "ptr", fourcc, "ptr", VP8X, "uptr", 4, "uptr"))
@@ -381,7 +396,6 @@ class ImagePut {
       "desktop",
       "wallpaper",
       "cursor",
-      "pdf",
       "url",
       "file",
       "hex",
@@ -502,10 +516,6 @@ class ImagePut {
       . "Help|IBeam|No|Pin|Person|SizeAll|SizeNESW|SizeNS|SizeNWSE|SizeWE|UpArrow|Wait)$")
          return "cursor"
 
-      ; A "pdf" is either a file or url with a .pdf extension.
-      if (image ~= "\.pdf$") && (FileExist(image) || this.is_url(image))
-         return "pdf"
-
       ; A "url" satisfies the url format.
       if this.is_url(image)
          return "url"
@@ -609,9 +619,6 @@ class ImagePut {
 
       if (type = "cursor")
          return this.CursorToBitmap()
-
-      if (type = "pdf")
-         return this.PdfToBitmap(image, index?)
 
       if (type = "url")
          return this.UrlToBitmap(image)
@@ -761,9 +768,6 @@ class ImagePut {
 
       if (type = "clipboardpng")
          return this.ClipboardPngToStream()
-
-      if (type = "pdf")
-         return this.PdfToStream(image, index?)
 
       if (type = "url")
          return this.UrlToStream(image)
@@ -1512,19 +1516,12 @@ class ImagePut {
       return pBitmap
    }
 
-   static PdfToBitmap(image, index := "") {
-      pStream := this.PdfToStream(image, index)
-      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
-      ObjRelease(pStream)
-      return pBitmap
-   }
-
-   static PdfToStream(image, index := "") {
+   static PdfToStream(&image, index := "") {
       ; Thanks malcev - https://www.autohotkey.com/boards/viewtopic.php?t=80735
       (index == "") && index := 1
 
       ; Create a stream from either a url or a file.
-      pStream := this.is_url(image) ? this.UrlToStream(image) : this.FileToStream(image)
+      pStream := image
 
       ; Compare the signature of the file with the PDF magic string "%PDF".
       DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", signature := Buffer(4), "uint", 4, "hresult")
@@ -1575,7 +1572,7 @@ class ImagePut {
       this.ObjReleaseClose(&pRandomAccessStream)
       ObjRelease(pStream)
 
-      return pStreamOut
+      return image := pStreamOut
    }
 
    static WaitForAsync(&Object) {
