@@ -1064,6 +1064,13 @@ class ImagePut {
       return pStream
    }
 
+   static EncodedBufferToBitmap(image) {
+      pStream := this.EncodedBufferToStream(image)
+      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
+      ObjRelease(pStream)
+      return pBitmap
+   }
+
    static EncodedBufferToStream(image) {  
       handle := DllCall("GlobalAlloc", "uint", 0x2, "uptr", image.size, "ptr")
       pointer := DllCall("GlobalLock", "ptr", handle, "ptr")
