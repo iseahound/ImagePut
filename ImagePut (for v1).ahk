@@ -978,9 +978,9 @@ class ImagePut {
             ; host & domain names, may end with dot
             ; can be replaced by a shortest alternative
             ; (?![-_])(?:[-\\w\\u00a1-\\uffff]{0,63}[^-_]\\.)+
-            . "(?:(?:[a-z0-9\x{00a1}-\x{ffff}][a-z0-9\x{00a1}-\x{ffff}_-]{0,62})?[a-z0-9\x{00a1}-\x{ffff}]\.)+"
+            . RegExReplace("(?:(?:[a-z0-9\x{00a1}-\x{ffff}][a-z0-9\x{00a1}-\x{ffff}_-]{0,62})?[a-z0-9\x{00a1}-\x{ffff}]\.)+", "ffff", A_IsUnicode ? "ffff" : "ff")
             ; TLD identifier name, may end with dot
-            . "(?:[a-z\x{00a1}-\x{ffff}]{2,}\.?)"
+            . RegExReplace("(?:[a-z\x{00a1}-\x{ffff}]{2,}\.?)", "ffff", A_IsUnicode ? "ffff" : "ff")
          . ")"
          . "(?::\d{2,5})?" ; port number (optional)
          . "(?:[/?#]\S*)?$" ; resource path (optional)
