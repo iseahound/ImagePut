@@ -2431,12 +2431,13 @@ class ImagePut {
          if (extension != "bmp")
             return ImagePut.BitmapToFile(this.pBitmap, filepath, quality)
 
-         VarSetCapacity(bm, 54)
+         ; Note because the ARGB values are 4-byte aligned it's not a "packed" bitmap.
+         VarSetCapacity(bm, 56)
 
          StrPut("BM", &bm, "CP0")               ; identifier
-         NumPut(54+this.size, bm,  2,   "uint") ; file size
+         NumPut(56+this.size, bm,  2,   "uint") ; file size
          NumPut(           0, bm,  6,   "uint") ; reserved
-         NumPut(          54, bm, 10,   "uint") ; bitmap data offset
+         NumPut(          56, bm, 10,   "uint") ; bitmap data offset
 
          ; BITMAPINFOHEADER struct
          NumPut(          40, bm, 14,   "uint") ; Size
@@ -2462,7 +2463,7 @@ class ImagePut {
                   Sleep (2**(A_Index-1) * 30)
                else throw
 
-         file.RawWrite(bm, 54)                ; Writes 54 bytes of bitmap file header.
+         file.RawWrite(bm, 56)                ; Writes 54 bytes of bitmap file header.
          file.RawWrite(this.ptr+0, this.size) ; Writes raw 32-bit ARGB pixel data.
          file.Close()
 

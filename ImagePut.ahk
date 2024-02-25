@@ -2431,12 +2431,13 @@ class ImagePut {
          if (extension != "bmp")
             return ImagePut.BitmapToFile(this.pBitmap, filepath, quality)
 
-         bm := Buffer(54)
+         ; Note because the ARGB values are 4-byte aligned it's not a "packed" bitmap.
+         bm := Buffer(56)
 
          StrPut("BM", bm, "CP0")                ; identifier
-         NumPut(  "uint", 54+this.size, bm,  2) ; file size
+         NumPut(  "uint", 56+this.size, bm,  2) ; file size
          NumPut(  "uint",            0, bm,  6) ; reserved
-         NumPut(  "uint",           54, bm, 10) ; bitmap data offset
+         NumPut(  "uint",           56, bm, 10) ; bitmap data offset
 
          ; BITMAPINFOHEADER struct
          NumPut(  "uint",           40, bm, 14) ; Size
