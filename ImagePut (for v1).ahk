@@ -2117,13 +2117,33 @@ class ImagePut {
       return ""
    }
 
+   BitmapToEncodedBuffer(pBitmap, extension := "", quality := "") {
+      ; Defaults to PNG for small sizes!
+      pStream := this.BitmapToStream(pBitmap, (extension) ? extension : "png", quality)
+      
+      ; Get a pointer to the encoded image data.
+      DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "ptr*", handle:=0, "uint")
+      ptr := DllCall("GlobalLock", "ptr", handle, "ptr")
+      size := DllCall("GlobalSize", "ptr", handle, "uptr")
+
+      ; Copy data into a buffer.
+      buf := {ptr: _ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr"), size: size, base: {__Delete: Func("DllCall").bind("GlobalFree", "ptr", _ptr)}}
+      DllCall("RtlMoveMemory", "ptr", buf.ptr, "ptr", ptr, "uptr", size)
+
+      ; Release binary data and stream.
+      DllCall("GlobalUnlock", "ptr", handle)
+      ObjRelease(pStream)
+
+      return buf
+   }
+
    StreamToEncodedBuffer(pStream) {
       DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", size:=0, "uint")
-      ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr")
+      buf := {ptr: _ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr"), size: size, base: {__Delete: Func("DllCall").bind("GlobalFree", "ptr", _ptr)}}
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
-      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", ptr, "uint", size, "uint")
+      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", buf.ptr, "uint", size, "uint")
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
-      return {ptr: ptr, size: size, base: {__Delete: Func("DllCall").bind("GlobalFree", "ptr", ptr)}}
+      return buf
    }
 
    BitmapToBuffer(pBitmap) {
