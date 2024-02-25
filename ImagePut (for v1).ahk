@@ -1087,7 +1087,7 @@ class ImagePut {
       return pBitmap
    }
 
-   EncodedBufferToStream(image) {  
+   EncodedBufferToStream(image) {
       handle := DllCall("GlobalAlloc", "uint", 0x2, "uptr", image.size, "ptr")
       pointer := DllCall("GlobalLock", "ptr", handle, "ptr")
       DllCall("RtlMoveMemory", "ptr", pointer, "ptr", image.ptr, "uptr", image.size)
@@ -2120,7 +2120,7 @@ class ImagePut {
    BitmapToEncodedBuffer(pBitmap, extension := "", quality := "") {
       ; Defaults to PNG for small sizes!
       pStream := this.BitmapToStream(pBitmap, (extension) ? extension : "png", quality)
-      
+
       ; Get a pointer to the encoded image data.
       DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "ptr*", handle:=0, "uint")
       ptr := DllCall("GlobalLock", "ptr", handle, "ptr")
