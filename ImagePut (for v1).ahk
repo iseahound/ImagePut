@@ -621,177 +621,153 @@ class ImagePut {
 
       try index := keywords.index
 
-      if (type = "clipboardpng")
+      if (type = "ClipboardPng")
          return this.ClipboardPngToBitmap()
 
-      if (type = "clipboard")
+      if (type = "Clipboard")
          return this.ClipboardToBitmap()
 
-      if (type = "object")
+      if (type = "Object")
          return this.BitmapToBitmap(image.pBitmap)
 
       if (type = "EncodedBuffer")
          return this.EncodedBufferToBitmap(image)
 
-      if (type = "buffer")
+      if (type = "Buffer")
          return this.BufferToBitmap(image)
 
-      if (type = "screenshot")
+      if (type = "Screenshot")
          return this.ScreenshotToBitmap(image)
 
-      if (type = "window")
+      if (type = "Window")
          return this.WindowToBitmap(image)
 
-      if (type = "desktop")
+      if (type = "Desktop")
          return this.DesktopToBitmap()
 
-      if (type = "wallpaper")
+      if (type = "Wallpaper")
          return this.WallpaperToBitmap()
 
-      if (type = "cursor")
+      if (type = "Cursor")
          return this.CursorToBitmap()
 
-      if (type = "url")
+      if (type = "Url")
          return this.UrlToBitmap(image)
 
-      if (type = "file")
+      if (type = "File")
          return this.FileToBitmap(image)
 
-      if (type = "hex")
+      if (type = "Hex")
          return this.HexToBitmap(image)
 
-      if (type = "base64")
+      if (type = "Base64")
          return this.Base64ToBitmap(image)
 
-      if (type = "monitor")
+      if (type = "Monitor")
          return this.MonitorToBitmap(image)
 
-      if (type = "dc")
-         return this.DcToBitmap(image)
+      if (type = "DC")
+         return this.DCToBitmap(image)
 
-      if (type = "hBitmap")
+      if (type = "HBitmap")
          return this.HBitmapToBitmap(image)
 
-      if (type = "hIcon")
+      if (type = "HIcon")
          return this.HIconToBitmap(image)
 
-      if (type = "bitmap")
+      if (type = "Bitmap")
          return this.BitmapToBitmap(image)
 
-      if (type = "stream")
+      if (type = "Stream")
          return this.StreamToBitmap(image)
 
       if (type = "RandomAccessStream")
          return this.RandomAccessStreamToBitmap(image)
 
-      if (type = "wicBitmap")
+      if (type = "WicBitmap")
          return this.WicBitmapToBitmap(image)
 
-      if (type = "sprite")
+      if (type = "Sprite")
          return this.SpriteToBitmap(image)
 
       throw Exception("Conversion from " type " to bitmap is not supported.")
    }
 
-   BitmapToCoimage(cotype, pBitmap, p1:="", p2:="", p3:="", p4:="", p5:="", p6 := "", p*) {
-      ; BitmapToCoimage("clipboard", pBitmap)
-      if (cotype = "clipboard" || cotype = "clipboardpng")
+   BitmapToCoimage(cotype, pBitmap, p1:="", p2:="", p3:="", p4:="", p5:="", p6:="", p7:="", p*) {
+
+      if (cotype = "Clipboard" || cotype = "ClipboardPng") ; (pBitmap)
          return this.BitmapToClipboard(pBitmap)
 
-      ; BitmapToEncodedBuffer(pBitmap)
-      if (cotype = "encodedbuffer")
-         return this.BitmapToEncodedBuffer(pBitmap)
+      if (cotype = "EncodedBuffer") ; (pBitmap, extension, quality)
+         return this.BitmapToEncodedBuffer(pBitmap, p1, p2)
 
-      ; BitmapToCoimage("buffer", pBitmap)
-      if (cotype = "buffer")
+      if (cotype = "Buffer") ; (pBitmap)
          return this.BitmapToBuffer(pBitmap)
 
-      ; BitmapToCoimage("sharedbuffer", pBitmap, p1)
-      if (cotype = "sharedbuffer")
+      if (cotype = "SharedBuffer") ; (pBitmap, name)
          return this.BitmapToSharedBuffer(pBitmap, p1)
 
-      ; BitmapToCoimage("screenshot", pBitmap, screenshot, alpha)
-      if (cotype = "screenshot")
+      if (cotype = "Screenshot") ; (pBitmap, pos, alpha)
          return this.BitmapToScreenshot(pBitmap, p1, p2)
 
-      ; BitmapToCoimage("show", pBitmap, title, pos, style, styleEx, parent, playback)
-      if (cotype = "show")
-         return this.show(pBitmap, p1, p2, p3, p4, p5, p6)
+      if (cotype = "Show") ; (pBitmap, title, pos, style, styleEx, parent, playback, cache)
+         return this.Show(pBitmap, p1, p2, p3, p4, p5, p6, p7)
 
-      ; BitmapToCoimage("window", pBitmap, title, pos, style, styleEx, parent, playback)
-      if (cotype = "window")
-         return this.BitmapToWindow(pBitmap, p1, p2, p3, p4, p5, p6)
+      if (cotype = "Window") ; (pBitmap, title, pos, style, styleEx, parent, playback, cache)
+         return this.BitmapToWindow(pBitmap, p1, p2, p3, p4, p5, p6, p7)
 
-      ; BitmapToCoimage("desktop", pBitmap)
-      if (cotype = "desktop")
+      if (cotype = "Desktop") ; (pBitmap)
          return this.BitmapToDesktop(pBitmap)
 
-      ; BitmapToCoimage("wallpaper", pBitmap)
-      if (cotype = "wallpaper")
+      if (cotype = "Wallpaper") ; (pBitmap)
          return this.BitmapToWallpaper(pBitmap)
 
-      ; BitmapToCoimage("cursor", pBitmap, xHotspot, yHotspot)
-      if (cotype = "cursor")
+      if (cotype = "Cursor") ; (pBitmap, xHotspot, yHotspot)
          return this.BitmapToCursor(pBitmap, p1, p2)
 
-      ; BitmapToCoimage("url", pBitmap)
-      if (cotype = "url")
+      if (cotype = "Url") ; (pBitmap)
          return this.BitmapToUrl(pBitmap)
 
-      ; BitmapToCoimage("file", pBitmap, filepath, quality)
-      if (cotype = "file")
+      if (cotype = "File") ; (pBitmap, filepath, quality)
          return this.BitmapToFile(pBitmap, p1, p2)
 
-      ; BitmapToCoimage("hex", pBitmap, extension, quality)
-      if (cotype = "hex")
+      if (cotype = "Hex") ; (pBitmap, extension, quality)
          return this.BitmapToHex(pBitmap, p1, p2)
 
-      ; BitmapToCoimage("base64", pBitmap, extension, quality)
-      if (cotype = "base64")
+      if (cotype = "Base64") ; (pBitmap, extension, quality)
          return this.BitmapToBase64(pBitmap, p1, p2)
 
-      ; BitmapToCoimage("uri", pBitmap, extension, quality)
-      if (cotype = "uri")
+      if (cotype = "Uri") ; (pBitmap, extension, quality)
          return this.BitmapToUri(pBitmap, p1, p2)
 
-      ; BitmapToCoimage("dc", pBitmap, alpha)
-      if (cotype = "dc")
-         return this.BitmapToDc(pBitmap, p1)
+      if (cotype = "DC") ; (pBitmap, alpha)
+         return this.BitmapToDC(pBitmap, p1)
 
-      ; BitmapToCoimage("hBitmap", pBitmap, alpha)
-      if (cotype = "hBitmap")
+      if (cotype = "HBitmap") ; (pBitmap, alpha)
          return this.BitmapToHBitmap(pBitmap, p1)
 
-      ; BitmapToCoimage("hIcon", pBitmap)
-      if (cotype = "hIcon")
+      if (cotype = "HIcon") ; (pBitmap)
          return this.BitmapToHIcon(pBitmap)
 
-      ; BitmapToCoimage("bitmap", pBitmap)
-      if (cotype = "bitmap")
+      if (cotype = "Bitmap")
          return pBitmap
 
-      ; BitmapToCoimage("stream", pBitmap, extension, quality)
-      if (cotype = "stream")
+      if (cotype = "Stream") ; (pBitmap, extension, quality)
          return this.BitmapToStream(pBitmap, p1, p2)
 
-      ; BitmapToCoimage("RandomAccessStream", pBitmap, extension, quality)
-      if (cotype = "RandomAccessStream")
+      if (cotype = "RandomAccessStream") ; (pBitmap, extension, quality)
          return this.BitmapToRandomAccessStream(pBitmap, p1, p2)
 
-      ; BitmapToCoimage("wicBitmap", pBitmap)
-      if (cotype = "wicBitmap")
+      if (cotype = "WicBitmap") ; (pBitmap)
          return this.BitmapToWicBitmap(pBitmap)
 
-      ; BitmapToCoimage("explorer", pBitmap, default)
-      if (cotype = "explorer")
+      if (cotype = "Explorer") ; (pBitmap, default)
          return this.BitmapToExplorer(pBitmap, p1)
 
-      ; BitmapToCoimage("safeArray", pBitmap, extension, quality)
-      if (cotype = "safeArray")
+      if (cotype = "SafeArray") ; (pBitmap, extension, quality)
          return this.BitmapToSafeArray(pBitmap, p1, p2)
 
-      ; BitmapToCoimage("formData", pBitmap, boundary, extension, quality)
-      if (cotype = "formData")
+      if (cotype = "FormData") ; (pBitmap, boundary, extension, quality)
          return this.BitmapToFormData(pBitmap, p1, p2, p3)
 
       throw Exception("Conversion from bitmap to " cotype " is not supported.")
@@ -801,25 +777,25 @@ class ImagePut {
 
       try index := keywords.index
 
-      if (type = "clipboardpng")
+      if (type = "ClipboardPng")
          return this.ClipboardPngToStream()
 
       if (type = "EncodedBuffer")
          return this.EncodedBufferToStream(image)
 
-      if (type = "url")
+      if (type = "Url")
          return this.UrlToStream(image)
 
-      if (type = "file")
+      if (type = "File")
          return this.FileToStream(image)
 
-      if (type = "hex")
+      if (type = "Hex")
          return this.HexToStream(image)
 
-      if (type = "base64")
+      if (type = "Base64")
          return this.Base64ToStream(image)
 
-      if (type = "stream")
+      if (type = "Stream")
          return this.StreamToStream(image)
 
       if (type = "RandomAccessStream")
@@ -829,44 +805,35 @@ class ImagePut {
    }
 
    StreamToCoimage(cotype, pStream, p1 := "", p2 := "", p*) {
-      ; StreamToEncodedBuffer(pStream)
-      if (cotype = "encodedbuffer")
+
+      if (cotype = "EncodedBuffer") ; (pStream)
          return this.StreamToEncodedBuffer(pStream)
 
-      ; StreamToCoimage("file", pStream, filepath)
-      if (cotype = "file")
+      if (cotype = "File") ; (pStream, filepath)
          return this.StreamToFile(pStream, p1)
 
-      ; StreamToCoimage("hex", pStream)
-      if (cotype = "hex")
+      if (cotype = "Hex") ; (pStream)
          return this.StreamToHex(pStream)
 
-      ; StreamToCoimage("base64", pStream)
-      if (cotype = "base64")
+      if (cotype = "Base64") ; (pStream)
          return this.StreamToBase64(pStream)
 
-      ; StreamToCoimage("uri", pStream)
-      if (cotype = "uri")
+      if (cotype = "Uri") ; (pStream)
          return this.StreamToUri(pStream)
 
-      ; StreamToCoimage("stream", pStream)
-      if (cotype = "stream")
+      if (cotype = "Stream")
          return pStream
 
-      ; StreamToCoimage("RandomAccessStream", pStream)
-      if (cotype = "RandomAccessStream")
+      if (cotype = "RandomAccessStream") ; (pStream)
          return this.StreamToRandomAccessStream(pStream)
 
-      ; StreamToCoimage("explorer", pStream, default)
-      if (cotype = "explorer")
+      if (cotype = "Explorer") ; (pStream, default)
          return this.StreamToExplorer(pStream, p1)
 
-      ; StreamToCoimage("safeArray", pStream)
-      if (cotype = "safeArray")
+      if (cotype = "SafeArray") ; (pStream)
          return this.StreamToSafeArray(pStream)
 
-      ; StreamToCoimage("formData", pStream, boundary)
-      if (cotype = "formData")
+      if (cotype = "FormData") ; (pStream, boundary)
          return this.StreamToFormData(pStream, p1)
 
       throw Exception("Conversion from stream to " cotype " is not supported.")
