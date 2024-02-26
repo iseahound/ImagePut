@@ -185,8 +185,9 @@ ImageEqual(images*) {
 
 class ImagePut {
 
-   static decode := False   ; Decompresses image to a pixel buffer. Any encoding such as JPG will be lost.
-   static validate := False ; Always copies pixels to new memory immediately instead of copy-on-read/write.
+   static decode := False    ; Decompresses image to a pixel buffer. Any encoding such as JPG will be lost.
+   static render := True     ; Determines whether vectorized formats such as SVG and PDF are rendered to pixels.
+   static validate := False  ; Always copies pixels to new memory immediately instead of copy-on-read/write.
 
    static call(cotype, image, p*) {
 
@@ -204,6 +205,7 @@ class ImagePut {
       upscale   := keywords.HasProp("upscale")   ? keywords.upscale   : ""
       downscale := keywords.HasProp("downscale") ? keywords.downscale : ""
       decode    := keywords.HasProp("decode")    ? keywords.decode    : this.decode
+      render    := keywords.HasProp("render")    ? keywords.render    : this.render
       validate  := keywords.HasProp("validate")  ? keywords.validate  : this.validate
 
       weight := (decode || crop || scale || upscale || downscale || p.Has(1) && p[1] != "")
@@ -240,7 +242,7 @@ class ImagePut {
 
       ; Perform decoding here.
       ; PDF Signature: %PDF-
-      if str ~= "(?i)^25 50 44 46 2D"
+      if render && str ~= "(?i)^25 50 44 46 2D"
          this.RenderPdf(&pStream, index?)
 
       ; Attempt conversion using StreamToCoimage.
