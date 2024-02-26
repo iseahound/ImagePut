@@ -220,7 +220,7 @@ class ImagePut {
       if not type ~= "^(?i:clipboardpng|encodedbuffer|url|file|stream|RandomAccessStream|hex|base64)$"
          goto bitmap
 
-      if !(pStream := this.ToStream(type, image, keywords))
+      if !(pStream := this.ImageToStream(type, image, keywords))
          throw Error("pStream cannot be zero.")
 
       ; Check the file signature for magic numbers.
@@ -264,7 +264,7 @@ class ImagePut {
 
       ; #2 - Fallback to GDI+ bitmap as the intermediate.
       bitmap:
-      if !(pBitmap := this.ToBitmap(type, image, keywords))
+      if !(pBitmap := this.ImageToBitmap(type, image, keywords))
          throw Error("pBitmap cannot be zero.")
 
       ; GdipImageForceValidation must be called immediately or it fails silently.
@@ -617,7 +617,7 @@ class ImagePut {
       throw Error("Image type could not be identified.")
    }
 
-   static ToBitmap(type, image, keywords := "") {
+   static ImageToBitmap(type, image, keywords := "") {
 
       try index := keywords.index
 
@@ -797,7 +797,7 @@ class ImagePut {
       throw Error("Conversion from bitmap to " cotype " is not supported.")
    }
 
-   static ToStream(type, image, keywords := "") {
+   static ImageToStream(type, image, keywords := "") {
 
       try index := keywords.index
 
@@ -4848,7 +4848,7 @@ class ImagePut {
       try type := this.DontVerifyImageType(&image)
       catch
          type := this.ImageType(image)
-      pBitmap := this.ToBitmap(type, image)
+      pBitmap := this.ImageToBitmap(type, image)
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
       DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
@@ -4940,7 +4940,7 @@ class ImageEqual extends ImagePut {
          type := this.ImageType(image)
 
       ; Convert only the first image to a bitmap.
-      if !(pBitmap1 := this.ToBitmap(type, image))
+      if !(pBitmap1 := this.ImageToBitmap(type, image))
          throw Error("Conversion to bitmap failed. The pointer value is zero.")
 
       ; If there is only one image, verify that image and return.
@@ -4962,7 +4962,7 @@ class ImageEqual extends ImagePut {
                type := this.ImageType(image)
 
             ; Convert the other image to a bitmap.
-            pBitmap2 := this.ToBitmap(type, image)
+            pBitmap2 := this.ImageToBitmap(type, image)
 
             ; Compare the two images.
             if !this.BitmapEqual(pBitmap1, pBitmap2)
