@@ -254,7 +254,7 @@ class ImagePut {
       : str ~= "(?i)^(((?!3c|3e).. )|3c (3f|21) ((?!3c|3e).. )*3e )*3c 73 76 67" ? "svg"  ; <svg
       : str ~= "(?i)^(49 49 2a 00|4d 4d 00 2a)"                                  ? "tif"  ; II* or MM*
       : str ~= "(?i)^52 49 46 46 .. .. .. .. 57 45 42 50"                        ? "webp" ; RIFF....WEBP
-      : str ~= "(?i)^d7 cd c6 9a"                                                ? "wmf"  : ""
+      : str ~= "(?i)^d7 cd c6 9a"                                                ? "wmf"  : "txt" ; pass through as-is
 
       ; Convert vectorized formats to rasterized formats.
       if (render && extension ~= "^(?i:pdf|svg)$") {
@@ -263,7 +263,7 @@ class ImagePut {
       }
 
       weight := decode || crop || scale || upscale || downscale
-         || not (cotype ~= "^(?i:encodedbuffer|url|hex|base64|uri|stream|randomaccessstream|safearray)$"
+         ||    not (cotype ~= "^(?i:encodedbuffer|url|hex|base64|uri|stream|randomaccessstream|safearray)$"
                and not (p.Has(1) && (p[1] != "" && p[1] != extension)))
             && not (cotype = "file"
                and not (p.Has(1) && !(extension ~= p[1] "$")))
@@ -4556,12 +4556,6 @@ class ImagePut {
 
       ; Create a stream from either a url or a file.
       pStream := image
-
-      ; Compare the signature of the file with the PDF magic string "%PDF".
-      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", signature := Buffer(4), "uint", 4, "hresult")
-      StrPut("%PDF", magic := Buffer(4), "CP0")
-      if 4 > DllCall("ntdll\RtlCompareMemory", "ptr", signature, "ptr", magic, "uptr", 4, "uptr")
-         throw Error("Invalid PDF.")
 
       ; Create a RandomAccessStream with BSOS_PREFERDESTINATIONSTREAM.
       DllCall("ole32\CLSIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", CLSID := Buffer(16), "hresult")
