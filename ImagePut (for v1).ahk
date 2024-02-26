@@ -545,7 +545,7 @@ class ImagePut {
          return "cursor"
 
       ; A "url" satisfies the url format.
-      if this.is_url(image)
+      if this.IsUrl(image)
          return "url"
 
       ; A "file" is stored on the disk or network.
@@ -994,7 +994,7 @@ class ImagePut {
       return pBitmap := pBitmapScale
    }
 
-   is_url(url) {
+   IsUrl(url) {
       ; Thanks dperini - https://gist.github.com/dperini/729294
       ; Also see for comparisons: https://mathiasbynens.be/demo/url-regex
       ; Modified to be compatible with AutoHotkey. \u0000 -> \x{0000}.
@@ -1975,7 +1975,7 @@ class ImagePut {
 
    SpriteToBitmap(image) {
       ; Create a source pBitmap.
-      if this.is_url(image)
+      if this.IsUrl(image)
          pBitmap := this.UrlToBitmap(image)
       else if FileExist(image)
          pBitmap := this.FileToBitmap(image)
