@@ -148,7 +148,7 @@ ImagePutWICBitmap(image) {
 ;   parent     -  Window Parent           |  ptr      ->   hwnd
 ;   playback   -  Animate Window?         |  bool     ->   True
 ;   cache      -  Cache Animation Frames? |  bool     ->   False
-ImagePutWindow(image, title := "", pos := "", style := 0x82C80000, styleEx := 0x9, parent := "", playback := True, cache := False)  {
+ImagePutWindow(image, title := "", pos := "", style := 0x82C80000, styleEx := 0x9, parent := "", playback := True, cache := False) {
    return ImagePut("window", image, title, pos, style, styleEx, parent, playback, cache)
 }
 
@@ -160,7 +160,7 @@ ImagePutWindow(image, title := "", pos := "", style := 0x82C80000, styleEx := 0x
 ;   parent     -  Window Parent           |  ptr      ->   hwnd
 ;   playback   -  Animate Window?         |  bool     ->   True
 ;   cache      -  Cache Animation Frames? |  bool     ->   False
-ImageShow(image, title := "", pos := "", style := 0x90000000, styleEx := 0x80088, parent := "", playback := True, cache := False)  {
+ImageShow(image, title := "", pos := "", style := 0x90000000, styleEx := 0x80088, parent := "", playback := True, cache := False) {
    return ImagePut("show", image, title, pos, style, styleEx, parent, playback, cache)
 }
 
@@ -210,8 +210,6 @@ class ImagePut {
       render    := keywords.HasKey("render")     ? keywords.render    : this.render
       validate  := keywords.HasKey("validate")   ? keywords.validate  : this.validate
 
-      weight := (decode || crop || scale || upscale || downscale || p[1] != "")
-
       ; Keywords are for ImageToBitmap or ImageToStream.
       try index := keywords.index
 
@@ -226,27 +224,52 @@ class ImagePut {
          throw Exception("pStream cannot be zero.")
 
       ; Check the file signature for magic numbers.
+      recheck:
       size := 12
       VarSetCapacity(bin, size)
 
       ; Get the first few bytes of the image.
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
       DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", &bin, "uint", size, "uint")
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
 
-      ; Allocate enough space for a hexadecimal string with spaces and a null terminator.
-      length := 2 * size + (size - 1) + 1
+      ; Allocate enough space for a hexadecimal string with spaces interleaved and a null terminator.
+      length := 2*size + (size-1) + 1
       VarSetCapacity(str, length * (A_IsUnicode?2:1))
 
       ; Lift the binary representation to hex.
       flags := 0x40000004 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_HEX
       DllCall("crypt32\CryptBinaryToString", "ptr", &bin, "uint", size, "uint", flags, "str", str, "uint*", length)
 
-      ; Perform decoding here.
-      ; PDF Signature: %PDF-
-      if render && str ~= "(?i)^25 50 44 46 2D"
-         this.RenderPdf(pStream, index)
+      ; Determine the file extension using herustics.
+      extension := 0                                                             ? ""
+      : str ~= "(?i)66 74 79 70 61 76 69 66"                                     ? "avif" ; ftypavif
+      : str ~= "(?i)^42 4d (.. ){36}00 00 .. 00 00 00"                           ? "bmp"  ; BM
+      : str ~= "(?i)^01 00 00 00 (.. ){36}20 45 4D 46"                           ? "emf"  ; emf
+      : str ~= "(?i)^47 49 46 38 (37|39) 61"                                     ? "gif"  ; GIF87a or GIF89a
+      : str ~= "(?i)66 74 79 70 68 65 69 63"                                     ? "heic" ; ftypheic
+      : str ~= "(?i)^00 00 01 00"                                                ? "ico"
+      : str ~= "(?i)^ff d8 ff"                                                   ? "jpg"
+      : str ~= "(?i)^25 50 44 46 2d"                                             ? "pdf"  ; %PDF-
+      : str ~= "(?i)^89 50 4e 47 0d 0a 1a 0a"                                    ? "png"  ; PNG
+      : str ~= "(?i)^(((?!3c|3e).. )|3c (3f|21) ((?!3c|3e).. )*3e )*3c 73 76 67" ? "svg"  ; <svg
+      : str ~= "(?i)^(49 49 2a 00|4d 4d 00 2a)"                                  ? "tif"  ; II* or MM*
+      : str ~= "(?i)^52 49 46 46 .. .. .. .. 57 45 42 50"                        ? "webp" ; RIFF....WEBP
+      : str ~= "(?i)^d7 cd c6 9a"                                                ? "wmf"  : ""
 
+      ; Convert vectorized formats to rasterized formats.
+      if (render && extension ~= "^(?i:pdf|svg)$") {
+         (extension = "pdf") && this.RenderPdf(pStream, index)
+         goto recheck
+      }
+
+      weight := decode || crop || scale || upscale || downscale
+         || not (cotype ~= "^(?i:encodedbuffer|url|hex|base64|uri|stream|randomaccessstream|safearray)$"
+               and not (p.Has(1) && (p[1] != "" && p[1] != extension)))
+            && not (cotype = "file"
+               and not (p.Has(1) && !(extension ~= p[1] "$")))
+            && not (cotype = "formdata"
+               and not (p.Has(2) && (p[2] != "" && p[2] != extension)))
+      ;MsgBox weight ? "convert to pixels" : "stay as stream"
       ; Attempt conversion using StreamToCoimage.
       if not weight && cotype ~= "^(?i:encodedbuffer|file|stream|RandomAccessStream|hex|base64|uri|explorer|safeArray|formData)$" {
 
@@ -276,8 +299,8 @@ class ImagePut {
       (upscale) && this.BitmapScale(pBitmap, upscale, 1)
       (downscale) && this.BitmapScale(pBitmap, downscale, -1)
 
-      ; WEBP Signature: RIFF....WEBP
-      if cotype ~= "^(?i:show|window)$" && type = "stream" && str ~= "(?i)^52 49 46 46 .. .. .. .. 57 45 42 50" {
+      ; Save frame delays and loop count for webp.
+      if (type = "stream" && extension = "webp" && cotype ~= "^(?i:show|window)$") {
          this.webp(pStream, pDelays, pCount)
          DllCall("gdiplus\GdipSetPropertyItem", "ptr", pBitmap, "ptr", pDelays)
          DllCall("gdiplus\GdipSetPropertyItem", "ptr", pBitmap, "ptr", pCount)
@@ -410,7 +433,7 @@ class ImagePut {
       "Hex",
       "Base64",
       "Monitor",
-      "Dc",
+      "DC",
       "HBitmap",
       "HIcon",
       "Bitmap",
@@ -488,27 +511,22 @@ class ImagePut {
 
       ; An "EncodedBuffer" contains a pointer to the bytes of an encoded image format.
       if image.HasKey("ptr") and image.HasKey("size") and (image.size > 24) {
-
          size := min(image.size, 256)
          length := VarSetCapacity(str, (2*size + (size-1) + 1) * (A_IsUnicode ? 2 : 1))
          DllCall("crypt32\CryptBinaryToString", "ptr", image.ptr, "uint", size, "uint", 0x40000004, "str", str, "uint*", length)
-
-         extension := str ~= "(?i)66 74 79 70 61 76 69 66"                          ? "avif" ; ftypavif
-         : str ~= "(?i)^42 4d (.. ){36}00 00 .. 00 00 00"                           ? "bmp"  ; BM
-         : str ~= "(?i)^01 00 00 00 (.. ){36}20 45 4D 46"                           ? "emf"  ; emf
-         : str ~= "(?i)^47 49 46 38 (37|39) 61"                                     ? "gif"  ; GIF87a or GIF89a
-         : str ~= "(?i)66 74 79 70 68 65 69 63"                                     ? "heic" ; ftypheic
-         : str ~= "(?i)^00 00 01 00"                                                ? "ico"
-         : str ~= "(?i)^ff d8 ff"                                                   ? "jpg"
-         : str ~= "(?i)^25 50 44 46 2d"                                             ? "pdf"  ; %PDF-
-         : str ~= "(?i)^89 50 4e 47 0d 0a 1a 0a"                                    ? "png"  ; PNG
-         : str ~= "(?i)^(((?!3c|3e).. )|3c (3f|21) ((?!3c|3e).. )*3e )*3c 73 76 67" ? "svg"  ; <svg
-         : str ~= "(?i)^(49 49 2a 00|4d 4d 00 2a)"                                  ? "tif"  ; II* or MM*
-         : str ~= "(?i)^52 49 46 46 .. .. .. .. 57 45 42 50"                        ? "webp" ; RIFF....WEBP
-         : str ~= "(?i)^d7 cd c6 9a"                                                ? "wmf"
-         : ""
-
-         if extension
+         if str ~= "(?i)66 74 79 70 61 76 69 66"                                     ; "avif" 
+         || str ~= "(?i)^42 4d (.. ){36}00 00 .. 00 00 00"                           ; "bmp"  
+         || str ~= "(?i)^01 00 00 00 (.. ){36}20 45 4D 46"                           ; "emf"  
+         || str ~= "(?i)^47 49 46 38 (37|39) 61"                                     ; "gif"  
+         || str ~= "(?i)66 74 79 70 68 65 69 63"                                     ; "heic" 
+         || str ~= "(?i)^00 00 01 00"                                                ; "ico"
+         || str ~= "(?i)^ff d8 ff"                                                   ; "jpg"
+         || str ~= "(?i)^25 50 44 46 2d"                                             ; "pdf"  
+         || str ~= "(?i)^89 50 4e 47 0d 0a 1a 0a"                                    ; "png"  
+         || str ~= "(?i)^(((?!3c|3e).. )|3c (3f|21) ((?!3c|3e).. )*3e )*3c 73 76 67" ; "svg"  
+         || str ~= "(?i)^(49 49 2a 00|4d 4d 00 2a)"                                  ; "tif"  
+         || str ~= "(?i)^52 49 46 46 .. .. .. .. 57 45 42 50"                        ; "webp" 
+         || str ~= "(?i)^d7 cd c6 9a"                                                ; "wmf"
             return "EncodedBuffer"
       }
 
@@ -522,8 +540,8 @@ class ImagePut {
       if image.HasKey("ptr") {
          image := image.ptr
          goto pointer
-      } else
-         goto end
+      }
+      goto end
 
       string:
       if (image == "")
@@ -4588,6 +4606,7 @@ class ImagePut {
       this.ObjReleaseClose(pRandomAccessStream)
       ObjRelease(pStream)
 
+      DllCall("shlwapi\IStream_Reset", "ptr", pStreamOut, "uint")
       return image := pStreamOut
    }
 
