@@ -1089,8 +1089,8 @@ class ImagePut {
 
    static EncodedBufferToStream(image) {
       handle := DllCall("GlobalAlloc", "uint", 0x2, "uptr", image.size, "ptr")
-      pointer := DllCall("GlobalLock", "ptr", handle, "ptr")
-      DllCall("RtlMoveMemory", "ptr", pointer, "ptr", image.ptr, "uptr", image.size)
+      ptr := DllCall("GlobalLock", "ptr", handle, "ptr")
+      DllCall("RtlMoveMemory", "ptr", ptr, "ptr", image.ptr, "uptr", image.size)
       DllCall("GlobalUnlock", "ptr", handle)
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", handle, "int", True, "ptr*", &pStream:=0, "hresult")
       return pStream
@@ -1618,17 +1618,18 @@ class ImagePut {
       image := Trim(image)
       image := RegExReplace(image, "^(0[xX])")
 
-      ; Retrieve the size of bytes from the length of the base64 string.
-      flags := 0xC ; CRYPT_STRING_HEXRAW
+      ; Retrieve the size of bytes from the length of the hex string.
       size := StrLen(image) / 2
+      handle := DllCall("GlobalAlloc", "uint", 0x2, "uptr", size, "ptr")
+      bin := DllCall("GlobalLock", "ptr", handle, "ptr")
+      
+      ; Place the decoded hex string into a binary buffer.
+      flags := 0xC ; CRYPT_STRING_HEXRAW
+      DllCall("crypt32\CryptStringToBinary", "str", image, "uint", 0, "uint", flags, "ptr", bin, "uint*", size, "ptr", 0, "ptr", 0)
 
-      hData := DllCall("GlobalAlloc", "uint", 0x2, "uptr", size, "ptr")
-      pData := DllCall("GlobalLock", "ptr", hData, "ptr")
-
-      DllCall("crypt32\CryptStringToBinary", "str", image, "uint", 0, "uint", flags, "ptr", pData, "uint*", size, "ptr", 0, "ptr", 0)
-
-      DllCall("GlobalUnlock", "ptr", hData)
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", True, "ptr*", &pStream:=0, "hresult")
+      ; Returns a stream that release the handle on ObjRelease().
+      DllCall("GlobalUnlock", "ptr", handle)
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", handle, "int", True, "ptr*", &pStream:=0, "hresult")
       return pStream
    }
 
@@ -1645,16 +1646,17 @@ class ImagePut {
       image := RegExReplace(image, "(?i)^data:image\/[a-z]+;base64,")
 
       ; Retrieve the size of bytes from the length of the base64 string.
-      flags := 0x1 ; CRYPT_STRING_BASE64
       size := StrLen(RTrim(image, "=")) * 3 // 4
+      handle := DllCall("GlobalAlloc", "uint", 0x2, "uptr", size, "ptr")
+      bin := DllCall("GlobalLock", "ptr", handle, "ptr")
 
-      hData := DllCall("GlobalAlloc", "uint", 0x2, "uptr", size, "ptr")
-      pData := DllCall("GlobalLock", "ptr", hData, "ptr")
+      ; Place the decoded base64 string into a binary buffer.
+      flags := 0x1 ; CRYPT_STRING_BASE64
+      DllCall("crypt32\CryptStringToBinary", "str", image, "uint", 0, "uint", flags, "ptr", bin, "uint*", size, "ptr", 0, "ptr", 0)
 
-      DllCall("crypt32\CryptStringToBinary", "str", image, "uint", 0, "uint", flags, "ptr", pData, "uint*", size, "ptr", 0, "ptr", 0)
-
-      DllCall("GlobalUnlock", "ptr", hData)
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", True, "ptr*", &pStream:=0, "hresult")
+      ; Returns a stream that release the handle on ObjRelease().
+      DllCall("GlobalUnlock", "ptr", handle)
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", handle, "int", True, "ptr*", &pStream:=0, "hresult")
       return pStream
    }
 
@@ -4276,24 +4278,25 @@ class ImagePut {
       pStream := this.BitmapToStream(pBitmap, extension, quality)
 
       ; Get a pointer to binary data.
-      DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "ptr*", &hbin:=0, "hresult")
-      bin := DllCall("GlobalLock", "ptr", hbin, "ptr")
-      size := DllCall("GlobalSize", "ptr", hbin, "uptr")
+      DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "ptr*", &handle:=0, "hresult")
+      bin := DllCall("GlobalLock", "ptr", handle, "ptr")
+      size := DllCall("GlobalSize", "ptr", handle, "uptr")
 
       ; Calculate the length of the base64 string.
+      length := 4 * Ceil(size / 3) + 1   ; A string has a null terminator
+      VarSetStrCapacity(&str, length)    ; Allocates a ANSI or Unicode string
+      ; This appends 1 or 2 zero byte null terminators respectively.
+      
+      ; Passing a pre-allocated string buffer prevents an additional memory copy via StrGet.
       flags := 0x40000001 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_BASE64
-      length := 4 * Ceil(size/3) + 1 ; An extra byte of padding is required.
-      str := Buffer(length)
-
-      ; Using CryptBinaryToStringA is faster and saves about 2MB in memory.
-      DllCall("crypt32\CryptBinaryToStringA", "ptr", bin, "uint", size, "uint", flags, "ptr", str, "uint*", &length)
+      DllCall("crypt32\CryptBinaryToString", "ptr", bin, "uint", size, "uint", flags, "str", str, "uint*", &length)
 
       ; Release binary data and stream.
-      DllCall("GlobalUnlock", "ptr", hbin)
+      DllCall("GlobalUnlock", "ptr", handle)
       ObjRelease(pStream)
 
-      ; Return encoded string length minus 1.
-      return StrGet(str, length, "CP0")
+      ; Returns an AutoHotkey native string.
+      return str
    }
 
    static StreamToBase64(pStream) {
@@ -4304,15 +4307,16 @@ class ImagePut {
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
 
       ; Calculate the length of the base64 string.
+      length := 4 * Ceil(size / 3) + 1   ; A string has a null terminator
+      VarSetStrCapacity(&str, length)    ; Allocates a ANSI or Unicode string
+      ; This appends 1 or 2 zero byte null terminators respectively.
+      
+      ; Passing a pre-allocated string buffer prevents an additional memory copy via StrGet.
       flags := 0x40000001 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_BASE64
-      length := 4 * Ceil(size/3) + 1 ; An extra byte of padding is required.
-      str := Buffer(length)
+      DllCall("crypt32\CryptBinaryToString", "ptr", bin, "uint", size, "uint", flags, "str", str, "uint*", &length)
 
-      ; Using CryptBinaryToStringA is faster and saves about 2MB in memory.
-      DllCall("crypt32\CryptBinaryToStringA", "ptr", bin, "uint", size, "uint", flags, "ptr", str, "uint*", &length)
-
-      ; Return encoded string length minus 1.
-      return StrGet(str, length, "CP0")
+      ; Returns an AutoHotkey native string.
+      return str
    }
 
    static BitmapToUri(pBitmap, extension := "", quality := "") {
