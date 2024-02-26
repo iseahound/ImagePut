@@ -146,9 +146,10 @@ ImagePutWICBitmap(image) {
 ;   style      -  Window Style            |  uint     ->   WS_VISIBLE
 ;   styleEx    -  Window Extended Style   |  uint     ->   WS_EX_LAYERED
 ;   parent     -  Window Parent           |  ptr      ->   hwnd
-;   playback   -  Window Animation        |  bool     ->   True
-ImagePutWindow(image, title := "", pos := "", style := 0x82C80000, styleEx := 0x9, parent := "", playback := True) {
-   return ImagePut("window", image, title, pos, style, styleEx, parent, playback)
+;   playback   -  Animate Window?         |  bool     ->   True
+;   cache      -  Cache Animation Frames? |  bool     ->   False
+ImagePutWindow(image, title := "", pos := "", style := 0x82C80000, styleEx := 0x9, parent := "", playback := True, cache := False) {
+   return ImagePut("window", image, title, pos, style, styleEx, parent, playback, cache)
 }
 
 
@@ -157,9 +158,10 @@ ImagePutWindow(image, title := "", pos := "", style := 0x82C80000, styleEx := 0x
 ;   style      -  Window Style            |  uint     ->   WS_VISIBLE
 ;   styleEx    -  Window Extended Style   |  uint     ->   WS_EX_LAYERED
 ;   parent     -  Window Parent           |  ptr      ->   hwnd
-;   playback   -  Window Animation        |  bool     ->   True
-ImageShow(image, title := "", pos := "", style := 0x90000000, styleEx := 0x80088, parent := "", playback := True) {
-   return ImagePut("show", image, title, pos, style, styleEx, parent, playback)
+;   playback   -  Animate Window?         |  bool     ->   True
+;   cache      -  Cache Animation Frames? |  bool     ->   False
+ImageShow(image, title := "", pos := "", style := 0x90000000, styleEx := 0x80088, parent := "", playback := True, cache := False) {
+   return ImagePut("show", image, title, pos, style, styleEx, parent, playback, cache)
 }
 
 ImageDestroy(image) {
@@ -3160,7 +3162,7 @@ class ImagePut {
       return [x,y,w,h]
    }
 
-   static BitmapToWindow(pBitmap, title := "", pos := "", style := 0x82C80000, styleEx := 0x9, parent := "", playback := "") {
+   static BitmapToWindow(pBitmap, title := "", pos := "", style := 0x82C80000, styleEx := 0x9, parent := "", playback := "", cache := "") {
       ; Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
       ; Extended Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/extended-window-styles
 
@@ -3256,7 +3258,7 @@ class ImagePut {
       DllCall("SetLayeredWindowAttributes", "ptr", hwnd, "uint", 0xF0F0F0, "uchar", 0, "int", 1)
 
       ; A layered child window is only available on Windows 8+.
-      child := this.show(pBitmap, title, [0, 0, w, h], WS_CHILD | WS_VISIBLE, WS_EX_LAYERED, hwnd, playback)
+      child := this.Show(pBitmap, title, [0, 0, w, h], WS_CHILD | WS_VISIBLE, WS_EX_LAYERED, hwnd, playback, cache)
 
       ; Store extra data inside window struct (cbWndExtra).
       DllCall("SetWindowLong", "ptr", hwnd, "int", 0*A_PtrSize, "ptr", hwnd) ; parent window
@@ -3270,7 +3272,7 @@ class ImagePut {
       return hwnd
    }
 
-   static show(pBitmap, title := "", pos := "", style := 0x90000000, styleEx := 0x80088, parent := "", playback := "") {
+   static Show(pBitmap, title := "", pos := "", style := 0x90000000, styleEx := 0x80088, parent := "", playback := "", cache := "") {
       ; Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
       WS_POPUP                  := 0x80000000   ; Allow small windows.
       WS_VISIBLE                := 0x10000000   ; Show on creation.
@@ -3477,7 +3479,7 @@ class ImagePut {
          DllCall("SetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", 3*A_PtrSize, "ptr", ObjPtr(obj))
 
          ; Case 1: Image is not scaled.
-         if (w == width && h == height) {
+         if (!cache && w == width && h == height) {
             ; Clone bitmap to avoid disposal.
             DllCall("gdiplus\GdipCloneImage", "ptr", pBitmap, "ptr*", &pBitmapClone:=0)
             DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmapClone) ; Load to memory.
