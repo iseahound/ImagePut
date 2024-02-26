@@ -49,8 +49,10 @@ ImagePutDesktop(image) {
 }
 
 ; Puts the image as an encoded format into a binary data object.
-ImagePutEncodedBuffer(image) {
-   return ImagePut("EncodedBuffer", image)
+;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
+;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
+ImagePutEncodedBuffer(image, extension := "", quality := "") {
+   return ImagePut("EncodedBuffer", image, extension, quality)
 }
 
 ; Puts the image into the most recently active explorer window.
@@ -254,7 +256,8 @@ class ImagePut {
       : str ~= "(?i)^(((?!3c|3e).. )|3c (3f|21) ((?!3c|3e).. )*3e )*3c 73 76 67" ? "svg"  ; <svg
       : str ~= "(?i)^(49 49 2a 00|4d 4d 00 2a)"                                  ? "tif"  ; II* or MM*
       : str ~= "(?i)^52 49 46 46 .. .. .. .. 57 45 42 50"                        ? "webp" ; RIFF....WEBP
-      : str ~= "(?i)^d7 cd c6 9a"                                                ? "wmf"  : "txt" ; pass through as-is
+      : str ~= "(?i)^d7 cd c6 9a"                                                ? "wmf"
+      : "" ; Extension must be blank for file pass-through as-is.
 
       ; Convert vectorized formats to rasterized formats.
       if (render && extension ~= "^(?i:pdf|svg)$") {
