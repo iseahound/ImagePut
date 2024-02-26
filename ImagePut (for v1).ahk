@@ -218,15 +218,14 @@ class ImagePut {
       cleanup := ""
 
       ; #1 - Stream as the intermediate.
-      stream:
       if not type ~= "^(?i:clipboardpng|encodedbuffer|url|file|stream|RandomAccessStream|hex|base64)$"
-         goto bitmap
-
+         goto make_bitmap
+      
       if !(pStream := this.ImageToStream(type, image, keywords))
          throw Exception("pStream cannot be zero.")
-
+      
       ; Check the file signature for magic numbers.
-      recheck:
+      stream:
       size := 12
       VarSetCapacity(bin, size)
 
@@ -260,9 +259,9 @@ class ImagePut {
       : "" ; Extension must be blank for file pass-through as-is.
 
       ; Convert vectorized formats to rasterized formats.
-      if (render && extension ~= "^(?i:pdf|svg)$") {
-         (extension = "pdf") && this.RenderPdf(pStream, index)
-         goto recheck
+      if (render) {
+         if (extension = "pdf") && this.RenderPdf(pStream, index)
+         goto % IsSet(pBitmap) ? "bitmap" : "stream"
       }
 
       weight := decode || crop || scale || upscale || downscale
@@ -291,11 +290,12 @@ class ImagePut {
       cleanup := "stream"
 
       ; #2 - Fallback to GDI+ bitmap as the intermediate.
-      bitmap:
+      make_bitmap:
       if !(pBitmap := this.ImageToBitmap(type, image, keywords))
          throw Exception("pBitmap cannot be zero.")
-
+      
       ; GdipImageForceValidation must be called immediately or it fails silently.
+      bitmap:
       (validate) && DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmap)
       (crop) && this.BitmapCrop(pBitmap, crop)
       (scale) && this.BitmapScale(pBitmap, scale)
