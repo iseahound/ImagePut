@@ -241,7 +241,7 @@ class ImagePut {
       flags := 0x40000004 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_HEX
       DllCall("crypt32\CryptBinaryToString", "ptr", &bin, "uint", size, "uint", flags, "str", str, "uint*", length)
 
-      ; Determine the file extension using herustics.
+      ; Determine the file extension using herustics. See: http://fileformats.archiveteam.org
       extension := 0                                                             ? ""
       : str ~= "(?i)66 74 79 70 61 76 69 66"                                     ? "avif" ; ftypavif
       : str ~= "(?i)^42 4d (.. ){36}00 00 .. 00 00 00"                           ? "bmp"  ; BM
@@ -4228,27 +4228,58 @@ class ImagePut {
    }
 
    StreamToUri(pStream) {
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
-      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", &signature := VarSetCapacity(signature, 256), "uint", 256, "uint")
+      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", size:=0, "uint")
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
 
-      ; This function sniffs the first 256 bytes and matches a known file signature.
-      ; 256 bytes is recommended, but images only need 12 bytes.
-      ; See: https://en.wikipedia.org/wiki/List_of_file_signatures
-      DllCall("urlmon\FindMimeFromData"
-               ,    "ptr", 0             ; pBC
-               ,    "ptr", 0             ; pwzUrl
-               ,    "ptr", &signature    ; pBuffer
-               ,   "uint", 256           ; cbSize
-               ,    "ptr", 0             ; pwzMimeProposed
-               ,   "uint", 0x20          ; dwMimeFlags
-               ,   "ptr*", MimeOut:=0    ; ppwzMimeOut
-               ,   "uint", 0             ; dwReserved
-               ,   "uint")
-      MimeType := StrGet(MimeOut, "UTF-16")
-      DllCall("ole32\CoTaskMemFree", "ptr", MimeOut)
+      ; 2048 characters should be good enough to identify the file correctly.
+      size := min(size, 2048)
+      VarSetCapacity(bin, size)
+      
+      ; Get the first few bytes of the image.
+      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", &bin, "uint", size, "uint")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
 
-      return "data:" MimeType ";base64," this.StreamToBase64(pStream)
+      ; Allocate enough space for a hexadecimal string with spaces interleaved and a null terminator.
+      length := 2*size + (size-1) + 1
+      VarSetCapacity(str, length * (A_IsUnicode?2:1))
+
+      ; Lift the binary representation to hex.
+      flags := 0x40000004 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_HEX
+      DllCall("crypt32\CryptBinaryToString", "ptr", &bin, "uint", size, "uint", flags, "str", str, "uint*", length)
+
+      ; Determine the mime type using herustics. See: http://fileformats.archiveteam.org
+      mime := 0                                                                  ? ""
+      : str ~= "(?i)66 74 79 70 61 76 69 66"                                     ? "image/avif"
+      : str ~= "(?i)^42 4d (.. ){36}00 00 .. 00 00 00"                           ? "image/bmp"
+      : str ~= "(?i)^01 00 00 00 (.. ){36}20 45 4D 46"                           ? "image/emf"
+      : str ~= "(?i)^47 49 46 38 (37|39) 61"                                     ? "image/gif"
+      : str ~= "(?i)66 74 79 70 68 65 69 63"                                     ? "image/heic"
+      : str ~= "(?i)^00 00 01 00"                                                ? "image/x-icon"
+      : str ~= "(?i)^ff d8 ff"                                                   ? "image/jpeg"
+      : str ~= "(?i)^25 50 44 46 2d"                                             ? "application/pdf"
+      : str ~= "(?i)^89 50 4e 47 0d 0a 1a 0a"                                    ? "image/png"
+      : str ~= "(?i)^(((?!3c|3e).. )|3c (3f|21) ((?!3c|3e).. )*3e )*3c 73 76 67" ? "image/svg+xml"
+      : str ~= "(?i)^(49 49 2a 00|4d 4d 00 2a)"                                  ? "image/tiff" 
+      : str ~= "(?i)^52 49 46 46 .. .. .. .. 57 45 42 50"                        ? "image/webp"
+      : str ~= "(?i)^d7 cd c6 9a"                                                ? "image/wmf"
+      : ""
+      
+      if (mime == "") {
+         DllCall("urlmon\FindMimeFromData"
+                  ,    "ptr", 0             ; pBC
+                  ,    "ptr", 0             ; pwzUrl
+                  ,    "ptr", &bin          ; pBuffer
+                  ,   "uint", size          ; cbSize
+                  ,    "ptr", 0             ; pwzMimeProposed
+                  ,   "uint", 0x20          ; dwMimeFlags
+                  ,   "ptr*", MimeOut:=0    ; ppwzMimeOut
+                  ,   "uint", 0             ; dwReserved
+                  ,   "uint")
+         mime := StrGet(MimeOut, "UTF-16")
+         DllCall("ole32\CoTaskMemFree", "ptr", MimeOut)
+      }
+
+      return "data:" mime ";base64," this.StreamToBase64(pStream)
    }
 
    BitmapToDc(pBitmap, alpha := "") {
