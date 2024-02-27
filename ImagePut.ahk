@@ -226,7 +226,11 @@ class ImagePut {
 
       ; Check the file signature for magic numbers.
       stream:
-      size := 2048
+      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
+
+      ; 2048 characters should be good enough to identify the file correctly.
+      size := min(size, 2048)
       bin := Buffer(size)
       (ComCall(Seek := 5, pStream, "uint64", 0, "uint", 1, "uint64*", &current:=0), current != 0 && MsgBox(current))
       ; Get the first few bytes of the image.
@@ -1985,7 +1989,7 @@ class ImagePut {
    }
 
    StreamToClipboard(pStream) { ; Not yet implemented.
-      this.select_extension(pStream, &extension:="")
+      ;this.select_extension(pStream, &extension:="")
 
       if !(extension ~= "gif|png") {
          DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
