@@ -4220,11 +4220,16 @@ class ImagePut {
    }
 
    BitmapToUri(pBitmap, extension := "", quality := "") {
-      static dict := { bmp: "bmp", dib: "bmp", rle: "bmp", jpg: "jpeg", jpeg: "jpeg", jpe: "jpeg"
-                     , jfif: "jpeg", gif: "gif", tif: "tiff", tiff: "tiff", png: "png" }
-
-      extension := RegExReplace(extension, "^\*?\.?")
-      return "data:image/" dict[extension] ";base64," this.BitmapToBase64(pBitmap, extension, quality)
+      extension := RegExReplace(extension, "^(\*?\.)?") ; Trim leading "*." or "." from the extension
+      extension :=  extension ~= "^(avif|avifs)$"           ? "avif"
+                  : extension ~= "^(bmp|dib|rle)$"          ? "bmp"
+                  : extension ~= "^(gif)$"                  ? "gif"
+                  : extension ~= "^(heic|heif|hif)$"        ? "heic"
+                  : extension ~= "^(jpg|jpeg|jpe|jfif)$"    ? "jpeg"
+                  : extension ~= "^(png)$"                  ? "png"
+                  : extension ~= "^(tif|tiff)$"             ? "tiff"
+                  : "png" ; Defaults to PNG
+      return "data:image/" extension ";base64," this.BitmapToBase64(pBitmap, extension, quality)
    }
 
    StreamToUri(pStream) {
