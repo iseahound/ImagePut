@@ -226,7 +226,7 @@ class ImagePut {
       
       ; Check the file signature for magic numbers.
       stream:
-      size := 12
+      size := 2048
       VarSetCapacity(bin, size)
 
       ; Get the first few bytes of the image.
@@ -422,7 +422,7 @@ class ImagePut {
 
       ; An "EncodedBuffer" contains a pointer to the bytes of an encoded image format.
       if image.HasKey("ptr") and image.HasKey("size") and (image.size > 24) {
-         size := min(image.size, 256)
+         size := min(image.size, 2048)
          length := VarSetCapacity(str, (2*size + (size-1) + 1) * (A_IsUnicode ? 2 : 1))
          DllCall("crypt32\CryptBinaryToString", "ptr", image.ptr, "uint", size, "uint", 0x40000004, "str", str, "uint*", length)
          if str ~= "(?i)66 74 79 70 61 76 69 66"                                     ; "avif" 
