@@ -246,20 +246,20 @@ class ImagePut {
       DllCall("crypt32\CryptBinaryToString", "ptr", &bin, "uint", size, "uint", flags, "str", str, "uint*", length)
 
       ; Determine the file extension using herustics. See: http://fileformats.archiveteam.org
-      extension := 0                                                             ? ""
-      : str ~= "(?i)66 74 79 70 61 76 69 66"                                     ? "avif" ; ftypavif
-      : str ~= "(?i)^42 4d (.. ){36}00 00 .. 00 00 00"                           ? "bmp"  ; BM
-      : str ~= "(?i)^01 00 00 00 (.. ){36}20 45 4D 46"                           ? "emf"  ; emf
-      : str ~= "(?i)^47 49 46 38 (37|39) 61"                                     ? "gif"  ; GIF87a or GIF89a
-      : str ~= "(?i)66 74 79 70 68 65 69 63"                                     ? "heic" ; ftypheic
-      : str ~= "(?i)^00 00 01 00"                                                ? "ico"
-      : str ~= "(?i)^ff d8 ff"                                                   ? "jpg"
-      : str ~= "(?i)^25 50 44 46 2d"                                             ? "pdf"  ; %PDF-
-      : str ~= "(?i)^89 50 4e 47 0d 0a 1a 0a"                                    ? "png"  ; PNG
-      : str ~= "(?i)^(((?!3c|3e).. )|3c (3f|21) ((?!3c|3e).. )*3e )*3c 73 76 67" ? "svg"  ; <svg
-      : str ~= "(?i)^(49 49 2a 00|4d 4d 00 2a)"                                  ? "tif"  ; II* or MM*
-      : str ~= "(?i)^52 49 46 46 .. .. .. .. 57 45 42 50"                        ? "webp" ; RIFF....WEBP
-      : str ~= "(?i)^d7 cd c6 9a"                                                ? "wmf"
+      extension := 0                                                              ? ""
+      : str ~= "(?i)66 74 79 70 61 76 69 66"                                      ? "avif" ; ftypavif
+      : str ~= "(?i)^42 4d (.. ){36}00 00 .. 00 00 00"                            ? "bmp"  ; BM
+      : str ~= "(?i)^01 00 00 00 (.. ){36}20 45 4D 46"                            ? "emf"  ; emf
+      : str ~= "(?i)^47 49 46 38 (37|39) 61"                                      ? "gif"  ; GIF87a or GIF89a
+      : str ~= "(?i)66 74 79 70 68 65 69 63"                                      ? "heic" ; ftypheic
+      : str ~= "(?i)^00 00 01 00"                                                 ? "ico"
+      : str ~= "(?i)^ff d8 ff"                                                    ? "jpg"
+      : str ~= "(?i)^25 50 44 46 2d"                                              ? "pdf"  ; %PDF-
+      : str ~= "(?i)^89 50 4e 47 0d 0a 1a 0a"                                     ? "png"  ; PNG
+      : str ~= "(?i)^(((?!3c|3e).. )|3c (3f|21) ((?!3c|3e).. )*3e )*+3c 73 76 67" ? "svg"  ; <svg
+      : str ~= "(?i)^(49 49 2a 00|4d 4d 00 2a)"                                   ? "tif"  ; II* or MM*
+      : str ~= "(?i)^52 49 46 46 .. .. .. .. 57 45 42 50"                         ? "webp" ; RIFF....WEBP
+      : str ~= "(?i)^d7 cd c6 9a"                                                 ? "wmf"
       : "" ; Extension must be blank for file pass-through as-is.
 
       ; Convert vectorized formats to rasterized formats.
@@ -276,7 +276,7 @@ class ImagePut {
                   && p[1] ~= "^(?i:avif|avifs|bmp|dib|rle|gif|heic|heif|hif|jpg|jpeg|jpe|jfif|png|tif|tiff)$")))
             && not (cotype = "formdata"
                and not (p.HasKey(2) && (p[2] != "" && p[2] != extension)))
-      ;MsgBox weight ? "convert to pixels" : "stay as stream"
+      ;MsgBox % weight ? "convert to pixels" : "stay as stream"
       ; Attempt conversion using StreamToCoimage.
       if not weight && cotype ~= "^(?i:encodedbuffer|file|stream|RandomAccessStream|hex|base64|uri|explorer|safeArray|formData)$" {
 
@@ -430,19 +430,19 @@ class ImagePut {
          size := min(image.size, 2048)
          length := VarSetCapacity(str, (2*size + (size-1) + 1) * (A_IsUnicode ? 2 : 1))
          DllCall("crypt32\CryptBinaryToString", "ptr", image.ptr, "uint", size, "uint", 0x40000004, "str", str, "uint*", length)
-         if str ~= "(?i)66 74 79 70 61 76 69 66"                                     ; "avif" 
-         || str ~= "(?i)^42 4d (.. ){36}00 00 .. 00 00 00"                           ; "bmp"  
-         || str ~= "(?i)^01 00 00 00 (.. ){36}20 45 4D 46"                           ; "emf"  
-         || str ~= "(?i)^47 49 46 38 (37|39) 61"                                     ; "gif"  
-         || str ~= "(?i)66 74 79 70 68 65 69 63"                                     ; "heic" 
-         || str ~= "(?i)^00 00 01 00"                                                ; "ico"
-         || str ~= "(?i)^ff d8 ff"                                                   ; "jpg"
-         || str ~= "(?i)^25 50 44 46 2d"                                             ; "pdf"  
-         || str ~= "(?i)^89 50 4e 47 0d 0a 1a 0a"                                    ; "png"  
-         || str ~= "(?i)^(((?!3c|3e).. )|3c (3f|21) ((?!3c|3e).. )*3e )*3c 73 76 67" ; "svg"  
-         || str ~= "(?i)^(49 49 2a 00|4d 4d 00 2a)"                                  ; "tif"  
-         || str ~= "(?i)^52 49 46 46 .. .. .. .. 57 45 42 50"                        ; "webp" 
-         || str ~= "(?i)^d7 cd c6 9a"                                                ; "wmf"
+         if str ~= "(?i)66 74 79 70 61 76 69 66"                                      ; "avif" 
+         || str ~= "(?i)^42 4d (.. ){36}00 00 .. 00 00 00"                            ; "bmp"  
+         || str ~= "(?i)^01 00 00 00 (.. ){36}20 45 4D 46"                            ; "emf"  
+         || str ~= "(?i)^47 49 46 38 (37|39) 61"                                      ; "gif"  
+         || str ~= "(?i)66 74 79 70 68 65 69 63"                                      ; "heic" 
+         || str ~= "(?i)^00 00 01 00"                                                 ; "ico"
+         || str ~= "(?i)^ff d8 ff"                                                    ; "jpg"
+         || str ~= "(?i)^25 50 44 46 2d"                                              ; "pdf"  
+         || str ~= "(?i)^89 50 4e 47 0d 0a 1a 0a"                                     ; "png"  
+         || str ~= "(?i)^(((?!3c|3e).. )|3c (3f|21) ((?!3c|3e).. )*3e )*+3c 73 76 67" ; "svg"  
+         || str ~= "(?i)^(49 49 2a 00|4d 4d 00 2a)"                                   ; "tif"  
+         || str ~= "(?i)^52 49 46 46 .. .. .. .. 57 45 42 50"                         ; "webp" 
+         || str ~= "(?i)^d7 cd c6 9a"                                                 ; "wmf"
             return "EncodedBuffer"
       }
 
@@ -4097,20 +4097,20 @@ class ImagePut {
       DllCall("crypt32\CryptBinaryToString", "ptr", &bin, "uint", size, "uint", flags, "str", str, "uint*", length)
 
       ; Determine the file extension using herustics. See: http://fileformats.archiveteam.org
-      extension := 0                                                             ? ""
-      : str ~= "(?i)66 74 79 70 61 76 69 66"                                     ? "avif" ; ftypavif
-      : str ~= "(?i)^42 4d (.. ){36}00 00 .. 00 00 00"                           ? "bmp"  ; BM
-      : str ~= "(?i)^01 00 00 00 (.. ){36}20 45 4D 46"                           ? "emf"  ; emf
-      : str ~= "(?i)^47 49 46 38 (37|39) 61"                                     ? "gif"  ; GIF87a or GIF89a
-      : str ~= "(?i)66 74 79 70 68 65 69 63"                                     ? "heic" ; ftypheic
-      : str ~= "(?i)^00 00 01 00"                                                ? "ico"
-      : str ~= "(?i)^ff d8 ff"                                                   ? "jpg"
-      : str ~= "(?i)^25 50 44 46 2d"                                             ? "pdf"  ; %PDF-
-      : str ~= "(?i)^89 50 4e 47 0d 0a 1a 0a"                                    ? "png"  ; PNG
-      : str ~= "(?i)^(((?!3c|3e).. )|3c (3f|21) ((?!3c|3e).. )*3e )*3c 73 76 67" ? "svg"  ; <svg
-      : str ~= "(?i)^(49 49 2a 00|4d 4d 00 2a)"                                  ? "tif"  ; II* or MM*
-      : str ~= "(?i)^52 49 46 46 .. .. .. .. 57 45 42 50"                        ? "webp" ; RIFF....WEBP
-      : str ~= "(?i)^d7 cd c6 9a"                                                ? "wmf"
+      extension := 0                                                              ? ""
+      : str ~= "(?i)66 74 79 70 61 76 69 66"                                      ? "avif" ; ftypavif
+      : str ~= "(?i)^42 4d (.. ){36}00 00 .. 00 00 00"                            ? "bmp"  ; BM
+      : str ~= "(?i)^01 00 00 00 (.. ){36}20 45 4D 46"                            ? "emf"  ; emf
+      : str ~= "(?i)^47 49 46 38 (37|39) 61"                                      ? "gif"  ; GIF87a or GIF89a
+      : str ~= "(?i)66 74 79 70 68 65 69 63"                                      ? "heic" ; ftypheic
+      : str ~= "(?i)^00 00 01 00"                                                 ? "ico"
+      : str ~= "(?i)^ff d8 ff"                                                    ? "jpg"
+      : str ~= "(?i)^25 50 44 46 2d"                                              ? "pdf"  ; %PDF-
+      : str ~= "(?i)^89 50 4e 47 0d 0a 1a 0a"                                     ? "png"  ; PNG
+      : str ~= "(?i)^(((?!3c|3e).. )|3c (3f|21) ((?!3c|3e).. )*3e )*+3c 73 76 67" ? "svg"  ; <svg
+      : str ~= "(?i)^(49 49 2a 00|4d 4d 00 2a)"                                   ? "tif"  ; II* or MM*
+      : str ~= "(?i)^52 49 46 46 .. .. .. .. 57 45 42 50"                         ? "webp" ; RIFF....WEBP
+      : str ~= "(?i)^d7 cd c6 9a"                                                 ? "wmf"
       : "" ; Extension must be blank for file pass-through as-is.
 
       this.select_filepath(filepath, extension)
@@ -4292,20 +4292,20 @@ class ImagePut {
       DllCall("crypt32\CryptBinaryToString", "ptr", &bin, "uint", size, "uint", flags, "str", str, "uint*", length)
 
       ; Determine the mime type using herustics. See: http://fileformats.archiveteam.org
-      mime := 0                                                                  ? ""
-      : str ~= "(?i)66 74 79 70 61 76 69 66"                                     ? "image/avif"
-      : str ~= "(?i)^42 4d (.. ){36}00 00 .. 00 00 00"                           ? "image/bmp"
-      : str ~= "(?i)^01 00 00 00 (.. ){36}20 45 4D 46"                           ? "image/emf"
-      : str ~= "(?i)^47 49 46 38 (37|39) 61"                                     ? "image/gif"
-      : str ~= "(?i)66 74 79 70 68 65 69 63"                                     ? "image/heic"
-      : str ~= "(?i)^00 00 01 00"                                                ? "image/x-icon"
-      : str ~= "(?i)^ff d8 ff"                                                   ? "image/jpeg"
-      : str ~= "(?i)^25 50 44 46 2d"                                             ? "application/pdf"
-      : str ~= "(?i)^89 50 4e 47 0d 0a 1a 0a"                                    ? "image/png"
-      : str ~= "(?i)^(((?!3c|3e).. )|3c (3f|21) ((?!3c|3e).. )*3e )*3c 73 76 67" ? "image/svg+xml"
-      : str ~= "(?i)^(49 49 2a 00|4d 4d 00 2a)"                                  ? "image/tiff" 
-      : str ~= "(?i)^52 49 46 46 .. .. .. .. 57 45 42 50"                        ? "image/webp"
-      : str ~= "(?i)^d7 cd c6 9a"                                                ? "image/wmf"
+      mime := 0                                                                   ? ""
+      : str ~= "(?i)66 74 79 70 61 76 69 66"                                      ? "image/avif"
+      : str ~= "(?i)^42 4d (.. ){36}00 00 .. 00 00 00"                            ? "image/bmp"
+      : str ~= "(?i)^01 00 00 00 (.. ){36}20 45 4D 46"                            ? "image/emf"
+      : str ~= "(?i)^47 49 46 38 (37|39) 61"                                      ? "image/gif"
+      : str ~= "(?i)66 74 79 70 68 65 69 63"                                      ? "image/heic"
+      : str ~= "(?i)^00 00 01 00"                                                 ? "image/x-icon"
+      : str ~= "(?i)^ff d8 ff"                                                    ? "image/jpeg"
+      : str ~= "(?i)^25 50 44 46 2d"                                              ? "application/pdf"
+      : str ~= "(?i)^89 50 4e 47 0d 0a 1a 0a"                                     ? "image/png"
+      : str ~= "(?i)^(((?!3c|3e).. )|3c (3f|21) ((?!3c|3e).. )*3e )*+3c 73 76 67" ? "image/svg+xml"
+      : str ~= "(?i)^(49 49 2a 00|4d 4d 00 2a)"                                   ? "image/tiff" 
+      : str ~= "(?i)^52 49 46 46 .. .. .. .. 57 45 42 50"                         ? "image/webp"
+      : str ~= "(?i)^d7 cd c6 9a"                                                 ? "image/wmf"
       : ""
       
       if (mime == "") {
