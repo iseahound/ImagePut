@@ -265,6 +265,7 @@ class ImagePut {
       ; Convert vectorized formats to rasterized formats.
       if (render && extension ~= "^(?i:pdf|svg)$") {
          (extension = "pdf") && this.RenderPdf(&pStream, index?)
+         (extension = "svg") && pBitmap := this.RenderSvg(&pStream, 800, 800)
          goto( IsSet(pBitmap) ? "bitmap" : "stream" )
       }
 
@@ -285,7 +286,7 @@ class ImagePut {
             || !(RegExReplace(p[1], "^.*(?:^|:|\\|\.)(.*)$", "$1")
             ~= "^(?i:avif|avifs|bmp|dib|rle|gif|heic|heif|hif|jpg|jpeg|jpe|jfif|png|tif|tiff)$")))
 
-      MsgBox weight ? "convert to pixels" : "stay as stream"
+      ; MsgBox weight ? "convert to pixels" : "stay as stream"
 
       ; Attempt conversion using StreamToCoimage.
       if not weight && cotype ~= "^(?i:encodedbuffer|file|stream|RandomAccessStream|hex|base64|uri|explorer|safeArray|formData)$" {
@@ -4720,6 +4721,69 @@ class ImagePut {
          try return ObjRelease(Object)
          finally Object := ""
       }
+   }
+
+   static RenderSvg(&IStream, width, height) {
+      ; Thanks MrDoge - https://www.autohotkey.com/boards/viewtopic.php?f=83&t=121834
+      ;https://gist.github.com/smourier/5b770d32043121d477a8079ef6be0995
+      ;https://stackoverflow.com/questions/75917247/convert-svg-files-to-bitmap-using-direct2d-in-mfc#75935717
+      ; ID2D1DeviceContext5::CreateSvgDocument is the carrying api
+      hModule:=DllCall("GetModuleHandleA", "AStr", "WindowsCodecs.dll", "ptr")||DllCall("LoadLibraryA", "AStr", "WindowsCodecs.dll", "ptr")
+      CLSID_WICImagingFactory:=Buffer(0x10)
+      NumPut("uint64", 0x433D5F24317D06E8, CLSID_WICImagingFactory, 0x0)
+      NumPut("uint64", 0xC2ABD868CE79F7BD, CLSID_WICImagingFactory, 0x8)
+      IID_IClassFactory:=Buffer(0x10)
+      NumPut("uint64", 0x0000000000000001, IID_IClassFactory, 0x0)
+      NumPut("uint64", 0x46000000000000C0, IID_IClassFactory, 0x8)
+      DllGetClassObject:=DllCall("GetProcAddress", "ptr", hModule, "AStr", "DllGetClassObject", "ptr")
+      DllCall(DllGetClassObject, "ptr", CLSID_WICImagingFactory, "ptr", IID_IClassFactory, "ptr*", &IClassFactory:=0)
+
+      IID_IWICImagingFactory := Buffer(0x10)
+      NumPut("uint64", 0x4314C395EC5EC8A9, IID_IWICImagingFactory, 0x0)
+      NumPut("uint64", 0x70FF35A9D754779C, IID_IWICImagingFactory, 0x8)
+      ComCall(CreateInstance := 3, IClassFactory, "ptr", 0, "ptr", IID_IWICImagingFactory, "ptr*", &IWICImagingFactory:=0) ;IClassFactory::
+
+      GUID_WICPixelFormat32bppPBGRA := Buffer(0x10)
+      NumPut("uint64", 0x4BFE4E036FDDC324, GUID_WICPixelFormat32bppPBGRA, 0x0)
+      NumPut("uint64", 0x10C98D76773D85B1, GUID_WICPixelFormat32bppPBGRA, 0x8)
+      ComCall(CreateBitmap := 17, IWICImagingFactory, "uint", width, "uint", height, "ptr", GUID_WICPixelFormat32bppPBGRA, "Int", 0x2, "ptr*", &IWICBitmap:=0) ;IWICImagingFactory::,  0x2=WICBitmapCacheOnLoad
+
+
+      IID_ID2D1Factory:=Buffer(0x10)
+      NumPut("uint64", 0x465A6F5006152247, IID_ID2D1Factory, 0x0)
+      NumPut("uint64", 0x07603BFD8B114592, IID_ID2D1Factory, 0x8)
+
+      DllCall("GetModuleHandleA",  "AStr",  "d2d1") || DllCall("LoadLibraryA",  "AStr",  "d2d1") ;this is needed to avoid "Critical Error: Invalid memory read/write"
+      DllCall("d2d1\D2D1CreateFactory", "Int", 0, "ptr", IID_ID2D1Factory, "Int*", 3, "ptr*", &ID2D1Factory:=0) ;0=D2D1_FACTORY_TYPE_SINGLE_THREADED,  3=D2D1_DEBUG_LEVEL_INFORMATION
+
+      D2D1_RENDER_TARGET_PROPERTIES:=Buffer(0x1c, 0)
+      ComCall(13, ID2D1Factory, "ptr", IWICBitmap, "ptr", D2D1_RENDER_TARGET_PROPERTIES, "ptr*", &ID2D1RenderTarget:=0) ;ID2D1Factory::CreateWicBitmapRenderTarget
+
+      ; IID_ID2D1DeviceContext5:=Buffer(0x10)
+      ; NumPut("uint64", 0x4DF668CC7836D248, IID_ID2D1DeviceContext5, 0x0)
+      ; NumPut("uint64", 0xB72EF61B99DEE8B9, IID_ID2D1DeviceContext5, 0x8)
+      ; ComCall(0, ID2D1RenderTarget, "ptr", IID_ID2D1DeviceContext5, "ptr*", &ID2D1DeviceContext5:=0) ;ID2D1RenderTarget::QueryInterface
+
+      ; DllCall("shlwapi\SHCreateStreamOnFileW", "WStr", svgPath, "uint", 0, "ptr*", &IStream:=0)
+
+      D2D1_SIZE_F:=Buffer(8)
+      NumPut("float", width, D2D1_SIZE_F, 0x0)
+      NumPut("float", height, D2D1_SIZE_F, 0x4)
+      ComCall(115, ID2D1RenderTarget, "ptr", IStream, "uint64", NumGet(D2D1_SIZE_F, "uint64"), "ptr*", &ID2D1SvgDocument:=0) ;ID2D1DeviceContext5::CreateSvgDocument
+
+      ComCall(BeginDraw := 48, ID2D1RenderTarget) ;ID2D1RenderTarget::
+      ComCall(DrawSvgDocument := 116, ID2D1RenderTarget, "ptr", ID2D1SvgDocument) ;ID2D1DeviceContext5::
+      ComCall(EndDraw := 49, ID2D1RenderTarget, "ptr", 0, "ptr", 0) ;ID2D1RenderTarget::
+      static pData
+      cbStride:=4*width ;stride=bpp*width
+      pData:=Buffer(cbStride * height) ;bpp*width*height
+      ComCall(7, IWICBitmap, "ptr", 0, "uint", cbStride, "uint", pData.Size, "ptr", pData) ;IWICBitmapSource::CopyPixels
+
+      ObjRelease(IStream)
+      DllCall("gdiplus\GdipCreateBitmapFromScan0", "uint", width, "uint", height, "Int", cbStride, "uint", 0xE200B, "ptr", pData, "ptr*", &pBitmap:=0) ;PixelFormat32bppPBGRA
+      return pBitmap
+      ;HBITMAP := DllCall("gdi32\CreateBitmap","Int",width,"Int",height,"Uint",1,"Uint",32,"Ptr",pData,"Ptr")
+      ;return HBITMAP
    }
 
    static select_codec(pBitmap, extension, quality, &pCodec, &ep, &ci, &v) {
