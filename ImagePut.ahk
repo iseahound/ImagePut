@@ -272,7 +272,8 @@ class ImagePut {
          ||    not (cotype ~= "^(?i:encodedbuffer|url|hex|base64|uri|stream|randomaccessstream|safearray)$"
                and not (p.Has(1) && (p[1] != "" && p[1] != extension)))
             && not (cotype = "file"
-               and not (p.Has(1) && !(extension ~= p[1] "$")))
+               and not (p.Has(1) && (p[1] != "" && !(p[1] ~= "(^|:|\\|\.)" extension "$")
+                  && p[1] ~= "^(?i:avif|avifs|bmp|dib|rle|gif|heic|heif|hif|jpg|jpeg|jpe|jfif|png|tif|tiff)$")))
             && not (cotype = "formdata"
                and not (p.Has(2) && (p[2] != "" && p[2] != extension)))
       ;MsgBox weight ? "convert to pixels" : "stay as stream"
@@ -4123,6 +4124,7 @@ class ImagePut {
                ,    "ptr", 0               ; pstmTemplate (reserved)
                ,   "ptr*", &pFileStream:=0
                ,"hresult")
+      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "hresult")
       DllCall("shlwapi\IStream_Copy", "ptr", pStream, "ptr", pFileStream, "uint", size, "hresult")
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
       ObjRelease(pFileStream)
@@ -4773,12 +4775,15 @@ class ImagePut {
       ; Default directory is a dot.
       (directory == "") && directory := "."
 
+      ; Declare allowed extension outputs.
+      static outputs := "^(?i:avif|avifs|bmp|dib|rle|gif|heic|heif|hif|jpg|jpeg|jpe|jfif|png|tif|tiff)$"
+
       ; Check if the filename is actually the extension.
-      if (extension == "" && filename ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$")
+      if (extension == "" && filename ~= outputs)
          extension := filename, filename := ""
 
       ; An invalid extension is actually part of the filename.
-      if !(extension ~= "^(?i:bmp|dib|rle|jpg|jpeg|jpe|jfif|gif|tif|tiff|png)$") {
+      if !(extension ~= outputs) {
          ; Avoid appending an extra period without an extension.
          if (extension != "")
             filename .= "." extension
