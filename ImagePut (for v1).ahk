@@ -220,10 +220,10 @@ class ImagePut {
       ; #1 - Stream as the intermediate.
       if not type ~= "^(?i:clipboardpng|encodedbuffer|url|file|stream|RandomAccessStream|hex|base64)$"
          goto make_bitmap
-      
+
       if !(pStream := this.ImageToStream(type, image, keywords))
          throw Exception("pStream cannot be zero.")
-      
+
       ; Check the file signature for magic numbers.
       stream:
       DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", size:=0, "uint")
@@ -298,7 +298,7 @@ class ImagePut {
       make_bitmap:
       if !(pBitmap := this.ImageToBitmap(type, image, keywords))
          throw Exception("pBitmap cannot be zero.")
-      
+
       ; GdipImageForceValidation must be called immediately or it fails silently.
       bitmap:
       (validate) && DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmap)
@@ -430,18 +430,18 @@ class ImagePut {
          size := min(image.size, 2048)
          length := VarSetCapacity(str, (2*size + (size-1) + 1) * (A_IsUnicode ? 2 : 1))
          DllCall("crypt32\CryptBinaryToString", "ptr", image.ptr, "uint", size, "uint", 0x40000004, "str", str, "uint*", length)
-         if str ~= "(?i)66 74 79 70 61 76 69 66"                                      ; "avif" 
-         || str ~= "(?i)^42 4d (.. ){36}00 00 .. 00 00 00"                            ; "bmp"  
-         || str ~= "(?i)^01 00 00 00 (.. ){36}20 45 4D 46"                            ; "emf"  
-         || str ~= "(?i)^47 49 46 38 (37|39) 61"                                      ; "gif"  
-         || str ~= "(?i)66 74 79 70 68 65 69 63"                                      ; "heic" 
+         if str ~= "(?i)66 74 79 70 61 76 69 66"                                      ; "avif"
+         || str ~= "(?i)^42 4d (.. ){36}00 00 .. 00 00 00"                            ; "bmp"
+         || str ~= "(?i)^01 00 00 00 (.. ){36}20 45 4D 46"                            ; "emf"
+         || str ~= "(?i)^47 49 46 38 (37|39) 61"                                      ; "gif"
+         || str ~= "(?i)66 74 79 70 68 65 69 63"                                      ; "heic"
          || str ~= "(?i)^00 00 01 00"                                                 ; "ico"
          || str ~= "(?i)^ff d8 ff"                                                    ; "jpg"
-         || str ~= "(?i)^25 50 44 46 2d"                                              ; "pdf"  
-         || str ~= "(?i)^89 50 4e 47 0d 0a 1a 0a"                                     ; "png"  
-         || str ~= "(?i)^(((?!3c|3e).. )|3c (3f|21) ((?!3c|3e).. )*3e )*+3c 73 76 67" ; "svg"  
-         || str ~= "(?i)^(49 49 2a 00|4d 4d 00 2a)"                                   ; "tif"  
-         || str ~= "(?i)^52 49 46 46 .. .. .. .. 57 45 42 50"                         ; "webp" 
+         || str ~= "(?i)^25 50 44 46 2d"                                              ; "pdf"
+         || str ~= "(?i)^89 50 4e 47 0d 0a 1a 0a"                                     ; "png"
+         || str ~= "(?i)^(((?!3c|3e).. )|3c (3f|21) ((?!3c|3e).. )*3e )*+3c 73 76 67" ; "svg"
+         || str ~= "(?i)^(49 49 2a 00|4d 4d 00 2a)"                                   ; "tif"
+         || str ~= "(?i)^52 49 46 46 .. .. .. .. 57 45 42 50"                         ; "webp"
          || str ~= "(?i)^d7 cd c6 9a"                                                 ; "wmf"
             return "EncodedBuffer"
       }
@@ -1555,7 +1555,7 @@ class ImagePut {
       size := StrLen(RTrim(image, "=")) * 3 // 4
       handle := DllCall("GlobalAlloc", "uint", 0x2, "uptr", size, "ptr")
       bin := DllCall("GlobalLock", "ptr", handle, "ptr")
-      
+
       ; Place the decoded base64 string into a binary buffer.
       flags := 0x1 ; CRYPT_STRING_BASE64
       DllCall("crypt32\CryptStringToBinary", "str", image, "uint", 0, "uint", flags, "ptr", bin, "uint*", size, "ptr", 0, "ptr", 0)
@@ -4225,7 +4225,7 @@ class ImagePut {
       length := 4 * Ceil(size / 3) + 1   ; A string has a null terminator
       VarSetCapacity(str, length * (A_IsUnicode?2:1)) ; Allocates a ANSI or Unicode string
       ; This appends 1 or 2 zero byte null terminators respectively.
-      
+
       ; Passing a pre-allocated string buffer prevents an additional memory copy via StrGet.
       flags := 0x40000001 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_BASE64
       DllCall("crypt32\CryptBinaryToString", "ptr", bin, "uint", size, "uint", flags, "str", str, "uint*", length)
@@ -4278,7 +4278,7 @@ class ImagePut {
       ; 2048 characters should be good enough to identify the file correctly.
       size := min(size, 2048)
       VarSetCapacity(bin, size)
-      
+
       ; Get the first few bytes of the image.
       DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", &bin, "uint", size, "uint")
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
@@ -4303,11 +4303,11 @@ class ImagePut {
       : str ~= "(?i)^25 50 44 46 2d"                                              ? "application/pdf"
       : str ~= "(?i)^89 50 4e 47 0d 0a 1a 0a"                                     ? "image/png"
       : str ~= "(?i)^(((?!3c|3e).. )|3c (3f|21) ((?!3c|3e).. )*3e )*+3c 73 76 67" ? "image/svg+xml"
-      : str ~= "(?i)^(49 49 2a 00|4d 4d 00 2a)"                                   ? "image/tiff" 
+      : str ~= "(?i)^(49 49 2a 00|4d 4d 00 2a)"                                   ? "image/tiff"
       : str ~= "(?i)^52 49 46 46 .. .. .. .. 57 45 42 50"                         ? "image/webp"
       : str ~= "(?i)^d7 cd c6 9a"                                                 ? "image/wmf"
       : ""
-      
+
       if (mime == "") {
          DllCall("urlmon\FindMimeFromData"
                   ,    "ptr", 0             ; pBC

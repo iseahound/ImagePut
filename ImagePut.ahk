@@ -282,7 +282,7 @@ class ImagePut {
       ; For files, if the desired extension is not supported, it is ignored.
       || cotype = "file"
          && (!p.Has(1) || p[1] == "" || p[1] ~= "(^|:|\\|\.)" extension "$"
-            || !(RegExReplace(p[1], "^.*(?:^|:|\\|\.)(.*)$", "$1") 
+            || !(RegExReplace(p[1], "^.*(?:^|:|\\|\.)(.*)$", "$1")
             ~= "^(?i:avif|avifs|bmp|dib|rle|gif|heic|heif|hif|jpg|jpeg|jpe|jfif|png|tif|tiff)$")))
 
       MsgBox weight ? "convert to pixels" : "stay as stream"
@@ -440,18 +440,18 @@ class ImagePut {
          size := min(image.size, 2048)
          length := VarSetStrCapacity(&str, 2*size + (size-1) + 1)
          DllCall("crypt32\CryptBinaryToString", "ptr", image.ptr, "uint", size, "uint", 0x40000004, "str", str, "uint*", &length)
-         if str ~= "(?i)66 74 79 70 61 76 69 66"                                      ; "avif" 
-         || str ~= "(?i)^42 4d (.. ){36}00 00 .. 00 00 00"                            ; "bmp"  
-         || str ~= "(?i)^01 00 00 00 (.. ){36}20 45 4D 46"                            ; "emf"  
-         || str ~= "(?i)^47 49 46 38 (37|39) 61"                                      ; "gif"  
-         || str ~= "(?i)66 74 79 70 68 65 69 63"                                      ; "heic" 
+         if str ~= "(?i)66 74 79 70 61 76 69 66"                                      ; "avif"
+         || str ~= "(?i)^42 4d (.. ){36}00 00 .. 00 00 00"                            ; "bmp"
+         || str ~= "(?i)^01 00 00 00 (.. ){36}20 45 4D 46"                            ; "emf"
+         || str ~= "(?i)^47 49 46 38 (37|39) 61"                                      ; "gif"
+         || str ~= "(?i)66 74 79 70 68 65 69 63"                                      ; "heic"
          || str ~= "(?i)^00 00 01 00"                                                 ; "ico"
          || str ~= "(?i)^ff d8 ff"                                                    ; "jpg"
-         || str ~= "(?i)^25 50 44 46 2d"                                              ; "pdf"  
-         || str ~= "(?i)^89 50 4e 47 0d 0a 1a 0a"                                     ; "png"  
-         || str ~= "(?i)^(((?!3c|3e).. )|3c (3f|21) ((?!3c|3e).. )*3e )*+3c 73 76 67" ; "svg"  
-         || str ~= "(?i)^(49 49 2a 00|4d 4d 00 2a)"                                   ; "tif"  
-         || str ~= "(?i)^52 49 46 46 .. .. .. .. 57 45 42 50"                         ; "webp" 
+         || str ~= "(?i)^25 50 44 46 2d"                                              ; "pdf"
+         || str ~= "(?i)^89 50 4e 47 0d 0a 1a 0a"                                     ; "png"
+         || str ~= "(?i)^(((?!3c|3e).. )|3c (3f|21) ((?!3c|3e).. )*3e )*+3c 73 76 67" ; "svg"
+         || str ~= "(?i)^(49 49 2a 00|4d 4d 00 2a)"                                   ; "tif"
+         || str ~= "(?i)^52 49 46 46 .. .. .. .. 57 45 42 50"                         ; "webp"
          || str ~= "(?i)^d7 cd c6 9a"                                                 ; "wmf"
             return "EncodedBuffer"
       }
@@ -1538,7 +1538,7 @@ class ImagePut {
       size := StrLen(image) / 2
       handle := DllCall("GlobalAlloc", "uint", 0x2, "uptr", size, "ptr")
       bin := DllCall("GlobalLock", "ptr", handle, "ptr")
-      
+
       ; Place the decoded hex string into a binary buffer.
       flags := 0xC ; CRYPT_STRING_HEXRAW
       DllCall("crypt32\CryptStringToBinary", "str", image, "uint", 0, "uint", flags, "ptr", bin, "uint*", size, "ptr", 0, "ptr", 0)
@@ -4235,7 +4235,7 @@ class ImagePut {
       length := 4 * Ceil(size / 3) + 1   ; A string has a null terminator
       VarSetStrCapacity(&str, length)    ; Allocates a ANSI or Unicode string
       ; This appends 1 or 2 zero byte null terminators respectively.
-      
+
       ; Passing a pre-allocated string buffer prevents an additional memory copy via StrGet.
       flags := 0x40000001 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_BASE64
       DllCall("crypt32\CryptBinaryToString", "ptr", bin, "uint", size, "uint", flags, "str", str, "uint*", &length)
@@ -4259,7 +4259,7 @@ class ImagePut {
       length := 4 * Ceil(size / 3) + 1   ; A string has a null terminator
       VarSetStrCapacity(&str, length)    ; Allocates a ANSI or Unicode string
       ; This appends 1 or 2 zero byte null terminators respectively.
-      
+
       ; Passing a pre-allocated string buffer prevents an additional memory copy via StrGet.
       flags := 0x40000001 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_BASE64
       DllCall("crypt32\CryptBinaryToString", "ptr", bin, "uint", size, "uint", flags, "str", str, "uint*", &length)
@@ -4313,11 +4313,11 @@ class ImagePut {
       : str ~= "(?i)^25 50 44 46 2d"                                              ? "application/pdf"
       : str ~= "(?i)^89 50 4e 47 0d 0a 1a 0a"                                     ? "image/png"
       : str ~= "(?i)^(((?!3c|3e).. )|3c (3f|21) ((?!3c|3e).. )*3e )*+3c 73 76 67" ? "image/svg+xml"
-      : str ~= "(?i)^(49 49 2a 00|4d 4d 00 2a)"                                   ? "image/tiff" 
+      : str ~= "(?i)^(49 49 2a 00|4d 4d 00 2a)"                                   ? "image/tiff"
       : str ~= "(?i)^52 49 46 46 .. .. .. .. 57 45 42 50"                         ? "image/webp"
       : str ~= "(?i)^d7 cd c6 9a"                                                 ? "image/wmf"
       : ""
-      
+
       if (mime == "") {
          DllCall("urlmon\FindMimeFromData"
                   ,    "ptr", 0             ; pBC
