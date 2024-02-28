@@ -1990,7 +1990,7 @@ class ImagePut {
 
    StreamToClipboard(pStream) { ; Not yet implemented.
       ;this.select_extension(pStream, &extension:="")
-
+      extension := ""
       if !(extension ~= "gif|png") {
          DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
          this.BitmapToClipboard(pBitmap)
@@ -4075,8 +4075,42 @@ class ImagePut {
    }
 
    static StreamToFile(pStream, filepath := "") {
-      extension := "png"
-      this.select_extension(pStream, &extension)
+      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
+
+      ; 2048 characters should be good enough to identify the file correctly.
+      size := min(size, 2048)
+      bin := Buffer(size)
+
+      ; Get the first few bytes of the image.
+      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", bin, "uint", size, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
+
+      ; Allocate enough space for a hexadecimal string with spaces interleaved and a null terminator.
+      length := 2*size + (size-1) + 1
+      VarSetStrCapacity(&str, length)
+
+      ; Lift the binary representation to hex.
+      flags := 0x40000004 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_HEX
+      DllCall("crypt32\CryptBinaryToString", "ptr", bin, "uint", size, "uint", flags, "str", str, "uint*", &length)
+
+      ; Determine the extension using herustics. See: http://fileformats.archiveteam.org
+      extension := 0                                                             ? ""
+      : str ~= "(?i)66 74 79 70 61 76 69 66"                                     ? "avif" ; ftypavif
+      : str ~= "(?i)^42 4d (.. ){36}00 00 .. 00 00 00"                           ? "bmp"  ; BM
+      : str ~= "(?i)^01 00 00 00 (.. ){36}20 45 4D 46"                           ? "emf"  ; emf
+      : str ~= "(?i)^47 49 46 38 (37|39) 61"                                     ? "gif"  ; GIF87a or GIF89a
+      : str ~= "(?i)66 74 79 70 68 65 69 63"                                     ? "heic" ; ftypheic
+      : str ~= "(?i)^00 00 01 00"                                                ? "ico"
+      : str ~= "(?i)^ff d8 ff"                                                   ? "jpg"
+      : str ~= "(?i)^25 50 44 46 2d"                                             ? "pdf"  ; %PDF-
+      : str ~= "(?i)^89 50 4e 47 0d 0a 1a 0a"                                    ? "png"  ; PNG
+      : str ~= "(?i)^(((?!3c|3e).. )|3c (3f|21) ((?!3c|3e).. )*3e )*3c 73 76 67" ? "svg"  ; <svg
+      : str ~= "(?i)^(49 49 2a 00|4d 4d 00 2a)"                                  ? "tif"  ; II* or MM*
+      : str ~= "(?i)^52 49 46 46 .. .. .. .. 57 45 42 50"                        ? "webp" ; RIFF....WEBP
+      : str ~= "(?i)^d7 cd c6 9a"                                                ? "wmf"
+      : "" ; Extension must be blank for file pass-through as-is.
+
       this.select_filepath(&filepath, &extension)
 
       ; For compatibility with SHCreateMemStream do not use GetHGlobalFromStream.
@@ -4088,8 +4122,6 @@ class ImagePut {
                ,    "ptr", 0               ; pstmTemplate (reserved)
                ,   "ptr*", &pFileStream:=0
                ,"hresult")
-      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "hresult")
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
       DllCall("shlwapi\IStream_Copy", "ptr", pStream, "ptr", pFileStream, "uint", size, "hresult")
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
       ObjRelease(pFileStream)
