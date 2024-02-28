@@ -1501,6 +1501,7 @@ class ImagePut {
 
    static FileToStream(image) {
       file := FileOpen(image, "r")
+      file.pos := 0
       hData := DllCall("GlobalAlloc", "uint", 0x2, "uptr", file.length, "ptr")
       pData := DllCall("GlobalLock", "ptr", hData, "ptr")
       file.RawRead(pData, file.length)
