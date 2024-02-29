@@ -2191,15 +2191,15 @@ class ImagePut {
       }
 
       __Enum(n) {
-
+         ; constants
          start := 0
          end := this.size
 
          switch n {
-         case 1: return (&c) => ((start < end) && (
-            c := Format("0x{:08X}", NumGet(this.ptr + start, "uint")),
-            start += 4,
-            True))
+         case 1: return (&c) => ((start < end) && (                    ; guard
+            c := Format("0x{:08X}", NumGet(this.ptr + start, "uint")), ; yield
+            start += 4,                                                ; do block
+            True))                                                     ; continue?
 
          case 2: return (&i, &c) => ((start < end) && (
             c := Format("0x{:08X}", NumGet(this.ptr + start, "uint")),
