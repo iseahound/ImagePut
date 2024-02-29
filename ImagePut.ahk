@@ -2196,107 +2196,47 @@ class ImagePut {
          end := this.size
 
          switch n {
-         case 1:
-            enum1(&c) {
+         case 1: return (&c) => ((start < end) && (
+            c := Format("0x{:08X}", NumGet(this.ptr + start, "uint")),
+            start += 4,
+            True))
 
-               if start == end
-                  return False
+         case 2: return (&i, &c) => ((start < end) && (
+            c := Format("0x{:08X}", NumGet(this.ptr + start, "uint")),
+            i := start // 4,
+            start += 4,
+            True))
 
-               ; yield statements
-               c := Format("0x{:08X}", NumGet(this, start, "uint"))
+         case 3: return (&x, &y, &c) => ((start < end) && (
+            c := Format("0x{:08X}", NumGet(this.ptr + start, "uint")),
+            i := start // 4,
+            x := mod(i, this.width),
+            y := i // this.width,
+            start += 4,
+            True))
 
-               ; do block
-               start += 4
+         case 6: return (&x, &y, &c, &r, &g, &b) => ((start < end) && (
+            c := Format("0x{:08X}", NumGet(this.ptr + start, "uint")),
+            i := start // 4,
+            x := mod(i, this.width),
+            y := i // this.width,
+            r := c >> 16 & 0xFF,
+            g := c >>  8 & 0xFF,
+            b := c       & 0xFF,
+            start += 4,
+            True))
 
-               ; continue?
-               return start <= end
-            }
-            return enum1
-
-         case 2:
-            enum2(&i, &c) {
-
-               if start == end
-                  return False
-
-               ; yield statements
-               i := start // 4
-               c := Format("0x{:08X}", NumGet(this, start, "uint"))
-
-               ; do block
-               start += 4
-
-               ; continue?
-               return start <= end
-            }
-            return enum2
-
-         case 3:
-            enum3(&x, &y, &c) {
-
-               if start == end
-                  return False
-
-               ; yield statements
-               i := start // 4
-               x := mod(i, this.width)
-               y := i // this.width
-               c := Format("0x{:08X}", NumGet(this, start, "uint"))
-
-               ; do block
-               start += 4
-
-               ; continue?
-               return start <= end
-            }
-            return enum3
-
-         case 6:
-            enum6(&x, &y, &c, &r, &g, &b) {
-
-               if start == end
-                  return False
-
-               ; yield statements
-               i := start // 4
-               x := mod(i, this.width)
-               y := i // this.width
-               c := Format("0x{:08X}", NumGet(this, start, "uint"))
-               r := c >> 16 & 0xFF
-               g := c >>  8 & 0xFF
-               b := c       & 0xFF
-
-               ; do block
-               start += 4
-
-               ; continue?
-               return start <= end
-            }
-            return enum6
-
-         case 7:
-            enum7(&x, &y, &c, &r, &g, &b, &a) {
-
-               if start == end
-                  return False
-
-               ; yield statements
-               i := start // 4
-               x := mod(i, this.width)
-               y := i // this.width
-               c := Format("0x{:08X}", NumGet(this, start, "uint"))
-               r := c >> 16 & 0xFF
-               g := c >>  8 & 0xFF
-               b := c       & 0xFF
-               a := c >> 24 & 0xFF
-
-               ; do block
-               start += 4
-
-               ; continue?
-               return start <= end
-            }
-            return enum7
+         case 7: return (&x, &y, &c, &r, &g, &b, &a) => ((start < end) && (
+            c := Format("0x{:08X}", NumGet(this.ptr + start, "uint")),
+            i := start // 4,
+            x := mod(i, this.width),
+            y := i // this.width,
+            a := c >> 24 & 0xFF,
+            r := c >> 16 & 0xFF,
+            g := c >>  8 & 0xFF,
+            b := c       & 0xFF,
+            start += 4,
+            True))
          }
       }
 
