@@ -263,20 +263,31 @@ class ImagePut {
       : "" ; Extension must be blank for file pass-through as-is.
 
       ; Convert vectorized formats to rasterized formats.
-      if (render) {
-         if (extension = "pdf") && this.RenderPdf(pStream, index)
+      if (render && extension ~= "^(?i:pdf|svg)$") {
+         (extension = "pdf") && this.RenderPdf(pStream, index)
+         ; (extension = "svg") && pBitmap := this.RenderSvg(&pStream, 800, 800)
          goto % IsSet(pBitmap) ? "bitmap" : "stream"
       }
 
-      weight := decode || crop || scale || upscale || downscale
-         ||    not (cotype ~= "^(?i:encodedbuffer|url|hex|base64|uri|stream|randomaccessstream|safearray)$"
-               and not (p.HasKey(1) && (p[1] != "" && p[1] != extension)))
-            && not (cotype = "file"
-               and not (p.HasKey(1) && (p[1] != "" && !(p[1] ~= "(^|:|\\|\.)" extension "$")
-                  && p[1] ~= "^(?i:avif|avifs|bmp|dib|rle|gif|heic|heif|hif|jpg|jpeg|jpe|jfif|png|tif|tiff)$")))
-            && not (cotype = "formdata"
-               and not (p.HasKey(2) && (p[2] != "" && p[2] != extension)))
-      ;MsgBox % weight ? "convert to pixels" : "stay as stream"
+      ; If positive, the stream will be decoded into pixels.
+      weight := decode || crop || scale || upscale || downscale ||
+
+      ; Check if the 1st parameter matches the file signature.
+      !( cotype ~= "^(?i:encodedbuffer|url|hex|base64|uri|stream|randomaccessstream|safearray)$"
+         && (!p.Has(1) || p[1] == "" || p[1] = extension)
+
+      ; Check if the 2nd parameter matches the file signature.
+      || cotype = "formdata"
+         && (!p.Has(2) || p[2] == "" || p[2] = extension)
+
+      ; For files, if the desired extension is not supported, it is ignored.
+      || cotype = "file"
+         && (!p.Has(1) || p[1] == "" || p[1] ~= "(^|:|\\|\.)" extension "$"
+            || !(RegExReplace(p[1], "^.*(?:^|:|\\|\.)(.*)$", "$1")
+            ~= "^(?i:avif|avifs|bmp|dib|rle|gif|heic|heif|hif|jpg|jpeg|jpe|jfif|png|tif|tiff)$")))
+
+      ; MsgBox % weight ? "convert to pixels" : "stay as stream"
+
       ; Attempt conversion using StreamToCoimage.
       if not weight && cotype ~= "^(?i:encodedbuffer|file|stream|RandomAccessStream|hex|base64|uri|explorer|safeArray|formData)$" {
 
@@ -2181,66 +2192,6 @@ class ImagePut {
          NumPut(color, this.ptr + 4*(y*this.width + x), "uint")
          return color
       }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
