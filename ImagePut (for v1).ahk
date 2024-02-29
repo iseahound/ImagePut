@@ -3803,28 +3803,30 @@ class ImagePut {
          ; Clears the frame number and wait time.
          if (uMsg = 0x8001 || uMsg = 0x8002) {
             if (wParam) {
-               ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", child, "int", 3*A_PtrSize, "ptr")
-               obj := Object(ptr)
-               obj.frame := 0
-               obj.accumulate := 0
+               if ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", child, "int", 3*A_PtrSize, "ptr") {
+                  obj := Object(ptr)
+                  obj.frame := 0
+                  obj.accumulate := 0
+               }
             }
          }
 
          ; Start Animation loop.
          if (uMsg = 0x8001) {
-            if DllCall("GetWindowLong", "ptr", child, "int", 4*A_PtrSize, "ptr")
+            if timer := DllCall("GetWindowLong", "ptr", child, "int", 4*A_PtrSize, "ptr")
                return
 
-            ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", child, "int", 3*A_PtrSize, "ptr")
-            obj := Object(ptr)
-            timer := DllCall("winmm\timeSetEvent"
-                     , "uint", obj.interval  ; uDelay
-                     , "uint", obj.interval  ; uResolution
-                     ,  "ptr", obj.pTimeProc ; lpTimeProc
-                     , "uptr", 0             ; dwUser
-                     , "uint", 1             ; fuEvent
-                     , "uint")
-            DllCall("SetWindowLong", "ptr", child, "int", 4*A_PtrSize, "ptr", timer)
+            if ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", child, "int", 3*A_PtrSize, "ptr") {
+               obj := Object(ptr)
+               timer := DllCall("winmm\timeSetEvent"
+                        , "uint", obj.interval  ; uDelay
+                        , "uint", obj.interval  ; uResolution
+                        ,  "ptr", obj.pTimeProc ; lpTimeProc
+                        , "uptr", 0             ; dwUser
+                        , "uint", 1             ; fuEvent
+                        , "uint")
+               DllCall("SetWindowLong", "ptr", child, "int", 4*A_PtrSize, "ptr", timer)
+            }
          }
 
          ; Stop Animation loop.
