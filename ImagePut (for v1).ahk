@@ -274,15 +274,15 @@ class ImagePut {
 
       ; Check if the 1st parameter matches the file signature.
       !( cotype ~= "^(?i:encodedbuffer|url|hex|base64|uri|stream|randomaccessstream|safearray)$"
-         && (!p.Has(1) || p[1] == "" || p[1] = extension)
+         && (!p.HasKey(1) || p[1] == "" || p[1] = extension)
 
       ; Check if the 2nd parameter matches the file signature.
       || cotype = "formdata"
-         && (!p.Has(2) || p[2] == "" || p[2] = extension)
+         && (!p.HasKey(2) || p[2] == "" || p[2] = extension)
 
       ; For files, if the desired extension is not supported, it is ignored.
       || cotype = "file"
-         && (!p.Has(1) || p[1] == "" || p[1] ~= "(^|:|\\|\.)" extension "$"
+         && (!p.HasKey(1) || p[1] == "" || p[1] ~= "(^|:|\\|\.)" extension "$"
             || !(RegExReplace(p[1], "^.*(?:^|:|\\|\.)(.*)$", "$1")
             ~= "^(?i:avif|avifs|bmp|dib|rle|gif|heic|heif|hif|jpg|jpeg|jpe|jfif|png|tif|tiff)$")))
 
