@@ -1951,23 +1951,20 @@ class ImagePut {
       ; Requires a valid window handle via OpenClipboard or the next call to OpenClipboard will crash.
       DllCall("EmptyClipboard")
 
-      ; #1 - Place the image onto the clipboard as a PNG stream.
+      ; #1 - PNG holds the transparency and is the most widely supported image format.
       ; Thanks Jochen Arndt - https://www.codeproject.com/Answers/1207927/Saving-an-image-to-the-clipboard#answer3
-
-      ; Create a Stream whose underlying HGlobal must be referenced or lost forever.
-      ; Please read: https://devblogs.microsoft.com/oldnewthing/20210929-00/?p=105742
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", False, "ptr*", pStream:=0, "uint")
       DllCall("ole32\CLSIDFromString", "wstr", "{557CF406-1A04-11D3-9A73-0000F81EF32E}", "ptr", &pCodec:=VarSetCapacity(pCodec, 16), "uint")
       DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", pStream, "ptr", &pCodec, "ptr", 0)
-      DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "uint*", hData:=0, "uint")
-      ObjRelease(pStream)
-
+      
       ; Set the rescued HGlobal to the clipboard as a shared object.
       png := DllCall("RegisterClipboardFormat", "str", "png", "uint") ; case insensitive
-      DllCall("SetClipboardData", "uint", png, "ptr", hData)
+      DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "uint*", handle:=0, "uint")
+      DllCall("SetClipboardData", "uint", png, "ptr", handle)
+      ObjRelease(pStream)
 
 
-      ; #2 - Place the image onto the clipboard in the CF_DIB format using a bottom-up bitmap.
+      ; #2 - Fallback to the CF_DIB format (bottom-up bitmap) for maximum compatibility.
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
       DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "ptr", pBitmap, "ptr*", hbm:=0, "uint", 0)
 
@@ -1982,20 +1979,18 @@ class ImagePut {
       hdib := DllCall("GlobalAlloc", "uint", 0x2, "uptr", 40 + size, "ptr") ; sizeof(BITMAPINFOHEADER) = 40
       pdib := DllCall("GlobalLock", "ptr", hdib, "ptr")
 
-      ; Copy the BITMAPINFOHEADER.
+      ; Copy the BITMAPINFOHEADER and pixel data respectively.
       DllCall("RtlMoveMemory", "ptr", pdib, "ptr", &dib + (A_PtrSize = 4 ? 24:32), "uptr", 40)
-
-      ; Copy the pixel data.
       DllCall("RtlMoveMemory", "ptr", pdib+40, "ptr", pBits, "uptr", size)
 
       ; Unlock to moveable memory because the clipboard requires it.
       DllCall("GlobalUnlock", "ptr", hdib)
+      DllCall("DeleteObject", "ptr", hbm)
 
       ; CF_DIB (8) can be synthesized into CF_BITMAP (2), CF_PALETTE (9), and CF_DIBV5 (17).
       DllCall("SetClipboardData", "uint", 8, "ptr", hdib)
 
-      ; Cleanup
-      DllCall("DeleteObject", "ptr", hbm)
+      ; Close the clipboard.
       DllCall("CloseClipboard")
       return ""
    }
