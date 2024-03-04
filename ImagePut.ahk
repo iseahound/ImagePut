@@ -1955,11 +1955,10 @@ class ImagePut {
       ; Thanks Jochen Arndt - https://www.codeproject.com/Answers/1207927/Saving-an-image-to-the-clipboard#answer3
 
       ; Create a Stream whose underlying HGlobal must be referenced or lost forever.
-      ; Rescue the HGlobal after GDI+ has written the PNG to stream and release the stream.
       ; Please read: https://devblogs.microsoft.com/oldnewthing/20210929-00/?p=105742
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", False, "ptr*", &pStream:=0, "hresult")
-      this.select_codec(pBitmap, "png", "", &pCodec, &ep, &ci, &v)
-      DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", pStream, "ptr", pCodec, "ptr", IsSet(ep) ? ep : 0)
+      DllCall("ole32\CLSIDFromString", "wstr", "{557CF406-1A04-11D3-9A73-0000F81EF32E}", "ptr", pCodec:=Buffer(16), "hresult")
+      DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", pStream, "ptr", pCodec, "ptr", 0)
       DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "uint*", &hData:=0, "hresult")
       ObjRelease(pStream)
 
@@ -2001,8 +2000,11 @@ class ImagePut {
       return ClipboardAll()
    }
 
-   StreamToClipboard(pStream) { ; Not yet implemented.
+   static StreamToClipboard(pStream) { ; Not yet implemented.
       ;this.select_extension(pStream, &extension:="")
+      /*
+
+
       extension := ""
       if !(extension ~= "gif|png") {
          DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
@@ -2010,7 +2012,7 @@ class ImagePut {
          DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
          return ClipboardAll()
       }
-
+*/
       ; Open the clipboard with exponential backoff.
       loop
          if DllCall("OpenClipboard", "ptr", A_ScriptHwnd)
@@ -2031,8 +2033,9 @@ class ImagePut {
 
       DllCall("ole32\GetHGlobalFromStream", "ptr", pSharedStream, "uint*", &hData:=0, "hresult")
       ObjRelease(pSharedStream)
-      DllCall("SetClipboardData", "uint", DllCall("RegisterClipboardFormat", "str", extension, "uint"), "ptr", hData)
+      DllCall("SetClipboardData", "uint", DllCall("RegisterClipboardFormat", "str", "image/gif", "uint"), "ptr", hData)
       DllCall("CloseClipboard")
+      msgbox
       return ClipboardAll()
    }
 
