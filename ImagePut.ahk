@@ -1344,7 +1344,7 @@ class ImagePut {
       DPI_AWARENESS := True ; Assume dpi aware if process cannot be opened.
       DllCall("GetWindowThreadProcessId", "ptr", image, "ptr*", pid:=0, "ptr")
       if hProcess := DllCall("OpenProcess", "uint", 0x0400, "int", False, "uint", pid, "ptr") {
-         DllCall("Shcore\GetProcessDpiAwareness", "ptr", hProcess, "int*", DPI_AWARENESS)
+         DllCall("shcore\GetProcessDpiAwareness", "ptr", hProcess, "int*", DPI_AWARENESS)
          DllCall("CloseHandle", "ptr", hProcess)
       }
 
@@ -1850,7 +1850,7 @@ class ImagePut {
    static RandomAccessStreamToStream(image) {
       ; Note that the returned stream shares a reference count with the original RandomAccessStream's internal stream.
       DllCall("ole32\CLSIDFromString", "wstr", "{0000000C-0000-0000-C000-000000000046}", "ptr", CLSID := Buffer(16), "hresult")
-      DllCall("ShCore\CreateStreamOverRandomAccessStream", "ptr", image, "ptr", CLSID, "ptr*", &pStream:=0, "hresult")
+      DllCall("shcore\CreateStreamOverRandomAccessStream", "ptr", image, "ptr", CLSID, "ptr*", &pStream:=0, "hresult")
       ; Cloning the stream ensures that each call to "GetStreamFromRandomAccessStream" returns a new stream.
       ; ^ That's what the function should be named, because that's what it actually does!
       ComCall(Clone := 13, pStream, "ptr*", &pStreamClone:=0)
@@ -4481,7 +4481,7 @@ class ImagePut {
    static StreamToRandomAccessStream(pStream) {
       ; Thanks teadrinker - https://www.autohotkey.com/boards/viewtopic.php?f=6&t=72674
       DllCall("ole32\CLSIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", CLSID := Buffer(16), "hresult")
-      DllCall("ShCore\CreateRandomAccessStreamOverStream"
+      DllCall("shcore\CreateRandomAccessStreamOverStream"
                ,    "ptr", pStream
                ,   "uint", BSOS_PREFERDESTINATIONSTREAM := 1
                ,    "ptr", CLSID
@@ -4674,13 +4674,13 @@ class ImagePut {
       pStream := image
 
       ; Create a RandomAccessStream with BSOS_PREFERDESTINATIONSTREAM.
-      DllCall("ole32\CLSIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", CLSID := Buffer(16), "hresult")
-      DllCall("ShCore\CreateRandomAccessStreamOverStream", "ptr", pStream, "uint", 1, "ptr", CLSID, "ptr*", &pRandomAccessStream:=0, "hresult")
+      DllCall("ole32\IIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", IID := Buffer(16), "hresult")
+      DllCall("shcore\CreateRandomAccessStreamOverStream", "ptr", pStream, "uint", 1, "ptr", IID, "ptr*", &pRandomAccessStream:=0, "hresult")
 
       ; Create the "Windows.Data.Pdf.PdfDocument" class using IPdfDocumentStatics.
+      DllCall("ole32\IIDFromString", "wstr", "{433A0B5F-C007-4788-90F2-08143D922599}", "ptr", IID := Buffer(16), "hresult")
       DllCall("combase\WindowsCreateString", "wstr", "Windows.Data.Pdf.PdfDocument", "uint", 28, "ptr*", &hString:=0, "hresult")
-      DllCall("ole32\CLSIDFromString", "wstr", "{433A0B5F-C007-4788-90F2-08143D922599}", "ptr", CLSID := Buffer(16), "hresult")
-      DllCall("combase\RoGetActivationFactory", "ptr", hString, "ptr", CLSID, "ptr*", &PdfDocumentStatics:=0, "hresult")
+      DllCall("combase\RoGetActivationFactory", "ptr", hString, "ptr", IID, "ptr*", &PdfDocumentStatics:=0, "hresult")
       DllCall("combase\WindowsDeleteString", "ptr", hString, "hresult")
 
       ; Create the PDF document.
@@ -4700,9 +4700,9 @@ class ImagePut {
       ComCall(GetPage := 6, PdfDocument, "uint", index, "ptr*", &PdfPage:=0)
 
       ; Render the page to an output stream.
+      DllCall("ole32\IIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", IID := Buffer(16), "hresult")
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "uint", True, "ptr*", &pStreamOut:=0)
-      DllCall("ole32\CLSIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", CLSID := Buffer(16), "hresult")
-      DllCall("ShCore\CreateRandomAccessStreamOverStream", "ptr", pStreamOut, "uint", BSOS_DEFAULT := 0, "ptr", CLSID, "ptr*", &pRandomAccessStreamOut:=0)
+      DllCall("shcore\CreateRandomAccessStreamOverStream", "ptr", pStreamOut, "uint", BSOS_DEFAULT := 0, "ptr", IID, "ptr*", &pRandomAccessStreamOut:=0)
       ComCall(RenderToStreamAsync := 6, PdfPage, "ptr", pRandomAccessStreamOut, "ptr*", &AsyncInfo:=0)
       this.WaitForAsync(&AsyncInfo)
 
