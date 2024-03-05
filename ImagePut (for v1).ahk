@@ -4009,11 +4009,11 @@ class ImagePut {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
       extension := "png"
       this.select_filepath(filepath, extension)
-      this.select_codec(pBitmap, extension, quality, pCodec, ep, ci, v)
+      this.select_codec(pBitmap, extension, quality, pCodec, ep)
 
       ; Write the file to disk using the specified encoder and encoding parameters with exponential backoff.
       loop
-         if !DllCall("gdiplus\GdipSaveImageToFile", "ptr", pBitmap, "wstr", filepath, "ptr", pCodec, "ptr", (ep) ? &ep : 0)
+         if !DllCall("gdiplus\GdipSaveImageToFile", "ptr", pBitmap, "wstr", filepath, "ptr", &pCodec, "ptr", &ep)
             break
          else
             if A_Index < 6
@@ -4371,11 +4371,11 @@ class ImagePut {
       if (extension == "")
          extension := "tif"
 
-      this.select_codec(pBitmap, extension, quality, pCodec, ep, ci, v)
+      this.select_codec(pBitmap, extension, quality, pCodec, ep)
 
       ; Create a Stream.
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", True, "ptr*", pStream:=0, "uint")
-      DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", pStream, "ptr", pCodec, "ptr", (ep) ? &ep : 0)
+      DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", pStream, "ptr", &pCodec, "ptr", &ep)
 
       return pStream
    }
@@ -4464,8 +4464,8 @@ class ImagePut {
       (extension == "") && extension := "png"
 
       ; Save pBitmap to the IStream.
-      this.select_codec(pBitmap, extension, quality, pCodec, ep, ci, v)
-      DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", pStream, "ptr", pCodec, "ptr", (ep) ? &ep : 0)
+      this.select_codec(pBitmap, extension, quality, pCodec, ep)
+      DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", pStream, "ptr", &pCodec, "ptr", &ep)
 
       ; Get the pointer and size of the IStream's movable memory.
       pData := DllCall("GlobalLock", "ptr", hData, "ptr")
@@ -4659,39 +4659,45 @@ class ImagePut {
       }
    }
 
-   select_codec(pBitmap, extension, quality, ByRef pCodec, ByRef ep, ByRef ci, ByRef v) {
-      ; Fill a buffer with the available image codec info.
-      DllCall("gdiplus\GdipGetImageEncodersSize", "uint*", count:=0, "uint*", size:=0)
-      DllCall("gdiplus\GdipGetImageEncoders", "uint", count, "uint", size, "ptr", &ci := VarSetCapacity(ci, size))
+   select_codec(pBitmap, extension, quality, ByRef pCodec, ByRef ep) {
+      extension := RegExReplace(extension, "^(\*?\.)?") ; Trim leading "*." or "." from the extension
+      extension :=  extension ~= "^(avif|avifs)$"           ? "avif"
+                  : extension ~= "^(bmp|dib|rle)$"          ? "bmp"
+                  : extension ~= "^(gif)$"                  ? "gif"
+                  : extension ~= "^(heic|heif|hif)$"        ? "heic"
+                  : extension ~= "^(jpg|jpeg|jpe|jfif)$"    ? "jpeg"
+                  : extension ~= "^(png)$"                  ? "png"
+                  : extension ~= "^(tif|tiff)$"             ? "tiff"
+                  : "png" ; Defaults to PNG
 
-      ; struct ImageCodecInfo - http://www.jose.it-berater.org/gdiplus/reference/structures/imagecodecinfo.htm
-      loop {
-         if (A_Index > count)
-            throw Exception("Could not find a matching encoder for the specified file format.")
+      VarSetCapacity(pCodec, 16)
 
-         idx := (48+7*A_PtrSize)*(A_Index-1)
-      } until InStr(StrGet(NumGet(ci, idx+32+3*A_PtrSize, "ptr"), "UTF-16"), extension) ; FilenameExtension
-
-      ; Get the pointer to the clsid of the matching encoder.
-      pCodec := &ci + idx ; ClassID
+      switch extension {
+      case "avif": MsgBox % "AVIF is not supported by GDI+."
+      case "bmp":  DllCall("ole32\CLSIDFromString", "wstr", "{557CF400-1A04-11D3-9A73-0000F81EF32E}", "ptr", &pCodec, "uint")
+      case "gif":  DllCall("ole32\CLSIDFromString", "wstr", "{557CF402-1A04-11D3-9A73-0000F81EF32E}", "ptr", &pCodec, "uint")
+      case "heic": DllCall("ole32\CLSIDFromString", "wstr", "{557CF408-1A04-11D3-9A73-0000F81EF32E}", "ptr", &pCodec, "uint")
+      case "jpeg": DllCall("ole32\CLSIDFromString", "wstr", "{557CF401-1A04-11D3-9A73-0000F81EF32E}", "ptr", &pCodec, "uint")
+      case "png":  DllCall("ole32\CLSIDFromString", "wstr", "{557CF406-1A04-11D3-9A73-0000F81EF32E}", "ptr", &pCodec, "uint")
+      case "tiff": DllCall("ole32\CLSIDFromString", "wstr", "{557CF405-1A04-11D3-9A73-0000F81EF32E}", "ptr", &pCodec, "uint")
+      }
 
       ; Default encoding parameter.
       ep := 0
 
       ; JPEG default quality is 75. Otherwise set a quality value from [0-100].
-      if (quality ~= "^-?\d+$") and ("image/jpeg" = StrGet(NumGet(ci, idx+32+4*A_PtrSize, "ptr"), "UTF-16")) { ; MimeType
-         ; Use a separate buffer to store the quality as ValueTypeLong (4).
-         VarSetCapacity(v, 4), NumPut(quality, v, "uint")
-
+      if (extension = "jpeg") && (quality ~= "^\d+$") {
          ; struct EncoderParameter - http://www.jose.it-berater.org/gdiplus/reference/structures/encoderparameter.htm
          ; enum ValueType - https://docs.microsoft.com/en-us/dotnet/api/system.drawing.imaging.encoderparametervaluetype
          ; clsid Image Encoder Constants - http://www.jose.it-berater.org/gdiplus/reference/constants/gdipimageencoderconstants.htm
-         VarSetCapacity(ep, 24+2*A_PtrSize)            ; sizeof(EncoderParameter) = ptr + n*(28, 32)
-            NumPut(    1, ep,            0,   "uptr")  ; Count
+         VarSetCapacity(ep, 24+2*A_PtrSize + 4)            ; sizeof(EncoderParameter) = ptr + n*(28, 32)
+         offset := &ep + 24+2*A_PtrSize                    ; Address of extra values appended to end
+            NumPut(      1, ep,              0,   "uptr")  ; Count
             DllCall("ole32\CLSIDFromString", "wstr", "{1D5BE4B5-FA4A-452D-9CDD-5DB35105E7EB}", "ptr", &ep+A_PtrSize, "uint")
-            NumPut(    1, ep, 16+A_PtrSize,   "uint")  ; Number of Values
-            NumPut(    4, ep, 20+A_PtrSize,   "uint")  ; Type
-            NumPut(   &v, ep, 24+A_PtrSize,    "ptr")  ; Value
+            NumPut(      1, ep,   16+A_PtrSize,   "uint")  ; Number of Values
+            NumPut(      4, ep,   20+A_PtrSize,   "uint")  ; Type
+            NumPut( offset, ep,   24+A_PtrSize,    "ptr")  ; Value
+            NumPut(quality, ep, 24+2*A_PtrSize,   "uint")  ; Quality (extra value appended to end)
       }
    }
 
