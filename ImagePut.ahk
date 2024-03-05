@@ -1996,21 +1996,63 @@ class ImagePut {
    }
 
    static StreamToClipboard(pStream) { ; Not yet implemented.
-      ;this.select_extension(pStream, &extension:="")
-      /*
+      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
 
+      ; 2048 characters should be good enough to identify the file correctly.
+      size := min(size, 2048)
+      bin := Buffer(size)
 
-      extension := ""
-      if !(extension ~= "gif|png") {
-         DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
-         this.BitmapToClipboard(pBitmap)
-         DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
-         return ClipboardAll()
+      ; Get the first few bytes of the image.
+      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", bin, "uint", size, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
+
+      ; Allocate enough space for a hexadecimal string with spaces interleaved and a null terminator.
+      length := 2*size + (size-1) + 1
+      VarSetStrCapacity(&str, length)
+
+      ; Lift the binary representation to hex.
+      flags := 0x40000004 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_HEX
+      DllCall("crypt32\CryptBinaryToString", "ptr", bin, "uint", size, "uint", flags, "str", str, "uint*", &length)
+
+      ; Determine the extension using herustics. See: http://fileformats.archiveteam.org
+      extension := 0                                                              ? ""
+      : str ~= "(?i)66 74 79 70 61 76 69 66"                                      ? "avif" ; ftypavif
+      : str ~= "(?i)^42 4d (.. ){36}00 00 .. 00 00 00"                            ? "bmp"  ; BM
+      : str ~= "(?i)^01 00 00 00 (.. ){36}20 45 4D 46"                            ? "emf"  ; emf
+      : str ~= "(?i)^47 49 46 38 (37|39) 61"                                      ? "gif"  ; GIF87a or GIF89a
+      : str ~= "(?i)66 74 79 70 68 65 69 63"                                      ? "heic" ; ftypheic
+      : str ~= "(?i)^00 00 01 00"                                                 ? "ico"
+      : str ~= "(?i)^ff d8 ff"                                                    ? "jpg"
+      : str ~= "(?i)^25 50 44 46 2d"                                              ? "pdf"  ; %PDF-
+      : str ~= "(?i)^89 50 4e 47 0d 0a 1a 0a"                                     ? "png"  ; PNG
+      : str ~= "(?i)^(((?!3c|3e).. )|3c (3f|21) ((?!3c|3e).. )*3e )*+3c 73 76 67" ? "svg"  ; <svg
+      : str ~= "(?i)^(49 49 2a 00|4d 4d 00 2a)"                                   ? "tif"  ; II* or MM*
+      : str ~= "(?i)^52 49 46 46 .. .. .. .. 57 45 42 50"                         ? "webp" ; RIFF....WEBP
+      : str ~= "(?i)^d7 cd c6 9a"                                                 ? "wmf"
+      : "" ; Extension must be blank for file pass-through as-is.
+
+         ; Create window data.
+         pWndProc := CallbackCreate(WindowProc)
+      WindowProc(hwnd, uMsg, wParam, lParam) {
+         ; 0x0307 = WM_DESTROYCLIPBOARD 
+         if (uMsg = 0x0307)
+            if ptr := DllCall("GetWindowLongPtr", "ptr", hwnd, "int", -21, "ptr") {
+               obj := ObjFromPtr(ptr)
+               DllCall("GlobalFree", "ptr", obj.hDropFiles)
+               DllCall("DeleteFile", "str", obj.filepath)
+               DllCall("SetWindowLongPtr", "ptr", hwnd, "int", -21, "ptr", 0, "ptr") ; GWLP_USERDATA = -21
+            }
+         return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "ptr", wParam, "ptr", lParam, "ptr")
       }
-*/
+
+      hwnd := DllCall("CreateWindowEx", "uint", 0, "str", "AutoHotkey", "ptr", 0, "uint", 0, "int", 0, "int", 0, "int", 0, "int", 0, "ptr", 0, "ptr", 0, "ptr", 0, "ptr", 0, "ptr")
+      DllCall("SetWindowLongPtr", "ptr", hwnd, "int", -4, "ptr", pWndProc) ; GWLP_WNDPROC = -4
+         ; Registers a window class for subsequent use in calls to the CreateWindow or CreateWindowEx function.
+
       ; Open the clipboard with exponential backoff.
       loop
-         if DllCall("OpenClipboard", "ptr", A_ScriptHwnd)
+         if DllCall("OpenClipboard", "ptr", hwnd)
             break
          else
             if A_Index < 6
@@ -2020,17 +2062,59 @@ class ImagePut {
       ; Requires a valid window handle via OpenClipboard or the next call to OpenClipboard will crash.
       DllCall("EmptyClipboard")
 
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", False, "ptr*", &pSharedStream:=0, "hresult")
-      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "hresult")
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
-      DllCall("shlwapi\IStream_Copy", "ptr", pStream, "ptr", pSharedStream, "uint", size, "hresult")
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
+      ; Save PNG directly to the clipboard.
+      if (extension = "png") {
+         ; Clone the stream. Can't use IStream::Clone because the cloned stream must be released.
+         DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "hresult")
+         handle := DllCall("GlobalAlloc", "uint", 0x2, "uptr", size, "ptr")
+         DllCall("ole32\CreateStreamOnHGlobal", "ptr", handle, "int", False, "ptr*", &pStreamClone:=0, "hresult")
+         DllCall("shlwapi\IStream_Copy", "ptr", pStream, "ptr", pStreamClone, "uint", size, "hresult")
+         DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
+         ObjRelease(pStreamClone)
 
-      DllCall("ole32\GetHGlobalFromStream", "ptr", pSharedStream, "uint*", &hData:=0, "hresult")
-      ObjRelease(pSharedStream)
-      DllCall("SetClipboardData", "uint", DllCall("RegisterClipboardFormat", "str", "image/gif", "uint"), "ptr", hData)
+         png := DllCall("RegisterClipboardFormat", "str", "png", "uint") ; case insensitive
+         DllCall("SetClipboardData", "uint", png, "ptr", handle)
+      }
+
+      ; Copy other formats to a file and pass a (15) DROPFILES struct.
+      ; This should be a complete substitute for CF_DIB(8) as some programs don't support PNG.
+      filepath := A_ScriptDir "\clipboard." extension
+      filepath := RTrim(filepath, ".") ; Remove trailing periods.
+
+      ; For compatibility with SHCreateMemStream do not use GetHGlobalFromStream.
+      DllCall("shlwapi\SHCreateStreamOnFileEx"
+               ,   "wstr", filepath
+               ,   "uint", 0x1001          ; STGM_CREATE | STGM_WRITE
+               ,   "uint", 0x80            ; FILE_ATTRIBUTE_NORMAL
+               ,    "int", True            ; fCreate is ignored when STGM_CREATE is set.
+               ,    "ptr", 0               ; pstmTemplate (reserved)
+               ,   "ptr*", &pFileStream:=0
+               ,"hresult")
+      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "hresult")
+      DllCall("shlwapi\IStream_Copy", "ptr", pStream, "ptr", pFileStream, "uint", size, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
+      ObjRelease(pFileStream)
+
+      ; struct DROPFILES - https://learn.microsoft.com/en-us/windows/win32/api/shlobj_core/ns-shlobj_core-dropfiles
+      size := 20 + StrPut(filepath, "UTF-16")
+      hDropFiles := DllCall("GlobalAlloc", "uint", 0x42, "uptr", size, "ptr")
+      pDropFiles := DllCall("GlobalLock", "ptr", hDropFiles, "ptr")
+         NumPut("uint", 20, pDropFiles + 0) ; pFiles
+         NumPut("uint", 1, pDropFiles + 16) ; fWide
+         StrPut(filepath, pDropFiles + 20, "UTF-16")
+      DllCall("GlobalUnlock", "ptr", hDropFiles)
+
+      ; Set the file to the clipboard as a shared object.
+      DllCall("SetClipboardData", "uint", 15, "ptr", hDropFiles)
+
+      ; Clean up the file when EmptyClipboard is called by another program.
+      obj := {filepath: filepath, hDropFiles: hDropFiles}
+      ptr := ObjPtr(obj)
+      ObjAddRef(ptr)
+      DllCall("SetWindowLongPtr", "ptr", hwnd, "int", -21, "ptr", ptr, "ptr") ; GWLP_USERDATA = -21
+
+      ; Close the clipboard.
       DllCall("CloseClipboard")
-      msgbox
       return ClipboardAll()
    }
 
