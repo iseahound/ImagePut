@@ -2067,40 +2067,42 @@ class ImagePut {
 
       ; Copy other formats to a file and pass a (15) DROPFILES struct.
       ; This should be a complete substitute for CF_DIB(8) as some programs don't support PNG.
-      filepath := A_ScriptDir "\clipboard." extension
-      filepath := RTrim(filepath, ".") ; Remove trailing periods.
+      if (extension) {
+         filepath := A_ScriptDir "\clipboard." extension
+         filepath := RTrim(filepath, ".") ; Remove trailing periods.
 
-      ; For compatibility with SHCreateMemStream do not use GetHGlobalFromStream.
-      DllCall("shlwapi\SHCreateStreamOnFileEx"
-               ,   "wstr", filepath
-               ,   "uint", 0x1001          ; STGM_CREATE | STGM_WRITE
-               ,   "uint", 0x80            ; FILE_ATTRIBUTE_NORMAL
-               ,    "int", True            ; fCreate is ignored when STGM_CREATE is set.
-               ,    "ptr", 0               ; pstmTemplate (reserved)
-               ,   "ptr*", &pFileStream:=0
-               ,"hresult")
-      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "hresult")
-      DllCall("shlwapi\IStream_Copy", "ptr", pStream, "ptr", pFileStream, "uint", size, "hresult")
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
-      ObjRelease(pFileStream)
+         ; For compatibility with SHCreateMemStream do not use GetHGlobalFromStream.
+         DllCall("shlwapi\SHCreateStreamOnFileEx"
+                  ,   "wstr", filepath
+                  ,   "uint", 0x1001          ; STGM_CREATE | STGM_WRITE
+                  ,   "uint", 0x80            ; FILE_ATTRIBUTE_NORMAL
+                  ,    "int", True            ; fCreate is ignored when STGM_CREATE is set.
+                  ,    "ptr", 0               ; pstmTemplate (reserved)
+                  ,   "ptr*", &pFileStream:=0
+                  ,"hresult")
+         DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "hresult")
+         DllCall("shlwapi\IStream_Copy", "ptr", pStream, "ptr", pFileStream, "uint", size, "hresult")
+         DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
+         ObjRelease(pFileStream)
 
-      ; struct DROPFILES - https://learn.microsoft.com/en-us/windows/win32/api/shlobj_core/ns-shlobj_core-dropfiles
-      size := 20 + StrPut(filepath, "UTF-16") + 2 ; triple/quadruple null terminated
-      hDropFiles := DllCall("GlobalAlloc", "uint", 0x42, "uptr", size, "ptr")
-      pDropFiles := DllCall("GlobalLock", "ptr", hDropFiles, "ptr")
-         NumPut("uint", 20, pDropFiles + 0) ; pFiles
-         NumPut("uint", 1, pDropFiles + 16) ; fWide
-         StrPut(filepath, pDropFiles + 20, "UTF-16")
-      DllCall("GlobalUnlock", "ptr", hDropFiles)
+         ; struct DROPFILES - https://learn.microsoft.com/en-us/windows/win32/api/shlobj_core/ns-shlobj_core-dropfiles
+         size := 20 + StrPut(filepath, "UTF-16") + 2 ; triple/quadruple null terminated
+         hDropFiles := DllCall("GlobalAlloc", "uint", 0x42, "uptr", size, "ptr")
+         pDropFiles := DllCall("GlobalLock", "ptr", hDropFiles, "ptr")
+            NumPut("uint", 20, pDropFiles + 0) ; pFiles
+            NumPut("uint", 1, pDropFiles + 16) ; fWide
+            StrPut(filepath, pDropFiles + 20, "UTF-16")
+         DllCall("GlobalUnlock", "ptr", hDropFiles)
 
-      ; Set the file to the clipboard as a shared object.
-      DllCall("SetClipboardData", "uint", 15, "ptr", hDropFiles)
+         ; Set the file to the clipboard as a shared object.
+         DllCall("SetClipboardData", "uint", 15, "ptr", hDropFiles)
 
-      ; Clean up the file when EmptyClipboard is called by another program.
-      obj := {filepath: filepath, hDropFiles: hDropFiles}
-      ptr := ObjPtr(obj)
-      ObjAddRef(ptr)
-      DllCall("SetWindowLongPtr", "ptr", hwnd, "int", -21, "ptr", ptr, "ptr") ; GWLP_USERDATA = -21
+         ; Clean up the file when EmptyClipboard is called by another program.
+         obj := {filepath: filepath, hDropFiles: hDropFiles}
+         ptr := ObjPtr(obj)
+         ObjAddRef(ptr)
+         DllCall("SetWindowLongPtr", "ptr", hwnd, "int", -21, "ptr", ptr, "ptr") ; GWLP_USERDATA = -21
+      }
    
       ; Close the clipboard.
       DllCall("CloseClipboard")
