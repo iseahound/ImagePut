@@ -2032,23 +2032,12 @@ class ImagePut {
       : str ~= "(?i)^d7 cd c6 9a"                                                 ? "wmf"
       : "" ; Extension must be blank for file pass-through as-is.
 
-         ; Create window data.
-         pWndProc := CallbackCreate(WindowProc)
-      WindowProc(hwnd, uMsg, wParam, lParam) {
-         ; 0x0307 = WM_DESTROYCLIPBOARD 
-         if (uMsg = 0x0307)
-            if ptr := DllCall("GetWindowLongPtr", "ptr", hwnd, "int", -21, "ptr") {
-               obj := ObjFromPtr(ptr)
-               DllCall("GlobalFree", "ptr", obj.hDropFiles)
-               DllCall("DeleteFile", "str", obj.filepath)
-               DllCall("SetWindowLongPtr", "ptr", hwnd, "int", -21, "ptr", 0, "ptr") ; GWLP_USERDATA = -21
-            }
-         return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "ptr", wParam, "ptr", lParam, "ptr")
+      ; Creates a dummy window solely for the purpose of receiving clipboard messages.
+      if !(hwnd := DllCall("FindWindow", "str", "AutoHotkey", "str", "_StreamToClipboard", "ptr")) {
+         hwnd := DllCall("CreateWindowEx", "uint", 0, "str", "AutoHotkey", "str", "_StreamToClipboard"
+         , "uint", 0, "int", 0, "int", 0, "int", 0, "int", 0, "ptr", 0, "ptr", 0, "ptr", 0, "ptr", 0, "ptr")
+         DllCall("SetWindowLongPtr", "ptr", hwnd, "int", -4, "ptr", CallbackCreate(StreamToClipboardProc)) ; GWLP_WNDPROC = -4
       }
-
-      hwnd := DllCall("CreateWindowEx", "uint", 0, "str", "AutoHotkey", "ptr", 0, "uint", 0, "int", 0, "int", 0, "int", 0, "int", 0, "ptr", 0, "ptr", 0, "ptr", 0, "ptr", 0, "ptr")
-      DllCall("SetWindowLongPtr", "ptr", hwnd, "int", -4, "ptr", pWndProc) ; GWLP_WNDPROC = -4
-         ; Registers a window class for subsequent use in calls to the CreateWindow or CreateWindowEx function.
 
       ; Open the clipboard with exponential backoff.
       loop
@@ -2096,7 +2085,7 @@ class ImagePut {
       ObjRelease(pFileStream)
 
       ; struct DROPFILES - https://learn.microsoft.com/en-us/windows/win32/api/shlobj_core/ns-shlobj_core-dropfiles
-      size := 20 + StrPut(filepath, "UTF-16")
+      size := 20 + StrPut(filepath, "UTF-16") + 2 ; triple/quadruple null terminated
       hDropFiles := DllCall("GlobalAlloc", "uint", 0x42, "uptr", size, "ptr")
       pDropFiles := DllCall("GlobalLock", "ptr", hDropFiles, "ptr")
          NumPut("uint", 20, pDropFiles + 0) ; pFiles
@@ -2112,10 +2101,22 @@ class ImagePut {
       ptr := ObjPtr(obj)
       ObjAddRef(ptr)
       DllCall("SetWindowLongPtr", "ptr", hwnd, "int", -21, "ptr", ptr, "ptr") ; GWLP_USERDATA = -21
-
+   
       ; Close the clipboard.
       DllCall("CloseClipboard")
       return ClipboardAll()
+
+      StreamToClipboardProc(hwnd, uMsg, wParam, lParam) {
+         ; WM_DESTROYCLIPBOARD 
+         if (uMsg = 0x0307)
+            if ptr := DllCall("GetWindowLongPtr", "ptr", hwnd, "int", -21, "ptr") {
+               obj := ObjFromPtr(ptr)
+               DllCall("GlobalFree", "ptr", obj.hDropFiles)
+               DllCall("DeleteFile", "str", obj.filepath)
+               DllCall("SetWindowLongPtr", "ptr", hwnd, "int", -21, "ptr", 0, "ptr") ; GWLP_USERDATA = -21
+            }
+         return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "ptr", wParam, "ptr", lParam, "ptr")
+      }
    }
 
    static BitmapToEncodedBuffer(pBitmap, extension := "", quality := "") {
