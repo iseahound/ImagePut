@@ -4255,6 +4255,7 @@ class ImagePut {
       : str ~= "(?i)^d7 cd c6 9a"                                                 ? "image/wmf"
       : ""
 
+      ; Enables guessing of mime type for general purpose usage.
       if (mime == "") {
          DllCall("urlmon\FindMimeFromData"
                   ,    "ptr", 0             ; pBC
