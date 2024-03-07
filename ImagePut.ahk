@@ -4173,11 +4173,11 @@ class ImagePut {
    static BitmapToHex(pBitmap, extension := "", quality := "") {
       ; Thanks noname - https://www.autohotkey.com/boards/viewtopic.php?style=7&p=144247#p144247
 
-      ; Default extension is PNG for small sizes!
+      
       if (extension == "")
          extension := "png"
 
-      pStream := this.BitmapToStream(pBitmap, extension, quality)
+      pStream := this.BitmapToStream(pBitmap, extension, quality) ; Defaults to PNG for small sizes!
 
       ; Get a pointer to binary data.
       DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "ptr*", &hbin:=0, "hresult")
@@ -4248,11 +4248,11 @@ class ImagePut {
    static BitmapToBase64(pBitmap, extension := "", quality := "") {
       ; Thanks noname - https://www.autohotkey.com/boards/viewtopic.php?style=7&p=144247#p144247
 
-      ; Default extension is PNG for small sizes!
+      
       if (extension == "")
          extension := "png"
 
-      pStream := this.BitmapToStream(pBitmap, extension, quality)
+      pStream := this.BitmapToStream(pBitmap, extension, quality) ; Defaults to PNG for small sizes!
 
       ; Get a pointer to binary data.
       DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "ptr*", &handle:=0, "hresult")
@@ -4458,16 +4458,9 @@ class ImagePut {
    }
 
    static BitmapToStream(pBitmap, extension := "", quality := "") {
-      ; Default extension is TIF for fast speeds!
-      if (extension == "")
-         extension := "tif"
-
-      this.select_codec(pBitmap, extension, quality, &pCodec, &ep)
-
-      ; Create a Stream.
+      this.select_codec(pBitmap, extension, quality, &pCodec, &ep) ; Defaults to PNG for small sizes!
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", True, "ptr*", &pStream:=0, "hresult")
       DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", pStream, "ptr", pCodec, "ptr", ep)
-
       return pStream
    }
 
@@ -4544,8 +4537,8 @@ class ImagePut {
       handle := DllCall("GlobalAlloc", "uint", 0x2, "uptr", 0, "ptr")
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", handle, "int", True, "ptr*", &pStream:=0, "hresult")
 
-      ; Save pBitmap to the IStream. Default extension is PNG for small sizes!
-      this.select_codec(pBitmap, extension, quality, &pCodec, &ep)
+      ; Save pBitmap to the IStream.
+      this.select_codec(pBitmap, extension, quality, &pCodec, &ep) ; Defaults to PNG for small sizes!
       DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", pStream, "ptr", pCodec, "ptr", ep)
 
       ; Get the pointer and size of the IStream's movable memory.
