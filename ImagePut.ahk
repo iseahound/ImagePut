@@ -4479,14 +4479,10 @@ class ImagePut {
    }
 
    static StreamToRandomAccessStream(pStream) {
-      ; Thanks teadrinker - https://www.autohotkey.com/boards/viewtopic.php?f=6&t=72674
-      DllCall("ole32\CLSIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", CLSID := Buffer(16), "hresult")
-      DllCall("shcore\CreateRandomAccessStreamOverStream"
-               ,    "ptr", pStream
-               ,   "uint", BSOS_PREFERDESTINATIONSTREAM := 1
-               ,    "ptr", CLSID
-               ,   "ptr*", &pRandomAccessStream:=0
-               ,"hresult")
+      ; Create a RandomAccessStream that loads the memory immediately (BSOS_PREFERDESTINATIONSTREAM = 1)
+      IID_IRandomAccessStream := Buffer(16)
+      DllCall("ole32\IIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", IID_IRandomAccessStream , "hresult")
+      DllCall("shcore\CreateRandomAccessStreamOverStream", "ptr", pStream, "uint", 1, "ptr", IID_IRandomAccessStream, "ptr*", &pRandomAccessStream:=0, "hresult")
       return pRandomAccessStream
    }
 
