@@ -1339,15 +1339,6 @@ class ImagePut {
       if DllCall("IsIconic", "ptr", image)
          DllCall("ShowWindow", "ptr", image, "int", 4)
 
-      ; Check window DPI awareness.
-      ; PROCESS_DPI_UNAWARE = 0, PROCESS_SYSTEM_DPI_AWARE = 1, PROCESS_PER_MONITOR_DPI_AWARE = 2
-      DPI_AWARENESS := True ; Assume dpi aware if process cannot be opened.
-      DllCall("GetWindowThreadProcessId", "ptr", image, "ptr*", pid:=0, "ptr")
-      if hProcess := DllCall("OpenProcess", "uint", 0x0400, "int", False, "uint", pid, "ptr") {
-         DllCall("shcore\GetProcessDpiAwareness", "ptr", hProcess, "int*", DPI_AWARENESS)
-         DllCall("CloseHandle", "ptr", hProcess)
-      }
-
       ; Get the width and height of the client window.
       try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", DPI_AWARENESS ? -3 : -5, "ptr")
       DllCall("GetClientRect", "ptr", image, "ptr", Rect := Buffer(16)) ; sizeof(RECT) = 16
@@ -4171,12 +4162,6 @@ class ImagePut {
    }
 
    static BitmapToHex(pBitmap, extension := "", quality := "") {
-      ; Thanks noname - https://www.autohotkey.com/boards/viewtopic.php?style=7&p=144247#p144247
-
-      
-      if (extension == "")
-         extension := "png"
-
       pStream := this.BitmapToStream(pBitmap, extension, quality) ; Defaults to PNG for small sizes!
 
       ; Get a pointer to binary data.
@@ -4193,7 +4178,7 @@ class ImagePut {
       if !code {
          b64 := (A_PtrSize == 4)
             ? "VYnlVotFDIt1EFOLTRSLXQgBxjnwcyCKEIPBAkDA6gQPttKKFBOIUf6KUP+D4g+KFBOIUf/r3FteXcM="
-            : "SInISQHQTDnCcyiKCkmDwQJI/8JBicqD4Q9BwOoERQ+20kaKFBBFiFH+igwIQYhJ/+vTww=="
+            : "SQHQTDnCcyWKAkmDwQJI/8LA6AQPtsCKBAFBiEH+ikL/g+APigQBQYhB/+vWww=="
          s64 := StrLen(RTrim(b64, "=")) * 3 // 4
          code := DllCall("GlobalAlloc", "uint", 0, "uptr", s64, "ptr")
          DllCall("crypt32\CryptStringToBinary", "str", b64, "uint", 0, "uint", 0x1, "ptr", code, "uint*", s64, "ptr", 0, "ptr", 0)
@@ -4247,11 +4232,6 @@ class ImagePut {
 
    static BitmapToBase64(pBitmap, extension := "", quality := "") {
       ; Thanks noname - https://www.autohotkey.com/boards/viewtopic.php?style=7&p=144247#p144247
-
-      
-      if (extension == "")
-         extension := "png"
-
       pStream := this.BitmapToStream(pBitmap, extension, quality) ; Defaults to PNG for small sizes!
 
       ; Get a pointer to binary data.
@@ -4260,8 +4240,8 @@ class ImagePut {
       size := DllCall("GlobalSize", "ptr", handle, "uptr")
 
       ; Calculate the length of the base64 string.
-      length := 4 * Ceil(size / 3) + 1   ; A string has a null terminator
-      VarSetStrCapacity(&str, length)    ; Allocates a ANSI or Unicode string
+      length := 4 * Ceil(size / 3) + 1                ; A string has a null terminator
+      VarSetStrCapacity(&str, length)                 ; Allocates a ANSI or Unicode string
       ; This appends 1 or 2 zero byte null terminators respectively.
 
       ; Passing a pre-allocated string buffer prevents an additional memory copy via StrGet.
@@ -4284,8 +4264,8 @@ class ImagePut {
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
 
       ; Calculate the length of the base64 string.
-      length := 4 * Ceil(size / 3) + 1   ; A string has a null terminator
-      VarSetStrCapacity(&str, length)    ; Allocates a ANSI or Unicode string
+      length := 4 * Ceil(size / 3) + 1                ; A string has a null terminator
+      VarSetStrCapacity(&str, length)                 ; Allocates a ANSI or Unicode string
       ; This appends 1 or 2 zero byte null terminators respectively.
 
       ; Passing a pre-allocated string buffer prevents an additional memory copy via StrGet.

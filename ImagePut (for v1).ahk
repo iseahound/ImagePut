@@ -1339,15 +1339,6 @@ class ImagePut {
       if DllCall("IsIconic", "ptr", image)
          DllCall("ShowWindow", "ptr", image, "int", 4)
 
-      ; Check window DPI awareness.
-      ; PROCESS_DPI_UNAWARE = 0, PROCESS_SYSTEM_DPI_AWARE = 1, PROCESS_PER_MONITOR_DPI_AWARE = 2
-      DPI_AWARENESS := True ; Assume dpi aware if process cannot be opened.
-      DllCall("GetWindowThreadProcessId", "ptr", image, "ptr*", pid:=0, "ptr")
-      if hProcess := DllCall("OpenProcess", "uint", 0x0400, "int", False, "uint", pid, "ptr") {
-         DllCall("shcore\GetProcessDpiAwareness", "ptr", hProcess, "int*", DPI_AWARENESS)
-         DllCall("CloseHandle", "ptr", hProcess)
-      }
-
       ; Get the width and height of the client window.
       try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", DPI_AWARENESS ? -3 : -5, "ptr")
       DllCall("GetClientRect", "ptr", image, "ptr", &Rect := VarSetCapacity(Rect, 16)) ; sizeof(RECT) = 16
@@ -4080,12 +4071,6 @@ class ImagePut {
    }
 
    BitmapToHex(pBitmap, extension := "", quality := "") {
-      ; Thanks noname - https://www.autohotkey.com/boards/viewtopic.php?style=7&p=144247#p144247
-
-      
-      if (extension == "")
-         extension := "png"
-
       pStream := this.BitmapToStream(pBitmap, extension, quality) ; Defaults to PNG for small sizes!
 
       ; Get a pointer to binary data.
@@ -4156,11 +4141,6 @@ class ImagePut {
 
    BitmapToBase64(pBitmap, extension := "", quality := "") {
       ; Thanks noname - https://www.autohotkey.com/boards/viewtopic.php?style=7&p=144247#p144247
-
-      
-      if (extension == "")
-         extension := "png"
-
       pStream := this.BitmapToStream(pBitmap, extension, quality) ; Defaults to PNG for small sizes!
 
       ; Get a pointer to binary data.
@@ -4169,7 +4149,7 @@ class ImagePut {
       size := DllCall("GlobalSize", "ptr", handle, "uptr")
 
       ; Calculate the length of the base64 string.
-      length := 4 * Ceil(size / 3) + 1   ; A string has a null terminator
+      length := 4 * Ceil(size / 3) + 1                ; A string has a null terminator
       VarSetCapacity(str, length * (A_IsUnicode?2:1)) ; Allocates a ANSI or Unicode string
       ; This appends 1 or 2 zero byte null terminators respectively.
 
@@ -4193,7 +4173,7 @@ class ImagePut {
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "uint")
 
       ; Calculate the length of the base64 string.
-      length := 4 * Ceil(size / 3) + 1   ; A string has a null terminator
+      length := 4 * Ceil(size / 3) + 1                ; A string has a null terminator
       VarSetCapacity(str, length * (A_IsUnicode?2:1)) ; Allocates a ANSI or Unicode string
       ; This appends 1 or 2 zero byte null terminators respectively.
 
