@@ -4533,52 +4533,49 @@ class ImagePut {
    static StreamToSafeArray(pStream) {
       ; Allocate a one-dimensional SAFEARRAY based on the size of the stream.
       DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "hresult")
-      safeArray := ComObjArray(0x11, size) ; VT_ARRAY | VT_UI1
-      pvData := NumGet(ComObjValue(safeArray), 8 + A_PtrSize, "ptr")
+      safearray := ComObjArray(0x11, size) ; VT_UI1
+      pvData := NumGet(ComObjValue(safearray), 8 + A_PtrSize, "ptr")
 
       ; Copy the stream to the SAFEARRAY.
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
       DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", pvData, "uint", size, "hresult")
       DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
 
-      return safeArray
+      return safearray
    }
 
    static BitmapToSafeArray(pBitmap, extension := "", quality := "") {
       ; Thanks tmplinshi - https://www.autohotkey.com/boards/viewtopic.php?p=354007#p354007
 
       ; Create an IStream backed with movable memory.
-      hData := DllCall("GlobalAlloc", "uint", 0x2, "uptr", 0, "ptr")
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", True, "ptr*", &pStream:=0, "hresult")
+      handle := DllCall("GlobalAlloc", "uint", 0x2, "uptr", 0, "ptr")
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", handle, "int", True, "ptr*", &pStream:=0, "hresult")
 
-      ; Default extension is PNG for small sizes!
-      (extension == "") && extension := "png"
-
-      ; Save pBitmap to the IStream.
+      ; Save pBitmap to the IStream. Default extension is PNG for small sizes!
       this.select_codec(pBitmap, extension, quality, &pCodec, &ep)
       DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", pStream, "ptr", pCodec, "ptr", ep)
 
       ; Get the pointer and size of the IStream's movable memory.
-      pData := DllCall("GlobalLock", "ptr", hData, "ptr")
-      size := DllCall("GlobalSize", "ptr", hData, "uptr")
+      ptr := DllCall("GlobalLock", "ptr", handle, "ptr")
+      size := DllCall("GlobalSize", "ptr", handle, "uptr")
 
       ; Copy the encoded image to a SAFEARRAY.
-      safeArray := ComObjArray(0x11, size) ; VT_ARRAY | VT_UI1
-      pvData := NumGet(ComObjValue(safeArray), 8 + A_PtrSize, "ptr")
-      DllCall("RtlMoveMemory", "ptr", pvData, "ptr", pData, "uptr", size)
+      safearray := ComObjArray(0x11, size) ; VT_UI1
+      pvData := NumGet(ComObjValue(safearray), 8 + A_PtrSize, "ptr")
+      DllCall("RtlMoveMemory", "ptr", pvData, "ptr", ptr, "uptr", size)
 
       ; Release the IStream and call GlobalFree.
-      DllCall("GlobalUnlock", "ptr", hData)
+      DllCall("GlobalUnlock", "ptr", handle)
       ObjRelease(pStream)
 
-      return safeArray
+      return safearray
    }
 
    static ParseWebp(pStream, &pDelays, &pCount) {
       ; Gets the size of the stream.
       DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &end:=0, "hresult")
 
-      ; Create FourCC binary buffer and a general purpose uint32 buffer.
+      ; Create FourCC binary buffer and initalize some variables.
       fourcc := Buffer(4)
       offset := 0
       current := 0
@@ -4646,7 +4643,7 @@ class ImagePut {
             ; Seek to the Frame Duration.
             ComCall(Seek := 5, pStream, "uint64", 12, "uint", 1, "uint64*", &current)
 
-            ; Cast the Frame Delay from uint24 to uint32 and write it to the delays stream.
+            ; Write the Frame Delay into the stream and cast from a uint24 to uint32.
             DllCall("shlwapi\IStream_Copy", "ptr", pStream, "ptr", sDelays, "uint", 3, "hresult")
             DllCall("shlwapi\IStream_Write", "ptr", sDelays, "uchar*", 0, "uint", 1, "hresult")
 
