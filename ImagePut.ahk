@@ -4453,6 +4453,7 @@ class ImagePut {
    }
 
    static BitmapToHIcon(pBitmap) {
+      ; Remember an hCursor is the same as an hIcon with an (x, y) hotspot.
       DllCall("gdiplus\GdipCreateHICONFromBitmap", "ptr", pBitmap, "ptr*", &hIcon:=0)
       return hIcon
    }
