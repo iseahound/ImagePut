@@ -404,10 +404,9 @@ class ImagePut {
       if not IsObject(image)
          goto string
 
-      if (image.HasProp("prototype") && image.prototype.HasProp("__class") && image.prototype.__class == "ClipboardAll")
-      or (image.base.HasProp("__class") && image.base.__class == "ClipboardAll") {
-
-         ; A "clipboardpng" is a pointer to a PNG stream saved as the "png" clipboard format.
+      if (image.base.HasProp("__class") && image.base.__class == "ClipboardAll") 
+      or (image.HasProp("prototype") && image.prototype.HasProp("__class") && image.prototype.__class == "ClipboardAll")
+      {  ; A "clipboardpng" is a pointer to a PNG stream saved as the "png" clipboard format.
          if DllCall("IsClipboardFormatAvailable", "uint", DllCall("RegisterClipboardFormat", "str", "png", "uint"))
             return "clipboardpng"
 
@@ -1340,7 +1339,7 @@ class ImagePut {
          DllCall("ShowWindow", "ptr", image, "int", 4)
 
       ; Get the width and height of the client window.
-      try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", DPI_AWARENESS ? -3 : -5, "ptr")
+      try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
       DllCall("GetClientRect", "ptr", image, "ptr", Rect := Buffer(16)) ; sizeof(RECT) = 16
          , width  := NumGet(Rect, 8, "int")
          , height := NumGet(Rect, 12, "int")
