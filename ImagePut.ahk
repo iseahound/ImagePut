@@ -985,13 +985,16 @@ class ImagePut {
       if !DllCall("IsClipboardFormatAvailable", "uint", png)
          throw Error("Clipboard does not have PNG stream data.")
 
-      if !(hData := DllCall("GetClipboardData", "uint", png, "ptr"))
+      if !(handle := DllCall("GetClipboardData", "uint", png, "ptr"))
          throw Error("Shared clipboard PNG has been deleted.")
 
-      ; Allow the stream to be freed while leaving the hData intact.
-      ; Please read: https://devblogs.microsoft.com/oldnewthing/20210930-00/?p=105745
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", False, "ptr*", &pStream:=0, "hresult")
       DllCall("CloseClipboard")
+
+      ; Create a new stream from the clipboard data.
+      size := DllCall("GlobalSize", "ptr", handle, "uptr")
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", handle, "int", False, "ptr*", &PngStream:=0, "hresult")
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", True, "ptr*", &pStream:=0, "hresult")
+      DllCall("shlwapi\IStream_Copy", "ptr", PngStream, "ptr", pStream, "uint", size, "hresult")
       return pStream
    }
 
