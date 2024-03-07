@@ -4495,24 +4495,21 @@ class ImagePut {
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
 
-      ; Initialize Windows Imaging Component.
-      IWICImagingFactory := ComObject(CLSID_WICImagingFactory := "{CACAF262-9370-4615-A13B-9F5539DA4C0A}", IID_IWICImagingFactory := "{EC5EC8A9-C395-4314-9C77-54D7A935FF70}")
+      IWICImagingFactory := ComObject("{CACAF262-9370-4615-A13B-9F5539DA4C0A}", "{EC5EC8A9-C395-4314-9C77-54D7A935FF70}")
 
-      ; WICBitmapNoCache  must be 1!
-      ; IWICImagingFactory::CreateBitmap - https://github.com/iseahound/10/blob/win/10.0.16299.0/um/wincodec.h#L6447
-      DllCall("ole32\CLSIDFromString", "wstr", GUID_WICPixelFormat32bppBGRA := "{6fddc324-4e03-4bfe-b185-3d77768dc90f}", "ptr", CLSID := Buffer(16), "hresult")
-      ComCall(CreateBitmap := 17, IWICImagingFactory, "uint", width, "uint", height, "ptr", CLSID, "int", 1, "ptr*", &wicBitmap:=0)
+      ; Initialize bitmap with backing memory. WICBitmapCacheOnDemand = 1
+      GUID_WICPixelFormat32bppBGRA := Buffer(16)
+      DllCall("ole32\CLSIDFromString", "wstr", "{6fddc324-4e03-4bfe-b185-3d77768dc90f}", "ptr", GUID_WICPixelFormat32bppBGRA, "hresult")
+      ComCall(CreateBitmap := 17, IWICImagingFactory, "uint", width, "uint", height, "ptr", GUID_WICPixelFormat32bppBGRA, "int", 1, "ptr*", &wicbitmap:=0)
 
+      ; Lock the WIC bitmap with write access only and get a pointer to its pixel buffer. 
       Rect := Buffer(16, 0)                  ; sizeof(Rect) = 16
          NumPut(  "uint",   width, Rect,  8) ; Width
          NumPut(  "uint",  height, Rect, 12) ; Height
+      ComCall(Lock := 8, wicbitmap, "ptr", Rect, "uint", 0x1, "ptr*", &IWICBitmapLock:=0)
+      ComCall(GetDataPointer := 5, IWICBitmapLock, "uint*", &size:=0, "ptr*", &Scan0:=0)
 
-      ; IWICBitmap::Lock - https://github.com/iseahound/10/blob/win/10.0.16299.0/um/wincodec.h#L2232
-      ComCall(_Lock := 8, wicBitmap, "ptr", Rect, "uint", 0x1, "ptr*", &Lock:=0)
-
-      ; IWICBitmapLock::GetDataPointer - https://github.com/iseahound/10/blob/win/10.0.16299.0/um/wincodec.h#L2104
-      ComCall(GetDataPointer := 5, Lock, "uint*", &size:=0, "ptr*", &Scan0:=0)
-
+      ; Transfer data from source pBitmap to a WIC Bitmap manually.
       BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
          NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
          NumPut(   "ptr",      Scan0, BitmapData, 16) ; Scan0
@@ -4521,13 +4518,13 @@ class ImagePut {
                ,    "ptr", Rect
                ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
                ,    "int", 0x26200A     ; Format32bppArgb
-               ,    "ptr", BitmapData)  ; Contains the pointer (Scan0) to the WICBitmap.
+               ,    "ptr", BitmapData)  ; Contains the pointer (Scan0) to the IWICBitmap.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
 
-      ObjRelease(Lock)
+      ObjRelease(IWICBitmapLock)
       IWICImagingFactory := ""
 
-      return wicBitmap
+      return wicbitmap
    }
 
    static StreamToSafeArray(pStream) {
