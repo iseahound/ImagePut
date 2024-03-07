@@ -987,7 +987,7 @@ class ImagePut {
          throw Exception("Clipboard does not have PNG stream data.")
 
       if !(hData := DllCall("GetClipboardData", "uint", png, "ptr"))
-         throw Exception("Shared clipboard data has been deleted.")
+         throw Exception("Shared clipboard PNG has been deleted.")
 
       ; Allow the stream to be freed while leaving the hData intact.
       ; Please read: https://devblogs.microsoft.com/oldnewthing/20210930-00/?p=105745
@@ -1505,12 +1505,12 @@ class ImagePut {
    FileToStream(image) {
       file := FileOpen(image, "r")
       file.pos := 0
-      hData := DllCall("GlobalAlloc", "uint", 0x2, "uptr", file.length, "ptr")
-      pData := DllCall("GlobalLock", "ptr", hData, "ptr")
-      file.RawRead(pData+0, file.length)
-      DllCall("GlobalUnlock", "ptr", hData)
+      handle := DllCall("GlobalAlloc", "uint", 0x2, "uptr", file.length, "ptr")
+      ptr := DllCall("GlobalLock", "ptr", handle, "ptr")
+      file.RawRead(ptr+0, file.length)
+      DllCall("GlobalUnlock", "ptr", handle)
       file.Close()
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", hData, "int", True, "ptr*", pStream:=0, "uint")
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", handle, "int", True, "ptr*", pStream:=0, "uint")
       return pStream
    }
 
