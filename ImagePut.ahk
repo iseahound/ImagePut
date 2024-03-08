@@ -2101,10 +2101,11 @@ class ImagePut {
       return ClipboardAll()
 
       StreamToClipboardProc(hwnd, uMsg, wParam, lParam) {
+
          ; WM_DESTROYCLIPBOARD
          if (uMsg = 0x0307)
             if ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", -21, "ptr") {
-               obj := ObjFromPtr(ptr)
+               obj := ObjFromPtr(ptr) ; Self-destructs at end of scope.
                DllCall("GlobalFree", "ptr", obj.hDropFiles)
                DllCall("DeleteFile", "str", obj.filepath)
                DllCall("SetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", -21, "ptr", 0, "ptr") ; GWLP_USERDATA = -21
@@ -3661,7 +3662,7 @@ class ImagePut {
 
             ; Convert from unsigned int to signed shorts.
             xy := Buffer(4)
-            NumPut("uint", lparam, xy)
+            NumPut("uint", lParam, xy)
             x := NumGet(xy, 0, "short")
             y := NumGet(xy, 2, "short")
 
