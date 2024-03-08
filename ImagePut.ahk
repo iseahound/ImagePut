@@ -4633,16 +4633,14 @@ class ImagePut {
       NumPut(    "ptr", pDelays + 8 + 2*A_PtrSize, pDelays + 8 + A_PtrSize)
    }
 
-   static RenderPdf(&image, index := "") {
+   static RenderPdf(&IStreamIn, index := "") {
       ; Thanks malcev - https://www.autohotkey.com/boards/viewtopic.php?t=80735
       (index == "") && index := 1
 
-      ; Create a stream from either a url or a file.
-      stream := image
-
       ; Create a RandomAccessStream with BSOS_PREFERDESTINATIONSTREAM.
-      DllCall("ole32\IIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", IID := Buffer(16), "hresult")
-      DllCall("shcore\CreateRandomAccessStreamOverStream", "ptr", stream, "uint", 1, "ptr", IID, "ptr*", &IRandomAccessStream:=0, "hresult")
+      IID_IRandomAccessStream := Buffer(16)
+      DllCall("ole32\IIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", IID_IRandomAccessStream, "hresult")
+      DllCall("shcore\CreateRandomAccessStreamOverStream", "ptr", IStreamIn, "uint", 1, "ptr", IID_IRandomAccessStream, "ptr*", &IRandomAccessStreamIn:=0, "hresult")
 
       ; Create the "Windows.Data.Pdf.PdfDocument" class using IPdfDocumentStatics.
       DllCall("ole32\IIDFromString", "wstr", "{433A0B5F-C007-4788-90F2-08143D922599}", "ptr", IID := Buffer(16), "hresult")
@@ -4651,7 +4649,7 @@ class ImagePut {
       DllCall("combase\WindowsDeleteString", "ptr", hString, "hresult")
 
       ; Create the PDF document.
-      ComCall(LoadFromStreamAsync := 8, PdfDocumentStatics, "ptr", IRandomAccessStream, "ptr*", &PdfDocument:=0)
+      ComCall(LoadFromStreamAsync := 8, PdfDocumentStatics, "ptr", IRandomAccessStreamIn, "ptr*", &PdfDocument:=0)
       this.WaitForAsync(&PdfDocument)
 
       ; Get Page
@@ -4660,16 +4658,16 @@ class ImagePut {
       if (index > count || index < 0) {
          ObjRelease(PdfDocument)
          ObjRelease(PdfDocumentStatics)
-         this.ObjReleaseClose(&IRandomAccessStream)
-         ObjRelease(stream)
+         this.ObjReleaseClose(&IRandomAccessStreamIn)
+         ObjRelease(IStreamIn)
          throw Error("The maximum number of pages in this pdf is " count ".")
       }
       ComCall(GetPage := 6, PdfDocument, "uint", index, "ptr*", &PdfPage:=0)
 
       ; Render the page to an output stream.
       DllCall("ole32\IIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", IID := Buffer(16), "hresult")
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "uint", True, "ptr*", &streamOut:=0)
-      DllCall("shcore\CreateRandomAccessStreamOverStream", "ptr", streamOut, "uint", BSOS_DEFAULT := 0, "ptr", IID, "ptr*", &IRandomAccessStreamOut:=0)
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "uint", True, "ptr*", &IStreamOut:=0)
+      DllCall("shcore\CreateRandomAccessStreamOverStream", "ptr", IStreamOut, "uint", BSOS_DEFAULT := 0, "ptr", IID, "ptr*", &IRandomAccessStreamOut:=0)
       ComCall(RenderToStreamAsync := 6, PdfPage, "ptr", IRandomAccessStreamOut, "ptr*", &AsyncInfo:=0)
       this.WaitForAsync(&AsyncInfo)
 
@@ -4680,11 +4678,11 @@ class ImagePut {
       ObjRelease(PdfDocument)
       ObjRelease(PdfDocumentStatics)
 
-      this.ObjReleaseClose(&IRandomAccessStream)
-      ObjRelease(stream)
+      this.ObjReleaseClose(&IRandomAccessStreamIn)
+      ObjRelease(IStreamIn)
 
-      DllCall("shlwapi\IStream_Reset", "ptr", streamOut, "hresult")
-      return image := streamOut
+      DllCall("shlwapi\IStream_Reset", "ptr", IStreamOut, "hresult")
+      return IStreamIn := IStreamOut
    }
 
    static WaitForAsync(&Object) {
