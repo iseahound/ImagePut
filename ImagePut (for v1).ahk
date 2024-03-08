@@ -208,6 +208,7 @@ class ImagePut {
       scale     := keywords.HasKey("scale")      ? keywords.scale     : ""
       upscale   := keywords.HasKey("upscale")    ? keywords.upscale   : ""
       downscale := keywords.HasKey("downscale")  ? keywords.downscale : ""
+      sprite    := keywords.HasKey("sprite")     ? keywords.sprite    : ""
       decode    := keywords.HasKey("decode")     ? keywords.decode    : this.decode
       render    := keywords.HasKey("render")     ? keywords.render    : this.render
       validate  := keywords.HasKey("validate")   ? keywords.validate  : this.validate
@@ -270,7 +271,7 @@ class ImagePut {
       }
 
       ; Determine whether the stream should be decoded into pixels.
-      weight := decode || crop || scale || upscale || downscale ||
+      weight := decode || crop || scale || upscale || downscale || sprite ||
 
          ; Check if the 1st parameter matches the file signature.
          !( cotype ~= "^(?i:encodedbuffer|url|hex|base64|uri|stream|randomaccessstream|safearray)$"
@@ -317,6 +318,7 @@ class ImagePut {
       (scale) && this.BitmapScale(pBitmap, scale)
       (upscale) && this.BitmapScale(pBitmap, upscale, 1)
       (downscale) && this.BitmapScale(pBitmap, downscale, -1)
+      (sprite) && this.BitmapSprite(pBitmap)
 
       ; Save frame delays and loop count for webp.
       if (type = "stream" && extension = "webp" && cotype ~= "^(?i:show|window)$") {
@@ -368,7 +370,6 @@ class ImagePut {
       "RandomAccessStream",
       "WicBitmap",
       "D2dBitmap",
-      "Sprite"
    ]
    )
    DontVerifyImageType(ByRef image, ByRef keywords := "") {
@@ -629,9 +630,6 @@ class ImagePut {
 
       if (type = "WicBitmap")
          return this.WicBitmapToBitmap(image)
-
-      if (type = "Sprite")
-         return this.SpriteToBitmap(image)
 
       throw Exception("Conversion from " type " to bitmap is not supported.")
    }
@@ -902,6 +900,45 @@ class ImagePut {
       DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
 
       return pBitmap := pBitmapScale
+   }
+
+   BitmapSprite(ByRef pBitmap) {
+      ; Get Bitmap width and height.
+      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
+      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
+
+      ; Create a pixel buffer.
+      VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
+         NumPut(  width, Rect,  8,   "uint") ; Width
+         NumPut( height, Rect, 12,   "uint") ; Height
+      VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
+      DllCall("gdiplus\GdipBitmapLockBits"
+               ,    "ptr", pBitmap
+               ,    "ptr", &Rect
+               ,   "uint", 3            ; ImageLockMode.ReadWrite
+               ,    "int", 0x26200A     ; Format32bppArgb
+               ,    "ptr", &BitmapData)
+      Scan0 := NumGet(BitmapData, 16, "ptr")
+
+      ; C source code - https://godbolt.org/z/nrv5Yr3Y3
+      static code := 0
+      if !code {
+         b64 := (A_PtrSize == 4)
+            ? "VYnli0UIi1UMi00QOdBzDzkIdQbHAAAAAACDwATr7V3D"
+            : "SDnRcw9EOQF1BDHAiQFIg8EE6+zD"
+         s64 := StrLen(RTrim(b64, "=")) * 3 // 4
+         code := DllCall("GlobalAlloc", "uint", 0, "uptr", s64, "ptr")
+         DllCall("crypt32\CryptStringToBinary", "str", b64, "uint", 0, "uint", 0x1, "ptr", code, "uint*", s64, "ptr", 0, "ptr", 0)
+         DllCall("VirtualProtect", "ptr", code, "ptr", s64, "uint", 0x40, "uint*", 0)
+      }
+
+      ; Sample the top-left pixel and set all matching pixels to be transparent.
+      DllCall(code, "ptr", Scan0, "ptr", Scan0 + 4*width*height, "uint", NumGet(Scan0+0, "uint"), "cdecl")
+
+      ; Write pixels to bitmap.
+      DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
+
+      return pBitmap
    }
 
    IsUrl(url) {
@@ -1873,53 +1910,6 @@ class ImagePut {
 
       ; IWICBitmapSource::CopyPixels - https://github.com/iseahound/10/blob/win/10.0.16299.0/um/wincodec.h#L1322
       DllCall(NumGet(NumGet(image+0)+A_PtrSize* 7), "ptr", image, "ptr", &Rect, "uint", stride, "uint", stride * height, "ptr", Scan0)
-
-      ; Write pixels to bitmap.
-      DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
-
-      return pBitmap
-   }
-
-   SpriteToBitmap(image) {
-      ; Create a source pBitmap.
-      if this.IsUrl(image)
-         pBitmap := this.UrlToBitmap(image)
-      else if FileExist(image)
-         pBitmap := this.FileToBitmap(image)
-      else
-         throw Exception("Could not be loaded from a valid file path or URL.")
-
-      ; Get Bitmap width and height.
-      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
-      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
-
-      ; Create a pixel buffer.
-      VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
-         NumPut(  width, Rect,  8,   "uint") ; Width
-         NumPut( height, Rect, 12,   "uint") ; Height
-      VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
-      DllCall("gdiplus\GdipBitmapLockBits"
-               ,    "ptr", pBitmap
-               ,    "ptr", &Rect
-               ,   "uint", 3            ; ImageLockMode.ReadWrite
-               ,    "int", 0x26200A     ; Format32bppArgb
-               ,    "ptr", &BitmapData)
-      Scan0 := NumGet(BitmapData, 16, "ptr")
-
-      ; C source code - https://godbolt.org/z/nrv5Yr3Y3
-      static code := 0
-      if !code {
-         b64 := (A_PtrSize == 4)
-            ? "VYnli0UIi1UMi00QOdBzDzkIdQbHAAAAAACDwATr7V3D"
-            : "SDnRcw9EOQF1BDHAiQFIg8EE6+zD"
-         s64 := StrLen(RTrim(b64, "=")) * 3 // 4
-         code := DllCall("GlobalAlloc", "uint", 0, "uptr", s64, "ptr")
-         DllCall("crypt32\CryptStringToBinary", "str", b64, "uint", 0, "uint", 0x1, "ptr", code, "uint*", s64, "ptr", 0, "ptr", 0)
-         DllCall("VirtualProtect", "ptr", code, "ptr", s64, "uint", 0x40, "uint*", 0)
-      }
-
-      ; Sample the top-left pixel and set all matching pixels to be transparent.
-      DllCall(code, "ptr", Scan0, "ptr", Scan0 + 4*width*height, "uint", NumGet(Scan0+0, "uint"), "cdecl")
 
       ; Write pixels to bitmap.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
