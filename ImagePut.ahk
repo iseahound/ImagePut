@@ -221,21 +221,21 @@ class ImagePut {
       if not type ~= "^(?i:clipboardpng|encodedbuffer|url|file|stream|RandomAccessStream|hex|base64)$"
          goto make_bitmap
 
-      if !(pStream := this.ImageToStream(type, image, keywords))
-         throw Error("pStream cannot be zero.")
+      if !(stream := this.ImageToStream(type, image, keywords))
+         throw Error("Stream cannot be zero.")
 
       ; Check the file signature for magic numbers.
       stream:
-      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "hresult")
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
+      DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", &size:=0, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", stream, "hresult")
 
       ; 2048 characters should be good enough to identify the file correctly.
       size := min(size, 2048)
       bin := Buffer(size)
-      (ComCall(Seek := 5, pStream, "uint64", 0, "uint", 1, "uint64*", &current:=0), current != 0 && MsgBox(current))
+      (ComCall(Seek := 5, stream, "uint64", 0, "uint", 1, "uint64*", &current:=0), current != 0 && MsgBox(current))
       ; Get the first few bytes of the image.
-      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", bin, "uint", size, "hresult")
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
+      DllCall("shlwapi\IStream_Read", "ptr", stream, "ptr", bin, "uint", size, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", stream, "hresult")
 
       ; Allocate enough space for a hexadecimal string with spaces interleaved and a null terminator.
       length := 2*size + (size-1) + 1
@@ -264,8 +264,8 @@ class ImagePut {
 
       ; Convert vectorized formats to rasterized formats.
       if (render && extension ~= "^(?i:pdf|svg)$") {
-         (extension = "pdf") && this.RenderPdf(&pStream, index?)
-         (extension = "svg") && pBitmap := this.RenderSvg(&pStream, 800, 800)
+         (extension = "pdf") && this.RenderPdf(&stream, index?)
+         (extension = "svg") && pBitmap := this.RenderSvg(&stream, 800, 800)
          goto( IsSet(pBitmap) ? "bitmap" : "stream" )
       }
 
@@ -291,18 +291,18 @@ class ImagePut {
       ; Attempt conversion using StreamToCoimage.
       if not weight && cotype ~= "^(?i:encodedbuffer|file|stream|RandomAccessStream|hex|base64|uri|explorer|safeArray|formData)$" {
 
-         coimage := this.StreamToCoimage(cotype, pStream, p*)
+         coimage := this.StreamToCoimage(cotype, stream, p*)
 
          ; Clean up the copy. Export raw pointers if requested.
          if (cotype != "stream")
-            ObjRelease(pStream)
+            ObjRelease(stream)
 
          goto exit
       }
 
       ; Otherwise export the image as a stream.
       type := "stream"
-      image := pStream
+      image := stream
       cleanup := "stream"
 
       ; #2 - Fallback to GDI+ bitmap as the intermediate.
@@ -320,7 +320,7 @@ class ImagePut {
 
       ; Save frame delays and loop count for webp.
       if (type = "stream" && extension = "webp" && cotype ~= "^(?i:show|window)$") {
-         this.ParseWebp(pStream, &pDelays, &pCount)
+         this.ParseWebp(stream, &pDelays, &pCount)
          DllCall("gdiplus\GdipSetPropertyItem", "ptr", pBitmap, "ptr", pDelays)
          DllCall("gdiplus\GdipSetPropertyItem", "ptr", pBitmap, "ptr", pCount)
       }
@@ -333,7 +333,7 @@ class ImagePut {
          DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
 
       if cleanup = "stream"
-         ObjRelease(pStream)
+         ObjRelease(stream)
 
       exit:
       ; Check for dangling pointers.
@@ -750,37 +750,37 @@ class ImagePut {
       throw Error("Conversion from " type " to stream is not supported.")
    }
 
-   static StreamToCoimage(cotype, pStream, p1 := "", p2 := "", p*) {
+   static StreamToCoimage(cotype, stream, p1 := "", p2 := "", p*) {
 
-      if (cotype = "EncodedBuffer") ; (pStream)
-         return this.StreamToEncodedBuffer(pStream)
+      if (cotype = "EncodedBuffer") ; (stream)
+         return this.StreamToEncodedBuffer(stream)
 
-      if (cotype = "File") ; (pStream, filepath)
-         return this.StreamToFile(pStream, p1)
+      if (cotype = "File") ; (stream, filepath)
+         return this.StreamToFile(stream, p1)
 
-      if (cotype = "Hex") ; (pStream)
-         return this.StreamToHex(pStream)
+      if (cotype = "Hex") ; (stream)
+         return this.StreamToHex(stream)
 
-      if (cotype = "Base64") ; (pStream)
-         return this.StreamToBase64(pStream)
+      if (cotype = "Base64") ; (stream)
+         return this.StreamToBase64(stream)
 
-      if (cotype = "Uri") ; (pStream)
-         return this.StreamToUri(pStream)
+      if (cotype = "Uri") ; (stream)
+         return this.StreamToUri(stream)
 
       if (cotype = "Stream")
-         return pStream
+         return stream
 
-      if (cotype = "RandomAccessStream") ; (pStream)
-         return this.StreamToRandomAccessStream(pStream)
+      if (cotype = "RandomAccessStream") ; (stream)
+         return this.StreamToRandomAccessStream(stream)
 
-      if (cotype = "Explorer") ; (pStream, default)
-         return this.StreamToExplorer(pStream, p1)
+      if (cotype = "Explorer") ; (stream, default)
+         return this.StreamToExplorer(stream, p1)
 
-      if (cotype = "SafeArray") ; (pStream)
-         return this.StreamToSafeArray(pStream)
+      if (cotype = "SafeArray") ; (stream)
+         return this.StreamToSafeArray(stream)
 
-      if (cotype = "FormData") ; (pStream, boundary)
-         return this.StreamToFormData(pStream, p1)
+      if (cotype = "FormData") ; (stream, boundary)
+         return this.StreamToFormData(stream, p1)
 
       throw Error("Conversion from stream to " cotype " is not supported.")
    }
@@ -965,9 +965,9 @@ class ImagePut {
    }
 
    static ClipboardPngToBitmap() {
-      pStream := this.ClipboardPngToStream()
-      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
-      ObjRelease(pStream)
+      stream := this.ClipboardPngToStream()
+      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", stream, "ptr*", &pBitmap:=0)
+      ObjRelease(stream)
       return pBitmap
    }
 
@@ -993,15 +993,15 @@ class ImagePut {
       ; Create a new stream from the clipboard data.
       size := DllCall("GlobalSize", "ptr", handle, "uptr")
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", handle, "int", False, "ptr*", &PngStream:=0, "hresult")
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", True, "ptr*", &pStream:=0, "hresult")
-      DllCall("shlwapi\IStream_Copy", "ptr", PngStream, "ptr", pStream, "uint", size, "hresult")
-      return pStream
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", True, "ptr*", &stream:=0, "hresult")
+      DllCall("shlwapi\IStream_Copy", "ptr", PngStream, "ptr", stream, "uint", size, "hresult")
+      return stream
    }
 
    static EncodedBufferToBitmap(image) {
-      pStream := this.EncodedBufferToStream(image)
-      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
-      ObjRelease(pStream)
+      stream := this.EncodedBufferToStream(image)
+      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", stream, "ptr*", &pBitmap:=0)
+      ObjRelease(stream)
       return pBitmap
    }
 
@@ -1010,8 +1010,8 @@ class ImagePut {
       ptr := DllCall("GlobalLock", "ptr", handle, "ptr")
       DllCall("RtlMoveMemory", "ptr", ptr, "ptr", image.ptr, "uptr", image.size)
       DllCall("GlobalUnlock", "ptr", handle)
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", handle, "int", True, "ptr*", &pStream:=0, "hresult")
-      return pStream
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", handle, "int", True, "ptr*", &stream:=0, "hresult")
+      return stream
    }
 
    static BufferToBitmap(image) {
@@ -1482,9 +1482,9 @@ class ImagePut {
    }
 
    static UrlToBitmap(image) {
-      pStream := this.UrlToStream(image)
-      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
-      ObjRelease(pStream)
+      stream := this.UrlToStream(image)
+      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", stream, "ptr*", &pBitmap:=0)
+      ObjRelease(stream)
       return pBitmap
    }
 
@@ -1498,9 +1498,9 @@ class ImagePut {
    }
 
    static FileToBitmap(image) {
-      pStream := this.FileToStream(image) ; Faster than GdipCreateBitmapFromFile and does not lock the file.
-      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
-      ObjRelease(pStream)
+      stream := this.FileToStream(image) ; Faster than GdipCreateBitmapFromFile and does not lock the file.
+      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", stream, "ptr*", &pBitmap:=0)
+      ObjRelease(stream)
       return pBitmap
    }
 
@@ -1512,14 +1512,14 @@ class ImagePut {
       file.RawRead(ptr, file.length)
       DllCall("GlobalUnlock", "ptr", handle)
       file.Close()
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", handle, "int", True, "ptr*", &pStream:=0, "hresult")
-      return pStream
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", handle, "int", True, "ptr*", &stream:=0, "hresult")
+      return stream
    }
 
    static HexToBitmap(image) {
-      pStream := this.HexToStream(image)
-      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
-      ObjRelease(pStream)
+      stream := this.HexToStream(image)
+      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", stream, "ptr*", &pBitmap:=0)
+      ObjRelease(stream)
       return pBitmap
    }
 
@@ -1539,14 +1539,14 @@ class ImagePut {
 
       ; Returns a stream that release the handle on ObjRelease().
       DllCall("GlobalUnlock", "ptr", handle)
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", handle, "int", True, "ptr*", &pStream:=0, "hresult")
-      return pStream
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", handle, "int", True, "ptr*", &stream:=0, "hresult")
+      return stream
    }
 
    static Base64ToBitmap(image) {
-      pStream := this.Base64ToStream(image)
-      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
-      ObjRelease(pStream)
+      stream := this.Base64ToStream(image)
+      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", stream, "ptr*", &pBitmap:=0)
+      ObjRelease(stream)
       return pBitmap
    }
 
@@ -1566,8 +1566,8 @@ class ImagePut {
 
       ; Returns a stream that release the handle on ObjRelease().
       DllCall("GlobalUnlock", "ptr", handle)
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", handle, "int", True, "ptr*", &pStream:=0, "hresult")
-      return pStream
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", handle, "int", True, "ptr*", &stream:=0, "hresult")
+      return stream
    }
 
    static MonitorToBitmap(image) {
@@ -1819,35 +1819,35 @@ class ImagePut {
    }
 
    static StreamToBitmap(image) {
-      pStream := this.StreamToStream(image) ; Below adds +3 references and seeks to 4096.
-      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
-      ObjRelease(pStream)
+      stream := this.StreamToStream(image) ; Below adds +3 references and seeks to 4096.
+      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", stream, "ptr*", &pBitmap:=0)
+      ObjRelease(stream)
       return pBitmap
    }
 
    static StreamToStream(image) {
       ; Creates a new, separate stream. Necessary to separate reference counting through a clone.
-      ComCall(Clone := 13, image, "ptr*", &pStream:=0)
+      ComCall(Clone := 13, image, "ptr*", &stream:=0)
       ; Ensures that a duplicated stream does not inherit the original seek position.
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
-      return pStream
+      DllCall("shlwapi\IStream_Reset", "ptr", stream, "hresult")
+      return stream
    }
 
    static RandomAccessStreamToBitmap(image) {
-      pStream := this.RandomAccessStreamToStream(image) ; Below adds +3 to the reference count.
-      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", pStream, "ptr*", &pBitmap:=0)
-      ObjRelease(pStream)
+      stream := this.RandomAccessStreamToStream(image) ; Below adds +3 to the reference count.
+      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", stream, "ptr*", &pBitmap:=0)
+      ObjRelease(stream)
       return pBitmap
    }
 
    static RandomAccessStreamToStream(image) {
       ; Note that the returned stream shares a reference count with the original RandomAccessStream's internal stream.
       DllCall("ole32\CLSIDFromString", "wstr", "{0000000C-0000-0000-C000-000000000046}", "ptr", CLSID := Buffer(16), "hresult")
-      DllCall("shcore\CreateStreamOverRandomAccessStream", "ptr", image, "ptr", CLSID, "ptr*", &pStream:=0, "hresult")
+      DllCall("shcore\CreateStreamOverRandomAccessStream", "ptr", image, "ptr", CLSID, "ptr*", &stream:=0, "hresult")
       ; Cloning the stream ensures that each call to "GetStreamFromRandomAccessStream" returns a new stream.
       ; ^ That's what the function should be named, because that's what it actually does!
-      ComCall(Clone := 13, pStream, "ptr*", &pStreamClone:=0)
-      return pStreamClone
+      ComCall(Clone := 13, stream, "ptr*", &ClonedStream:=0)
+      return ClonedStream
    }
 
    static WicBitmapToBitmap(image) {
@@ -1946,15 +1946,15 @@ class ImagePut {
 
       ; #1 - PNG holds the transparency and is the most widely supported image format.
       ; Thanks Jochen Arndt - https://www.codeproject.com/Answers/1207927/Saving-an-image-to-the-clipboard#answer3
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", False, "ptr*", &pStream:=0, "hresult")
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", False, "ptr*", &stream:=0, "hresult")
       DllCall("ole32\CLSIDFromString", "wstr", "{557CF406-1A04-11D3-9A73-0000F81EF32E}", "ptr", pCodec:=Buffer(16), "hresult")
-      DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", pStream, "ptr", pCodec, "ptr", 0)
+      DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", stream, "ptr", pCodec, "ptr", 0)
       
       ; Set the rescued HGlobal to the clipboard as a shared object.
       png := DllCall("RegisterClipboardFormat", "str", "png", "uint") ; case insensitive
-      DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "uint*", &handle:=0, "hresult")
+      DllCall("ole32\GetHGlobalFromStream", "ptr", stream, "uint*", &handle:=0, "hresult")
       DllCall("SetClipboardData", "uint", png, "ptr", handle)
-      ObjRelease(pStream)
+      ObjRelease(stream)
 
 
       ; #2 - Fallback to the CF_DIB format (bottom-up bitmap) for maximum compatibility.
@@ -1988,17 +1988,17 @@ class ImagePut {
       return ClipboardAll()
    }
 
-   static StreamToClipboard(pStream) { ; Not yet implemented.
-      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "hresult")
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
+   static StreamToClipboard(stream) { ; Not yet implemented.
+      DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", &size:=0, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", stream, "hresult")
 
       ; 2048 characters should be good enough to identify the file correctly.
       size := min(size, 2048)
       bin := Buffer(size)
 
       ; Get the first few bytes of the image.
-      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", bin, "uint", size, "hresult")
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
+      DllCall("shlwapi\IStream_Read", "ptr", stream, "ptr", bin, "uint", size, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", stream, "hresult")
 
       ; Allocate enough space for a hexadecimal string with spaces interleaved and a null terminator.
       length := 2*size + (size-1) + 1
@@ -2047,12 +2047,12 @@ class ImagePut {
       ; Save PNG directly to the clipboard.
       if (extension = "png") {
          ; Clone the stream. Can't use IStream::Clone because the cloned stream must be released.
-         DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "hresult")
+         DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", &size:=0, "hresult")
          handle := DllCall("GlobalAlloc", "uint", 0x2, "uptr", size, "ptr")
-         DllCall("ole32\CreateStreamOnHGlobal", "ptr", handle, "int", False, "ptr*", &pStreamClone:=0, "hresult")
-         DllCall("shlwapi\IStream_Copy", "ptr", pStream, "ptr", pStreamClone, "uint", size, "hresult")
-         DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
-         ObjRelease(pStreamClone)
+         DllCall("ole32\CreateStreamOnHGlobal", "ptr", handle, "int", False, "ptr*", &ClonedStream:=0, "hresult")
+         DllCall("shlwapi\IStream_Copy", "ptr", stream, "ptr", ClonedStream, "uint", size, "hresult")
+         DllCall("shlwapi\IStream_Reset", "ptr", stream, "hresult")
+         ObjRelease(ClonedStream)
 
          png := DllCall("RegisterClipboardFormat", "str", "png", "uint") ; case insensitive
          DllCall("SetClipboardData", "uint", png, "ptr", handle)
@@ -2071,12 +2071,12 @@ class ImagePut {
                   ,   "uint", 0x80            ; FILE_ATTRIBUTE_NORMAL
                   ,    "int", True            ; fCreate is ignored when STGM_CREATE is set.
                   ,    "ptr", 0               ; pstmTemplate (reserved)
-                  ,   "ptr*", &pFileStream:=0
+                  ,   "ptr*", &FileStream:=0
                   ,"hresult")
-         DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "hresult")
-         DllCall("shlwapi\IStream_Copy", "ptr", pStream, "ptr", pFileStream, "uint", size, "hresult")
-         DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
-         ObjRelease(pFileStream)
+         DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", &size:=0, "hresult")
+         DllCall("shlwapi\IStream_Copy", "ptr", stream, "ptr", FileStream, "uint", size, "hresult")
+         DllCall("shlwapi\IStream_Reset", "ptr", stream, "hresult")
+         ObjRelease(FileStream)
 
          ; struct DROPFILES - https://learn.microsoft.com/en-us/windows/win32/api/shlobj_core/ns-shlobj_core-dropfiles
          size := 20 + StrPut(filepath, "UTF-16") + 2 ; triple/quadruple null terminated
@@ -2116,10 +2116,10 @@ class ImagePut {
 
    static BitmapToEncodedBuffer(pBitmap, extension := "", quality := "") {
       ; Defaults to PNG for small sizes!
-      pStream := this.BitmapToStream(pBitmap, (extension) ? extension : "png", quality)
+      stream := this.BitmapToStream(pBitmap, (extension) ? extension : "png", quality)
 
       ; Get a pointer to the encoded image data.
-      DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "ptr*", &handle:=0, "hresult")
+      DllCall("ole32\GetHGlobalFromStream", "ptr", stream, "ptr*", &handle:=0, "hresult")
       ptr := DllCall("GlobalLock", "ptr", handle, "ptr")
       size := DllCall("GlobalSize", "ptr", handle, "uptr")
 
@@ -2129,17 +2129,17 @@ class ImagePut {
 
       ; Release binary data and stream.
       DllCall("GlobalUnlock", "ptr", handle)
-      ObjRelease(pStream)
+      ObjRelease(stream)
 
       return buf
    }
 
-   static StreamToEncodedBuffer(pStream) {
-      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "hresult")
+   static StreamToEncodedBuffer(stream) {
+      DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", &size:=0, "hresult")
       buf := Buffer(size)
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
-      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", buf.ptr, "uint", size, "hresult")
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", stream, "hresult")
+      DllCall("shlwapi\IStream_Read", "ptr", stream, "ptr", buf.ptr, "uint", size, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", stream, "hresult")
       return buf
    }
 
@@ -4064,7 +4064,7 @@ class ImagePut {
       return this.BitmapToFile(pBitmap, directory)
    }
 
-   static StreamToExplorer(pStream, default := "") {
+   static StreamToExplorer(stream, default := "") {
 
       ; Default directory to desktop.
       (default == "") && default := A_Desktop
@@ -4086,7 +4086,7 @@ class ImagePut {
       else
          directory := default
 
-      return this.StreamToFile(pStream, directory)
+      return this.StreamToFile(stream, directory)
    }
 
    static BitmapToFile(pBitmap, filepath := "", quality := "") {
@@ -4107,17 +4107,17 @@ class ImagePut {
       return filepath
    }
 
-   static StreamToFile(pStream, filepath := "") {
-      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "hresult")
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
+   static StreamToFile(stream, filepath := "") {
+      DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", &size:=0, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", stream, "hresult")
 
       ; 2048 characters should be good enough to identify the file correctly.
       size := min(size, 2048)
       bin := Buffer(size)
 
       ; Get the first few bytes of the image.
-      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", bin, "uint", size, "hresult")
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
+      DllCall("shlwapi\IStream_Read", "ptr", stream, "ptr", bin, "uint", size, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", stream, "hresult")
 
       ; Allocate enough space for a hexadecimal string with spaces interleaved and a null terminator.
       length := 2*size + (size-1) + 1
@@ -4153,21 +4153,21 @@ class ImagePut {
                ,   "uint", 0x80            ; FILE_ATTRIBUTE_NORMAL
                ,    "int", True            ; fCreate is ignored when STGM_CREATE is set.
                ,    "ptr", 0               ; pstmTemplate (reserved)
-               ,   "ptr*", &pFileStream:=0
+               ,   "ptr*", &FileStream:=0
                ,"hresult")
-      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "hresult")
-      DllCall("shlwapi\IStream_Copy", "ptr", pStream, "ptr", pFileStream, "uint", size, "hresult")
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
-      ObjRelease(pFileStream)
+      DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", &size:=0, "hresult")
+      DllCall("shlwapi\IStream_Copy", "ptr", stream, "ptr", FileStream, "uint", size, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", stream, "hresult")
+      ObjRelease(FileStream)
 
       return filepath
    }
 
    static BitmapToHex(pBitmap, extension := "", quality := "") {
-      pStream := this.BitmapToStream(pBitmap, extension, quality) ; Defaults to PNG for small sizes!
+      stream := this.BitmapToStream(pBitmap, extension, quality) ; Defaults to PNG for small sizes!
 
       ; Get a pointer to binary data.
-      DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "ptr*", &hbin:=0, "hresult")
+      DllCall("ole32\GetHGlobalFromStream", "ptr", stream, "ptr*", &hbin:=0, "hresult")
       bin := DllCall("GlobalLock", "ptr", hbin, "ptr")
       size := DllCall("GlobalSize", "ptr", hbin, "uptr")
 
@@ -4194,18 +4194,18 @@ class ImagePut {
 
       ; Release binary data and stream.
       DllCall("GlobalUnlock", "ptr", hbin)
-      ObjRelease(pStream)
+      ObjRelease(stream)
 
       ; Return encoded string from ANSI.
       return StrGet(str, length, "CP0")
    }
 
-   static StreamToHex(pStream) {
+   static StreamToHex(stream) {
       ; For compatibility with SHCreateMemStream do not use GetHGlobalFromStream.
-      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "hresult")
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
-      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", bin := Buffer(size), "uint", size, "hresult")
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
+      DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", &size:=0, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", stream, "hresult")
+      DllCall("shlwapi\IStream_Read", "ptr", stream, "ptr", bin := Buffer(size), "uint", size, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", stream, "hresult")
 
       ; Calculate the length of the hexadecimal string.
       length := 2 * size ; No zero terminator needed.
@@ -4234,10 +4234,10 @@ class ImagePut {
 
    static BitmapToBase64(pBitmap, extension := "", quality := "") {
       ; Thanks noname - https://www.autohotkey.com/boards/viewtopic.php?style=7&p=144247#p144247
-      pStream := this.BitmapToStream(pBitmap, extension, quality) ; Defaults to PNG for small sizes!
+      stream := this.BitmapToStream(pBitmap, extension, quality) ; Defaults to PNG for small sizes!
 
       ; Get a pointer to binary data.
-      DllCall("ole32\GetHGlobalFromStream", "ptr", pStream, "ptr*", &handle:=0, "hresult")
+      DllCall("ole32\GetHGlobalFromStream", "ptr", stream, "ptr*", &handle:=0, "hresult")
       bin := DllCall("GlobalLock", "ptr", handle, "ptr")
       size := DllCall("GlobalSize", "ptr", handle, "uptr")
 
@@ -4252,18 +4252,18 @@ class ImagePut {
 
       ; Release binary data and stream.
       DllCall("GlobalUnlock", "ptr", handle)
-      ObjRelease(pStream)
+      ObjRelease(stream)
 
       ; Returns an AutoHotkey native string.
       return str
    }
 
-   static StreamToBase64(pStream) {
+   static StreamToBase64(stream) {
       ; For compatibility with SHCreateMemStream do not use GetHGlobalFromStream.
-      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "hresult")
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
-      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", bin := Buffer(size), "uint", size, "hresult")
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
+      DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", &size:=0, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", stream, "hresult")
+      DllCall("shlwapi\IStream_Read", "ptr", stream, "ptr", bin := Buffer(size), "uint", size, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", stream, "hresult")
 
       ; Calculate the length of the base64 string.
       length := 4 * Ceil(size / 3) + 1                ; A string has a null terminator
@@ -4291,17 +4291,17 @@ class ImagePut {
       return "data:image/" extension ";base64," this.BitmapToBase64(pBitmap, extension, quality)
    }
 
-   static StreamToUri(pStream) {
-      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "hresult")
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
+   static StreamToUri(stream) {
+      DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", &size:=0, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", stream, "hresult")
 
       ; 2048 characters should be good enough to identify the file correctly.
       size := min(size, 2048)
       bin := Buffer(size)
 
       ; Get the first few bytes of the image.
-      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", bin, "uint", size, "hresult")
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
+      DllCall("shlwapi\IStream_Read", "ptr", stream, "ptr", bin, "uint", size, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", stream, "hresult")
 
       ; Allocate enough space for a hexadecimal string with spaces interleaved and a null terminator.
       length := 2*size + (size-1) + 1
@@ -4344,7 +4344,7 @@ class ImagePut {
          DllCall("ole32\CoTaskMemFree", "ptr", MimeOut)
       }
 
-      return "data:" mime ";base64," this.StreamToBase64(pStream)
+      return "data:" mime ";base64," this.StreamToBase64(stream)
    }
 
    static BitmapToDc(pBitmap, alpha := "") {
@@ -4443,24 +4443,24 @@ class ImagePut {
 
    static BitmapToStream(pBitmap, extension := "", quality := "") {
       this.select_codec(pBitmap, extension, quality, &pCodec, &ep) ; Defaults to PNG for small sizes!
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", True, "ptr*", &pStream:=0, "hresult")
-      DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", pStream, "ptr", pCodec, "ptr", ep)
-      return pStream
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", True, "ptr*", &stream:=0, "hresult")
+      DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", stream, "ptr", pCodec, "ptr", ep)
+      return stream
    }
 
    static BitmapToRandomAccessStream(pBitmap, extension := "", quality := "") {
-      pStream := this.BitmapToStream(pBitmap, extension, quality)
-      pRandomAccessStream := this.StreamToRandomAccessStream(pStream)
-      ObjRelease(pStream) ; Decrement the reference count of the IStream interface.
-      return pRandomAccessStream
+      stream := this.BitmapToStream(pBitmap, extension, quality)
+      IRandomAccessStream := this.StreamToRandomAccessStream(stream)
+      ObjRelease(stream) ; Decrement the reference count of the IStream interface.
+      return IRandomAccessStream
    }
 
-   static StreamToRandomAccessStream(pStream) {
+   static StreamToRandomAccessStream(stream) {
       ; Create a RandomAccessStream that loads the memory immediately (BSOS_PREFERDESTINATIONSTREAM = 1)
       IID_IRandomAccessStream := Buffer(16)
       DllCall("ole32\IIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", IID_IRandomAccessStream , "hresult")
-      DllCall("shcore\CreateRandomAccessStreamOverStream", "ptr", pStream, "uint", 1, "ptr", IID_IRandomAccessStream, "ptr*", &pRandomAccessStream:=0, "hresult")
-      return pRandomAccessStream
+      DllCall("shcore\CreateRandomAccessStreamOverStream", "ptr", stream, "uint", 1, "ptr", IID_IRandomAccessStream, "ptr*", &IRandomAccessStream:=0, "hresult")
+      return IRandomAccessStream
    }
 
    static BitmapToWicBitmap(pBitmap) {
@@ -4500,16 +4500,16 @@ class ImagePut {
       return wicbitmap
    }
 
-   static StreamToSafeArray(pStream) {
+   static StreamToSafeArray(stream) {
       ; Allocate a one-dimensional SAFEARRAY based on the size of the stream.
-      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &size:=0, "hresult")
+      DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", &size:=0, "hresult")
       safearray := ComObjArray(0x11, size) ; VT_UI1
       pvData := NumGet(ComObjValue(safearray), 8 + A_PtrSize, "ptr")
 
       ; Copy the stream to the SAFEARRAY.
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
-      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", pvData, "uint", size, "hresult")
-      DllCall("shlwapi\IStream_Reset", "ptr", pStream, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", stream, "hresult")
+      DllCall("shlwapi\IStream_Read", "ptr", stream, "ptr", pvData, "uint", size, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", stream, "hresult")
 
       return safearray
    }
@@ -4519,11 +4519,11 @@ class ImagePut {
 
       ; Create an IStream backed with movable memory.
       handle := DllCall("GlobalAlloc", "uint", 0x2, "uptr", 0, "ptr")
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", handle, "int", True, "ptr*", &pStream:=0, "hresult")
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", handle, "int", True, "ptr*", &stream:=0, "hresult")
 
       ; Save pBitmap to the IStream.
       this.select_codec(pBitmap, extension, quality, &pCodec, &ep) ; Defaults to PNG for small sizes!
-      DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", pStream, "ptr", pCodec, "ptr", ep)
+      DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", stream, "ptr", pCodec, "ptr", ep)
 
       ; Get the pointer and size of the IStream's movable memory.
       ptr := DllCall("GlobalLock", "ptr", handle, "ptr")
@@ -4536,14 +4536,14 @@ class ImagePut {
 
       ; Release the IStream and call GlobalFree.
       DllCall("GlobalUnlock", "ptr", handle)
-      ObjRelease(pStream)
+      ObjRelease(stream)
 
       return safearray
    }
 
-   static ParseWebp(pStream, &pDelays, &pCount) {
+   static ParseWebp(stream, &pDelays, &pCount) {
       ; Gets the size of the stream.
-      DllCall("shlwapi\IStream_Size", "ptr", pStream, "uint64*", &end:=0, "hresult")
+      DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", &end:=0, "hresult")
 
       ; Create FourCC binary buffer and initalize some variables.
       fourcc := Buffer(4)
@@ -4552,22 +4552,22 @@ class ImagePut {
 
       ; Create the VP8X FourCC.
       StrPut("VP8X", VP8X := Buffer(4), "cp1252")
-      ComCall(Seek := 5, pStream, "uint64", 12, "uint", 0, "uint64*", &current)
-      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", fourcc, "uint", 4, "hresult")
-      DllCall("shlwapi\IStream_Read", "ptr", pStream, "uint*", &offset, "uint", 4, "hresult")
+      ComCall(Seek := 5, stream, "uint64", 12, "uint", 0, "uint64*", &current)
+      DllCall("shlwapi\IStream_Read", "ptr", stream, "ptr", fourcc, "uint", 4, "hresult")
+      DllCall("shlwapi\IStream_Read", "ptr", stream, "uint*", &offset, "uint", 4, "hresult")
       if (4 != DllCall("ntdll\RtlCompareMemory", "ptr", fourcc, "ptr", VP8X, "uptr", 4, "uptr"))
          return
 
       ; Check the animation bit.
-      DllCall("shlwapi\IStream_Read", "ptr", pStream, "uchar*", &flags:=0, "uint", 1, "hresult")
+      DllCall("shlwapi\IStream_Read", "ptr", stream, "uchar*", &flags:=0, "uint", 1, "hresult")
       if not flags & 0x2
          return
 
       ; Goto the ANIM FourCC.
       StrPut("ANIM", ANIM := Buffer(4), "cp1252")
-      ComCall(Seek := 5, pStream, "uint64", offset - 1, "uint", 1, "uint64*", &current)
-      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", fourcc, "uint", 4, "hresult")
-      DllCall("shlwapi\IStream_Read", "ptr", pStream, "uint*", &offset, "uint", 4, "hresult")
+      ComCall(Seek := 5, stream, "uint64", offset - 1, "uint", 1, "uint64*", &current)
+      DllCall("shlwapi\IStream_Read", "ptr", stream, "ptr", fourcc, "uint", 4, "hresult")
+      DllCall("shlwapi\IStream_Read", "ptr", stream, "uint*", &offset, "uint", 4, "hresult")
       if (4 != DllCall("ntdll\RtlCompareMemory", "ptr", fourcc, "ptr", ANIM, "uptr", 4, "uptr"))
          return
 
@@ -4579,9 +4579,9 @@ class ImagePut {
       NumPut(    "ptr", pCount + 8 + 2*A_PtrSize, pCount + 8 + A_PtrSize)
 
       ; Save the loop count into the struct.
-      ComCall(Seek := 5, pStream, "uint64", 4, "uint", 1, "uint64*", &current)
-      DllCall("shlwapi\IStream_Read", "ptr", pStream, "ushort*", pCount + 8 + 2*A_PtrSize, "uint", 2, "hresult")
-      ComCall(Seek := 5, pStream, "uint64", offset - 6, "uint", 1, "uint64*", &current)
+      ComCall(Seek := 5, stream, "uint64", 4, "uint", 1, "uint64*", &current)
+      DllCall("shlwapi\IStream_Read", "ptr", stream, "ushort*", pCount + 8 + 2*A_PtrSize, "uint", 2, "hresult")
+      ComCall(Seek := 5, stream, "uint64", offset - 6, "uint", 1, "uint64*", &current)
 
       ; ANMF fourcc.
       StrPut("ANMF", ANMF := Buffer(4), "cp1252")
@@ -4602,8 +4602,8 @@ class ImagePut {
       while current < end {
 
          ; Get fourcc and chunk size.
-         DllCall("shlwapi\IStream_Read", "ptr", pStream, "ptr", fourcc, "uint", 4, "hresult")
-         DllCall("shlwapi\IStream_Read", "ptr", pStream, "uint*", &offset, "uint", 4, "hresult")
+         DllCall("shlwapi\IStream_Read", "ptr", stream, "ptr", fourcc, "uint", 4, "hresult")
+         DllCall("shlwapi\IStream_Read", "ptr", stream, "uint*", &offset, "uint", 4, "hresult")
 
          ; Rounds up to a even number. Odd numbers are +1, and even numbers are +0.
          alignment := offset&1 ; Use this as offset + alignment.
@@ -4611,10 +4611,10 @@ class ImagePut {
          if (4 == DllCall("ntdll\RtlCompareMemory", "ptr", fourcc, "ptr", ANMF, "uptr", 4, "uptr")) {
 
             ; Seek to the Frame Duration.
-            ComCall(Seek := 5, pStream, "uint64", 12, "uint", 1, "uint64*", &current)
+            ComCall(Seek := 5, stream, "uint64", 12, "uint", 1, "uint64*", &current)
 
             ; Write the Frame Delay into the stream and cast from a uint24 to uint32.
-            DllCall("shlwapi\IStream_Copy", "ptr", pStream, "ptr", sDelays, "uint", 3, "hresult")
+            DllCall("shlwapi\IStream_Copy", "ptr", stream, "ptr", sDelays, "uint", 3, "hresult")
             DllCall("shlwapi\IStream_Write", "ptr", sDelays, "uchar*", 0, "uint", 1, "hresult")
 
             ; Subtract the 15 bytes that have already been read.
@@ -4622,7 +4622,7 @@ class ImagePut {
          }
 
          ; Seek to the next fourcc which must be aligned to 2 bytes.
-         ComCall(Seek := 5, pStream, "uint64", offset + alignment, "uint", 1, "uint64*", &current)
+         ComCall(Seek := 5, stream, "uint64", offset + alignment, "uint", 1, "uint64*", &current)
       }
 
       ; Fill in the size of the delays array and pointer position.
@@ -4638,11 +4638,11 @@ class ImagePut {
       (index == "") && index := 1
 
       ; Create a stream from either a url or a file.
-      pStream := image
+      stream := image
 
       ; Create a RandomAccessStream with BSOS_PREFERDESTINATIONSTREAM.
       DllCall("ole32\IIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", IID := Buffer(16), "hresult")
-      DllCall("shcore\CreateRandomAccessStreamOverStream", "ptr", pStream, "uint", 1, "ptr", IID, "ptr*", &pRandomAccessStream:=0, "hresult")
+      DllCall("shcore\CreateRandomAccessStreamOverStream", "ptr", stream, "uint", 1, "ptr", IID, "ptr*", &IRandomAccessStream:=0, "hresult")
 
       ; Create the "Windows.Data.Pdf.PdfDocument" class using IPdfDocumentStatics.
       DllCall("ole32\IIDFromString", "wstr", "{433A0B5F-C007-4788-90F2-08143D922599}", "ptr", IID := Buffer(16), "hresult")
@@ -4651,7 +4651,7 @@ class ImagePut {
       DllCall("combase\WindowsDeleteString", "ptr", hString, "hresult")
 
       ; Create the PDF document.
-      ComCall(LoadFromStreamAsync := 8, PdfDocumentStatics, "ptr", pRandomAccessStream, "ptr*", &PdfDocument:=0)
+      ComCall(LoadFromStreamAsync := 8, PdfDocumentStatics, "ptr", IRandomAccessStream, "ptr*", &PdfDocument:=0)
       this.WaitForAsync(&PdfDocument)
 
       ; Get Page
@@ -4660,31 +4660,31 @@ class ImagePut {
       if (index > count || index < 0) {
          ObjRelease(PdfDocument)
          ObjRelease(PdfDocumentStatics)
-         this.ObjReleaseClose(&pRandomAccessStream)
-         ObjRelease(pStream)
+         this.ObjReleaseClose(&IRandomAccessStream)
+         ObjRelease(stream)
          throw Error("The maximum number of pages in this pdf is " count ".")
       }
       ComCall(GetPage := 6, PdfDocument, "uint", index, "ptr*", &PdfPage:=0)
 
       ; Render the page to an output stream.
       DllCall("ole32\IIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", IID := Buffer(16), "hresult")
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "uint", True, "ptr*", &pStreamOut:=0)
-      DllCall("shcore\CreateRandomAccessStreamOverStream", "ptr", pStreamOut, "uint", BSOS_DEFAULT := 0, "ptr", IID, "ptr*", &pRandomAccessStreamOut:=0)
-      ComCall(RenderToStreamAsync := 6, PdfPage, "ptr", pRandomAccessStreamOut, "ptr*", &AsyncInfo:=0)
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "uint", True, "ptr*", &streamOut:=0)
+      DllCall("shcore\CreateRandomAccessStreamOverStream", "ptr", streamOut, "uint", BSOS_DEFAULT := 0, "ptr", IID, "ptr*", &IRandomAccessStreamOut:=0)
+      ComCall(RenderToStreamAsync := 6, PdfPage, "ptr", IRandomAccessStreamOut, "ptr*", &AsyncInfo:=0)
       this.WaitForAsync(&AsyncInfo)
 
       ; Cleanup
-      this.ObjReleaseClose(&pRandomAccessStreamOut)
+      this.ObjReleaseClose(&IRandomAccessStreamOut)
       this.ObjReleaseClose(&PdfPage)
 
       ObjRelease(PdfDocument)
       ObjRelease(PdfDocumentStatics)
 
-      this.ObjReleaseClose(&pRandomAccessStream)
-      ObjRelease(pStream)
+      this.ObjReleaseClose(&IRandomAccessStream)
+      ObjRelease(stream)
 
-      DllCall("shlwapi\IStream_Reset", "ptr", pStreamOut, "hresult")
-      return image := pStreamOut
+      DllCall("shlwapi\IStream_Reset", "ptr", streamOut, "hresult")
+      return image := streamOut
    }
 
    static WaitForAsync(&Object) {
