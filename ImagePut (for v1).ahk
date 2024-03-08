@@ -3306,9 +3306,9 @@ class ImagePut {
       if (number > 1) {
 
          ; Get the frame delays from PropertyTagFrameDelay.
-         DllCall("gdiplus\GdipGetPropertyItemSize", "ptr", pBitmap, "uint", 0x5100, "uint*", pDelaysSize:=0)
-         pDelays := DllCall("GlobalAlloc", "uint", 0, "uptr", pDelaysSize, "ptr")
-         DllCall("gdiplus\GdipGetPropertyItem", "ptr", pBitmap, "uint", 0x5100, "uint", pDelaysSize, "ptr", pDelays)
+         DllCall("gdiplus\GdipGetPropertyItemSize", "ptr", pBitmap, "uint", 0x5100, "uint*", nDelays:=0)
+         pDelays := DllCall("GlobalAlloc", "uint", 0, "uptr", nDelays, "ptr")
+         DllCall("gdiplus\GdipGetPropertyItem", "ptr", pBitmap, "uint", 0x5100, "uint", nDelays, "ptr", pDelays)
 
          ; Check PropertyTagTypeLong if WEBP or GIF.
          type := NumGet(pDelays + 8, "ushort") == 4 ? "gif" : "webp"
@@ -4537,9 +4537,9 @@ class ImagePut {
 
       ; Fill in the size of the delays array and pointer position.
       ObjRelease(sDelays)
-      DelaySize := DllCall("GlobalSize", "ptr", hDelays, "uptr") - 8 - 2*A_PtrSize
+      nDelays := DllCall("GlobalSize", "ptr", hDelays, "uptr") - 8 - 2*A_PtrSize
       pDelays := DllCall("GlobalLock", "ptr", hDelays, "ptr")
-      NumPut(DelaySize, pDelays + 4,    "uint") ; Size
+      NumPut(nDelays, pDelays + 4,    "uint") ; Size
       NumPut(pDelays + 8 + 2*A_PtrSize, pDelays + 8 + A_PtrSize, "ptr")
    }
 
