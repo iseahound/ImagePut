@@ -417,9 +417,6 @@ class ImagePut {
          throw Error("Clipboard format not supported.")
       }
 
-
-
-
       ; A "screenshot" is an array of 4 numbers with an optional window.
       if image.HasProp("__Item") && image.HasProp("length") && image.length ~= "4|5"
       && image[1] ~= "^-?\d+$" && image[2] ~= "^-?\d+$" && image[3] ~= "^\d+$" && image[4] ~= "^\d+$"
