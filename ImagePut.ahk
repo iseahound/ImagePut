@@ -1948,7 +1948,7 @@ class ImagePut {
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", False, "ptr*", &stream:=0, "hresult")
       DllCall("ole32\CLSIDFromString", "wstr", "{557CF406-1A04-11D3-9A73-0000F81EF32E}", "ptr", pCodec:=Buffer(16), "hresult")
       DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", stream, "ptr", pCodec, "ptr", 0)
-      
+
       ; Set the rescued HGlobal to the clipboard as a shared object.
       png := DllCall("RegisterClipboardFormat", "str", "png", "uint") ; case insensitive
       DllCall("ole32\GetHGlobalFromStream", "ptr", stream, "uint*", &handle:=0, "hresult")
@@ -2095,13 +2095,13 @@ class ImagePut {
          ObjAddRef(ptr)
          DllCall("SetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", -21, "ptr", ptr, "ptr") ; GWLP_USERDATA = -21
       }
-   
+
       ; Close the clipboard.
       DllCall("CloseClipboard")
       return ClipboardAll()
 
       StreamToClipboardProc(hwnd, uMsg, wParam, lParam) {
-         ; WM_DESTROYCLIPBOARD 
+         ; WM_DESTROYCLIPBOARD
          if (uMsg = 0x0307)
             if ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", -21, "ptr") {
                obj := ObjFromPtr(ptr)
@@ -4474,7 +4474,7 @@ class ImagePut {
       DllCall("ole32\CLSIDFromString", "wstr", "{6fddc324-4e03-4bfe-b185-3d77768dc90f}", "ptr", GUID_WICPixelFormat32bppBGRA, "hresult")
       ComCall(CreateBitmap := 17, IWICImagingFactory, "uint", width, "uint", height, "ptr", GUID_WICPixelFormat32bppBGRA, "int", 1, "ptr*", &wicbitmap:=0)
 
-      ; Lock the WIC bitmap with write access only and get a pointer to its pixel buffer. 
+      ; Lock the WIC bitmap with write access only and get a pointer to its pixel buffer.
       Rect := Buffer(16, 0)                  ; sizeof(Rect) = 16
          NumPut(  "uint",   width, Rect,  8) ; Width
          NumPut(  "uint",  height, Rect, 12) ; Height

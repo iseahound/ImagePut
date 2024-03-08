@@ -1269,6 +1269,8 @@ class ImagePut {
 
 
 
+
+
    ScreenshotToBitmap(image) {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
 
@@ -1946,7 +1948,7 @@ class ImagePut {
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", False, "ptr*", stream:=0, "uint")
       DllCall("ole32\CLSIDFromString", "wstr", "{557CF406-1A04-11D3-9A73-0000F81EF32E}", "ptr", &pCodec:=VarSetCapacity(pCodec, 16), "uint")
       DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", stream, "ptr", &pCodec, "ptr", 0)
-      
+
       ; Set the rescued HGlobal to the clipboard as a shared object.
       png := DllCall("RegisterClipboardFormat", "str", "png", "uint") ; case insensitive
       DllCall("ole32\GetHGlobalFromStream", "ptr", stream, "uint*", handle:=0, "uint")
@@ -4381,7 +4383,7 @@ class ImagePut {
       DllCall("ole32\CLSIDFromString", "wstr", "{6fddc324-4e03-4bfe-b185-3d77768dc90f}", "ptr", &GUID_WICPixelFormat32bppBGRA, "uint")
       DllCall(NumGet(NumGet(IWICImagingFactory+0)+A_PtrSize* 17), "ptr", IWICImagingFactory, "uint", width, "uint", height, "ptr", &GUID_WICPixelFormat32bppBGRA, "int", 1, "ptr*", wicbitmap:=0)
 
-      ; Lock the WIC bitmap with write access only and get a pointer to its pixel buffer. 
+      ; Lock the WIC bitmap with write access only and get a pointer to its pixel buffer.
       VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
          NumPut(  width, Rect,  8,   "uint") ; Width
          NumPut( height, Rect, 12,   "uint") ; Height
