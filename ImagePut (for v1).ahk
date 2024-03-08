@@ -1842,11 +1842,11 @@ class ImagePut {
    }
 
    RandomAccessStreamToStream(image) {
-      ; Note that the returned stream shares a reference count with the original RandomAccessStream's internal stream.
-      DllCall("ole32\CLSIDFromString", "wstr", "{0000000C-0000-0000-C000-000000000046}", "ptr", &CLSID := VarSetCapacity(CLSID, 16), "uint")
-      DllCall("shcore\CreateStreamOverRandomAccessStream", "ptr", image, "ptr", &CLSID, "ptr*", stream:=0, "uint")
-      ; Cloning the stream ensures that each call to "GetStreamFromRandomAccessStream" returns a new stream.
-      ; ^ That's what the function should be named, because that's what it actually does!
+      ; Since an IStream returned from CreateStreamOverRandomAccessStream shares a reference count
+      ; with the internal IStream of the RandomAccessStream, clone it so that reference counting begins anew.
+      VarSetCapacity(IID_IStream, 16)
+      DllCall("ole32\IIDFromString", "wstr", "{0000000C-0000-0000-C000-000000000046}", "ptr", &IID_IStream, "uint")
+      DllCall("shcore\CreateStreamOverRandomAccessStream", "ptr", image, "ptr", &IID_IStream, "ptr*", stream:=0, "uint")
       DllCall(NumGet(NumGet(stream+0)+A_PtrSize* 13), "ptr", stream, "ptr*", ClonedStream:=0)
       return ClonedStream
    }
