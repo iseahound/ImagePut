@@ -4697,7 +4697,7 @@ class ImagePut {
       (directory == "") && directory := "."
 
       ; Declare allowed extension outputs.
-      static outputs := "^(?i:avif|avifs|bmp|dib|rle|gif|heic|heif|hif|jpg|jpeg|jpe|jfif|png|tif|tiff)$"
+      outputs := "^(?i:avif|avifs|bmp|dib|rle|gif|heic|heif|hif|jpg|jpeg|jpe|jfif|png|tif|tiff)$"
 
       ; Check if the filename is actually the extension.
       if (extension == "" && filename ~= outputs)
