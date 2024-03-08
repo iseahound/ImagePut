@@ -350,8 +350,8 @@ class ImagePut {
       "ClipboardPng",
       "Clipboard",
       "Screenshot",
-      "Object",
       "Window",
+      "Object",
       "EncodedBuffer",
       "Buffer",
       "Monitor",
@@ -424,14 +424,14 @@ class ImagePut {
       && (image.Has(5) ? WinExist(image[5]) : True)
          return "screenshot"
 
+      ; A "window" is an object with an hwnd property.
+      if image.HasProp("hwnd")
+         return "window"
+
       ; A "object" has a pBitmap property that points to an internal GDI+ bitmap.
       if image.HasProp("pBitmap")
          try if !DllCall("gdiplus\GdipGetImageType", "ptr", image.pBitmap, "ptr*", &type:=0) && (type == 1)
             return "object"
-
-      ; A "window" is an object with an hwnd property.
-      if image.HasProp("hwnd")
-         return "window"
 
       ; An "EncodedBuffer" contains a pointer to the bytes of an encoded image format.
       if image.HasProp("ptr") and image.HasProp("size") and (image.size > 24) {
@@ -570,45 +570,45 @@ class ImagePut {
 
       if (type = "Clipboard")
          return this.ClipboardToBitmap()
-
-      if (type = "Object")
-         return this.BitmapToBitmap(image.pBitmap)
-
-      if (type = "EncodedBuffer")
-         return this.EncodedBufferToBitmap(image)
-
-      if (type = "Buffer")
-         return this.BufferToBitmap(image)
-
+      
       if (type = "Screenshot")
          return this.ScreenshotToBitmap(image)
 
       if (type = "Window")
-         return this.WindowToBitmap(image)
-
-      if (type = "Desktop")
-         return this.DesktopToBitmap()
-
-      if (type = "Wallpaper")
-         return this.WallpaperToBitmap()
-
-      if (type = "Cursor")
-         return this.CursorToBitmap()
-
-      if (type = "Url")
-         return this.UrlToBitmap(image)
-
-      if (type = "File")
-         return this.FileToBitmap(image)
-
-      if (type = "Hex")
-         return this.HexToBitmap(image)
-
-      if (type = "Base64")
-         return this.Base64ToBitmap(image)
-
+         return this.WindowToBitmap(image)   
+      
+      if (type = "Object")
+         return this.BitmapToBitmap(image.pBitmap)
+      
+      if (type = "EncodedBuffer")
+         return this.EncodedBufferToBitmap(image)   
+      
+      if (type = "Buffer")
+         return this.BufferToBitmap(image)   
+      
       if (type = "Monitor")
          return this.MonitorToBitmap(image)
+
+      if (type = "Desktop")
+         return this.DesktopToBitmap()      
+      
+      if (type = "Wallpaper")
+         return this.WallpaperToBitmap()   
+
+      if (type = "Cursor")
+         return this.CursorToBitmap()   
+
+      if (type = "Url")
+         return this.UrlToBitmap(image)   
+
+      if (type = "File")
+         return this.FileToBitmap(image)   
+
+      if (type = "Hex")
+         return this.HexToBitmap(image)   
+
+      if (type = "Base64")
+         return this.Base64ToBitmap(image)   
 
       if (type = "DC")
          return this.DCToBitmap(image)
@@ -631,31 +631,34 @@ class ImagePut {
       if (type = "WicBitmap")
          return this.WicBitmapToBitmap(image)
 
+      if (type = "D2dBitmap")
+         return this.D2dBitmapToBitmap(image)
+
       throw Error("Conversion from " type " to bitmap is not supported.")
    }
 
    static BitmapToCoimage(cotype, pBitmap, p1:="", p2:="", p3:="", p4:="", p5:="", p6:="", p7:="", p*) {
 
-      if (cotype = "Clipboard" || cotype = "ClipboardPng") ; (pBitmap)
+      if (cotype = "Clipboard") ; (pBitmap)
          return this.BitmapToClipboard(pBitmap)
-
-      if (cotype = "EncodedBuffer") ; (pBitmap, extension, quality)
-         return this.BitmapToEncodedBuffer(pBitmap, p1, p2)
-
-      if (cotype = "Buffer") ; (pBitmap)
-         return this.BitmapToBuffer(pBitmap)
-
-      if (cotype = "SharedBuffer") ; (pBitmap, name)
-         return this.BitmapToSharedBuffer(pBitmap, p1)
 
       if (cotype = "Screenshot") ; (pBitmap, pos, alpha)
          return this.BitmapToScreenshot(pBitmap, p1, p2)
 
-      if (cotype = "Show") ; (pBitmap, title, pos, style, styleEx, parent, playback, cache)
-         return this.Show(pBitmap, p1, p2, p3, p4, p5, p6, p7)
-
       if (cotype = "Window") ; (pBitmap, title, pos, style, styleEx, parent, playback, cache)
          return this.BitmapToWindow(pBitmap, p1, p2, p3, p4, p5, p6, p7)
+
+      if (cotype = "Show") ; (pBitmap, title, pos, style, styleEx, parent, playback, cache)
+         return this.Show(pBitmap, p1, p2, p3, p4, p5, p6, p7)   
+
+      if (cotype = "EncodedBuffer") ; (pBitmap, extension, quality)
+         return this.BitmapToEncodedBuffer(pBitmap, p1, p2)         
+
+      if (cotype = "Buffer") ; (pBitmap)
+         return this.BitmapToBuffer(pBitmap)         
+
+      if (cotype = "SharedBuffer") ; (pBitmap, name)
+         return this.BitmapToSharedBuffer(pBitmap, p1)         
 
       if (cotype = "Desktop") ; (pBitmap)
          return this.BitmapToDesktop(pBitmap)
