@@ -1073,9 +1073,11 @@ class ImagePut {
             DllCall("LoadLibrary", "str", "DXGI")
          if !DllCall("GetModuleHandle", "str", "D3D11")
             DllCall("LoadLibrary", "str", "D3D11")
-         DllCall("ole32\CLSIDFromString", "wstr", "{7b7166ec-21c7-44ae-b21a-c9ae321ae369}", "ptr", riid := Buffer(16, 0), "hresult")
-         DllCall("DXGI\CreateDXGIFactory1", "ptr", riid, "ptr*", &ppFactory:=0, "hresult")
-         return ppFactory
+
+         IID_IDXGIFactory1 := Buffer(16)
+         DllCall("ole32\IIDFromString", "wstr", "{770aae78-f26f-4dba-a829-253c83d1b387}", "ptr", IID_IDXGIFactory1, "hresult")
+         DllCall("DXGI\CreateDXGIFactory1", "ptr", IID_IDXGIFactory1, "ptr*", &IDXGIFactory1:=0, "hresult")
+         return IDXGIFactory1
       }
 
       ; Get monitor?
