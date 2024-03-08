@@ -4553,9 +4553,10 @@ class ImagePut {
       DllCall("shcore\CreateRandomAccessStreamOverStream", "ptr", IStreamIn, "uint", 1, "ptr", &IID_IRandomAccessStream, "ptr*", IRandomAccessStreamIn:=0, "uint")
 
       ; Create the "Windows.Data.Pdf.PdfDocument" class using IPdfDocumentStatics.
-      DllCall("ole32\IIDFromString", "wstr", "{433A0B5F-C007-4788-90F2-08143D922599}", "ptr", &IID := VarSetCapacity(IID, 16), "uint")
+      VarSetCapacity(IID_IPdfDocumentStatics, 16)
+      DllCall("ole32\IIDFromString", "wstr", "{433A0B5F-C007-4788-90F2-08143D922599}", "ptr", &IID_IPdfDocumentStatics, "uint")
       DllCall("combase\WindowsCreateString", "wstr", "Windows.Data.Pdf.PdfDocument", "uint", 28, "ptr*", hString:=0, "uint")
-      DllCall("combase\RoGetActivationFactory", "ptr", hString, "ptr", &IID, "ptr*", PdfDocumentStatics:=0, "uint")
+      DllCall("combase\RoGetActivationFactory", "ptr", hString, "ptr", &IID_IPdfDocumentStatics, "ptr*", PdfDocumentStatics:=0, "uint")
       DllCall("combase\WindowsDeleteString", "ptr", hString, "uint")
 
       ; Create the PDF document.
@@ -4575,9 +4576,8 @@ class ImagePut {
       DllCall(NumGet(NumGet(PdfDocument+0)+A_PtrSize* 6), "ptr", PdfDocument, "uint", index, "ptr*", PdfPage:=0)
 
       ; Render the page to an output stream.
-      DllCall("ole32\IIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", &IID := VarSetCapacity(IID, 16), "uint")
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "uint", True, "ptr*", IStreamOut:=0)
-      DllCall("shcore\CreateRandomAccessStreamOverStream", "ptr", IStreamOut, "uint", BSOS_DEFAULT := 0, "ptr", &IID, "ptr*", IRandomAccessStreamOut:=0)
+      DllCall("shcore\CreateRandomAccessStreamOverStream", "ptr", IStreamOut, "uint", BSOS_DEFAULT := 0, "ptr", &IID_IRandomAccessStream, "ptr*", IRandomAccessStreamOut:=0)
       DllCall(NumGet(NumGet(PdfPage+0)+A_PtrSize* 6), "ptr", PdfPage, "ptr", IRandomAccessStreamOut, "ptr*", AsyncInfo:=0)
       this.WaitForAsync(AsyncInfo)
 

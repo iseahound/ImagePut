@@ -4643,9 +4643,10 @@ class ImagePut {
       DllCall("shcore\CreateRandomAccessStreamOverStream", "ptr", IStreamIn, "uint", 1, "ptr", IID_IRandomAccessStream, "ptr*", &IRandomAccessStreamIn:=0, "hresult")
 
       ; Create the "Windows.Data.Pdf.PdfDocument" class using IPdfDocumentStatics.
-      DllCall("ole32\IIDFromString", "wstr", "{433A0B5F-C007-4788-90F2-08143D922599}", "ptr", IID := Buffer(16), "hresult")
+      IID_IPdfDocumentStatics := Buffer(16)
+      DllCall("ole32\IIDFromString", "wstr", "{433A0B5F-C007-4788-90F2-08143D922599}", "ptr", IID_IPdfDocumentStatics, "hresult")
       DllCall("combase\WindowsCreateString", "wstr", "Windows.Data.Pdf.PdfDocument", "uint", 28, "ptr*", &hString:=0, "hresult")
-      DllCall("combase\RoGetActivationFactory", "ptr", hString, "ptr", IID, "ptr*", &PdfDocumentStatics:=0, "hresult")
+      DllCall("combase\RoGetActivationFactory", "ptr", hString, "ptr", IID_IPdfDocumentStatics, "ptr*", &PdfDocumentStatics:=0, "hresult")
       DllCall("combase\WindowsDeleteString", "ptr", hString, "hresult")
 
       ; Create the PDF document.
@@ -4655,7 +4656,7 @@ class ImagePut {
       ; Get Page
       ComCall(get_PageCount := 7, PdfDocument, "uint*", &count:=0)
       index := (index > 0) ? index - 1 : (index < 0) ? count + index : 0 ; Zero indexed.
-      if (index > count || index < 0) {
+      if (index < 0 || index > count) {
          ObjRelease(PdfDocument)
          ObjRelease(PdfDocumentStatics)
          this.ObjReleaseClose(&IRandomAccessStreamIn)
@@ -4665,9 +4666,8 @@ class ImagePut {
       ComCall(GetPage := 6, PdfDocument, "uint", index, "ptr*", &PdfPage:=0)
 
       ; Render the page to an output stream.
-      DllCall("ole32\IIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", IID := Buffer(16), "hresult")
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "uint", True, "ptr*", &IStreamOut:=0)
-      DllCall("shcore\CreateRandomAccessStreamOverStream", "ptr", IStreamOut, "uint", BSOS_DEFAULT := 0, "ptr", IID, "ptr*", &IRandomAccessStreamOut:=0)
+      DllCall("shcore\CreateRandomAccessStreamOverStream", "ptr", IStreamOut, "uint", BSOS_DEFAULT := 0, "ptr", IID_IRandomAccessStream, "ptr*", &IRandomAccessStreamOut:=0)
       ComCall(RenderToStreamAsync := 6, PdfPage, "ptr", IRandomAccessStreamOut, "ptr*", &AsyncInfo:=0)
       this.WaitForAsync(&AsyncInfo)
 
