@@ -1990,7 +1990,7 @@ class ImagePut {
       return ClipboardAll()
    }
 
-   static StreamToClipboard(stream) { ; Not yet implemented.
+   static StreamToClipboard(stream) {
       DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", &size:=0, "hresult")
       DllCall("shlwapi\IStream_Reset", "ptr", stream, "hresult")
 
@@ -2031,7 +2031,7 @@ class ImagePut {
       if !(hwnd := DllCall("FindWindow", "str", "AutoHotkey", "str", "_StreamToClipboard", "ptr")) {
          hwnd := DllCall("CreateWindowEx", "uint", 0, "str", "AutoHotkey", "str", "_StreamToClipboard"
          , "uint", 0, "int", 0, "int", 0, "int", 0, "int", 0, "ptr", 0, "ptr", 0, "ptr", 0, "ptr", 0, "ptr")
-         DllCall("SetWindowLongPtr", "ptr", hwnd, "int", -4, "ptr", CallbackCreate(StreamToClipboardProc)) ; GWLP_WNDPROC = -4
+         DllCall("SetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", -4, "ptr", CallbackCreate(StreamToClipboardProc)) ; GWLP_WNDPROC = -4
       }
 
       ; Open the clipboard with exponential backoff.
@@ -2081,8 +2081,8 @@ class ImagePut {
          ObjRelease(FileStream)
 
          ; struct DROPFILES - https://learn.microsoft.com/en-us/windows/win32/api/shlobj_core/ns-shlobj_core-dropfiles
-         size := 20 + StrPut(filepath, "UTF-16") + 2 ; triple/quadruple null terminated
-         hDropFiles := DllCall("GlobalAlloc", "uint", 0x42, "uptr", size, "ptr")
+         nDropFiles := 20 + StrPut(filepath, "UTF-16") + 2 ; triple/quadruple null terminated
+         hDropFiles := DllCall("GlobalAlloc", "uint", 0x42, "uptr", nDropFiles, "ptr")
          pDropFiles := DllCall("GlobalLock", "ptr", hDropFiles, "ptr")
             NumPut("uint", 20, pDropFiles + 0) ; pFiles
             NumPut("uint", 1, pDropFiles + 16) ; fWide
@@ -2096,7 +2096,7 @@ class ImagePut {
          obj := {filepath: filepath, hDropFiles: hDropFiles}
          ptr := ObjPtr(obj)
          ObjAddRef(ptr)
-         DllCall("SetWindowLongPtr", "ptr", hwnd, "int", -21, "ptr", ptr, "ptr") ; GWLP_USERDATA = -21
+         DllCall("SetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", -21, "ptr", ptr, "ptr") ; GWLP_USERDATA = -21
       }
    
       ; Close the clipboard.
@@ -2106,11 +2106,11 @@ class ImagePut {
       StreamToClipboardProc(hwnd, uMsg, wParam, lParam) {
          ; WM_DESTROYCLIPBOARD 
          if (uMsg = 0x0307)
-            if ptr := DllCall("GetWindowLongPtr", "ptr", hwnd, "int", -21, "ptr") {
+            if ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", -21, "ptr") {
                obj := ObjFromPtr(ptr)
                DllCall("GlobalFree", "ptr", obj.hDropFiles)
                DllCall("DeleteFile", "str", obj.filepath)
-               DllCall("SetWindowLongPtr", "ptr", hwnd, "int", -21, "ptr", 0, "ptr") ; GWLP_USERDATA = -21
+               DllCall("SetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", -21, "ptr", 0, "ptr") ; GWLP_USERDATA = -21
             }
          return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "ptr", wParam, "ptr", lParam, "ptr")
       }
