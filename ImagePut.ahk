@@ -502,8 +502,14 @@ class ImagePut {
       . "(?:[A-Za-z0-9+\/]{4})*+(?:[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{2}==)?\s*$")
          return "base64"
 
-      if not (image ~= "^-?\d+$")
+      ; For more helpful error messages: Catch file names without extensions!
+      if not (image ~= "^-?\d+$") {
+         for extension in ["bmp","dib","rle","jpg","jpeg","jpe","jfif","gif","tif","tiff","png","ico","exe","dll"]
+            if FileExist(image "." extension)
+               throw Error("A ." extension " file extension is required!", -3)
+
          goto end
+      }
 
       handle:
       ; A "dc" is a handle to a GDI device context.
@@ -543,12 +549,6 @@ class ImagePut {
       ; A "d2dBitmap" is a pointer to a ID2D1Bitmap.
       try if ComObjQuery(image, "{A2296057-EA42-4099-983B-539FB6505426}")
          return "d2dBitmap"
-
-
-      ; For more helpful error messages: Catch file names without extensions!
-      for extension in ["bmp","dib","rle","jpg","jpeg","jpe","jfif","gif","tif","tiff","png","ico","exe","dll"]
-         if FileExist(image "." extension)
-            throw Error("A ." extension " file extension is required!", -3)
 
       end:
       throw Error("Image type could not be identified.")
