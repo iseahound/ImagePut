@@ -219,7 +219,7 @@ class ImagePut {
       cleanup := ""
 
       ; #1 - Stream as the intermediate representation.
-      if not type ~= "^(?i:clipboardpng|encodedbuffer|url|file|stream|RandomAccessStream|hex|base64)$"
+      if not type ~= "^(?i:clipboardpng|safearray|encodedbuffer|url|file|stream|RandomAccessStream|hex|base64)$"
          goto make_bitmap
 
       if !(stream := this.ImageToStream(type, image, keywords))
@@ -418,6 +418,10 @@ class ImagePut {
          throw Error("Clipboard format not supported.")
       }
 
+      ; A "safearray" is a pointer to a SafeArray COM Object.
+      if ComObjType(image) and ComObjType(image) & 0x2000
+         return "safearray"
+
       ; A "screenshot" is an array of 4 numbers with an optional window.
       if image.HasProp("__Item") && image.HasProp("length") && image.length ~= "4|5"
       && image[1] ~= "^-?\d+$" && image[2] ~= "^-?\d+$" && image[3] ~= "^\d+$" && image[4] ~= "^\d+$"
@@ -574,7 +578,10 @@ class ImagePut {
 
       if (type = "Clipboard")
          return this.ClipboardToBitmap()
-      
+
+      if (type = "SafeArray")
+         return this.SafeArrayToBitmap(image)
+
       if (type = "Screenshot")
          return this.ScreenshotToBitmap(image)
 
@@ -730,6 +737,9 @@ class ImagePut {
 
       if (type = "ClipboardPng")
          return this.ClipboardPngToStream()
+
+      if (type = "SafeArray")
+         return this.SafeArrayToStream(image)
 
       if (type = "EncodedBuffer")
          return this.EncodedBufferToStream(image)
@@ -1039,6 +1049,27 @@ class ImagePut {
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", handle, "int", False, "ptr*", &PngStream:=0, "hresult")
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", True, "ptr*", &stream:=0, "hresult")
       DllCall("shlwapi\IStream_Copy", "ptr", PngStream, "ptr", stream, "uint", size, "hresult")
+      return stream
+   }
+
+   static SafeArrayToBitmap(image) {
+      stream := this.SafeArrayToStream(image)
+      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", stream, "ptr*", &pBitmap:=0)
+      ObjRelease(stream)
+      return pBitmap
+   }
+
+   static SafeArrayToStream(image) {
+      ; Expects a 1-D safe array of bytes. (VT_UI1)
+      size := image.MaxIndex()
+      pvData := NumGet(ComObjValue(image), 8 + A_PtrSize, "ptr")
+
+      ; Copy data to a new stream.
+      handle := DllCall("GlobalAlloc", "uint", 0x2, "uptr", size, "ptr")
+      ptr := DllCall("GlobalLock", "ptr", handle, "ptr")
+      DllCall("RtlMoveMemory", "ptr", ptr, "ptr", pvData, "uptr", size)
+      DllCall("GlobalUnlock", "ptr", handle)
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", handle, "int", True, "ptr*", &stream:=0, "hresult")
       return stream
    }
 
