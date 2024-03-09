@@ -420,6 +420,7 @@ class ImagePut {
          throw Error("Clipboard format not supported.")
       }
 
+      array:
       ; A "safearray" is a pointer to a SafeArray COM Object.
       if ComObjType(image) and ComObjType(image) & 0x2000
          return "SafeArray"
@@ -430,6 +431,7 @@ class ImagePut {
       && (image.Has(5) ? WinExist(image[5]) : True)
          return "Screenshot"
 
+      object:
       ; A "window" is an object with an hwnd property.
       if image.HasProp("hwnd")
          return "Window"

@@ -420,6 +420,7 @@ class ImagePut {
       if not IsObject(image)
          goto string
 
+      array:
       ; A "safearray" is a pointer to a SafeArray COM Object.
       if ComObjType(image) and ComObjType(image) & 0x2000
          return "SafeArray"
@@ -430,6 +431,7 @@ class ImagePut {
       && (image.HasKey(5) ? WinExist(image[5]) : True)
          return "Screenshot"
 
+      object:
       ; A "window" is an object with an hwnd property.
       if image.HasKey("hwnd")
          return "Window"
