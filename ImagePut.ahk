@@ -285,12 +285,15 @@ class ImagePut {
          || cotype = "file"
             && (!p.Has(1) || p[1] == "" || p[1] ~= "(^|:|\\|\.)" extension "$"
                || !(RegExReplace(p[1], "^.*(?:^|:|\\|\.)(.*)$", "$1")
-               ~= "^(?i:avif|avifs|bmp|dib|rle|gif|heic|heif|hif|jpg|jpeg|jpe|jfif|png|tif|tiff)$")))
+               ~= "^(?i:avif|avifs|bmp|dib|rle|gif|heic|heif|hif|jpg|jpeg|jpe|jfif|png|tif|tiff)$"))
+               
+         ; Pass through all other cotypes.
+         || cotype)
 
          ; MsgBox weight ? "convert to pixels" : "stay as stream"
 
       ; Attempt conversion using StreamToCoimage.
-      if not weight && cotype ~= "^(?i:encodedbuffer|file|stream|RandomAccessStream|hex|base64|uri|explorer|safeArray|formData)$" {
+      if not weight && cotype ~= "^(?i:clipboard|encodedbuffer|file|stream|RandomAccessStream|hex|base64|uri|explorer|safeArray|formData)$" {
 
          coimage := this.StreamToCoimage(cotype, stream, p*)
 
@@ -573,16 +576,16 @@ class ImagePut {
          return this.ScreenshotToBitmap(image)
 
       if (type = "Window")
-         return this.WindowToBitmap(image)   
-      
+         return this.WindowToBitmap(image)
+
       if (type = "Object")
          return this.BitmapToBitmap(image.pBitmap)
-      
+
       if (type = "EncodedBuffer")
-         return this.EncodedBufferToBitmap(image)   
-      
+         return this.EncodedBufferToBitmap(image)
+
       if (type = "Buffer")
-         return this.BufferToBitmap(image)   
+         return this.BufferToBitmap(image)
 
       if (type = "SharedBuffer")
          return this.SharedBufferToBitmap(image)
@@ -591,25 +594,25 @@ class ImagePut {
          return this.MonitorToBitmap(image)
 
       if (type = "Desktop")
-         return this.DesktopToBitmap()      
-      
+         return this.DesktopToBitmap()
+
       if (type = "Wallpaper")
-         return this.WallpaperToBitmap()   
+         return this.WallpaperToBitmap()
 
       if (type = "Cursor")
-         return this.CursorToBitmap()   
+         return this.CursorToBitmap()
 
       if (type = "Url")
-         return this.UrlToBitmap(image)   
+         return this.UrlToBitmap(image)
 
       if (type = "File")
-         return this.FileToBitmap(image)   
+         return this.FileToBitmap(image)
 
       if (type = "Hex")
-         return this.HexToBitmap(image)   
+         return this.HexToBitmap(image)
 
       if (type = "Base64")
-         return this.Base64ToBitmap(image)   
+         return this.Base64ToBitmap(image)
 
       if (type = "DC")
          return this.DCToBitmap(image)
@@ -650,16 +653,16 @@ class ImagePut {
          return this.BitmapToWindow(pBitmap, p1, p2, p3, p4, p5, p6, p7)
 
       if (cotype = "Show") ; (pBitmap, title, pos, style, styleEx, parent, playback, cache)
-         return this.Show(pBitmap, p1, p2, p3, p4, p5, p6, p7)   
+         return this.Show(pBitmap, p1, p2, p3, p4, p5, p6, p7)
 
       if (cotype = "EncodedBuffer") ; (pBitmap, extension, quality)
-         return this.BitmapToEncodedBuffer(pBitmap, p1, p2)         
+         return this.BitmapToEncodedBuffer(pBitmap, p1, p2)
 
       if (cotype = "Buffer") ; (pBitmap)
-         return this.BitmapToBuffer(pBitmap)         
+         return this.BitmapToBuffer(pBitmap)
 
       if (cotype = "SharedBuffer") ; (pBitmap, name)
-         return this.BitmapToSharedBuffer(pBitmap, p1)         
+         return this.BitmapToSharedBuffer(pBitmap, p1)
 
       if (cotype = "Desktop") ; (pBitmap)
          return this.BitmapToDesktop(pBitmap)
@@ -753,6 +756,9 @@ class ImagePut {
    }
 
    static StreamToCoimage(cotype, stream, p1 := "", p2 := "", p*) {
+
+      if (cotype = "Clipboard") ; (stream)
+         return this.StreamToClipboard(stream)
 
       if (cotype = "EncodedBuffer") ; (stream)
          return this.StreamToEncodedBuffer(stream)
