@@ -5175,7 +5175,7 @@ class ImageEqual extends ImagePut {
       VarSetCapacity(BitmapData1, 16+2*A_PtrSize) ; sizeof(BitmapData) = 24, 32
       VarSetCapacity(BitmapData2, 16+2*A_PtrSize) ; sizeof(BitmapData) = 24, 32
 
-      ; Transfer the pixels to a read-only buffer. The user can declare a PixelFormat.
+      ; Force conversion into a pixel buffer. The user can declare a PixelFormat.
       loop 2
          DllCall("gdiplus\GdipBitmapLockBits"
                   ,    "ptr", pBitmap%A_Index%

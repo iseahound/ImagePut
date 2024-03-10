@@ -3421,7 +3421,6 @@ class ImagePut {
 
       ; Case 1: Image is not scaled.
       if (w == width && h == height) {
-         DllCall('gdiplus\GdipCloneImage', 'ptr', pBitmap, 'ptr*', &pBitmapClone:=0)
          ; Transfer data from source pBitmap to an hBitmap manually.
          Rect := Buffer(16, 0)                  ; sizeof(Rect) = 16
             NumPut(  "uint",   width, Rect,  8) ; Width
@@ -3430,7 +3429,7 @@ class ImagePut {
             NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
             NumPut(   "ptr",      pBits, BitmapData, 16) ; Scan0
          DllCall("gdiplus\GdipBitmapLockBits"
-                  ,    "ptr", pBitmapClone
+                  ,    "ptr", pBitmap
                   ,    "ptr", Rect
                   ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
                   ,    "int", 0xE200B      ; Format32bppPArgb
@@ -5237,6 +5236,7 @@ class ImageEqual extends ImagePut {
       ; I assume that instead of locking the stream, the clones lock the originals.
 
       pBitmap1 := pBitmap2 := 0
+      /*
       loop 2
          if DllCall("gdiplus\GdipCloneBitmapAreaI"
                      ,    "int", 0
@@ -5247,7 +5247,7 @@ class ImageEqual extends ImagePut {
                      ,    "ptr", SourceBitmap%A_Index%
                      ,   "ptr*", &pBitmap%A_Index%)
             throw Error("Cloning Bitmap" A_Index " failed.")
-
+      */
       ; struct RECT - https://referencesource.microsoft.com/#System.Drawing/commonui/System/Drawing/Rectangle.cs,32
       Rect := Buffer(16, 0)                       ; sizeof(Rect) = 16
          NumPut(  "uint",   width1, Rect,  8)     ; Width
@@ -5257,7 +5257,7 @@ class ImageEqual extends ImagePut {
       BitmapData1 := Buffer(16+2*A_PtrSize)       ; sizeof(BitmapData) = 24, 32
       BitmapData2 := Buffer(16+2*A_PtrSize)       ; sizeof(BitmapData) = 24, 32
 
-      ; Transfer the pixels to a read-only buffer. The user can declare a PixelFormat.
+      ; Force conversion of pixels into a read-only buffer. The user can declare a PixelFormat.
       loop 2
          DllCall("gdiplus\GdipBitmapLockBits"
                   ,    "ptr", pBitmap%A_Index%
