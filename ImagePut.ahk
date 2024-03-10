@@ -203,7 +203,11 @@ class ImagePut {
       catch
          type := this.ImageType(image)
 
-      ; Extract parameters for intermediate processing.
+      ; Determine if the intermediate type is supported.
+      isStreamIn := type ~= "^(?i:clipboardpng|safearray|encodedbuffer|url|file|stream|RandomAccessStream|hex|base64)$"
+      isStreamOut := cotype ~= "^(?i:clipboard|encodedbuffer|file|stream|RandomAccessStream|hex|base64|uri|explorer|safeArray|formData)$"
+
+      ; Extract options to be directly applied the intermediate representation here.
       crop      := keywords.HasProp("crop")      ? keywords.crop      : ""
       scale     := keywords.HasProp("scale")     ? keywords.scale     : ""
       upscale   := keywords.HasProp("upscale")   ? keywords.upscale   : ""
@@ -213,13 +217,13 @@ class ImagePut {
       render    := keywords.HasProp("render")    ? keywords.render    : this.render
       validate  := keywords.HasProp("validate")  ? keywords.validate  : this.validate
 
-      ; Keywords are for ImageToBitmap or ImageToStream.
+      ; Keywords are for (image -> intermediate).
       try index := keywords.index
 
       cleanup := ""
 
       ; #1 - Stream as the intermediate representation.
-      if not type ~= "^(?i:clipboardpng|safearray|encodedbuffer|url|file|stream|RandomAccessStream|hex|base64)$"
+      if not isStreamIn
          goto make_bitmap
 
       if !(stream := this.ImageToStream(type, image, keywords))
@@ -293,7 +297,7 @@ class ImagePut {
          ; MsgBox weight ? "convert to pixels" : "stay as stream"
 
       ; Attempt conversion using StreamToCoimage.
-      if not weight && cotype ~= "^(?i:clipboard|encodedbuffer|file|stream|RandomAccessStream|hex|base64|uri|explorer|safeArray|formData)$" {
+      if not weight && isStreamOut {
 
          coimage := this.StreamToCoimage(cotype, stream, p*)
 
@@ -1032,7 +1036,7 @@ class ImagePut {
          throw Error("Shared clipboard data has been deleted.")
 
       DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", hbm, "ptr", 0, "ptr*", &pBitmap:=0)
-      DllCall("DeleteObject", "ptr", hbm)
+      MsgBox DllCall("DeleteObject", "ptr", hbm)
       DllCall("CloseClipboard")
       return pBitmap
    }

@@ -203,7 +203,11 @@ class ImagePut {
       catch
          type := this.ImageType(image)
 
-      ; Extract parameters for intermediate processing.
+      ; Determine if the intermediate type is supported.
+      isStreamIn := type ~= "^(?i:clipboardpng|safearray|encodedbuffer|url|file|stream|RandomAccessStream|hex|base64)$"
+      isStreamOut := cotype ~= "^(?i:clipboard|encodedbuffer|file|stream|RandomAccessStream|hex|base64|uri|explorer|safeArray|formData)$"
+
+      ; Extract options to be directly applied the intermediate here.
       crop      := keywords.HasKey("crop")       ? keywords.crop      : ""
       scale     := keywords.HasKey("scale")      ? keywords.scale     : ""
       upscale   := keywords.HasKey("upscale")    ? keywords.upscale   : ""
@@ -213,13 +217,13 @@ class ImagePut {
       render    := keywords.HasKey("render")     ? keywords.render    : this.render
       validate  := keywords.HasKey("validate")   ? keywords.validate  : this.validate
 
-      ; Keywords are for ImageToBitmap or ImageToStream.
+      ; Keywords are for (input -> intermediate).
       try index := keywords.index
 
       cleanup := ""
 
       ; #1 - Stream as the intermediate representation.
-      if not type ~= "^(?i:clipboardpng|safearray|encodedbuffer|url|file|stream|RandomAccessStream|hex|base64)$"
+      if not isStreamIn
          goto make_bitmap
 
       if !(stream := this.ImageToStream(type, image, keywords))
@@ -293,7 +297,7 @@ class ImagePut {
          ; MsgBox % weight ? "convert to pixels" : "stay as stream"
 
       ; Attempt conversion using StreamToCoimage.
-      if not weight && cotype ~= "^(?i:clipboard|encodedbuffer|file|stream|RandomAccessStream|hex|base64|uri|explorer|safeArray|formData)$" {
+      if not weight && isStreamOut {
 
          coimage := this.StreamToCoimage(cotype, stream, p*)
 
