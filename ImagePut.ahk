@@ -448,6 +448,9 @@ class ImagePut {
          try if !DllCall("gdiplus\GdipGetImageType", "ptr", image.pBitmap, "ptr*", &type:=0) && (type == 1)
             return "Object"
 
+      ; Check if image is a pointer. If not, crash and do not recover.
+      ("POINTER IS BAD AND PROGRAM IS CRASH") && NumGet(image.ptr, "char")
+
       ; An "encodedbuffer" contains a pointer to the bytes of an encoded image format.
       if image.HasProp("ptr") && image.HasProp("size") && this.IsImage(image.ptr, image.size)
          return "EncodedBuffer"
@@ -536,6 +539,9 @@ class ImagePut {
       ; A "bitmap" is a pointer to a GDI+ Bitmap.
       try if !DllCall("gdiplus\GdipGetImageType", "ptr", image, "ptr*", &type:=0) && (type == 1)
          return "Bitmap"
+
+      ; Check if image is a pointer. If not, crash and do not recover.
+      ("POINTER IS BAD AND PROGRAM IS CRASH") && NumGet(image, "char")
 
       ; Note 1: All GDI+ functions add 1 to the reference count of COM objects on 64-bit systems.
       ; Note 2: GDI+ pBitmaps that are queried cease to stay pBitmaps.
@@ -965,7 +971,6 @@ class ImagePut {
 
       size := min(size, 2048)
       length := VarSetStrCapacity(&str, 2*size + (size-1) + 1)
-      MsgBox ptr
       DllCall("crypt32\CryptBinaryToString", "ptr", ptr, "uint", size, "uint", 0x40000004, "str", str, "uint*", &length)
       if str ~= "(?i)66 74 79 70 61 76 69 66"                                      ; "avif"
       || str ~= "(?i)^42 4d (.. ){36}00 00 .. 00 00 00"                            ; "bmp"
@@ -5012,8 +5017,8 @@ class ImagePut {
 
          DllCall("LoadLibrary", "str", "gdiplus")
          si := Buffer(A_PtrSize = 4 ? 20:32, 0) ; sizeof(GdiplusStartupInputEx) = 20, 32
-            NumPut("uint", 0x1, si)
-            ;NumPut("uint", 0x4, si, A_PtrSize = 4 ? 16:24)
+            NumPut("uint", 0x2, si)
+            NumPut("uint", 0x4, si, A_PtrSize = 4 ? 16:24)
          DllCall("gdiplus\GdiplusStartup", "ptr*", &pToken:=0, "ptr", si, "ptr", 0)
 
       }

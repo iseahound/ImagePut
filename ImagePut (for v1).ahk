@@ -448,6 +448,9 @@ class ImagePut {
          try if !DllCall("gdiplus\GdipGetImageType", "ptr", image.pBitmap, "ptr*", type:=0) && (type == 1)
             return "Object"
 
+      ; Check if image is a pointer. If not, crash and do not recover.
+      ("POINTER IS BAD AND PROGRAM IS CRASH") && NumGet(image.ptr, "char")
+
       ; An "encodedbuffer" contains a pointer to the bytes of an encoded image format.
       if image.HasKey("ptr") and image.HasKey("size") and this.IsImage(image.ptr, image.size)
          return "EncodedBuffer"
@@ -532,6 +535,9 @@ class ImagePut {
       ; An "hIcon" is a handle to a GDI icon.
       if DllCall("DestroyIcon", "ptr", DllCall("CopyIcon", "ptr", image, "ptr"))
          return "HIcon"
+
+      ; Check if image is a pointer. If not, crash and do not recover.
+      ("POINTER IS BAD AND PROGRAM IS CRASH") && NumGet(image+0, "char")
 
       ; A "bitmap" is a pointer to a GDI+ Bitmap.
       try if !DllCall("gdiplus\GdipGetImageType", "ptr", image, "ptr*", type:=0) && (type == 1)
