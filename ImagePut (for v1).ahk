@@ -1036,7 +1036,6 @@ class ImagePut {
          throw Exception("Shared clipboard data has been deleted.")
 
       DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", hbm, "ptr", 0, "ptr*", pBitmap:=0)
-      DllCall("DeleteObject", "ptr", hbm)
       DllCall("CloseClipboard")
       return pBitmap
    }
@@ -1123,7 +1122,7 @@ class ImagePut {
          stride := image.width * 4
       else if image.HasKey("height") && image.HasKey("size")
          stride := image.size // image.height
-      else throw Exception("Buffer must have a stride or pitch property.")
+      else throw Exception("Image buffer is missing a stride or pitch property.")
 
       if image.HasKey("height")
          height := image.height
@@ -1131,7 +1130,7 @@ class ImagePut {
          height := image.size // stride
       else if image.HasKey("width") && image.HasKey("size")
          height := image.size // (4 * image.width)
-      else throw Exception("Buffer must have a height property.")
+      else throw Exception("Image buffer is missing a height property.")
 
       if image.HasKey("width")
          width := image.width
@@ -1139,7 +1138,7 @@ class ImagePut {
          width := stride // 4
       else if height && image.HasKey("size")
          width := image.size // (4 * height)
-      else throw Exception("Buffer must have a width property.")
+      else throw Exception("Image buffer is missing a width property.")
 
       ; Could assert a few assumptions, such as stride * height = size.
       ; However, I'd like for the pointer and its size to be as flexable as possible.
@@ -1150,8 +1149,12 @@ class ImagePut {
          throw Exception("Image dimensions exceed the size of the buffer.")
 
       ; User is responsible for ensuring that the pointer remains valid.
-      DllCall("gdiplus\GdipCreateBitmapFromScan0"
-               , "int", width, "int", height, "int", stride, "int", 0x26200A, "ptr", image.ptr, "ptr*", pBitmap:=0)
+      if (height > 0) ; top-down bitmap
+         DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height
+         , "int", stride, "int", 0x26200A, "ptr", image.ptr, "ptr*", pBitmap:=0)
+      else            ; bottom-up bitmap
+         DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height
+         , "int", -stride, "int", 0x26200A, "ptr", image.ptr + (height-1)*stride, "ptr*", pBitmap:=0)
 
       return pBitmap
    }

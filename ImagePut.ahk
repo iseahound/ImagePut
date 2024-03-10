@@ -965,6 +965,7 @@ class ImagePut {
 
       size := min(size, 2048)
       length := VarSetStrCapacity(&str, 2*size + (size-1) + 1)
+      MsgBox ptr
       DllCall("crypt32\CryptBinaryToString", "ptr", ptr, "uint", size, "uint", 0x40000004, "str", str, "uint*", &length)
       if str ~= "(?i)66 74 79 70 61 76 69 66"                                      ; "avif"
       || str ~= "(?i)^42 4d (.. ){36}00 00 .. 00 00 00"                            ; "bmp"
@@ -1027,6 +1028,23 @@ class ImagePut {
             if A_Index < 6
                Sleep (2**(A_Index-1) * 30)
             else throw Error("Clipboard could not be opened.")
+               
+      if DllCall("IsClipboardFormatAvailable", "uint", 8) {
+         if !(hBitmap := DllCall("GetClipboardData", "uint", 8, "ptr"))
+            throw Error("Shared clipboard data has been deleted.")
+         hBitmap := DllCall("GlobalLock", "ptr", hBitmap, "ptr")
+         ;ImagePutWIndow(hBitmap, "hBitmap")
+         DllCall("CloseClipboard")
+         width := NumGet(hBitmap, 4, "int")
+         height := NumGet(hBitmap, 8, "int")
+         size := NumGet(hBitmap, 20, "uint")
+         pBits := hBitmap + 40
+         MsgBox "size: " size " width: " width " height: " height
+         msgbox pbits
+         MsgBox this.ImageType({ptr: pBits, size: size, width: width, height: height})
+         ImagePutWIndow({ptr: pBits, size: size, width: width, height: height}, "hBitmap")
+         return pBitmap
+      }
 
       ; Fallback to CF_BITMAP. This format does not support transparency even with BitmapToHBitmap().
       if !DllCall("IsClipboardFormatAvailable", "uint", 2)
@@ -1036,7 +1054,6 @@ class ImagePut {
          throw Error("Shared clipboard data has been deleted.")
 
       DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", hbm, "ptr", 0, "ptr*", &pBitmap:=0)
-      MsgBox DllCall("DeleteObject", "ptr", hbm)
       DllCall("CloseClipboard")
       return pBitmap
    }
@@ -1123,7 +1140,7 @@ class ImagePut {
          stride := image.width * 4
       else if image.HasProp("height") && image.HasProp("size")
          stride := image.size // image.height
-      else throw Error("Buffer must have a stride or pitch property.")
+      else throw Error("Image buffer is missing a stride or pitch property.")
 
       if image.HasProp("height")
          height := image.height
@@ -1131,7 +1148,7 @@ class ImagePut {
          height := image.size // stride
       else if image.HasProp("width") && image.HasProp("size")
          height := image.size // (4 * image.width)
-      else throw Error("Buffer must have a height property.")
+      else throw Error("Image buffer is missing a height property.")
 
       if image.HasProp("width")
          width := image.width
@@ -1139,7 +1156,7 @@ class ImagePut {
          width := stride // 4
       else if height && image.HasProp("size")
          width := image.size // (4 * height)
-      else throw Error("Buffer must have a width property.")
+      else throw Error("Image buffer is missing a width property.")
 
       ; Could assert a few assumptions, such as stride * height = size.
       ; However, I'd like for the pointer and its size to be as flexable as possible.
@@ -1150,8 +1167,12 @@ class ImagePut {
          throw Error("Image dimensions exceed the size of the buffer.")
 
       ; User is responsible for ensuring that the pointer remains valid.
-      DllCall("gdiplus\GdipCreateBitmapFromScan0"
-               , "int", width, "int", height, "int", stride, "int", 0x26200A, "ptr", image.ptr, "ptr*", &pBitmap:=0)
+      if (height > 0) ; top-down bitmap
+         DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height
+         , "int", stride, "int", 0x26200A, "ptr", image.ptr, "ptr*", &pBitmap:=0)
+      else            ; bottom-up bitmap
+         DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height
+         , "int", -stride, "int", 0x26200A, "ptr", image.ptr + (height-1)*stride, "ptr*", &pBitmap:=0)
 
       return pBitmap
    }
@@ -3400,6 +3421,7 @@ class ImagePut {
 
       ; Case 1: Image is not scaled.
       if (w == width && h == height) {
+         DllCall('gdiplus\GdipCloneImage', 'ptr', pBitmap, 'ptr*', &pBitmapClone:=0)
          ; Transfer data from source pBitmap to an hBitmap manually.
          Rect := Buffer(16, 0)                  ; sizeof(Rect) = 16
             NumPut(  "uint",   width, Rect,  8) ; Width
@@ -3408,7 +3430,7 @@ class ImagePut {
             NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
             NumPut(   "ptr",      pBits, BitmapData, 16) ; Scan0
          DllCall("gdiplus\GdipBitmapLockBits"
-                  ,    "ptr", pBitmap
+                  ,    "ptr", pBitmapClone
                   ,    "ptr", Rect
                   ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
                   ,    "int", 0xE200B      ; Format32bppPArgb
