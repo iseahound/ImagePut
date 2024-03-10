@@ -844,7 +844,7 @@ class ImagePut {
       if (safe_x || safe_y || safe_w || safe_h)
          return pBitmap
 
-      ; Clone
+      ; Clone and retain a reference to the backing stream.
       DllCall("gdiplus\GdipCloneBitmapAreaI"
                ,    "int", crop[1]
                ,    "int", crop[2]
@@ -1028,7 +1028,8 @@ class ImagePut {
             if A_Index < 6
                Sleep (2**(A_Index-1) * 30)
             else throw Error("Clipboard could not be opened.")
-               
+/*
+
       if DllCall("IsClipboardFormatAvailable", "uint", 8) {
          if !(hBitmap := DllCall("GetClipboardData", "uint", 8, "ptr"))
             throw Error("Shared clipboard data has been deleted.")
@@ -1043,8 +1044,10 @@ class ImagePut {
          msgbox pbits
          MsgBox this.ImageType({ptr: pBits, size: size, width: width, height: height})
          ImagePutWIndow({ptr: pBits, size: size, width: width, height: height}, "hBitmap")
-         return pBitmap
+         return ImagePutBitmap({ptr: pBits, size: size, width: width, height: height})
       }
+
+*/
 
       ; Fallback to CF_BITMAP. This format does not support transparency even with BitmapToHBitmap().
       if !DllCall("IsClipboardFormatAvailable", "uint", 2)
@@ -1054,6 +1057,7 @@ class ImagePut {
          throw Error("Shared clipboard data has been deleted.")
 
       DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", hbm, "ptr", 0, "ptr*", &pBitmap:=0)
+      msgbox hbm
       DllCall("CloseClipboard")
       return pBitmap
    }
@@ -1924,18 +1928,8 @@ class ImagePut {
    }
 
    static BitmapToBitmap(image) {
-      ; Retain the current PixelFormat, unlike GdipCloneImage.
-      DllCall("gdiplus\GdipGetImageWidth", "ptr", image, "uint*", &width:=0)
-      DllCall("gdiplus\GdipGetImageHeight", "ptr", image, "uint*", &height:=0)
-      DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", image, "int*", &format:=0)
-      DllCall("gdiplus\GdipCloneBitmapAreaI"
-               ,    "int", 0
-               ,    "int", 0
-               ,    "int", width
-               ,    "int", height
-               ,    "int", format
-               ,    "ptr", image
-               ,   "ptr*", &pBitmap:=0)
+      ; Clone and retain a reference to the backing stream.
+      DllCall("gdiplus\GdipCloneImage", "ptr", image, "ptr*", &pBitmap:=0)
       return pBitmap
    }
 
@@ -5018,8 +5012,8 @@ class ImagePut {
 
          DllCall("LoadLibrary", "str", "gdiplus")
          si := Buffer(A_PtrSize = 4 ? 20:32, 0) ; sizeof(GdiplusStartupInputEx) = 20, 32
-            NumPut("uint", 0x2, si)
-            NumPut("uint", 0x4, si, A_PtrSize = 4 ? 16:24)
+            NumPut("uint", 0x1, si)
+            ;NumPut("uint", 0x4, si, A_PtrSize = 4 ? 16:24)
          DllCall("gdiplus\GdiplusStartup", "ptr*", &pToken:=0, "ptr", si, "ptr", 0)
 
       }
@@ -5213,7 +5207,7 @@ class ImageEqual extends ImagePut {
       if (SourceBitmap1 == SourceBitmap2)
          return True
 
-      ; The two bitmaps must be the same size.
+      ; The two bitmaps must be the same size but can have different pixel formats.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", SourceBitmap1, "uint*", &width1:=0)
       DllCall("gdiplus\GdipGetImageWidth", "ptr", SourceBitmap2, "uint*", &width2:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", SourceBitmap1, "uint*", &height1:=0)
@@ -5221,7 +5215,7 @@ class ImageEqual extends ImagePut {
       DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", SourceBitmap1, "int*", &format1:=0)
       DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", SourceBitmap2, "int*", &format2:=0)
 
-      ; Determine if get width and height failed (as dimensions can never be zero).
+      ; If the dimensions are zero, then get width and height failed.
       if !(width1 && width2 && height1 && height2)
          throw Error("Get bitmap width and height failed.")
 
@@ -5230,24 +5224,19 @@ class ImageEqual extends ImagePut {
          return False
 
       ; Create clones of the supplied source bitmaps in their original PixelFormat.
-      ; This has the side effect of (1) removing negative stride and solves
-      ; the problem when (2) both bitmaps reference the same stream and only
-      ; one of them is able to retrieve the pixel data through LockBits.
-      ; I assume that instead of locking the stream, the clones lock the originals.
+      ; This has the side effect of solving the problem when both bitmaps reference 
+      ; the same stream and only one of them is able to retrieve the pixel data through LockBits.
+      ; This occurs when both streams are fighting over the same seek position.
 
       pBitmap1 := pBitmap2 := 0
-      /*
       loop 2
-         if DllCall("gdiplus\GdipCloneBitmapAreaI"
-                     ,    "int", 0
-                     ,    "int", 0
-                     ,    "int", width%A_Index%
-                     ,    "int", height%A_Index%
-                     ,    "int", format%A_Index%
-                     ,    "ptr", SourceBitmap%A_Index%
-                     ,   "ptr*", &pBitmap%A_Index%)
+         if DllCall("gdiplus\GdipCloneImage", "ptr", SourceBitmap%A_Index%, "ptr*", &pBitmap%A_Index%)
             throw Error("Cloning Bitmap" A_Index " failed.")
-      */
+
+      DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", pBitmap1, "int*", &format3:=0)
+      if (format1 != format3)
+         throw Error("Report this error to the developer.")
+
       ; struct RECT - https://referencesource.microsoft.com/#System.Drawing/commonui/System/Drawing/Rectangle.cs,32
       Rect := Buffer(16, 0)                       ; sizeof(Rect) = 16
          NumPut(  "uint",   width1, Rect,  8)     ; Width
@@ -5257,22 +5246,18 @@ class ImageEqual extends ImagePut {
       BitmapData1 := Buffer(16+2*A_PtrSize)       ; sizeof(BitmapData) = 24, 32
       BitmapData2 := Buffer(16+2*A_PtrSize)       ; sizeof(BitmapData) = 24, 32
 
-      ; Force conversion of pixels into a read-only buffer. The user can declare a PixelFormat.
+      ; Force conversion into a pixel buffer. The user can declare a PixelFormat.
       loop 2
          DllCall("gdiplus\GdipBitmapLockBits"
                   ,    "ptr", pBitmap%A_Index%
                   ,    "ptr", Rect
                   ,   "uint", 1            ; ImageLockMode.ReadOnly
-                  ,    "int", PixelFormat  ; Format32bppArgb is fast.
+                  ,    "int", PixelFormat  ; Defaults to Format32bppArgb for comparison.
                   ,    "ptr", BitmapData%A_Index%)
 
       ; Get Stride (number of bytes per horizontal line).
       stride1 := NumGet(BitmapData1, 8, "int")
       stride2 := NumGet(BitmapData2, 8, "int")
-
-      ; Well the image has already been cloned, so the stride should never be negative.
-      if (stride1 < 0 || stride2 < 0) ; See: https://stackoverflow.com/a/10341340
-         throw Error("Negative stride. Please report this error to the developer.")
 
       ; Get Scan0 (top-left pixel at 0,0).
       Scan01 := NumGet(BitmapData1, 16, "ptr")
