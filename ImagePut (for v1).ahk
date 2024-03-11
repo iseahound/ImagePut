@@ -2002,11 +2002,13 @@ class ImagePut {
       DllCall("ole32\CLSIDFromString", "wstr", "{557CF406-1A04-11D3-9A73-0000F81EF32E}", "ptr", &pCodec:=VarSetCapacity(pCodec, 16), "uint")
       DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", stream, "ptr", &pCodec, "ptr", 0)
 
-      ; Set the rescued HGlobal to the clipboard as a shared object.
-      png := DllCall("RegisterClipboardFormat", "str", "png", "uint") ; case insensitive
+      ; Set the rescued HGlobal to the
       DllCall("ole32\GetHGlobalFromStream", "ptr", stream, "uint*", handle:=0, "uint")
-      DllCall("SetClipboardData", "uint", png, "ptr", handle)
       ObjRelease(stream)
+
+      ; Set the clipboard data. GlobalFree will be called by the system.
+      png := DllCall("RegisterClipboardFormat", "str", "png", "uint") ; case insensitive
+      DllCall("SetClipboardData", "uint", png, "ptr", handle)
 
 
       ; #2 - Fallback to the CF_DIB format (bottom-up bitmap) for maximum compatibility.
@@ -2032,7 +2034,7 @@ class ImagePut {
       DllCall("GlobalUnlock", "ptr", hdib)
       DllCall("DeleteObject", "ptr", hbm)
 
-      ; CF_DIB (8) can be synthesized into CF_BITMAP (2), CF_PALETTE (9), and CF_DIBV5 (17).
+      ; CF_DIB (8) can be synthesized into CF_DIBV5 (17) and CF_BITMAP (2) with delayed rendering.
       DllCall("SetClipboardData", "uint", 8, "ptr", hdib)
 
       ; Close the clipboard.
