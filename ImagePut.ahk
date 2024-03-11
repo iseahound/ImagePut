@@ -1078,7 +1078,7 @@ class ImagePut {
 
    static ClipboardPngToBitmap() {
       stream := this.ClipboardPngToStream()
-      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", stream, "ptr*", &pBitmap:=0)
+      DllCall("gdiplus\GdipCreateBitmapFromStreamICM", "ptr", stream, "ptr*", &pBitmap:=0)
       ObjRelease(stream)
       return pBitmap
    }
@@ -1112,7 +1112,7 @@ class ImagePut {
 
    static SafeArrayToBitmap(image) {
       stream := this.SafeArrayToStream(image)
-      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", stream, "ptr*", &pBitmap:=0)
+      DllCall("gdiplus\GdipCreateBitmapFromStreamICM", "ptr", stream, "ptr*", &pBitmap:=0)
       ObjRelease(stream)
       return pBitmap
    }
@@ -1133,7 +1133,7 @@ class ImagePut {
 
    static EncodedBufferToBitmap(image) {
       stream := this.EncodedBufferToStream(image)
-      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", stream, "ptr*", &pBitmap:=0)
+      DllCall("gdiplus\GdipCreateBitmapFromStreamICM", "ptr", stream, "ptr*", &pBitmap:=0)
       ObjRelease(stream)
       return pBitmap
    }
@@ -1622,7 +1622,7 @@ class ImagePut {
 
    static UrlToBitmap(image) {
       stream := this.UrlToStream(image)
-      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", stream, "ptr*", &pBitmap:=0)
+      DllCall("gdiplus\GdipCreateBitmapFromStreamICM", "ptr", stream, "ptr*", &pBitmap:=0)
       ObjRelease(stream)
       return pBitmap
    }
@@ -1638,7 +1638,7 @@ class ImagePut {
 
    static FileToBitmap(image) {
       stream := this.FileToStream(image) ; Faster than GdipCreateBitmapFromFile and does not lock the file.
-      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", stream, "ptr*", &pBitmap:=0)
+      DllCall("gdiplus\GdipCreateBitmapFromStreamICM", "ptr", stream, "ptr*", &pBitmap:=0)
       ObjRelease(stream)
       return pBitmap
    }
@@ -1657,7 +1657,7 @@ class ImagePut {
 
    static HexToBitmap(image) {
       stream := this.HexToStream(image)
-      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", stream, "ptr*", &pBitmap:=0)
+      DllCall("gdiplus\GdipCreateBitmapFromStreamICM", "ptr", stream, "ptr*", &pBitmap:=0)
       ObjRelease(stream)
       return pBitmap
    }
@@ -1684,7 +1684,7 @@ class ImagePut {
 
    static Base64ToBitmap(image) {
       stream := this.Base64ToStream(image)
-      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", stream, "ptr*", &pBitmap:=0)
+      DllCall("gdiplus\GdipCreateBitmapFromStreamICM", "ptr", stream, "ptr*", &pBitmap:=0)
       ObjRelease(stream)
       return pBitmap
    }
@@ -1949,7 +1949,7 @@ class ImagePut {
 
    static StreamToBitmap(image) {
       stream := this.StreamToStream(image) ; Below adds +3 references and seeks to 4096.
-      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", stream, "ptr*", &pBitmap:=0)
+      DllCall("gdiplus\GdipCreateBitmapFromStreamICM", "ptr", stream, "ptr*", &pBitmap:=0)
       ObjRelease(stream)
       return pBitmap
    }
@@ -1964,7 +1964,7 @@ class ImagePut {
 
    static RandomAccessStreamToBitmap(image) {
       stream := this.RandomAccessStreamToStream(image) ; Below adds +3 to the reference count.
-      DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", stream, "ptr*", &pBitmap:=0)
+      DllCall("gdiplus\GdipCreateBitmapFromStreamICM", "ptr", stream, "ptr*", &pBitmap:=0)
       ObjRelease(stream)
       return pBitmap
    }
@@ -2183,7 +2183,7 @@ class ImagePut {
       ; #3 - Fallback to (8) CF_DIB format (bottom-up bitmap) for maximum compatibility.
       if (extension ~= "^(?i:avif|bmp|emf|gif|heic|ico|jpg|png|tif|webp|wmf)$") {
          ; Convert decodable formats into a DIB.
-         DllCall("gdiplus\GdipCreateBitmapFromStream", "ptr", stream, "ptr*", &pBitmap:=0)
+         DllCall("gdiplus\GdipCreateBitmapFromStreamICM", "ptr", stream, "ptr*", &pBitmap:=0)
          DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "ptr", pBitmap, "ptr*", &hbm:=0, "uint", 0)
 
          ; struct DIBSECTION - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-dibsection
