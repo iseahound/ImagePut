@@ -1048,7 +1048,7 @@ class ImagePut {
 
    ClipboardPngToBitmap() {
       stream := this.ClipboardPngToStream()
-      DllCall("gdiplus\GdipCreateBitmapFromStreamICM", "ptr", stream, "ptr*", pBitmap:=0)
+      DllCall("gdiplus\GdipCreateBitmapFromStreamICMICM", "ptr", stream, "ptr*", pBitmap:=0)
       ObjRelease(stream)
       return pBitmap
    }
@@ -3484,12 +3484,12 @@ class ImagePut {
       DllCall("gdiplus\GdipImageGetFrameDimensionsCount", "ptr", pBitmap, "uint*", dims:=0)
       DllCall("gdiplus\GdipImageGetFrameDimensionsList", "ptr", pBitmap, "ptr", &dimIDs := VarSetCapacity(dimIDs, 16*dims), "uint", dims)
       DllCall("gdiplus\GdipImageGetFrameCount", "ptr", pBitmap, "ptr", &dimIDs, "uint*", number:=0)
+      DllCall("gdiplus\GdipGetPropertyItemSize", "ptr", pBitmap, "uint", 0x5100, "uint*", nDelays:=0)
 
       ; Animations!
-      if (number > 1) {
+      if (number > 1 && nDelays > 0) {
 
          ; Get the frame delays from PropertyTagFrameDelay.
-         DllCall("gdiplus\GdipGetPropertyItemSize", "ptr", pBitmap, "uint", 0x5100, "uint*", nDelays:=0)
          pDelays := DllCall("GlobalAlloc", "uint", 0, "uptr", nDelays, "ptr")
          DllCall("gdiplus\GdipGetPropertyItem", "ptr", pBitmap, "uint", 0x5100, "uint", nDelays, "ptr", pDelays)
 

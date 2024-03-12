@@ -3532,16 +3532,24 @@ class ImagePut {
       DllCall("SetWindowLong", "ptr", hwnd, "int", 1*A_PtrSize, "ptr", hwnd) ; child window  (same, only 1 window for now)
       DllCall("SetWindowLong", "ptr", hwnd, "int", 2*A_PtrSize, "ptr", hdc)  ; hdc contains a pixel buffer too!
 
+      obj := {scale: 4
+            , scales: [0.125, 0.25, 0.5, 1, 2, 3, 4, 6, 8, 12]}
+
+      ;obj := {scale: 8
+      ;      , scales: [0.125, 0.25, 0.33, 0.5, 0.66, 0.75, 0.8, 1, 1.2, 1.25, 1.33, 1.5, 1.75, 2, 2.5, 3, 4, 5, 8, 10]}
+      ObjAddRef(ObjPtr(obj))          ; Hold onto this object for dear life!
+      DllCall("SetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", 3*A_PtrSize, "ptr", ObjPtr(obj))
+
       ; Check for multiple frames. This can be in either the page (WEBP) or time (GIF) dimension.
       DllCall("gdiplus\GdipImageGetFrameDimensionsCount", "ptr", pBitmap, "uint*", &dims:=0)
       DllCall("gdiplus\GdipImageGetFrameDimensionsList", "ptr", pBitmap, "ptr", dimIDs := Buffer(16*dims), "uint", dims)
       DllCall("gdiplus\GdipImageGetFrameCount", "ptr", pBitmap, "ptr", dimIDs, "uint*", &number:=0)
+      DllCall("gdiplus\GdipGetPropertyItemSize", "ptr", pBitmap, "uint", 0x5100, "uint*", &nDelays:=0)
 
       ; Animations!
-      if (number > 1) {
+      if (number > 1 && nDelays > 0) {
 
          ; Get the frame delays from PropertyTagFrameDelay.
-         DllCall("gdiplus\GdipGetPropertyItemSize", "ptr", pBitmap, "uint", 0x5100, "uint*", &nDelays:=0)
          pDelays := DllCall("GlobalAlloc", "uint", 0, "uptr", nDelays, "ptr")
          DllCall("gdiplus\GdipGetPropertyItem", "ptr", pBitmap, "uint", 0x5100, "uint", nDelays, "ptr", pDelays)
 
@@ -3574,18 +3582,16 @@ class ImagePut {
          pTimeProc := this.SyncWindowProc(hwnd, 0x8000)
 
          ; Create an object to hold all the extra data.
-         obj := {type : type             ; Either "gif" or "webp"
-               , w : w                   ; width
-               , h : h                   ; height
-               , frame : 0               ; current frame (zero-indexed)
-               , number : number         ; max frames
-               , accumulate : 0          ; current wait time
-               , delays : delays         ; array of frame delays
-               , interval : interval     ; timer resolution
-               , pTimeProc : pTimeProc   ; callback address
-               , dimIDs : dimIDs}        ; frame dimension guid (Time or Page)
-         ObjAddRef(ObjPtr(obj))          ; Hold onto this object for dear life!
-         DllCall("SetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", 3*A_PtrSize, "ptr", ObjPtr(obj))
+         obj.type := type            ; Either "gif" or "webp"
+         obj.w := w                  ; width
+         obj.h := h                  ; height
+         obj.frame := 0              ; current frame (zero-indexed)
+         obj.number := number        ; max frames
+         obj.accumulate := 0         ; current wait time
+         obj.delays := delays        ; array of frame delays
+         obj.interval := interval    ; timer resolution
+         obj.pTimeProc := pTimeProc  ; callback address
+         obj.dimIDs := dimIDs        ; frame dimension guid (Time or Page)
 
          ; Case 1: Image is not scaled.
          if (!cache && w == width && h == height) {
@@ -3722,7 +3728,7 @@ class ImagePut {
          if (uMsg = 0x2) {
             Persistent(--active_windows)
 
-            ; The child window contains all of the assets to be freed.
+            ; Continue if the child window is found. It contains all of the assets to be freed.
             if hwnd != DllCall("GetWindowLong", "ptr", hwnd, "int", 1*A_PtrSize, "ptr")
                return
 
@@ -3746,7 +3752,9 @@ class ImagePut {
                ; Stop Animation loop.
                if timer := DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
                   DllCall("winmm\timeKillEvent", "uint", timer)
-               DllCall("GlobalFree", "ptr", obj.pTimeProc)
+
+               if obj.HasProp("pTimeProc")
+                  DllCall("GlobalFree", "ptr", obj.pTimeProc)
 
                if obj.HasProp("pBitmap") {
                   DllCall("gdiplus\GdipDisposeImage", "ptr", obj.pBitmap)
@@ -3769,6 +3777,10 @@ class ImagePut {
          ; Remember the child window contains all the assets.
          parent := DllCall("GetWindowLong", "ptr", hwnd, "int", 0*A_PtrSize, "ptr")
          child := DllCall("GetWindowLong", "ptr", hwnd, "int", 1*A_PtrSize, "ptr")
+         hdc := DllCall("GetWindowLong", "ptr", child, "int", 2*A_PtrSize, "ptr")
+         if ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", child, "int", 3*A_PtrSize, "ptr")
+            obj := ObjFromPtrAddRef(ptr)
+         timer := DllCall("GetWindowLong", "ptr", child, "int", 4*A_PtrSize, "ptr")
 
          ; For some reason using DefWindowProc or PostMessage to reroute WM_LBUTTONDOWN to WM_NCLBUTTONDOWN
          ; will always disable the complementary WM_LBUTTONUP. However, if the CS_DBLCLKS window style is set,
@@ -3779,7 +3791,7 @@ class ImagePut {
 
          ; WM_LBUTTONDOWN - Drag to move the window.
          if (uMsg = 0x201)
-            return DllCall("DefWindowProc", "ptr", parent, "uint", 0xA1, "uptr", 2, "ptr", 0, "ptr")
+            return DllCall("DefWindowProc", "ptr", obj.scales[obj.scale] > 1 ? child : parent, "uint", 0xA1, "uptr", 2, "ptr", 0, "ptr")
 
          ; WM_LBUTTONUP - Double Click to toggle between play and pause.
          if (uMsg = 0x202)
@@ -3836,6 +3848,71 @@ class ImagePut {
             ; Destroy tooltip after 7 seconds of the last showing.
             static Reset_Tooltip := Tooltip.bind(,,, 16)
             SetTimer Reset_Tooltip, -7000
+         }
+
+         if (uMsg = 0x020A) {
+            ; Convert from unsigned int to signed shorts.
+            wBuf := Buffer(4)
+            NumPut("uint", wParam, wBuf)
+            keystate := NumGet(wBuf, 0, "short")
+            wheeldelta := NumGet(wBuf, 2, "short")
+
+            sdc := DllCall("GetWindowLong", "ptr", child, "int", 2*A_PtrSize, "ptr")
+            sbm := DllCall("GetCurrentObject", "ptr", sdc, "uint", 7)
+            dib := Buffer(64+5*A_PtrSize) ; sizeof(DIBSECTION) = 84, 104
+            DllCall("GetObject", "ptr", sbm, "int", dib.size, "ptr", dib)
+               , width  := NumGet(dib, 4, "uint")
+               , height := NumGet(dib, 8, "uint")
+               , pBits  := NumGet(dib, A_PtrSize = 4 ? 20:24, "ptr")
+
+            obj := ObjFromPtrAddRef(DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", child, "int", 3*A_PtrSize, "ptr"))
+            scale := obj.scale
+            (wheeldelta > 1) ? scale++ : scale--
+            (scale < 1) && scale := 1
+            (scale > obj.scales.length) && scale := obj.scales.length
+
+            ; Disallow downscaling if ImagePutWindow is called.
+            if (parent != child)
+               if obj.scales[scale] < 1
+                  for i, _scale in obj.scales
+                     if (_scale = 1)
+                        scale := i
+
+            if (scale = obj.scale)
+               return
+
+            obj.scale := scale
+            s := obj.scales[scale]
+
+            w := Ceil(width * s)
+            h := Ceil(height * s)
+
+            hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
+            bi := Buffer(40, 0)                    ; sizeof(bi) = 40
+               NumPut(  "uint",        40, bi,  0) ; Size
+               NumPut(   "int",         w, bi,  4) ; Width
+               NumPut(   "int",        -h, bi,  8) ; Height - Negative so (0, 0) is top-left.
+               NumPut("ushort",         1, bi, 12) ; Planes
+               NumPut("ushort",        32, bi, 14) ; BitCount / BitsPerPixel
+            hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", bi, "uint", 0, "ptr*", &pBits:=0, "ptr", 0, "uint", 0, "ptr")
+            obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
+
+            DllCall("SetStretchBltMode", "ptr", hdc, "int", 3) ; Nearest Neighbor
+            DllCall("StretchBlt", "ptr", hdc, "int", 0, "int", 0, "int", w, "int", h, "ptr", sdc, "int", 0, "int", 0, "int", width, "int", height, "uint", 0xCC0020) ; SRCCOPY | CAPTUREBLT
+            DllCall("UpdateLayeredWindow"
+                     ,    "ptr", child                    ; hWnd
+                     ,    "ptr", 0                        ; hdcDst
+                     ,    "ptr", 0                        ; *pptDst
+                     ,"uint64*", w | h << 32              ; *psize
+                     ,    "ptr", hdc                      ; hdcSrc
+                     , "int64*", 0                        ; *pptSrc
+                     ,   "uint", 0                        ; crKey
+                     ,  "uint*", 0xFF << 16 | 0x01 << 24  ; *pblend
+                     ,   "uint", 2)                       ; dwFlags
+
+            DllCall("SelectObject", "ptr", hdc, "ptr", obm, "ptr")
+            DllCall("DeleteObject", "ptr", hbm)
+            DllCall("DeleteDC", "ptr", hdc)
          }
 
 
@@ -3992,14 +4069,16 @@ class ImagePut {
 
             if ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", child, "int", 3*A_PtrSize, "ptr") {
                obj := ObjFromPtrAddRef(ptr)
-               timer := DllCall("winmm\timeSetEvent"
-                        , "uint", obj.interval  ; uDelay
-                        , "uint", obj.interval  ; uResolution
-                        ,  "ptr", obj.pTimeProc ; lpTimeProc
-                        , "uptr", 0             ; dwUser
-                        , "uint", 1             ; fuEvent
-                        , "uint")
-               DllCall("SetWindowLong", "ptr", child, "int", 4*A_PtrSize, "ptr", timer)
+               if obj.HasProp("pTimeProc") {
+                  timer := DllCall("winmm\timeSetEvent"
+                           , "uint", obj.interval  ; uDelay
+                           , "uint", obj.interval  ; uResolution
+                           ,  "ptr", obj.pTimeProc ; lpTimeProc
+                           , "uptr", 0             ; dwUser
+                           , "uint", 1             ; fuEvent
+                           , "uint")
+                  DllCall("SetWindowLong", "ptr", child, "int", 4*A_PtrSize, "ptr", timer)
+               }
             }
          }
 
