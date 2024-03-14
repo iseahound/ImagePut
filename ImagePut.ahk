@@ -972,7 +972,7 @@ class ImagePut {
          if (offset := NumGet(ptr + pos + 4, "uint"))
             pos += offset + 8
          else break
-      return pos + 4 == size
+      return pos + 4 == size && !NumGet(ptr + pos, "uint") ; 4 byte null terminator
    }
 
    static IsImage(ptr, size) {
