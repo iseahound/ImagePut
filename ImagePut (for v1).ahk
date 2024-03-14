@@ -293,7 +293,7 @@ class ImagePut {
 
          ; Pass through all other cotypes.
          || cotype)
-         
+
          ; MsgBox % weight ? "convert to pixels" : "stay as stream"
 
       ; Attempt conversion using StreamToCoimage.
@@ -1483,7 +1483,7 @@ class ImagePut {
 
       ; Get the handle to the window.
       image := (hwnd := IsObject(image) ? image.hwnd : WinExist(image)) ? hwnd : image
-      
+
       ; Test whether keystrokes can be sent to this window using a reserved virtual key code.
       PostMessage WM_KEYDOWN := 0x100, 0x88,,, % "ahk_id" image
       if ErrorLevel
@@ -2228,7 +2228,7 @@ class ImagePut {
       return ""
    }
       StreamToClipboardProc(uMsg, wParam, lParam) {
-         hwnd := this 
+         hwnd := this
          ; WM_DESTROYCLIPBOARD
          if (uMsg = 0x0307) ; ObjFromPtr self-destructs at end of scope.
             if obj := Object(DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", -21, "ptr"))
@@ -5248,7 +5248,7 @@ class ImageEqual extends ImagePut {
          return False
 
       ; Create clones of the supplied source bitmaps in their original PixelFormat.
-      ; This has the side effect of solving the problem when both bitmaps reference 
+      ; This has the side effect of solving the problem when both bitmaps reference
       ; the same stream and only one of them is able to retrieve the pixel data through LockBits.
       ; This occurs when both streams are fighting over the same seek position.
 

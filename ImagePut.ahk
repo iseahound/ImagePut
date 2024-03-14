@@ -290,7 +290,7 @@ class ImagePut {
             && (!p.Has(1) || p[1] == "" || p[1] ~= "(^|:|\\|\.)" extension "$"
                || !(RegExReplace(p[1], "^.*(?:^|:|\\|\.)(.*)$", "$1")
                ~= "^(?i:avif|avifs|bmp|dib|rle|gif|heic|heif|hif|jpg|jpeg|jpe|jfif|png|tif|tiff)$"))
-               
+
          ; Pass through all other cotypes.
          || cotype)
 
@@ -466,7 +466,7 @@ class ImagePut {
             or image.HasProp("stride") && image.HasProp("height")
             or image.HasProp("size") && (image.HasProp("stride") || image.HasProp("width") || image.HasProp("height")))
          return "Buffer"
-      
+
       image := image.ptr
       goto pointer
 
@@ -537,7 +537,7 @@ class ImagePut {
       ; An "hIcon" is a handle to a GDI icon.
       if DllCall("DestroyIcon", "ptr", DllCall("CopyIcon", "ptr", image, "ptr"))
          return "HIcon"
-      
+
       ; Check if image is a pointer. If not, crash and do not recover.
       ("POINTER IS BAD AND PROGRAM IS CRASH") && NumGet(image, "char")
 
@@ -5402,7 +5402,7 @@ class ImageEqual extends ImagePut {
          return False
 
       ; Create clones of the supplied source bitmaps in their original PixelFormat.
-      ; This has the side effect of solving the problem when both bitmaps reference 
+      ; This has the side effect of solving the problem when both bitmaps reference
       ; the same stream and only one of them is able to retrieve the pixel data through LockBits.
       ; This occurs when both streams are fighting over the same seek position.
 
