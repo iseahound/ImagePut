@@ -541,7 +541,7 @@ class ImagePut {
       ; Check if image is a pointer. If not, crash and do not recover.
       ("POINTER IS BAD AND PROGRAM IS CRASH") && NumGet(image+0, "char")
 
-      ; A "bitmap" is a pointer to a GDI+ Bitmap.
+      ; A "bitmap" is a pointer to a GDI+ Bitmap. GdiplusStartup exception is caught above.
       try if !DllCall("gdiplus\GdipGetImageType", "ptr", image, "ptr*", _type:=0) && (_type == 1)
          return "Bitmap"
 
