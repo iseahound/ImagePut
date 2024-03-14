@@ -414,9 +414,8 @@ class ImagePut {
       if not IsObject(image)
          goto string
 
-      if image.HasProp("prototype") && type(image.prototype) == "ClipboardAll"
-      or type(image) == "ClipboardAll" && this.IsClipboard(image.ptr, image.size)
-      {  ; A "clipboardpng" is a pointer to a PNG stream saved as the "png" clipboard format.
+      if image.HasProp("prototype") && image.prototype.HasProp("__class") && image.prototype.__class == "ClipboardAll") {
+         ; A "clipboardpng" is a pointer to a PNG stream saved as the "png" clipboard format.
          if DllCall("IsClipboardFormatAvailable", "uint", DllCall("RegisterClipboardFormat", "str", "png", "uint"))
             return "ClipboardPng"
 
@@ -426,6 +425,9 @@ class ImagePut {
 
          throw Error("Clipboard format not supported.")
       }
+
+      if type(image) == "ClipboardAll"
+         return this.IsClipboard(image.ptr, image.size)
 
       array:
       ; A "safearray" is a pointer to a SafeArray COM Object.

@@ -411,6 +411,8 @@ class ImagePut {
 
    ImageType(image) {
 
+
+      
       ; Throw if the image is an empty string.
       if (image == "") {
          ; A "clipboardpng" is a pointer to a PNG stream saved as the "png" clipboard format.
