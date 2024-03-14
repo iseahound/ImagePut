@@ -4298,27 +4298,52 @@ class ImagePut {
 
    static BitmapToExplorer(pBitmap, default := "") {
 
-      ; Default directory to desktop.
-      (default == "") && default := A_Desktop
-
-      ; Check if the mouse is pointing to the desktop.
-      MouseGetPos ,, &hwnd
-
-      if WinGetClass("ahk_id" hwnd) ~= "(?i)Progman|WorkerW"
-         directory := A_Desktop
-
       ; Get path of active window.
-      else if (hwnd := WinExist("ahk_class ExploreWClass")) || (hwnd := WinExist("ahk_class CabinetWClass")) {
-         for window in ComObject("Shell.Application").Windows {
-            if (window.hwnd == hwnd) {
-               try directory := window.Document.Folder.Self.Path
+      if (hwnd := WinExist("ahk_class ExploreWClass")) || (hwnd := WinExist("ahk_class CabinetWClass")) {
+         ; script from Lexikos: https://www.autohotkey.com/boards/viewtopic.php?f=83&t=109907
+         ; modified for this by: @TheCrether
+         ; useful for windows 11 explorer tabs support (works with windows 10 explorers too)
+         tab := this.GetCurrentExplorerTab(hwnd)
+         if tab {
+            switch Type(tab.Document) {
+               case "ShellFolderView":
+                  directory := tab.Document.Folder.Self.Path
+               default: ; case "HTMLDocument"
+                  directory := tab.LocationURL
             }
          }
       }
-      else
+      else if (default != "")
          directory := default
+      else
+         return
 
       return this.BitmapToFile(pBitmap, directory)
+   }
+
+   static StreamToExplorer(stream, default := "") {
+
+      ; Get path of active window.
+      if (hwnd := WinExist("ahk_class ExploreWClass")) || (hwnd := WinExist("ahk_class CabinetWClass")) {
+         ; script from Lexikos: https://www.autohotkey.com/boards/viewtopic.php?f=83&t=109907
+         ; modified for this by: @TheCrether
+         ; useful for windows 11 explorer tabs support (works with windows 10 explorers too)
+         tab := this.GetCurrentExplorerTab(hwnd)
+         if tab {
+            switch Type(tab.Document) {
+               case "ShellFolderView":
+                  directory := tab.Document.Folder.Self.Path
+               default: ; case "HTMLDocument"
+                  directory := tab.LocationURL
+            }
+         }
+      }
+      else if (default != "")
+         directory := default
+      else
+         return
+
+      return this.StreamToFile(stream, directory)
    }
 
    static GetCurrentExplorerTab(hwnd) {
@@ -4340,38 +4365,7 @@ class ImagePut {
          }
          return w
       }
-	   return false
-   }
-
-   static StreamToExplorer(stream, default := "") {
-
-      ; Default directory to desktop.
-      (default == "") && default := A_Desktop
-
-      ; Check if the mouse is pointing to the desktop.
-      MouseGetPos ,, &hwnd
-
-      if WinGetClass("ahk_id" hwnd) ~= "(?i)Progman|WorkerW"
-         directory := A_Desktop
-
-      ; Get path of active window.
-      else if (hwnd := WinExist("ahk_class ExploreWClass")) || (hwnd := WinExist("ahk_class CabinetWClass")) {
-         ; script from Lexikos: https://www.autohotkey.com/boards/viewtopic.php?f=83&t=109907
-         ; modified for this by: @TheCrether
-         tab := this.GetCurrentExplorerTab(hwnd)
-         if tab {
-            switch Type(tab.Document) {
-               case "ShellFolderView":
-                  directory := tab.Document.Folder.Self.Path
-               default: ; case "HTMLDocument"
-                  directory := tab.LocationURL
-            }
-         }
-      }
-      else
-         directory := default
-
-      return this.StreamToFile(stream, directory)
+      return false
    }
 
    static BitmapToFile(pBitmap, filepath := "", quality := "") {
