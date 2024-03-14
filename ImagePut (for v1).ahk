@@ -1108,13 +1108,13 @@ class ImagePut {
       if !(handle := DllCall("GetClipboardData", "uint", png, "ptr"))
          throw Exception("Shared clipboard PNG has been deleted.")
 
-      DllCall("CloseClipboard")
-
       ; Create a new stream from the clipboard data.
       size := DllCall("GlobalSize", "ptr", handle, "uptr")
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", handle, "int", False, "ptr*", PngStream:=0, "uint")
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", True, "ptr*", stream:=0, "uint")
       DllCall("shlwapi\IStream_Copy", "ptr", PngStream, "ptr", stream, "uint", size, "uint")
+
+      DllCall("CloseClipboard")
       return stream
    }
 
