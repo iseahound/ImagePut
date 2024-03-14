@@ -1045,15 +1045,43 @@ class ImagePut {
                Sleep (2**(A_Index-1) * 30)
             else throw Exception("Clipboard could not be opened.")
 
-      ; Fallback to CF_BITMAP. This format does not support transparency even with BitmapToHBitmap().
-      if !DllCall("IsClipboardFormatAvailable", "uint", 2)
-         throw Exception("Clipboard does not have CF_BITMAP data.")
+      ; Check for CF_Bitmap to retrieve transparent pixels when possible.
+      if DllCall("IsClipboardFormatAvailable", "uint", 8) {
+         if !(handle := DllCall("GetClipboardData", "uint", 8, "ptr"))
+            throw Exception("Shared clipboard data has been deleted.")
+         DllCall("CloseClipboard")
+      }
 
-      if !(hbm := DllCall("GetClipboardData", "uint", 2, "ptr"))
-         throw Exception("Shared clipboard data has been deleted.")
+      ; Adjust Scan0 for top-down or bottom-up bitmaps.
+      ptr := DllCall("GlobalLock", "ptr", handle, "ptr")
+      width := NumGet(ptr + 4, "int")
+      height := NumGet(ptr + 8, "int")
+      bpp := NumGet(ptr + 14, "ushort")
+      stride := ((height < 0) ? 1 : -1) * (width * bpp + 31) // 32 * 4
+      pBits := ptr + 40
+      Scan0 := (height < 0) ? pBits : pBits - stride*(height-1)
 
-      DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", hbm, "ptr", 0, "ptr*", pBitmap:=0)
-      DllCall("CloseClipboard")
+      ; Create a GDI+ Bitmap that owns its memory.
+      DllCall("gdiplus\GdipCreateBitmapFromScan0"
+               , "int", width, "int", height, "int", 0, "uint", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
+
+      ; Describe the current buffer holding the pixel data.
+      VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
+         NumPut(  width, Rect,  8,   "uint") ; Width
+         NumPut( height, Rect, 12,   "uint") ; Height
+      VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
+         NumPut(    stride, BitmapData,  8,    "int") ; Stride
+         NumPut(     Scan0, BitmapData, 16,    "ptr") ; Scan0
+
+      ; Use LockBits to copy pixel data from an external buffer into the internal GDI+ Bitmap.
+      DllCall("gdiplus\GdipBitmapLockBits"
+               ,    "ptr", pBitmap
+               ,    "ptr", Rect
+               ,   "uint", 6            ; ImageLockMode.UserInputBuffer | ImageLockMode.WriteOnly
+               ,    "int", 0x26200A     ; Format32bppArgb (external buffer)
+               ,    "ptr", &BitmapData) ; Contains the pointer to the external buffer.
+      DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
+
       return pBitmap
    }
 
