@@ -290,7 +290,7 @@ class ImagePut {
             && (!p.Has(1) || p[1] == "" || p[1] ~= "(^|:|\\|\.)" extension "$"
                || !(RegExReplace(p[1], "^.*(?:^|:|\\|\.)(.*)$", "$1")
                ~= "^(?i:avif|avifs|bmp|dib|rle|gif|heic|heif|hif|jpg|jpeg|jpe|jfif|png|tif|tiff)$"))
-               
+
          ; Pass through all other cotypes.
          || cotype)
 
@@ -536,12 +536,12 @@ class ImagePut {
       if DllCall("DestroyIcon", "ptr", DllCall("CopyIcon", "ptr", image, "ptr"))
          return "HIcon"
 
-      ; A "bitmap" is a pointer to a GDI+ Bitmap.
-      try if !DllCall("gdiplus\GdipGetImageType", "ptr", image, "ptr*", &type:=0) && (type == 1)
-         return "Bitmap"
-
       ; Check if image is a pointer. If not, crash and do not recover.
       ("POINTER IS BAD AND PROGRAM IS CRASH") && NumGet(image, "char")
+
+      ; A "bitmap" is a pointer to a GDI+ Bitmap. GdiplusStartup exception is caught above.
+      try if !DllCall("gdiplus\GdipGetImageType", "ptr", image, "ptr*", &_type:=0) && (_type == 1)
+         return "Bitmap"
 
       ; Note 1: All GDI+ functions add 1 to the reference count of COM objects on 64-bit systems.
       ; Note 2: GDI+ pBitmaps that are queried cease to stay pBitmaps.
@@ -5369,7 +5369,7 @@ class ImageEqual extends ImagePut {
          return False
 
       ; Create clones of the supplied source bitmaps in their original PixelFormat.
-      ; This has the side effect of solving the problem when both bitmaps reference 
+      ; This has the side effect of solving the problem when both bitmaps reference
       ; the same stream and only one of them is able to retrieve the pixel data through LockBits.
       ; This occurs when both streams are fighting over the same seek position.
 
