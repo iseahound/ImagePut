@@ -250,7 +250,7 @@ class ImagePut {
       flags := 0x40000004 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_HEX
       DllCall("crypt32\CryptBinaryToString", "ptr", &bin, "uint", size, "uint", flags, "str", str, "uint*", length)
 
-      ; Determine the file extension using herustics. See: http://fileformats.archiveteam.org
+      ; Determine the extension using herustics. See: http://fileformats.archiveteam.org
       extension := 0                                                              ? ""
       : str ~= "(?i)66 74 79 70 61 76 69 66"                                      ? "avif" ; ftypavif
       : str ~= "(?i)^42 4d (.. ){36}00 00 .. 00 00 00"                            ? "bmp"  ; BM
@@ -965,6 +965,15 @@ class ImagePut {
 
       return pBitmap
    }
+
+
+
+
+
+
+
+
+
 
    IsImage(ptr, size) {
       ; Shortest possible image is 24 bytes.
