@@ -4174,6 +4174,32 @@ class ImagePut {
       return this.BitmapToFile(pBitmap, directory)
    }
 
+   GetCurrentExplorerTab(hwnd) {
+      ; script from Lexikos: https://www.autohotkey.com/boards/viewtopic.php?f=83&t=109907
+      ; modified for this by: @TheCrether
+      ; useful for windows 11 explorer tabs support (works with windows 10 explorers too)
+      static IID_IShellBrowser := "{000214E2-0000-0000-C000-000000000046}"
+
+      activeTab := 0, hwnd := hwnd ? hwnd : WinExist("A")
+      try
+         ControlGet, activeTab, Hwnd,, ShellTabWindowClass1, ahk_id %hwnd%	; File Explorer (Windows 11)
+      catch
+      try
+         ControlGet, activeTab, Hwnd,, TabWindowClass1, ahk_id %hwnd%	; IE
+      for w in ComObjCreate("Shell.Application").Windows {
+         if (w.hwnd != hwnd)
+               continue
+         if (activeTab) { ; The window has tabs, so make sure this is the right one.
+            shellBrowser := ComObjQuery(w, IID_IShellBrowser, IID_IShellBrowser)
+               DllCall(NumGet(NumGet(shellBrowser+0), 3*A_PtrSize), "UPtr",shellBrowser, "UIntP",thisTab:=0)
+               if (thisTab != activeTab)
+                  continue
+         }
+         return w
+      }
+	   return 0
+   }
+
    StreamToExplorer(stream, default := "") {
 
       ; Default directory to desktop.
@@ -4187,9 +4213,17 @@ class ImagePut {
 
       ; Get path of active window.
       else if (hwnd := WinExist("ahk_class ExploreWClass")) || (hwnd := WinExist("ahk_class CabinetWClass")) {
-         for window in ComObjCreate("Shell.Application").Windows {
-            if (window.hwnd == hwnd) {
-               try directory := window.Document.Folder.Self.Path
+         ; script from Lexikos: https://www.autohotkey.com/boards/viewtopic.php?f=83&t=109907
+         ; modified for this by: @TheCrether
+         ; useful for windows 11 explorer tabs support (works with windows 10 explorers too)
+         tab := this.GetCurrentExplorerTab(hwnd)
+         if tab {
+            switch ComObjType(tab.Document, "Class")
+            {
+               case "ShellFolderView":
+                  directory := tab.Document.Folder.Self.Path
+               default: ; case "HTMLDocument"
+                  directory := tab.LocationURL
             }
          }
       }

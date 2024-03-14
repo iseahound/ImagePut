@@ -4323,6 +4323,28 @@ class ImagePut {
       return this.BitmapToFile(pBitmap, directory)
    }
 
+   static GetCurrentExplorerTab(hwnd) {
+      ; script from Lexikos: https://www.autohotkey.com/boards/viewtopic.php?f=83&t=109907
+      ; modified for this by: @TheCrether
+      activeTab := 0
+      try activeTab := ControlGetHwnd("ShellTabWindowClass1", hwnd) ; File Explorer (Windows 11)
+      catch
+         try activeTab := ControlGetHwnd("TabWindowClass1", hwnd) ; IE
+      for w in ComObject("Shell.Application").Windows {
+         if w.hwnd != hwnd
+            continue
+         if activeTab { ; The window has tabs, so make sure this is the right one.
+            static IID_IShellBrowser := "{000214E2-0000-0000-C000-000000000046}"
+            shellBrowser := ComObjQuery(w, IID_IShellBrowser, IID_IShellBrowser)
+            ComCall(3, shellBrowser, "uint*", &thisTab := 0)
+            if thisTab != activeTab
+               continue
+         }
+         return w
+      }
+	   return false
+   }
+
    static StreamToExplorer(stream, default := "") {
 
       ; Default directory to desktop.
@@ -4336,9 +4358,15 @@ class ImagePut {
 
       ; Get path of active window.
       else if (hwnd := WinExist("ahk_class ExploreWClass")) || (hwnd := WinExist("ahk_class CabinetWClass")) {
-         for window in ComObject("Shell.Application").Windows {
-            if (window.hwnd == hwnd) {
-               try directory := window.Document.Folder.Self.Path
+         ; script from Lexikos: https://www.autohotkey.com/boards/viewtopic.php?f=83&t=109907
+         ; modified for this by: @TheCrether
+         tab := this.GetCurrentExplorerTab(hwnd)
+         if tab {
+            switch Type(tab.Document) {
+               case "ShellFolderView":
+                  directory := tab.Document.Folder.Self.Path
+               default: ; case "HTMLDocument"
+                  directory := tab.LocationURL
             }
          }
       }
