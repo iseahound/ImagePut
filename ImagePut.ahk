@@ -414,8 +414,8 @@ class ImagePut {
       if not IsObject(image)
          goto string
 
-      if (image.base.HasProp("__class") && image.base.__class == "ClipboardAll")
-      or (image.HasProp("prototype") && image.prototype.HasProp("__class") && image.prototype.__class == "ClipboardAll")
+      if image.HasProp("prototype") && type(image.prototype) == "ClipboardAll"
+      or type(image) == "ClipboardAll" && this.IsClipboard(image.ptr, image.size)
       {  ; A "clipboardpng" is a pointer to a PNG stream saved as the "png" clipboard format.
          if DllCall("IsClipboardFormatAvailable", "uint", DllCall("RegisterClipboardFormat", "str", "png", "uint"))
             return "ClipboardPng"
@@ -445,8 +445,11 @@ class ImagePut {
 
       ; A "object" has a pBitmap property that points to an internal GDI+ bitmap.
       if image.HasProp("pBitmap")
-         try if !DllCall("gdiplus\GdipGetImageType", "ptr", image.pBitmap, "ptr*", &type:=0) && (type == 1)
+         try if !DllCall("gdiplus\GdipGetImageType", "ptr", image.pBitmap, "ptr*", &_type:=0) && (_type == 1)
             return "Object"
+
+      if not image.HasProp("ptr")
+         goto end
 
       ; Check if image is a pointer. If not, crash and do not recover.
       ("POINTER IS BAD AND PROGRAM IS CRASH") && NumGet(image.ptr, "char")
@@ -457,16 +460,13 @@ class ImagePut {
 
       ; A "buffer" is an object with a pointer to bytes and properties to determine its 2-D shape.
       if image.HasProp("ptr")
-         and (image.HasProp("width") && image.HasProp("height")
-         or image.HasProp("stride") && image.HasProp("height")
-         or image.HasProp("size") && (image.HasProp("stride") || image.HasProp("width") || image.HasProp("height")))
+         and ( image.HasProp("width") && image.HasProp("height")
+            or image.HasProp("stride") && image.HasProp("height")
+            or image.HasProp("size") && (image.HasProp("stride") || image.HasProp("width") || image.HasProp("height")))
          return "Buffer"
-
-      if image.HasProp("ptr") {
-         image := image.ptr
-         goto pointer
-      }
-      goto end
+      
+      image := image.ptr
+      goto pointer
 
       string:
       if (image == "")
@@ -537,7 +537,7 @@ class ImagePut {
          return "HIcon"
 
       ; A "bitmap" is a pointer to a GDI+ Bitmap.
-      try if !DllCall("gdiplus\GdipGetImageType", "ptr", image, "ptr*", &type:=0) && (type == 1)
+      try if !DllCall("gdiplus\GdipGetImageType", "ptr", image, "ptr*", &_type:=0) && (_type == 1)
          return "Bitmap"
 
       ; Check if image is a pointer. If not, crash and do not recover.
@@ -962,6 +962,17 @@ class ImagePut {
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
 
       return pBitmap
+   }
+
+   static IsClipboard(ptr, size) {
+      msgbox
+      pos := 0
+      while (pos < size) 
+         pos += NumGet(ptr + pos + 4, "uint") ; offset
+      if (pos = size)
+         MsgBox true
+      else
+         MsgBox false
    }
 
    static IsImage(ptr, size) {

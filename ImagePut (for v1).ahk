@@ -445,8 +445,11 @@ class ImagePut {
 
       ; A "object" has a pBitmap property that points to an internal GDI+ bitmap.
       if image.HasKey("pBitmap")
-         try if !DllCall("gdiplus\GdipGetImageType", "ptr", image.pBitmap, "ptr*", type:=0) && (type == 1)
+         try if !DllCall("gdiplus\GdipGetImageType", "ptr", image.pBitmap, "ptr*", _type:=0) && (_type == 1)
             return "Object"
+
+      if not image.HasKey("ptr")
+         goto end
 
       ; Check if image is a pointer. If not, crash and do not recover.
       ("POINTER IS BAD AND PROGRAM IS CRASH") && NumGet(image.ptr, "char")
@@ -457,16 +460,13 @@ class ImagePut {
 
       ; A "buffer" is an object with a pointer to bytes and properties to determine its 2-D shape.
       if image.HasKey("ptr")
-         and (image.HasKey("width") && image.HasKey("height")
-         or image.HasKey("stride") && image.HasKey("height")
-         or image.HasKey("size") && (image.HasKey("stride") || image.HasKey("width") || image.HasKey("height")))
+         and ( image.HasKey("width") && image.HasKey("height")
+            or image.HasKey("stride") && image.HasKey("height")
+            or image.HasKey("size") && (image.HasKey("stride") || image.HasKey("width") || image.HasKey("height")))
          return "Buffer"
 
-      if image.HasKey("ptr") {
-         image := image.ptr
-         goto pointer
-      }
-      goto end
+      image := image.ptr
+      goto pointer
 
       string:
       if (image == "")
@@ -540,7 +540,7 @@ class ImagePut {
       ("POINTER IS BAD AND PROGRAM IS CRASH") && NumGet(image+0, "char")
 
       ; A "bitmap" is a pointer to a GDI+ Bitmap.
-      try if !DllCall("gdiplus\GdipGetImageType", "ptr", image, "ptr*", type:=0) && (type == 1)
+      try if !DllCall("gdiplus\GdipGetImageType", "ptr", image, "ptr*", _type:=0) && (_type == 1)
          return "Bitmap"
 
       ; Note 1: All GDI+ functions add 1 to the reference count of COM objects on 64-bit systems.
