@@ -1476,6 +1476,12 @@ class ImagePut {
       ; Get the handle to the window.
       image := WinExist(image)
 
+      ; Test whether keystrokes can be sent to this window using a reserved virtual key code.
+      try PostMessage WM_KEYDOWN := 0x100, 0x88,,, image
+      catch OSError
+         throw Error("Administrator privileges are required to capture the window.")
+      PostMessage WM_KEYUP := 0x101, 0x88, 0xC0000000,, image
+
       ; Restore the window if minimized! Must be visible for capture.
       if DllCall("IsIconic", "ptr", image)
          DllCall("ShowWindow", "ptr", image, "int", 4)
@@ -3850,12 +3856,24 @@ class ImagePut {
             SetTimer Reset_Tooltip, -7000
          }
 
+         ; WM_MOUSEWHEEL - Zoom in and out.
          if (uMsg = 0x020A) {
+            uMsg := 0x8003
+            Sleep 100 ; Debounce or block subsequent WM_MOUSEWHEEL messages.
+         }
+
+         if (uMsg = 0x8003) {
             ; Convert from unsigned int to signed shorts.
             wBuf := Buffer(4)
             NumPut("uint", wParam, wBuf)
             keystate := NumGet(wBuf, 0, "short")
             wheeldelta := NumGet(wBuf, 2, "short")
+
+            ; Convert from unsigned int to signed shorts.
+            xy := Buffer(4)
+            NumPut("uint", lParam, xy)
+            x := NumGet(xy, 0, "short")
+            y := NumGet(xy, 2, "short")
 
             sdc := DllCall("GetWindowLong", "ptr", child, "int", 2*A_PtrSize, "ptr")
             sbm := DllCall("GetCurrentObject", "ptr", sdc, "uint", 7)
@@ -3883,7 +3901,8 @@ class ImagePut {
 
             obj.scale := scale
             s := obj.scales[scale]
-
+            x := Ceil(x * s) - x
+            y := Ceil(y * s) - y
             w := Ceil(width * s)
             h := Ceil(height * s)
 
@@ -3899,6 +3918,11 @@ class ImagePut {
 
             DllCall("SetStretchBltMode", "ptr", hdc, "int", 3) ; Nearest Neighbor
             DllCall("StretchBlt", "ptr", hdc, "int", 0, "int", 0, "int", w, "int", h, "ptr", sdc, "int", 0, "int", 0, "int", width, "int", height, "uint", 0xCC0020) ; SRCCOPY | CAPTUREBLT
+
+            pptDst := Buffer(8, 0)
+            NumPut("int", x, pptDst, 0)
+            NumPut("int", y, pptDst, 4)
+
             DllCall("UpdateLayeredWindow"
                      ,    "ptr", child                    ; hWnd
                      ,    "ptr", 0                        ; hdcDst

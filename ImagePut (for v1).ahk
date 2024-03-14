@@ -1445,6 +1445,12 @@ class ImagePut {
 
       ; Get the handle to the window.
       image := (hwnd := IsObject(image) ? image.hwnd : WinExist(image)) ? hwnd : image
+      
+      ; Test whether keystrokes can be sent to this window using a reserved virtual key code.
+      PostMessage WM_KEYDOWN := 0x100, 0x88,,, % "ahk_id" image
+      if ErrorLevel
+         throw Exception("Administrator privileges are required to capture the window.")
+      PostMessage WM_KEYUP := 0x101, 0x88, 0xC0000000,, % "ahk_id" image
 
       ; Restore the window if minimized! Must be visible for capture.
       if DllCall("IsIconic", "ptr", image)
