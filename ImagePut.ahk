@@ -1045,12 +1045,10 @@ class ImagePut {
                Sleep (2**(A_Index-1) * 30)
             else throw Error("Clipboard could not be opened.")
 
-      ; Check for CF_Bitmap to retrieve transparent pixels when possible.
-      if DllCall("IsClipboardFormatAvailable", "uint", 8) {
+      ; Check for CF_DIB to retrieve transparent pixels when possible.
+      if DllCall("IsClipboardFormatAvailable", "uint", 8)
          if !(handle := DllCall("GetClipboardData", "uint", 8, "ptr"))
             throw Error("Shared clipboard data has been deleted.")
-         DllCall("CloseClipboard")
-      }
 
       ; Adjust Scan0 for top-down or bottom-up bitmaps.
       ptr := DllCall("GlobalLock", "ptr", handle, "ptr")
@@ -1082,6 +1080,7 @@ class ImagePut {
                ,    "ptr", BitmapData)  ; Contains the pointer to the external buffer.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
 
+      DllCall("CloseClipboard")
       return pBitmap
    }
 
