@@ -2202,7 +2202,7 @@ class ImagePut {
 
          ; struct DIBSECTION - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-dibsection
          ; struct BITMAP - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmap
-         dib := Buffer(64+5*A_PtrSize) ; sizeof(DIBSECTION) = 84, 104
+         dib := Buffer(64+5*A_PtrSize)                            ; sizeof(DIBSECTION) = 84, 104
          DllCall("GetObject", "ptr", hbm, "int", dib.size, "ptr", dib)
             , pBits := NumGet(dib, A_PtrSize = 4 ? 20:24, "ptr")  ; bmBits
             , size  := NumGet(dib, A_PtrSize = 4 ? 44:52, "uint") ; biSizeImage
@@ -2228,6 +2228,7 @@ class ImagePut {
       return ClipboardAll()
 
       StreamToClipboardProc(hwnd, uMsg, wParam, lParam) {
+
          ; WM_DESTROYCLIPBOARD
          if (uMsg = 0x0307) ; ObjFromPtr self-destructs at end of scope.
             if obj := ObjFromPtr(DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", -21, "ptr"))

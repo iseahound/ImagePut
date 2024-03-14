@@ -2142,7 +2142,7 @@ class ImagePut {
       ; Requires a valid window handle via OpenClipboard or the next call to OpenClipboard will crash.
       DllCall("EmptyClipboard")
 
-      ; Save PNG directly to the clipboard.
+      ; #1 - Save PNG directly to the clipboard.
       if (extension = "png") {
          ; Clone the stream. Can't use IStream::Clone because the cloned stream must be released.
          DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", size:=0, "uint")
@@ -2156,8 +2156,7 @@ class ImagePut {
          DllCall("SetClipboardData", "uint", png, "ptr", handle)
       }
 
-      ; Copy other formats to a file and pass a (15) DROPFILES struct.
-      ; This should be a complete substitute for CF_DIB(8) as some programs don't support PNG.
+      ; #2 - Copy other formats to a file and pass a (15) DROPFILES struct.
       if (extension) {
          filepath := A_ScriptDir "\clipboard." extension
          filepath := RTrim(filepath, ".") ; Remove trailing periods.
@@ -2195,21 +2194,45 @@ class ImagePut {
          DllCall("SetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", -21, "ptr", ptr, "ptr") ; GWLP_USERDATA = -21
       }
 
+      ; #3 - Fallback to (8) CF_DIB format (bottom-up bitmap) for maximum compatibility.
+      if (extension ~= "^(?i:avif|bmp|emf|gif|heic|ico|jpg|png|tif|webp|wmf)$") {
+         ; Convert decodable formats into a DIB.
+         DllCall("gdiplus\GdipCreateBitmapFromStreamICM", "ptr", stream, "ptr*", pBitmap:=0)
+         DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "ptr", pBitmap, "ptr*", hbm:=0, "uint", 0)
+
+         ; struct DIBSECTION - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-dibsection
+         ; struct BITMAP - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmap
+         VarSetCapacity(dib, size := 64+5*A_PtrSize)              ; sizeof(DIBSECTION) = 84, 104
+         DllCall("GetObject", "ptr", hbm, "int", size, "ptr", &dib)
+            , pBits := NumGet(dib, A_PtrSize = 4 ? 20:24, "ptr")  ; bmBits
+            , size  := NumGet(dib, A_PtrSize = 4 ? 44:52, "uint") ; biSizeImage
+
+         ; Allocate space for a new device independent bitmap on movable memory.
+         hdib := DllCall("GlobalAlloc", "uint", 0x2, "uptr", 40 + size, "ptr") ; sizeof(BITMAPINFOHEADER) = 40
+         pdib := DllCall("GlobalLock", "ptr", hdib, "ptr")
+
+         ; Copy the BITMAPINFOHEADER and pixel data respectively.
+         DllCall("RtlMoveMemory", "ptr", pdib, "ptr", &dib + (A_PtrSize = 4 ? 24:32), "uptr", 40)
+         DllCall("RtlMoveMemory", "ptr", pdib+40, "ptr", pBits, "uptr", size)
+
+         ; Unlock to moveable memory because the clipboard requires it.
+         DllCall("GlobalUnlock", "ptr", hdib)
+         DllCall("DeleteObject", "ptr", hbm)
+
+         ; CF_DIB (8) can be synthesized into CF_DIBV5 (17), and also CF_BITMAP (2) with delayed rendering.
+         DllCall("SetClipboardData", "uint", 8, "ptr", hdib)
+      }
+
       ; Close the clipboard.
       DllCall("CloseClipboard")
       return ""
    }
       StreamToClipboardProc(uMsg, wParam, lParam) {
-         hwnd := this
+         hwnd := this 
          ; WM_DESTROYCLIPBOARD
-         if (uMsg = 0x0307)
-            if ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", -21, "ptr") {
-               obj := Object(ptr) ; Self-destructs at end of scope.
-               DllCall("GlobalFree", "ptr", obj.hDropFiles)
+         if (uMsg = 0x0307) ; ObjFromPtr self-destructs at end of scope.
+            if obj := Object(DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", -21, "ptr"))
                DllCall("DeleteFile", "str", obj.filepath)
-               DllCall("SetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", -21, "ptr", 0, "ptr") ; GWLP_USERDATA = -21
-            }
-         return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "ptr", wParam, "ptr", lParam, "ptr")
       }
 
 
