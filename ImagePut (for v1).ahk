@@ -412,19 +412,19 @@ class ImagePut {
    ImageType(image) {
 
 
-      
+
       ; Throw if the image is an empty string.
-      if (image == "") {
+      if (image == "")
          ; A "clipboardpng" is a pointer to a PNG stream saved as the "png" clipboard format.
          if DllCall("IsClipboardFormatAvailable", "uint", DllCall("RegisterClipboardFormat", "str", "png", "uint"))
             return "ClipboardPng"
 
          ; A "clipboard" is a handle to a GDI bitmap saved as CF_BITMAP.
-         if DllCall("IsClipboardFormatAvailable", "uint", 2)
+         else if DllCall("IsClipboardFormatAvailable", "uint", 2)
             return "Clipboard"
 
-         throw Exception("Image data is an empty string.")
-      }
+         else throw Exception("Image data is an empty string.")
+
 
       if not IsObject(image)
          goto string

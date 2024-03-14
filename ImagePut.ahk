@@ -414,20 +414,20 @@ class ImagePut {
       if not IsObject(image)
          goto string
 
-      if image.HasProp("prototype") && image.prototype.HasProp("__class") && image.prototype.__class == "ClipboardAll") {
+      if image.HasProp("prototype") && image.prototype.HasProp("__class") && image.prototype.__class == "ClipboardAll"
+      or type(image) == "ClipboardAll" && this.IsClipboard(image.ptr, image.size)
          ; A "clipboardpng" is a pointer to a PNG stream saved as the "png" clipboard format.
          if DllCall("IsClipboardFormatAvailable", "uint", DllCall("RegisterClipboardFormat", "str", "png", "uint"))
             return "ClipboardPng"
 
          ; A "clipboard" is a handle to a GDI bitmap saved as CF_BITMAP.
-         if DllCall("IsClipboardFormatAvailable", "uint", 2)
+         else if DllCall("IsClipboardFormatAvailable", "uint", 2)
             return "Clipboard"
 
-         throw Error("Clipboard format not supported.")
-      }
+         else throw Error("Clipboard format not supported.")
 
-      if type(image) == "ClipboardAll"
-         return this.IsClipboard(image.ptr, image.size)
+
+
 
       array:
       ; A "safearray" is a pointer to a SafeArray COM Object.
@@ -967,14 +967,12 @@ class ImagePut {
    }
 
    static IsClipboard(ptr, size) {
-      msgbox
       pos := 0
-      while (pos < size) 
-         pos += NumGet(ptr + pos + 4, "uint") ; offset
-      if (pos = size)
-         MsgBox true
-      else
-         MsgBox false
+      while (pos < size)
+         if (offset := NumGet(ptr + pos + 4, "uint"))
+            pos += offset + 8
+         else break
+      return pos + 4 == size
    }
 
    static IsImage(ptr, size) {
