@@ -1741,7 +1741,7 @@ class ImagePut {
       return this.ScreenshotToBitmap([x,y,w,h])
    }
 
-   static DcToBitmap(image) {
+   static DCToBitmap(image) {
       ; An application cannot select a single bitmap into more than one DC at a time.
       if !(sbm := DllCall("GetCurrentObject", "ptr", image, "uint", 7))
          throw Error("The device context has no bitmap selected.")
@@ -4621,7 +4621,7 @@ class ImagePut {
       return "data:" mime ";base64," this.StreamToBase64(stream)
    }
 
-   static BitmapToDc(pBitmap, alpha := "") {
+   static BitmapToDC(pBitmap, alpha := "") {
       ; Revert to built in functionality if a replacement color is declared.
       if (alpha != "") { ; This built-in version is about 25% slower and also preserves transparency.
          DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "ptr", pBitmap, "ptr*", &hbm:=0, "uint", alpha)
