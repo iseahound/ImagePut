@@ -2478,7 +2478,7 @@ class ImagePut {
          this.map := Map()
          loop this.width * this.height
             if c := NumGet(this.ptr + 4*(A_Index-1), "uint")
-               this.map[c] := this.map.has(c) ? this.map[c] + 1 : 1
+               this.map[c] := this.map.Has(c) ? this.map[c] + 1 : 1
       }
 
       Count(c*) {
@@ -2565,7 +2565,7 @@ class ImagePut {
       Base64Code(b64) {
          static codes := Map()
 
-         if codes.has(b64)
+         if codes.Has(b64)
             return codes[b64]
 
          s64 := StrLen(RTrim(b64, "=")) * 3 // 4
@@ -3542,12 +3542,9 @@ class ImagePut {
       DllCall("SetWindowLong", "ptr", hwnd, "int", 1*A_PtrSize, "ptr", hwnd) ; child window  (same, only 1 window for now)
       DllCall("SetWindowLong", "ptr", hwnd, "int", 2*A_PtrSize, "ptr", hdc)  ; hdc contains a pixel buffer too!
 
-      obj := {scale: 4
-            , scales: [0.125, 0.25, 0.5, 1, 2, 3, 4, 6, 8, 12]}
-
-      ;obj := {scale: 8
-      ;      , scales: [0.125, 0.25, 0.33, 0.5, 0.66, 0.75, 0.8, 1, 1.2, 1.25, 1.33, 1.5, 1.75, 2, 2.5, 3, 4, 5, 8, 10]}
-      ObjAddRef(ObjPtr(obj))          ; Hold onto this object for dear life!
+      obj := {scale: 5
+            , scales: [0.125, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4, 6, 8, 12]}
+      ObjAddRef(ObjPtr(obj)) ; Hold onto this object for dear life!
       DllCall("SetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", 3*A_PtrSize, "ptr", ObjPtr(obj))
 
       ; Check for multiple frames. This can be in either the page (WEBP) or time (GIF) dimension.
@@ -3789,7 +3786,7 @@ class ImagePut {
          child := DllCall("GetWindowLong", "ptr", hwnd, "int", 1*A_PtrSize, "ptr")
          hdc := DllCall("GetWindowLong", "ptr", child, "int", 2*A_PtrSize, "ptr")
          if ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", child, "int", 3*A_PtrSize, "ptr")
-            obj := ObjFromPtrAddRef(ptr)
+            obj := Object(ptr), ObjAddRef(ptr)
          timer := DllCall("GetWindowLong", "ptr", child, "int", 4*A_PtrSize, "ptr")
 
          ; For some reason using DefWindowProc or PostMessage to reroute WM_LBUTTONDOWN to WM_NCLBUTTONDOWN
@@ -3856,8 +3853,12 @@ class ImagePut {
             DllCall("SendMessage", "ptr", tt, "uint", 1044, "ptr", text_color, "ptr", 0)
 
             ; Destroy tooltip after 7 seconds of the last showing.
-            static Reset_Tooltip := Tooltip.bind(,,, 16)
             SetTimer Reset_Tooltip, -7000
+            return
+
+            Reset_Tooltip() {
+               Tooltip(,,, 16)
+            }
          }
 
          ; WM_MOUSEWHEEL - Zoom in and out.
@@ -3942,10 +3943,6 @@ class ImagePut {
             DllCall("DeleteObject", "ptr", hbm)
             DllCall("DeleteDC", "ptr", hdc)
          }
-
-
-
-
 
          ; WM_APP - Animate GIFs
          if (uMsg = 0x8000) {
@@ -4361,6 +4358,9 @@ class ImagePut {
          return w
       }
       return false
+
+
+
    }
 
    static BitmapToFile(pBitmap, filepath := "", quality := "") {

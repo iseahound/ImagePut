@@ -1434,7 +1434,7 @@ class ImagePut {
       }
 
       ; Adjust coordinates relative to specified window.
-      if image.haskey(5) && (WinExist(image[5]) || DllCall("IsWindow", "ptr", image[5])) {
+      if image.HasKey(5) && (WinExist(image[5]) || DllCall("IsWindow", "ptr", image[5])) {
          try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
          image[5] := (hwnd := WinExist(image[5])) ? hwnd : image[5]
          VarSetCapacity(rect, 16, 0)
@@ -2402,7 +2402,6 @@ class ImagePut {
          this.size := size
          this.width := width
          this.height := height
-         this.free := free
          this.pBitmap := pBitmap
 
          ; A series of callbacks to be called in order to free the memory.
@@ -2479,7 +2478,7 @@ class ImagePut {
          this.map := {}
          loop % this.width * this.height
             if c := NumGet(this.ptr + 4*(A_Index-1), "uint")
-               this.map[c] := this.map.haskey(c) ? this.map[c] + 1 : 1
+               this.map[c] := this.map.HasKey(c) ? this.map[c] + 1 : 1
       }
 
       Count(c*) {
@@ -2566,7 +2565,7 @@ class ImagePut {
       Base64Code(b64) {
          static codes := {}
 
-         if codes.haskey(b64)
+         if codes.HasKey(b64)
             return codes[b64]
 
          s64 := StrLen(RTrim(b64, "=")) * 3 // 4
@@ -3244,6 +3243,15 @@ class ImagePut {
 
 
 
+
+
+
+
+
+
+
+
+
    BitmapToScreenshot(pBitmap, screenshot := "", alpha := "") {
       ; Get Bitmap width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
@@ -3543,6 +3551,11 @@ class ImagePut {
       DllCall("SetWindowLong", "ptr", hwnd, "int", 1*A_PtrSize, "ptr", hwnd) ; child window  (same, only 1 window for now)
       DllCall("SetWindowLong", "ptr", hwnd, "int", 2*A_PtrSize, "ptr", hdc)  ; hdc contains a pixel buffer too!
 
+      obj := {scale: 5
+            , scales: [0.125, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4, 6, 8, 12]}
+      ObjAddRef(&obj)        ; Hold onto this object for dear life!
+      DllCall("SetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", 3*A_PtrSize, "ptr", &obj)
+
       ; Check for multiple frames. This can be in either the page (WEBP) or time (GIF) dimension.
       DllCall("gdiplus\GdipImageGetFrameDimensionsCount", "ptr", pBitmap, "uint*", dims:=0)
       DllCall("gdiplus\GdipImageGetFrameDimensionsList", "ptr", pBitmap, "ptr", &dimIDs := VarSetCapacity(dimIDs, 16*dims), "uint", dims)
@@ -3585,18 +3598,16 @@ class ImagePut {
          pTimeProc := this.SyncWindowProc(hwnd, 0x8000)
 
          ; Create an object to hold all the extra data.
-         obj := {type : type             ; Either "gif" or "webp"
-               , w : w                   ; width
-               , h : h                   ; height
-               , frame : 0               ; current frame (zero-indexed)
-               , number : number         ; max frames
-               , accumulate : 0          ; current wait time
-               , delays : delays         ; array of frame delays
-               , interval : interval     ; timer resolution
-               , pTimeProc : pTimeProc   ; callback address
-               , dimIDs : dimIDs}        ; frame dimension guid (Time or Page)
-         ObjAddRef(&obj)                 ; Hold onto this object for dear life!
-         DllCall("SetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", 3*A_PtrSize, "ptr", &obj)
+         obj.type := type            ; Either "gif" or "webp"
+         obj.w := w                  ; width
+         obj.h := h                  ; height
+         obj.frame := 0              ; current frame (zero-indexed)
+         obj.number := number        ; max frames
+         obj.accumulate := 0         ; current wait time
+         obj.delays := delays        ; array of frame delays
+         obj.interval := interval    ; timer resolution
+         obj.pTimeProc := pTimeProc  ; callback address
+         obj.dimIDs := dimIDs        ; frame dimension guid (Time or Page)
 
          ; Case 1: Image is not scaled.
          if (!cache && w == width && h == height) {
@@ -3749,7 +3760,7 @@ class ImagePut {
 
             ; The object will self-destruct at end of scope. No need to add a reference!
             if ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", 3*A_PtrSize, "ptr") {
-               obj := Object(ptr) ; Todo: test reference...
+               obj := Object(ptr)
 
                ; Exit GIF animation loop. Ends any triggered WM_APP.
                DllCall("SetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", 3*A_PtrSize, "ptr", 0)
@@ -3757,7 +3768,9 @@ class ImagePut {
                ; Stop Animation loop.
                if timer := DllCall("GetWindowLong", "ptr", hwnd, "int", 4*A_PtrSize, "ptr")
                   DllCall("winmm\timeKillEvent", "uint", timer)
-               DllCall("GlobalFree", "ptr", obj.pTimeProc)
+
+               if obj.HasKey("pTimeProc")
+                  DllCall("GlobalFree", "ptr", obj.pTimeProc)
 
                if obj.HasKey("pBitmap") {
                   DllCall("gdiplus\GdipDisposeImage", "ptr", obj.pBitmap)
@@ -3780,6 +3793,10 @@ class ImagePut {
          ; Remember the child window contains all the assets.
          parent := DllCall("GetWindowLong", "ptr", hwnd, "int", 0*A_PtrSize, "ptr")
          child := DllCall("GetWindowLong", "ptr", hwnd, "int", 1*A_PtrSize, "ptr")
+         hdc := DllCall("GetWindowLong", "ptr", child, "int", 2*A_PtrSize, "ptr")
+         if ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", child, "int", 3*A_PtrSize, "ptr")
+            obj := ObjFromPtrAddRef(ptr)
+         timer := DllCall("GetWindowLong", "ptr", child, "int", 4*A_PtrSize, "ptr")
 
          ; For some reason using DefWindowProc or PostMessage to reroute WM_LBUTTONDOWN to WM_NCLBUTTONDOWN
          ; will always disable the complementary WM_LBUTTONUP. However, if the CS_DBLCLKS window style is set,
@@ -3852,6 +3869,81 @@ class ImagePut {
                Tooltip,,,, 16
             return
          }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
          ; WM_APP - Animate GIFs
          if (uMsg = 0x8000) {
@@ -4003,14 +4095,16 @@ class ImagePut {
 
             if ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", child, "int", 3*A_PtrSize, "ptr") {
                obj := Object(ptr)
-               timer := DllCall("winmm\timeSetEvent"
-                        , "uint", obj.interval  ; uDelay
-                        , "uint", obj.interval  ; uResolution
-                        ,  "ptr", obj.pTimeProc ; lpTimeProc
-                        , "uptr", 0             ; dwUser
-                        , "uint", 1             ; fuEvent
-                        , "uint")
-               DllCall("SetWindowLong", "ptr", child, "int", 4*A_PtrSize, "ptr", timer)
+               if obj.HasKey("pTimeProc") {
+                  timer := DllCall("winmm\timeSetEvent"
+                           , "uint", obj.interval  ; uDelay
+                           , "uint", obj.interval  ; uResolution
+                           ,  "ptr", obj.pTimeProc ; lpTimeProc
+                           , "uptr", 0             ; dwUser
+                           , "uint", 1             ; fuEvent
+                           , "uint")
+                  DllCall("SetWindowLong", "ptr", child, "int", 4*A_PtrSize, "ptr", timer)
+               }
             }
          }
 
@@ -4308,7 +4402,7 @@ class ImagePut {
       flags := 0x40000004 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_HEX
       DllCall("crypt32\CryptBinaryToString", "ptr", &bin, "uint", size, "uint", flags, "str", str, "uint*", length)
 
-      ; Determine the file extension using herustics. See: http://fileformats.archiveteam.org
+      ; Determine the extension using herustics. See: http://fileformats.archiveteam.org
       extension := 0                                                              ? ""
       : str ~= "(?i)66 74 79 70 61 76 69 66"                                      ? "avif" ; ftypavif
       : str ~= "(?i)^42 4d (.. ){36}00 00 .. 00 00 00"                            ? "bmp"  ; BM
