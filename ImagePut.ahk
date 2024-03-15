@@ -1994,7 +1994,6 @@ class ImagePut {
    }
 
    static WicBitmapToBitmap(image) {
-      ; IWICBitmapSource::GetSize - https://github.com/iseahound/10/blob/win/10.0.16299.0/um/wincodec.h#L1304
       ComCall(GetSize := 3, image, "uint*", &width:=0, "uint*", &height:=0)
 
       ; Intialize an empty pBitmap using managed memory.
@@ -2015,7 +2014,6 @@ class ImagePut {
       Scan0 := NumGet(BitmapData, 16, "ptr")
       stride := NumGet(BitmapData, 8, "int")
 
-      ; IWICBitmapSource::CopyPixels - https://github.com/iseahound/10/blob/win/10.0.16299.0/um/wincodec.h#L1322
       ComCall(CopyPixels := 7, image, "ptr", Rect, "uint", stride, "uint", stride * height, "ptr", Scan0)
 
       ; Write pixels to bitmap.
@@ -2127,7 +2125,7 @@ class ImagePut {
       if !(hwnd := DllCall("FindWindow", "str", "AutoHotkey", "str", "_StreamToClipboard", "ptr")) {
          hwnd := DllCall("CreateWindowEx", "uint", 0, "str", "AutoHotkey", "str", "_StreamToClipboard"
          , "uint", 0, "int", 0, "int", 0, "int", 0, "int", 0, "ptr", 0, "ptr", 0, "ptr", 0, "ptr", 0, "ptr")
-         DllCall("SetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", -4, "ptr", CallbackCreate(StreamToClipboardProc)) ; GWLP_WNDPROC = -4
+         DllCall("SetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", -4, "ptr", CallbackCreate(StreamToClipboardProc)) ; GWLP_WNDPROC
       }
 
       ; Open the clipboard with exponential backoff.

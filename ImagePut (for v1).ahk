@@ -207,7 +207,7 @@ class ImagePut {
       isStreamIn := type ~= "^(?i:clipboardpng|safearray|encodedbuffer|url|file|stream|RandomAccessStream|hex|base64)$"
       isStreamOut := cotype ~= "^(?i:clipboard|encodedbuffer|file|stream|RandomAccessStream|hex|base64|uri|explorer|safeArray|formData)$"
 
-      ; Extract options to be directly applied the intermediate here.
+      ; Extract options to be directly applied the intermediate representation here.
       crop      := keywords.HasKey("crop")       ? keywords.crop      : ""
       scale     := keywords.HasKey("scale")      ? keywords.scale     : ""
       upscale   := keywords.HasKey("upscale")    ? keywords.upscale   : ""
@@ -457,7 +457,7 @@ class ImagePut {
       ("POINTER IS BAD AND PROGRAM IS CRASH") && NumGet(image.ptr, "char")
 
       ; An "encodedbuffer" contains a pointer to the bytes of an encoded image format.
-      if image.HasKey("ptr") and image.HasKey("size") and this.IsImage(image.ptr, image.size)
+      if image.HasKey("ptr") && image.HasKey("size") && this.IsImage(image.ptr, image.size)
          return "EncodedBuffer"
 
       ; A "buffer" is an object with a pointer to bytes and properties to determine its 2-D shape.
@@ -1994,7 +1994,6 @@ class ImagePut {
    }
 
    WicBitmapToBitmap(image) {
-      ; IWICBitmapSource::GetSize - https://github.com/iseahound/10/blob/win/10.0.16299.0/um/wincodec.h#L1304
       DllCall(NumGet(NumGet(image+0)+A_PtrSize* 3), "ptr", image, "uint*", width:=0, "uint*", height:=0)
 
       ; Intialize an empty pBitmap using managed memory.
@@ -2015,7 +2014,6 @@ class ImagePut {
       Scan0 := NumGet(BitmapData, 16, "ptr")
       stride := NumGet(BitmapData, 8, "int")
 
-      ; IWICBitmapSource::CopyPixels - https://github.com/iseahound/10/blob/win/10.0.16299.0/um/wincodec.h#L1322
       DllCall(NumGet(NumGet(image+0)+A_PtrSize* 7), "ptr", image, "ptr", &Rect, "uint", stride, "uint", stride * height, "ptr", Scan0)
 
       ; Write pixels to bitmap.
@@ -2046,7 +2044,7 @@ class ImagePut {
       DllCall("ole32\CLSIDFromString", "wstr", "{557CF406-1A04-11D3-9A73-0000F81EF32E}", "ptr", &pCodec:=VarSetCapacity(pCodec, 16), "uint")
       DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", stream, "ptr", &pCodec, "ptr", 0)
 
-      ; Set the rescued HGlobal to the
+      ; Set the rescued HGlobal to the clipboard as a shared object.
       DllCall("ole32\GetHGlobalFromStream", "ptr", stream, "uint*", handle:=0, "uint")
       ObjRelease(stream)
 
@@ -2106,7 +2104,7 @@ class ImagePut {
       flags := 0x40000004 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_HEX
       DllCall("crypt32\CryptBinaryToString", "ptr", &bin, "uint", size, "uint", flags, "str", str, "uint*", length)
 
-      ; Determine the file extension using herustics. See: http://fileformats.archiveteam.org
+      ; Determine the extension using herustics. See: http://fileformats.archiveteam.org
       extension := 0                                                              ? ""
       : str ~= "(?i)66 74 79 70 61 76 69 66"                                      ? "avif" ; ftypavif
       : str ~= "(?i)^42 4d (.. ){36}00 00 .. 00 00 00"                            ? "bmp"  ; BM
@@ -2127,7 +2125,7 @@ class ImagePut {
       if !(hwnd := DllCall("FindWindow", "str", "AutoHotkey", "str", "_StreamToClipboard", "ptr")) {
          hwnd := DllCall("CreateWindowEx", "uint", 0, "str", "AutoHotkey", "str", "_StreamToClipboard"
          , "uint", 0, "int", 0, "int", 0, "int", 0, "int", 0, "ptr", 0, "ptr", 0, "ptr", 0, "ptr", 0, "ptr")
-         DllCall("SetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", -4, "ptr", RegisterCallback(this.StreamToClipboardProc,,, &this)) ; GWLP_WNDPROC = -4
+         DllCall("SetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", -4, "ptr", RegisterCallback(this.StreamToClipboardProc,,, &this)) ; GWLP_WNDPROC
       }
 
       ; Open the clipboard with exponential backoff.
@@ -2188,7 +2186,7 @@ class ImagePut {
          DllCall("SetClipboardData", "uint", 15, "ptr", hDropFiles)
 
          ; Clean up the file when EmptyClipboard is called by another program.
-         obj := {filepath: filepath, hDropFiles: hDropFiles}
+         obj := {filepath: filepath}
          ptr := &obj
          ObjAddRef(ptr)
          DllCall("SetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", -21, "ptr", ptr, "ptr") ; GWLP_USERDATA = -21
