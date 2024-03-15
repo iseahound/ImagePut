@@ -341,7 +341,7 @@ class ImagePut {
       if (cotype != "bitmap")
          DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
 
-      if cleanup = "stream"
+      if (cleanup = "stream")
          ObjRelease(stream)
 
       exit:
@@ -3736,7 +3736,7 @@ class ImagePut {
             Persistent(--active_windows)
 
             ; Continue if the child window is found. It contains all of the assets to be freed.
-            if hwnd != DllCall("GetWindowLong", "ptr", hwnd, "int", 1*A_PtrSize, "ptr")
+            if (hwnd != DllCall("GetWindowLong", "ptr", hwnd, "int", 1*A_PtrSize, "ptr"))
                return
 
             ; Get stock bitmap.
@@ -3768,12 +3768,13 @@ class ImagePut {
                   ImagePut.gdiplusShutdown()
                }
 
-               if obj.HasProp("cache")
+               if obj.HasProp("cache") {
                   for each, hdc in obj.cache { ; Overwrites the hdc and hbm variables.
                      hbm := DllCall("SelectObject", "ptr", hdc, "ptr", obm, "ptr")
                      DllCall("DeleteObject", "ptr", hbm)
                      DllCall("DeleteDC", "ptr", hdc)
                   }
+               }
             }
          }
 
@@ -3786,7 +3787,7 @@ class ImagePut {
          child := DllCall("GetWindowLong", "ptr", hwnd, "int", 1*A_PtrSize, "ptr")
          hdc := DllCall("GetWindowLong", "ptr", child, "int", 2*A_PtrSize, "ptr")
          if ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", child, "int", 3*A_PtrSize, "ptr")
-            obj := Object(ptr), ObjAddRef(ptr)
+            obj := ObjFromPtrAddRef(ptr)
          timer := DllCall("GetWindowLong", "ptr", child, "int", 4*A_PtrSize, "ptr")
 
          ; For some reason using DefWindowProc or PostMessage to reroute WM_LBUTTONDOWN to WM_NCLBUTTONDOWN
@@ -3888,7 +3889,6 @@ class ImagePut {
                , height := NumGet(dib, 8, "uint")
                , pBits  := NumGet(dib, A_PtrSize = 4 ? 20:24, "ptr")
 
-            obj := ObjFromPtrAddRef(DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", child, "int", 3*A_PtrSize, "ptr"))
             scale := obj.scale
             (wheeldelta > 1) ? scale++ : scale--
             (scale < 1) && scale := 1
@@ -3949,15 +3949,11 @@ class ImagePut {
             ; Thanks tmplinshi, Teadrinker - https://www.autohotkey.com/boards/viewtopic.php?f=76&t=83358
             Critical
 
-            ; Get variables.
-            ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", child, "int", 3*A_PtrSize, "ptr")
-
             ; Exit GIF animation loop. Set by WM_Destroy.
             if !ptr
                return
 
             ; Get variables. ObjRelease is automatically called at the end of the scope.
-            obj := ObjFromPtrAddRef(ptr)
             type := obj.type
             w := obj.w
             h := obj.h
@@ -4079,11 +4075,8 @@ class ImagePut {
          ; Clears the frame number and wait time.
          if (uMsg = 0x8001 || uMsg = 0x8002) {
             if (wParam) {
-               if ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", child, "int", 3*A_PtrSize, "ptr") {
-                  obj := ObjFromPtrAddRef(ptr)
-                  obj.frame := 0
-                  obj.accumulate := 0
-               }
+               obj.frame := 0
+               obj.accumulate := 0
             }
          }
 
@@ -4092,18 +4085,15 @@ class ImagePut {
             if timer := DllCall("GetWindowLong", "ptr", child, "int", 4*A_PtrSize, "ptr")
                return
 
-            if ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", child, "int", 3*A_PtrSize, "ptr") {
-               obj := ObjFromPtrAddRef(ptr)
-               if obj.HasProp("pTimeProc") {
-                  timer := DllCall("winmm\timeSetEvent"
-                           , "uint", obj.interval  ; uDelay
-                           , "uint", obj.interval  ; uResolution
-                           ,  "ptr", obj.pTimeProc ; lpTimeProc
-                           , "uptr", 0             ; dwUser
-                           , "uint", 1             ; fuEvent
-                           , "uint")
-                  DllCall("SetWindowLong", "ptr", child, "int", 4*A_PtrSize, "ptr", timer)
-               }
+            if obj.HasProp("pTimeProc") {
+               timer := DllCall("winmm\timeSetEvent"
+                        , "uint", obj.interval  ; uDelay
+                        , "uint", obj.interval  ; uResolution
+                        ,  "ptr", obj.pTimeProc ; lpTimeProc
+                        , "uptr", 0             ; dwUser
+                        , "uint", 1             ; fuEvent
+                        , "uint")
+               DllCall("SetWindowLong", "ptr", child, "int", 4*A_PtrSize, "ptr", timer)
             }
          }
 

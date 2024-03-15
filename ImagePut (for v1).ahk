@@ -341,7 +341,7 @@ class ImagePut {
       if (cotype != "bitmap")
          DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
 
-      if cleanup = "stream"
+      if (cleanup = "stream")
          ObjRelease(stream)
 
       exit:
@@ -2230,7 +2230,7 @@ class ImagePut {
          ; WM_DESTROYCLIPBOARD
          if (uMsg = 0x0307) ; ObjFromPtr self-destructs at end of scope.
             if obj := Object(DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", -21, "ptr"))
-               DllCall("DeleteFile", "str", obj.filepath)
+               DllCall("DeleteFile", "str", obj.filepath), ObjRelease(obj)
       }
 
 
@@ -3243,15 +3243,6 @@ class ImagePut {
 
 
 
-
-
-
-
-
-
-
-
-
    BitmapToScreenshot(pBitmap, screenshot := "", alpha := "") {
       ; Get Bitmap width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
@@ -3745,7 +3736,7 @@ class ImagePut {
             Hotkey % "^+F12", % void, Off ; Cannot disable script persistence, does nothing
 
             ; The child window contains all of the assets to be freed.
-            if hwnd != DllCall("GetWindowLong", "ptr", hwnd, "int", 1*A_PtrSize, "ptr")
+            if (hwnd != DllCall("GetWindowLong", "ptr", hwnd, "int", 1*A_PtrSize, "ptr"))
                return
 
             ; Get stock bitmap.
@@ -3760,7 +3751,7 @@ class ImagePut {
 
             ; The object will self-destruct at end of scope. No need to add a reference!
             if ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", 3*A_PtrSize, "ptr") {
-               obj := Object(ptr)
+               obj := Object(ptr), ObjRelease(ptr)
 
                ; Exit GIF animation loop. Ends any triggered WM_APP.
                DllCall("SetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", 3*A_PtrSize, "ptr", 0)
@@ -3777,12 +3768,13 @@ class ImagePut {
                   ImagePut.gdiplusShutdown()
                }
 
-               if obj.HasKey("cache")
+               if obj.HasKey("cache") {
                   for each, hdc in obj.cache { ; Overwrites the hdc and hbm variables.
                      hbm := DllCall("SelectObject", "ptr", hdc, "ptr", obm, "ptr")
                      DllCall("DeleteObject", "ptr", hbm)
                      DllCall("DeleteDC", "ptr", hdc)
                   }
+               }
             }
          }
 
@@ -3795,7 +3787,7 @@ class ImagePut {
          child := DllCall("GetWindowLong", "ptr", hwnd, "int", 1*A_PtrSize, "ptr")
          hdc := DllCall("GetWindowLong", "ptr", child, "int", 2*A_PtrSize, "ptr")
          if ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", child, "int", 3*A_PtrSize, "ptr")
-            obj := ObjFromPtrAddRef(ptr)
+            obj := Object(ptr)
          timer := DllCall("GetWindowLong", "ptr", child, "int", 4*A_PtrSize, "ptr")
 
          ; For some reason using DefWindowProc or PostMessage to reroute WM_LBUTTONDOWN to WM_NCLBUTTONDOWN
@@ -3945,20 +3937,23 @@ class ImagePut {
 
 
 
+
+
+
+
+
+
+
          ; WM_APP - Animate GIFs
          if (uMsg = 0x8000) {
             ; Thanks tmplinshi, Teadrinker - https://www.autohotkey.com/boards/viewtopic.php?f=76&t=83358
             Critical
-
-            ; Get variables.
-            ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", child, "int", 3*A_PtrSize, "ptr")
 
             ; Exit GIF animation loop. Set by WM_Destroy.
             if !ptr
                return
 
             ; Get variables. ObjRelease is automatically called at the end of the scope.
-            obj := Object(ptr)
             type := obj.type
             w := obj.w
             h := obj.h
@@ -4080,11 +4075,8 @@ class ImagePut {
          ; Clears the frame number and wait time.
          if (uMsg = 0x8001 || uMsg = 0x8002) {
             if (wParam) {
-               if ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", child, "int", 3*A_PtrSize, "ptr") {
-                  obj := Object(ptr)
-                  obj.frame := 0
-                  obj.accumulate := 0
-               }
+               obj.frame := 0
+               obj.accumulate := 0
             }
          }
 
@@ -4093,18 +4085,15 @@ class ImagePut {
             if timer := DllCall("GetWindowLong", "ptr", child, "int", 4*A_PtrSize, "ptr")
                return
 
-            if ptr := DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", child, "int", 3*A_PtrSize, "ptr") {
-               obj := Object(ptr)
-               if obj.HasKey("pTimeProc") {
-                  timer := DllCall("winmm\timeSetEvent"
-                           , "uint", obj.interval  ; uDelay
-                           , "uint", obj.interval  ; uResolution
-                           ,  "ptr", obj.pTimeProc ; lpTimeProc
-                           , "uptr", 0             ; dwUser
-                           , "uint", 1             ; fuEvent
-                           , "uint")
-                  DllCall("SetWindowLong", "ptr", child, "int", 4*A_PtrSize, "ptr", timer)
-               }
+            if obj.HasKey("pTimeProc") {
+               timer := DllCall("winmm\timeSetEvent"
+                        , "uint", obj.interval  ; uDelay
+                        , "uint", obj.interval  ; uResolution
+                        ,  "ptr", obj.pTimeProc ; lpTimeProc
+                        , "uptr", 0             ; dwUser
+                        , "uint", 1             ; fuEvent
+                        , "uint")
+               DllCall("SetWindowLong", "ptr", child, "int", 4*A_PtrSize, "ptr", timer)
             }
          }
 
