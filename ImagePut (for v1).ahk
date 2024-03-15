@@ -2290,12 +2290,12 @@ class ImagePut {
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
 
       ; Free the pixels later.
-      free := Func("DllCall").bind("GlobalFree", "ptr", ptr)
-
-      return new ImagePut.BitmapBuffer(ptr, size, width, height, free)
+      buf := new ImagePut.BitmapBuffer(ptr, size, width, height)
+      buf.free := [Func("DllCall").bind("GlobalFree", "ptr", ptr)]
+      return buf
    }
 
-   SharedBufferToBuffer(image) {
+   SharedBufferToSharedBuffer(image) {
       hMap := DllCall("OpenFileMapping", "uint", 0x2, "int", 0, "str", image, "ptr")
       pMap := DllCall("MapViewOfFile", "ptr", hMap, "uint", 0x2, "uint", 0, "uint", 0, "uptr", 0, "ptr")
 
@@ -2304,12 +2304,9 @@ class ImagePut {
       size := 4 * width * height
       ptr := pMap + 8
 
-      free := DllCall.bind("UnmapViewOfFile", "ptr", pMap)
-      ;   DllCall("UnmapViewOfFile", "ptr", pMap),
-      ;   DllCall("CloseHandle", "ptr", hMap)
-      ;)
-
-      buf := new ImagePut.BitmapBuffer(ptr, size, width, height, free)
+      ; Free the pixels later.
+      buf := new ImagePut.BitmapBuffer(ptr, size, width, height)
+      buf.free := [Func("DllCall").bind("UnmapViewOfFile", "ptr", pMap), Func("DllCall").bind("CloseHandle", "ptr", hMap)]
       buf.name := image
       return buf
    }
@@ -2385,19 +2382,15 @@ class ImagePut {
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
 
       ; Free the pixels later.
-      free := DllCall.bind("UnmapViewOfFile", "ptr", pMap)
-      ;free := () => (
-      ;   DllCall("UnmapViewOfFile", "ptr", pMap),
-      ;)
-
-      buf := new ImagePut.BitmapBuffer(ptr, size, width, height, free)
+      buf := new ImagePut.BitmapBuffer(ptr, size, width, height)
+      buf.free := [Func("DllCall").bind("UnmapViewOfFile", "ptr", pMap), Func("DllCall").bind("CloseHandle", "ptr", hMap)]
       buf.name := name
       return buf
    }
 
    class BitmapBuffer {
 
-      __New(ptr, size, width, height, free:="") {
+      __New(ptr, size, width, height, stride:="") {
          ImagePut.gdiplusStartup()
 
          ; Create a pBitmap on saved memory.
@@ -2411,11 +2404,15 @@ class ImagePut {
          this.height := height
          this.free := free
          this.pBitmap := pBitmap
+
+         ; A series of callbacks to be called in order to free the memory.
+         this.free := []
       }
 
       __Delete() {
          DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap)
-         this.free.call()
+	 for callback in this.free
+            callback.call()
          ImagePut.gdiplusShutdown()
       }
 
@@ -2499,8 +2496,9 @@ class ImagePut {
       Clone() {
          ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", this.size, "ptr")
          DllCall("RtlMoveMemory", "ptr", ptr, "ptr", this.ptr, "uptr", this.size)
-         free := Func("DllCall").bind("GlobalFree", "ptr", ptr)
-         return new ImagePut.BitmapBuffer(ptr, this.size, this.width, this.height, free)
+         buf := new ImagePut.BitmapBuffer(ptr, this.size, this.width, this.height)
+         buf.free := [Func("DllCall").bind("GlobalFree", "ptr", ptr)]
+         return buf
       }
 
       Crop(x, y, w, h) {
