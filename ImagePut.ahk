@@ -1393,7 +1393,7 @@ class ImagePut {
       pBits := obj.ptr
       size := obj.size
 
-      ; Create a source GDI+ Bitmap that owns its memory. The pixel format is 32-bit pre-multiplied ARGB.
+      ; Create a destination GDI+ Bitmap that owns its memory. The pixel format is 32-bit pre-multiplied ARGB.
       DllCall("gdiplus\GdipCreateBitmapFromScan0"
                , "int", width, "int", height, "uint", size / height, "uint", 0xE200B, "ptr", 0, "ptr*", &pBitmap:=0)
 
@@ -2320,7 +2320,7 @@ class ImagePut {
       size := 4 * width * height
       ptr := pMap + 8
 
-      ; Create a source GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
+      ; Create a destination GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
       DllCall("gdiplus\GdipCreateBitmapFromScan0"
                , "int", width, "int", height, "uint", size / height, "uint", 0x26200A, "ptr", 0, "ptr*", &pBitmap:=0)
 
