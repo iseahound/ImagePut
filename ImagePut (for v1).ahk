@@ -975,6 +975,11 @@ class ImagePut {
 
 
 
+
+
+
+
+
    IsImage(ptr, size) {
       ; Shortest possible image is 24 bytes.
       if (size < 24)
