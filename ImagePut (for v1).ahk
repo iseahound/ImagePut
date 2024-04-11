@@ -203,10 +203,6 @@ class ImagePut {
       catch
          type := this.ImageType(image)
 
-      ; Determine if the intermediate type is supported.
-      isStreamIn := type ~= "^(?i:clipboardpng|safearray|encodedbuffer|url|file|stream|RandomAccessStream|hex|base64)$"
-      isStreamOut := cotype ~= "^(?i:clipboard|encodedbuffer|file|stream|RandomAccessStream|hex|base64|uri|explorer|safeArray|formData)$"
-
       ; Extract options to be directly applied the intermediate representation here.
       crop      := keywords.HasKey("crop")       ? keywords.crop      : ""
       scale     := keywords.HasKey("scale")      ? keywords.scale     : ""
@@ -223,10 +219,12 @@ class ImagePut {
       cleanup := ""
 
       ; #1 - Stream as the intermediate representation.
-      if not isStreamIn
-         goto make_bitmap
-
-      if !(stream := this.ImageToStream(type, image, keywords))
+      try stream := this.ImageToStream(type, image, keywords)
+      catch e
+         if (e.Message ~= "^Conversion from")
+            goto make_bitmap
+         else throw
+      if not stream
          throw Exception("Stream cannot be zero.")
 
       ; Check the file signature for magic numbers.
@@ -277,11 +275,11 @@ class ImagePut {
       ; Determine whether the stream should be decoded into pixels.
       weight := decode || crop || scale || upscale || downscale || sprite ||
 
-         ; Check if the 1st parameter matches the file signature.
+         ; Check if the 1st parameter matches the extension.
          !( cotype ~= "^(?i:encodedbuffer|url|hex|base64|uri|stream|randomaccessstream|safearray)$"
             && (!p.HasKey(1) || p[1] == "" || p[1] = extension)
 
-         ; Check if the 2nd parameter matches the file signature.
+         ; Check if the 2nd parameter matches the extension.
          || cotype = "formdata"
             && (!p.HasKey(2) || p[2] == "" || p[2] = extension)
 
@@ -296,19 +294,24 @@ class ImagePut {
 
          ; MsgBox % weight ? "convert to pixels" : "stay as stream"
 
+      if weight
+         goto clean_stream
+
       ; Attempt conversion using StreamToCoimage.
-      if not weight && isStreamOut {
+      try coimage := this.StreamToCoimage(cotype, stream, p*)
+      catch e
+         if (e.Message ~= "^Conversion from")
+            goto clean_stream
+         else throw
 
-         coimage := this.StreamToCoimage(cotype, stream, p*)
+      ; Clean up the copy. Export raw pointers if requested.
+      if (cotype != "stream")
+         ObjRelease(stream)
 
-         ; Clean up the copy. Export raw pointers if requested.
-         if (cotype != "stream")
-            ObjRelease(stream)
-
-         goto exit
-      }
+      goto exit
 
       ; Otherwise export the image as a stream.
+      clean_stream:
       type := "stream"
       image := stream
       cleanup := "stream"
