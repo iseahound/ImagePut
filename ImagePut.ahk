@@ -4992,11 +4992,15 @@ class ImagePut {
       ;https://gist.github.com/smourier/5b770d32043121d477a8079ef6be0995
       ;https://stackoverflow.com/questions/75917247/convert-svg-files-to-bitmap-using-direct2d-in-mfc#75935717
       ; ID2D1DeviceContext5::CreateSvgDocument is the carrying api
+      /*
+
+
       hModule:=DllCall("GetModuleHandleA", "AStr", "WindowsCodecs.dll", "ptr")||DllCall("LoadLibraryA", "AStr", "WindowsCodecs.dll", "ptr")
-      CLSID_WICImagingFactory:=Buffer(0x10)
-      NumPut("uint64", 0x433D5F24317D06E8, CLSID_WICImagingFactory, 0x0)
-      NumPut("uint64", 0xC2ABD868CE79F7BD, CLSID_WICImagingFactory, 0x8)
-      IID_IClassFactory:=Buffer(0x10)
+      CLSID_WICImagingFactory := Buffer(16)
+      DllCall("ole32\CLSIDFromString", "wstr", "{317d06e8-5f24-433d-bdf7-79ce68d8abc2}", "ptr", CLSID_WICImagingFactory, "hresult")
+      ;NumPut("uint64", 0x433D5F24317D06E8, CLSID_WICImagingFactory, 0x0)
+      ;NumPut("uint64", 0xC2ABD868CE79F7BD, CLSID_WICImagingFactory, 0x8)
+      IID_IClassFactory := Buffer(16)
       NumPut("uint64", 0x0000000000000001, IID_IClassFactory, 0x0)
       NumPut("uint64", 0x46000000000000C0, IID_IClassFactory, 0x8)
       DllGetClassObject:=DllCall("GetProcAddress", "ptr", hModule, "AStr", "DllGetClassObject", "ptr")
@@ -5006,22 +5010,20 @@ class ImagePut {
       NumPut("uint64", 0x4314C395EC5EC8A9, IID_IWICImagingFactory, 0x0)
       NumPut("uint64", 0x70FF35A9D754779C, IID_IWICImagingFactory, 0x8)
       ComCall(CreateInstance := 3, IClassFactory, "ptr", 0, "ptr", IID_IWICImagingFactory, "ptr*", &IWICImagingFactory:=0) ;IClassFactory::
+*/
+      IWICImagingFactory := ComObject("{CACAF262-9370-4615-A13B-9F5539DA4C0A}", "{EC5EC8A9-C395-4314-9C77-54D7A935FF70}")
 
-      GUID_WICPixelFormat32bppPBGRA := Buffer(0x10)
-      NumPut("uint64", 0x4BFE4E036FDDC324, GUID_WICPixelFormat32bppPBGRA, 0x0)
-      NumPut("uint64", 0x10C98D76773D85B1, GUID_WICPixelFormat32bppPBGRA, 0x8)
-      ComCall(CreateBitmap := 17, IWICImagingFactory, "uint", width, "uint", height, "ptr", GUID_WICPixelFormat32bppPBGRA, "Int", 0x2, "ptr*", &IWICBitmap:=0) ;IWICImagingFactory::,  0x2=WICBitmapCacheOnLoad
+      GUID_WICPixelFormat32bppPBGRA := Buffer(16)
+      DllCall("ole32\CLSIDFromString", "wstr", "{6fddc324-4e03-4bfe-b185-3d77768dc910}", "ptr", GUID_WICPixelFormat32bppPBGRA, "hresult")
+      ComCall(CreateBitmap := 17, IWICImagingFactory, "uint", width, "uint", height, "ptr", GUID_WICPixelFormat32bppPBGRA, "int", 2, "ptr*", &IWICBitmap:=0) ;IWICImagingFactory::,  0x2=WICBitmapCacheOnLoad
 
-
-      IID_ID2D1Factory:=Buffer(0x10)
-      NumPut("uint64", 0x465A6F5006152247, IID_ID2D1Factory, 0x0)
-      NumPut("uint64", 0x07603BFD8B114592, IID_ID2D1Factory, 0x8)
-
+      IID_ID2D1Factory:=Buffer(16)
+      DllCall("ole32\IIDFromString", "wstr", "{06152247-6f50-465a-9245-118bfd3b6007}", "ptr", IID_ID2D1Factory, "hresult")
       DllCall("GetModuleHandleA",  "AStr",  "d2d1") || DllCall("LoadLibraryA",  "AStr",  "d2d1") ;this is needed to avoid "Critical Error: Invalid memory read/write"
       DllCall("d2d1\D2D1CreateFactory", "Int", 0, "ptr", IID_ID2D1Factory, "ptr", 0, "ptr*", &ID2D1Factory:=0) ;0=D2D1_FACTORY_TYPE_SINGLE_THREADED,  3=D2D1_DEBUG_LEVEL_INFORMATION
 
       D2D1_RENDER_TARGET_PROPERTIES:=Buffer(0x1c, 0)
-      ComCall(13, ID2D1Factory, "ptr", IWICBitmap, "ptr", D2D1_RENDER_TARGET_PROPERTIES, "ptr*", &ID2D1RenderTarget:=0) ;ID2D1Factory::CreateWicBitmapRenderTarget
+      ComCall(CreateWicBitmapRenderTarget := 13, ID2D1Factory, "ptr", IWICBitmap, "ptr", D2D1_RENDER_TARGET_PROPERTIES, "ptr*", &ID2D1RenderTarget:=0) ;ID2D1Factory::
 
       ; IID_ID2D1DeviceContext5:=Buffer(0x10)
       ; NumPut("uint64", 0x4DF668CC7836D248, IID_ID2D1DeviceContext5, 0x0)
