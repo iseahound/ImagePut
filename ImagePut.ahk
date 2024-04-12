@@ -5018,7 +5018,7 @@ class ImagePut {
       NumPut("uint64", 0x07603BFD8B114592, IID_ID2D1Factory, 0x8)
 
       DllCall("GetModuleHandleA",  "AStr",  "d2d1") || DllCall("LoadLibraryA",  "AStr",  "d2d1") ;this is needed to avoid "Critical Error: Invalid memory read/write"
-      DllCall("d2d1\D2D1CreateFactory", "Int", 0, "ptr", IID_ID2D1Factory, "Int*", 3, "ptr*", &ID2D1Factory:=0) ;0=D2D1_FACTORY_TYPE_SINGLE_THREADED,  3=D2D1_DEBUG_LEVEL_INFORMATION
+      DllCall("d2d1\D2D1CreateFactory", "Int", 0, "ptr", IID_ID2D1Factory, "ptr", 0, "ptr*", &ID2D1Factory:=0) ;0=D2D1_FACTORY_TYPE_SINGLE_THREADED,  3=D2D1_DEBUG_LEVEL_INFORMATION
 
       D2D1_RENDER_TARGET_PROPERTIES:=Buffer(0x1c, 0)
       ComCall(13, ID2D1Factory, "ptr", IWICBitmap, "ptr", D2D1_RENDER_TARGET_PROPERTIES, "ptr*", &ID2D1RenderTarget:=0) ;ID2D1Factory::CreateWicBitmapRenderTarget
@@ -5035,8 +5035,8 @@ class ImagePut {
       NumPut("float", height, D2D1_SIZE_F, 0x4)
       ComCall(115, ID2D1RenderTarget, "ptr", IStream, "uint64", NumGet(D2D1_SIZE_F, "uint64"), "ptr*", &ID2D1SvgDocument:=0) ;ID2D1DeviceContext5::CreateSvgDocument
 
-      ComCall(BeginDraw := 48, ID2D1RenderTarget) ;ID2D1RenderTarget::
-      ComCall(DrawSvgDocument := 116, ID2D1RenderTarget, "ptr", ID2D1SvgDocument) ;ID2D1DeviceContext5::
+      ComCall(BeginDraw := 48, ID2D1RenderTarget, "char") ;ID2D1RenderTarget::
+      ComCall(DrawSvgDocument := 116, ID2D1RenderTarget, "ptr", ID2D1SvgDocument, "char") ;ID2D1DeviceContext5::
       ComCall(EndDraw := 49, ID2D1RenderTarget, "ptr", 0, "ptr", 0) ;ID2D1RenderTarget::
       static pData
       cbStride:=4*width ;stride=bpp*width
