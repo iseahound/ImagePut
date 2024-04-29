@@ -2918,14 +2918,14 @@ class ImagePut {
 
          ; ------------------------ Machine code generated with MCode4GCC using gcc 13.2.0 ------------------------
 
-         ; C source code - https://godbolt.org/z/GYMPYv4qT
+         ; C source code - https://godbolt.org/z/3rd4drccd
          pixelsearchall1 := this.Base64Code((A_PtrSize == 4)
             ? "VTHSieVXZg9uVRiLRRBWU4tdFGYPcMoAjXP0OfBzDw8QAGYPdsFmD9fIhcl0BY1IEOsVjUgQicjr4TnIdPiLfRg5OHQJg8AEOdhy"
             . "7usOO1UMcwaLfQiJBJdC6+lbidBeX13D"
             : "VlMxwESLVCQ4ZkEPbtJmD3DKAEmNWfRJOdhNjVgQcyNBDxAAZg92wWYP1/CF9nUTTYnY6+JNOdh09kU5EHQLSYPABE05yHLt6w45"
             . "0HMGicZMiQTx/8Dr51teww==")
 
-         ; C source code - https://godbolt.org/z/G5vYe5c8c
+         ; C source code - https://godbolt.org/z/8859rajsx
          pixelsearchall2 := this.Base64Code((A_PtrSize == 4)
             ? "VWYPduSJ5VdWU4Pk8IPsEItdGItNIItVKIpFHIhcJA8PttuLfRTB4xCIRCQOikUkiEwkDQ+2yY139IhUJAsPttLB4QgJ2ohEJAyK"
             . "RSwJyg+2TSQPttiBygAAAP+IRCQKweEIZg9u6jHSCcsPtk0cZg9wzQDB4RAJy2YPbvNmD3DWADl1EHMri0UQDxAADxAYDxA4Zg/e"
@@ -2936,7 +2936,7 @@ class ImagePut {
             . "UBBzQEEPECAPKNEPKNxmD97UZg/e2GYPdNFmD3TcD1TTZg921WYP18qFyXUXSYnQ68lJOdB09kGKSAJAOM9zC0mDwARNOchy6esu"
             . "QDjpcvBBikgBQTjMcudEOOly4kGKCEE4znLaRDj5ctU58HMGicFMiQTL/8Drx1teX11BXEFdQV5BX8M=")
 
-         ; C source code - https://godbolt.org/z/Px5TE4MWW
+         ; C source code - https://godbolt.org/z/Ync4eq1rj
          pixelsearchall3 := this.Base64Code((A_PtrSize == 4)
             ? "VTHSMcmJ5VdWU4Pk8IPsEItFFIPoDIlEJASLRRwp0IlEJAwPhDwBAACD+AF0PoP4AnQhg/gDuAMAAAAPTEQkCIlEJAiLRRhmD25k"
             . "kAhmD3DcAOsIx0QkCAIAAACLRRhmD25skARmD3DVAOsIx0QkCAEAAACLRRiNBJCJBCSLRRhmD240kItFEGYPcM4Ag3wkDAF1C4t1"
@@ -2949,7 +2949,7 @@ class ImagePut {
             . "DyjhZg924GYPdsJmRA/X7GYP19hECet13kiDwBBIOehy24PCAuke////DxAAZg92wWYP19iF23W+SIPAEEg56HLo/8Lp//7//0WL"
             . "PJxEOTh0Hkj/w0E52n/vSIPABEw5yHMcTDnoD4Q9////Mdvr5Tn5cwdBic9KiQT+/8Hr04nIW15fXUFcQV1BXkFfww==")
 
-         ; C source code - https://godbolt.org/z/T8KjEPb1z
+         ; C source code - https://godbolt.org/z/aajP7z1jb
          pixelsearchall4 := this.Base64Code((A_PtrSize == 4)
             ? "VWYPdtKJ5VdWMfZTMduD5PCD7ECJXCQ0i0UgKfCJRCQ8D4R3AgAAg/gBdGOD+AJ0OIP4A7gDAAAAD0xEJDiJRCQ4i0UYZg9uZLAI"
             . "i0UcZg9w7AAPKWwkIGYPbmywCGYPcN0ADykcJOsIx0QkOAIAAACLRRhmD25ksASLRRxmD25MsARmD3DcAGYPcOkA6wjHRCQ4AQAA"
