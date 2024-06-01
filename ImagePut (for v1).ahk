@@ -3568,14 +3568,28 @@ class ImagePut {
          pDelays := DllCall("GlobalAlloc", "uint", 0, "uptr", nDelays, "ptr")
          DllCall("gdiplus\GdipGetPropertyItem", "ptr", pBitmap, "uint", 0x5100, "uint", nDelays, "ptr", pDelays)
 
-         ; Check PropertyTagTypeLong if WEBP or GIF.
+         ; Check if WEBP or GIF from PropertyTagTypeLong.
          type := NumGet(pDelays + 8, "ushort") == 4 ? "gif" : "webp"
 
-         ; Save frame delays because they are slow enough to impact timing.
-         p := NumGet(pDelays + 8 + A_PtrSize, "ptr")
-         delays := {0: NumGet(p+0, "uint")}
-         loop % number ; Remember the pointer to the array of delays should be dereferenced.
-            delays[A_Index] := NumGet(p + 4*A_Index, "uint")
+         ; Save frame delays because retrieving them is slow enough to impact timing.
+         p := NumGet(pDelays + 8 + A_PtrSize, "ptr") ; Offset to array of delays
+         delays := {0: NumGet(p+0, "uint")}          ; Start index from 0
+         loop % number {
+            delay := NumGet(p + 4*A_Index, "uint")
+
+            ; See: https://www.biphelps.com/blog/The-Fastest-GIF-Does-Not-Exist
+            if (type = "gif") {
+               delay *= 10                      ; Convert centiseconds to milliseconds
+               delay := max(delay, 10)          ; Minimum delay is 10ms
+               (delay == 10) && delay := 100    ; 10 ms is actually 100 ms
+            }
+
+            if (type = "webp") {
+               (delay == 0) && delay := 100     ; 10 ms is actually 100 ms
+            }
+
+            delays[A_Index] := delay
+         }
 
          ; Calculate the greatest common factor of all frame delays.
          for each, delay in delays
@@ -3587,10 +3601,6 @@ class ImagePut {
                   interval := delay
                   delay := temp
                }
-
-         ; Convert centiseconds to milliseconds.
-         if (type = "gif")
-            interval *= 10
 
          ; Because timeSetEvent calls in a seperate thread, redirect to main thread.
          ; LPTIMECALLBACK: (uTimerID, uMsg, dwUser, dw1, dw2)
@@ -3962,7 +3972,6 @@ class ImagePut {
                return
 
             ; Get variables. ObjRelease is automatically called at the end of the scope.
-            type := obj.type
             w := obj.w
             h := obj.h
             frame := obj.frame
@@ -3982,13 +3991,6 @@ class ImagePut {
          if (uMsg = 0x8000 && wParam == 0) {
             index := mod(frame + 1, number)     ; Increment and loop back to zero
             delay := delays[index]              ; Zero-based array
-
-            ; See: https://www.biphelps.com/blog/The-Fastest-GIF-Does-Not-Exist
-            if (type = "gif") {
-               delay *= 10                      ; Convert centiseconds to milliseconds
-               delay := max(delay, 10)          ; Minimum delay is 10ms
-               (delay == 10) && delay := 100    ; 10 ms is actually 100 ms
-            }
 
             ; The current wait time is advanced by one interval.
             accumulate += interval              ; Add resolution of timer
