@@ -3573,9 +3573,10 @@ class ImagePut {
 
          ; Save frame delays because retrieving them is slow enough to impact timing.
          p := NumGet(pDelays + 8 + A_PtrSize, "ptr") ; Offset to array of delays
-         delays := {0: NumGet(p+0, "uint")}          ; Start index from 0
+         delays := {}                                ; Start index from 0
          loop % number {
-            delay := NumGet(p + 4*A_Index, "uint")
+            A_Offset := A_Index - 1
+            delay := NumGet(p + 4*A_Offset, "uint")
 
             ; See: https://www.biphelps.com/blog/The-Fastest-GIF-Does-Not-Exist
             if (type = "gif") {
@@ -3588,7 +3589,7 @@ class ImagePut {
                (delay == 0) && delay := 100     ; 10 ms is actually 100 ms
             }
 
-            delays[A_Index] := delay
+            delays[A_Offset] := delay
          }
 
          ; Calculate the greatest common factor of all frame delays.
