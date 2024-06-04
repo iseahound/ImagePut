@@ -2553,16 +2553,7 @@ class ImagePut {
          NumPut(           0, bm, 46,   "uint") ; biClrUsed
          NumPut(           0, bm, 50,   "uint") ; biClrImportant
 
-         loop
-            try
-               if file := FileOpen(filepath, "w")
-                  break
-               else throw
-            catch
-               if A_Index < 6
-                  Sleep (2**(A_Index-1) * 30)
-               else throw
-
+         file := FileOpen(filepath, "w")
          file.RawWrite(bm, 56)                ; Writes 54 bytes of bitmap file header.
          file.RawWrite(this.ptr+0, this.size) ; Writes raw 32-bit ARGB pixel data.
          file.Close()
