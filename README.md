@@ -102,3 +102,5 @@ Feel free to ask for any help, questions, or post suggestions, etc.
 
 * v1 forum: https://www.autohotkey.com/boards/viewtopic.php?t=76301
 * v2 forum: https://www.autohotkey.com/boards/viewtopic.php?t=76633
+
+If for some reason you'd like to show extra appreciation: https://ko-fi.com/iseahound
