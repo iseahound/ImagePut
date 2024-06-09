@@ -2515,10 +2515,10 @@ class ImagePut {
          finally DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
       }
 
-      Show(window_border := False, title := "", pos := "", style := "", styleEx := "", parent := "") {
+      Show(window_border := False, title:="", pos:="", style:="", styleEx:="", parent:="", playback:="", cache:="") {
          return (window_border)
-            ? ImagePut.BitmapToWindow(this.pBitmap, title, pos, style, styleEx, parent)
-            : ImagePut.show(this.pBitmap, title, pos, style, styleEx, parent)
+            ? ImagePut.BitmapToWindow(this.pBitmap, title, pos, style, styleEx, parent, playback, cache)
+            : ImagePut.show(this.pBitmap, title, pos, style, styleEx, parent, playback, cache)
       }
 
       Save(filepath := "", quality := "")  {
@@ -3281,7 +3281,7 @@ class ImagePut {
       return [x,y,w,h]
    }
 
-   static BitmapToWindow(pBitmap, title := "", pos := "", style := 0x82C80000, styleEx := 0x9, parent := "", playback := "", cache := "") {
+   static BitmapToWindow(pBitmap, title:="", pos:="", style:="", styleEx:="", parent:="", playback:="", cache:="") {
       ; Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
       ; Extended Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/extended-window-styles
 
@@ -3391,7 +3391,7 @@ class ImagePut {
       return hwnd
    }
 
-   static Show(pBitmap, title := "", pos := "", style := 0x90000000, styleEx := 0x80088, parent := "", playback := "", cache := "") {
+   static Show(pBitmap, title:="", pos:="", style:="", styleEx:="", parent:="", playback:="", cache:="") {
       ; Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
       WS_POPUP                  := 0x80000000   ; Allow small windows.
       WS_VISIBLE                := 0x10000000   ; Show on creation.
