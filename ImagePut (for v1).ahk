@@ -331,7 +331,7 @@ class ImagePut {
       (sprite) && this.BitmapSprite(pBitmap)
 
       ; Save frame delays and loop count for webp.
-      if (type = "stream" && extension = "webp" && cotype ~= "^(?i:show|window)$") {
+      if (type = "stream" && extension = "webp" && cotype ~= "^(?i:show|window|desktop)$") {
          this.ParseWebp(stream, pDelays, pCount)
          DllCall("gdiplus\GdipSetPropertyItem", "ptr", pBitmap, "ptr", pDelays)
          DllCall("gdiplus\GdipSetPropertyItem", "ptr", pBitmap, "ptr", pCount)
@@ -4166,55 +4166,31 @@ class ImagePut {
       return pcb
    }
 
-   BitmapToDesktop(pBitmap) {
+
+   BitmapToDesktop(pBitmap, title:="", pos:="", style:="", styleEx:="", parent:="", playback:="", cache:="") {
       ; Thanks Gerald Degeneve - https://www.codeproject.com/Articles/856020/Draw-Behind-Desktop-Icons-in-Windows-plus
-
-      ; Get Bitmap width and height.
-      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
-      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
-
-      ; Convert the Bitmap to a hBitmap and associate a device context for blitting.
-      hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
-      hbm := this.BitmapToHBitmap(pBitmap)
-      obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
-
       ; Post-Creator's Update Windows 10. WM_SPAWN_WORKER = 0x052C
-      DllCall("SendMessage", "ptr", WinExist("ahk_class Progman"), "uint", 0x052C, "ptr", 0x0000000D, "ptr", 0)
-      DllCall("SendMessage", "ptr", WinExist("ahk_class Progman"), "uint", 0x052C, "ptr", 0x0000000D, "ptr", 1)
+      desktop := WinExist("ahk_class Progman")
+      DllCall("SendMessage", "ptr", desktop, "uint", 0x052C, "ptr", 0xD, "ptr", 0)
+      DllCall("SendMessage", "ptr", desktop, "uint", 0x052C, "ptr", 0xD, "ptr", 1)
 
-      ; Find the child window.
+      ; Find a child window of class SHELLDLL_DefView.
       WinGet windows, List, ahk_class WorkerW
       loop % windows
-         hwnd := windows%A_Index%
-      until DllCall("FindWindowEx", "ptr", hwnd, "ptr", 0, "str", "SHELLDLL_DefView", "ptr", 0)
+         if DllCall("FindWindowEx", "ptr", windows%A_Index%, "ptr", 0, "str", "SHELLDLL_DefView", "ptr", 0) {
+            hwnd := windows%A_Index%
+            break
+         }
 
-      ; Maybe this hack gets patched. Tough luck!
+      ; Find a child window of the desktop after the previous window of class WorkerW.
       if !(WorkerW := DllCall("FindWindowEx", "ptr", 0, "ptr", hwnd, "str", "WorkerW", "ptr", 0, "ptr"))
-         throw Exception("Could not locate hidden window behind desktop.")
+         throw Exception("Could not locate hidden window behind desktop icons.")
 
-      ; Position the image in the center. This line can be removed.
-      DllCall("SetWindowPos", "ptr", WorkerW, "ptr", 1
-               , "int", Round((A_ScreenWidth - width) / 2)   ; x coordinate
-               , "int", Round((A_ScreenHeight - height) / 2) ; y coordinate
-               , "int", width, "int", height, "uint", 0)
-
-      ; Get device context of spawned window.
-      ddc := DllCall("GetDCEx", "ptr", WorkerW, "ptr", 0, "int", 0x403, "ptr") ; LockWindowUpdate | Cache | Window
-
-      ; Copies a portion of the screen to a new device context.
-      DllCall("gdi32\BitBlt"
-               , "ptr", ddc, "int", 0, "int", 0, "int", width, "int", height
-               , "ptr", hdc, "int", 0, "int", 0, "uint", 0x00CC0020) ; SRCCOPY
-
-      ; Release device context of spawned window.
-      DllCall("ReleaseDC", "ptr", 0, "ptr", ddc)
-
-      ; Cleanup the hBitmap and device contexts.
-      DllCall("SelectObject", "ptr", hdc, "ptr", obm)
-      DllCall("DeleteObject", "ptr", hbm)
-      DllCall("DeleteDC",     "ptr", hdc)
-
-      return "desktop"
+      ; Once the WorkerW window is found, use it as the parent window.
+      WS_CHILD                  := 0x40000000   ; Creates a child window.
+      WS_VISIBLE                := 0x10000000   ; Show on creation.
+      (style == "") && style := WS_CHILD | WS_VISIBLE
+      return this.show(pBitmap, title, pos, style | WS_CHILD, styleEx, WorkerW, playback, cache)
    }
 
    BitmapToWallpaper(pBitmap) {
