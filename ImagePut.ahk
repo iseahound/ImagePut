@@ -44,6 +44,7 @@ ImagePutDC(image, alpha := "") {
 }
 
 ; Puts the image behind the desktop icons and returns the string "desktop".
+;   See ImageShow for parameter descriptions.
 ImagePutDesktop(image, title := "", pos := "", style := 0x50000000, styleEx := 0x80000, parent := "", playback := True, cache := False) {
    return ImagePut("desktop", image, title, pos, style, styleEx, parent, playback, cache)
 }
