@@ -4151,7 +4151,7 @@ class ImagePut {
             68 00 00 00 00                 ; push .. (wParam)
             68 00 00 00 00                 ; push .. (uMsg)
             68 00 00 00 00                 ; push .. (hwnd)
-            b8 00 00 00 00                 ; mov eax, &SendMessageW
+            b8 00 00 00 00                 ; mov eax, .. (SendMessageW)
             ff d0                          ; call eax
             c3                             ; ret
             )"
