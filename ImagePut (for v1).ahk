@@ -1536,57 +1536,28 @@ class ImagePut {
    }
 
    DesktopToBitmap() {
-      ; Find the child window.
       WinGet windows, List, ahk_class WorkerW
       if (windows == 0)
          throw Exception("The hidden desktop window has not been initalized. Call ImagePutDesktop() first.")
 
+      ; Find a child window of class SHELLDLL_DefView.
+      WinGet windows, List, ahk_class WorkerW
       loop % windows
-         hwnd := windows%A_Index%
-      until DllCall("FindWindowEx", "ptr", hwnd, "ptr", 0, "str", "SHELLDLL_DefView", "ptr", 0)
+         if DllCall("FindWindowEx", "ptr", windows%A_Index%, "ptr", 0, "str", "SHELLDLL_DefView", "ptr", 0) {
+            hwnd := windows%A_Index%
+            break
+         }
 
-      ; Maybe this hack gets patched. Tough luck!
+      ; Find a child window of the desktop after the previous window of class WorkerW.
       if !(WorkerW := DllCall("FindWindowEx", "ptr", 0, "ptr", hwnd, "str", "WorkerW", "ptr", 0, "ptr"))
-         throw Exception("Could not locate hidden window behind desktop.")
+         throw Exception("Could not locate hidden window behind desktop icons.")
 
-      ; Get the width and height of the client window.
-      try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
-      DllCall("GetClientRect", "ptr", WorkerW, "ptr", &Rect := VarSetCapacity(Rect, 16)) ; sizeof(RECT) = 16
-         , width  := NumGet(Rect, 8, "int")
-         , height := NumGet(Rect, 12, "int")
-      try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+      ; Returns the first child window of the WorkerW window.
+      if !(child := DllCall("FindWindowEx", "ptr", WorkerW, "ptr", 0, "ptr", 0, "ptr", 0))
+         throw Exception("No child windows are attached to the hidden desktop window.")
 
-      ; Get device context of spawned window.
-      sdc := DllCall("GetDCEx", "ptr", WorkerW, "ptr", 0, "int", 0x403, "ptr") ; LockWindowUpdate | Cache | Window
-
-      ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
-      hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
-      VarSetCapacity(bi, 40, 0)              ; sizeof(bi) = 40
-         NumPut(       40, bi,  0,   "uint") ; Size
-         NumPut(    width, bi,  4,   "uint") ; Width
-         NumPut(  -height, bi,  8,    "int") ; Height - Negative so (0, 0) is top-left.
-         NumPut(        1, bi, 12, "ushort") ; Planes
-         NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
-      hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
-      obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
-
-      ; Copies a portion of the hidden window to a new device context.
-      DllCall("gdi32\BitBlt"
-               , "ptr", hdc, "int", 0, "int", 0, "int", width, "int", height
-               , "ptr", sdc, "int", 0, "int", 0, "uint", 0x00CC0020) ; SRCCOPY
-
-      ; Convert the hBitmap to a Bitmap using a built in function as there is no transparency.
-      DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", hbm, "ptr", 0, "ptr*", pBitmap:=0)
-
-      ; Cleanup the hBitmap and device contexts.
-      DllCall("SelectObject", "ptr", hdc, "ptr", obm)
-      DllCall("DeleteObject", "ptr", hbm)
-      DllCall("DeleteDC",     "ptr", hdc)
-
-      ; Release device context of spawned window.
-      DllCall("ReleaseDC", "ptr", 0, "ptr", sdc)
-
-      return pBitmap
+      ; Use PrintWindow as the window is overlapped by other windows. Could use BitBlt on dc?
+      return this.WindowToBitmap(child)
    }
 
    WallpaperToBitmap() {
