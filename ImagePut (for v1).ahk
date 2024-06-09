@@ -44,8 +44,8 @@ ImagePutDC(image, alpha := "") {
 }
 
 ; Puts the image behind the desktop icons and returns the string "desktop".
-ImagePutDesktop(image) {
-   return ImagePut("desktop", image)
+ImagePutDesktop(image, title := "", pos := "", style := 0x50000000, styleEx := 0x80000, parent := "", playback := True, cache := False) {
+   return ImagePut("desktop", image, title, pos, style, styleEx, parent, playback, cache)
 }
 
 ; Puts the image as an encoded format into a binary data object.
@@ -142,19 +142,13 @@ ImagePutWICBitmap(image) {
    return ImagePut("wicBitmap", image)
 }
 
-; Puts the image in a window and returns a handle to a window.
-;   title      -  Window Title            |  string   ->   MyTitle
-;   pos        -  Window Coordinates      |  array    ->   [x,y,w,h] or [0,0]
-;   style      -  Window Style            |  uint     ->   WS_VISIBLE
-;   styleEx    -  Window Extended Style   |  uint     ->   WS_EX_LAYERED
-;   parent     -  Window Parent           |  ptr      ->   hwnd
-;   playback   -  Animate Window?         |  bool     ->   True
-;   cache      -  Cache Animation Frames? |  bool     ->   False
+; Puts the image in a window (with a border) and returns a handle to a window.
+;   See ImageShow for parameter descriptions.
 ImagePutWindow(image, title := "", pos := "", style := 0x82C80000, styleEx := 0x9, parent := "", playback := True, cache := False) {
    return ImagePut("window", image, title, pos, style, styleEx, parent, playback, cache)
 }
 
-
+; Shows the image in a window (without a border) and returns a handle to a window.
 ;   title      -  Window Title            |  string   ->   MyTitle
 ;   pos        -  Window Coordinates      |  array    ->   [x,y,w,h] or [0,0]
 ;   style      -  Window Style            |  uint     ->   WS_VISIBLE
@@ -679,8 +673,8 @@ class ImagePut {
       if (cotype = "SharedBuffer") ; (pBitmap, name)
          return this.BitmapToSharedBuffer(pBitmap, p1)
 
-      if (cotype = "Desktop") ; (pBitmap)
-         return this.BitmapToDesktop(pBitmap)
+      if (cotype = "Desktop") ; (pBitmap, title, pos, style, styleEx, parent, playback, cache)
+         return this.BitmapToDesktop(pBitmap, p1, p2, p3, p4, p5, p6, p7)
 
       if (cotype = "Wallpaper") ; (pBitmap)
          return this.BitmapToWallpaper(pBitmap)
@@ -2489,7 +2483,7 @@ class ImagePut {
       Show(window_border := False, title:="", pos:="", style:="", styleEx:="", parent:="", playback:="", cache:="") {
          return (window_border)
             ? ImagePut.BitmapToWindow(this.pBitmap, title, pos, style, styleEx, parent, playback, cache)
-            : ImagePut.show(this.pBitmap, title, pos, style, styleEx, parent, playback, cache)
+            : ImagePut.Show(this.pBitmap, title, pos, style, styleEx, parent, playback, cache)
       }
 
       Save(filepath := "", quality := "")  {
