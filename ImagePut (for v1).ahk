@@ -1158,6 +1158,44 @@ class ImagePut {
       return stream
    }
 
+   SharedBufferToBitmap(image) {
+      hMap := DllCall("OpenFileMapping", "uint", 0x2, "int", 0, "str", image, "ptr")
+      pMap := DllCall("MapViewOfFile", "ptr", hMap, "uint", 0x2, "uint", 0, "uint", 0, "uptr", 0, "ptr")
+
+      width := NumGet(pMap + 0, "uint")
+      height := NumGet(pMap + 4, "uint")
+      size := 4 * width * height
+      ptr := pMap + 8
+
+      ; Create a destination GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
+      DllCall("gdiplus\GdipCreateBitmapFromScan0"
+               , "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
+
+      ; Create a Scan0 buffer pointing to pBits.
+      VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
+         NumPut(  width, Rect,  8,   "uint") ; Width
+         NumPut( height, Rect, 12,   "uint") ; Height
+      VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
+         NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
+         NumPut(       ptr, BitmapData, 16,    "ptr") ; Scan0
+
+      ; Use LockBits to create a writable buffer that converts pARGB to ARGB.
+      DllCall("gdiplus\GdipBitmapLockBits"
+               ,    "ptr", pBitmap
+               ,    "ptr", &Rect
+               ,   "uint", 6            ; ImageLockMode.UserInputBuffer | ImageLockMode.WriteOnly
+               ,    "int", 0x26200A     ; Format32bppArgb
+               ,    "ptr", &BitmapData) ; Contains the pointer (pBits) to the hbm.
+
+      ; Convert the pARGB pixels copied into the device independent bitmap (hbm) to ARGB.
+      DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
+
+      DllCall("UnmapViewOfFile", "ptr", pMap)
+      DllCall("CloseHandle", "ptr", hMap)
+
+      return pBitmap
+   }
+
    BufferToBitmap(image) {
 
       if image.HasKey("pitch")
@@ -1204,6 +1242,24 @@ class ImagePut {
          , "int", -stride, "int", 0x26200A, "ptr", image.ptr + (height-1)*stride, "ptr*", pBitmap:=0)
 
       return pBitmap
+   }
+
+   MonitorToBitmap(image) {
+      try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+      if (image > 0) {
+         SysGet _, Monitor, % image
+         x := _Left
+         y := _Top
+         w := _Right - _Left
+         h := _Bottom - _Top
+      } else {
+         x := DllCall("GetSystemMetrics", "int", 76, "int")
+         y := DllCall("GetSystemMetrics", "int", 77, "int")
+         w := DllCall("GetSystemMetrics", "int", 78, "int")
+         h := DllCall("GetSystemMetrics", "int", 79, "int")
+      }
+      try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+      return this.ScreenshotToBitmap([x,y,w,h])
    }
 
 
@@ -1695,24 +1751,6 @@ class ImagePut {
       DllCall("GlobalUnlock", "ptr", handle)
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", handle, "int", True, "ptr*", stream:=0, "uint")
       return stream
-   }
-
-   MonitorToBitmap(image) {
-      try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
-      if (image > 0) {
-         SysGet _, Monitor, % image
-         x := _Left
-         y := _Top
-         w := _Right - _Left
-         h := _Bottom - _Top
-      } else {
-         x := DllCall("GetSystemMetrics", "int", 76, "int")
-         y := DllCall("GetSystemMetrics", "int", 77, "int")
-         w := DllCall("GetSystemMetrics", "int", 78, "int")
-         h := DllCall("GetSystemMetrics", "int", 79, "int")
-      }
-      try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
-      return this.ScreenshotToBitmap([x,y,w,h])
    }
 
    DCToBitmap(image) {
@@ -2208,6 +2246,47 @@ class ImagePut {
       }
 
 
+   BitmapToSafeArray(pBitmap, extension := "", quality := "") {
+      ; Thanks tmplinshi - https://www.autohotkey.com/boards/viewtopic.php?p=354007#p354007
+
+      ; Create an IStream backed with movable memory.
+      handle := DllCall("GlobalAlloc", "uint", 0x2, "uptr", 0, "ptr")
+      DllCall("ole32\CreateStreamOnHGlobal", "ptr", handle, "int", True, "ptr*", stream:=0, "uint")
+
+      ; Save pBitmap to the IStream.
+      this.select_codec(pBitmap, extension, quality, pCodec, ep) ; Defaults to PNG for small sizes!
+      DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", stream, "ptr", &pCodec, "ptr", &ep)
+
+      ; Get the pointer and size of the IStream's movable memory.
+      ptr := DllCall("GlobalLock", "ptr", handle, "ptr")
+      size := DllCall("GlobalSize", "ptr", handle, "uptr")
+
+      ; Copy the encoded image to a SAFEARRAY.
+      safearray := ComObjArray(0x11, size) ; VT_UI1
+      pvData := NumGet(ComObjValue(safearray), 8 + A_PtrSize, "ptr")
+      DllCall("RtlMoveMemory", "ptr", pvData, "ptr", ptr, "uptr", size)
+
+      ; Release the IStream and call GlobalFree.
+      DllCall("GlobalUnlock", "ptr", handle)
+      ObjRelease(stream)
+
+      return safearray
+   }
+
+   StreamToSafeArray(stream) {
+      ; Allocate a one-dimensional SAFEARRAY based on the size of the stream.
+      DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", size:=0, "uint")
+      safearray := ComObjArray(0x11, size) ; VT_UI1
+      pvData := NumGet(ComObjValue(safearray), 8 + A_PtrSize, "ptr")
+
+      ; Copy the stream to the SAFEARRAY.
+      DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
+      DllCall("shlwapi\IStream_Read", "ptr", stream, "ptr", pvData, "uint", size, "uint")
+      DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
+
+      return safearray
+   }
+
    BitmapToEncodedBuffer(pBitmap, extension := "", quality := "") {
       ; Defaults to PNG for small sizes!
       stream := this.BitmapToStream(pBitmap, (extension) ? extension : "png", quality)
@@ -2235,92 +2314,6 @@ class ImagePut {
       DllCall("shlwapi\IStream_Read", "ptr", stream, "ptr", buf.ptr, "uint", size, "uint")
       DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
       return buf
-   }
-
-   BitmapToBuffer(pBitmap) {
-      ; Get Bitmap width and height.
-      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
-      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
-
-      ; Allocate global memory.
-      size := 4 * width * height
-      ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr")
-
-      ; Create a pixel buffer.
-      VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
-         NumPut(  width, Rect,  8,   "uint") ; Width
-         NumPut( height, Rect, 12,   "uint") ; Height
-      VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
-         NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
-         NumPut(       ptr, BitmapData, 16,    "ptr") ; Scan0
-      DllCall("gdiplus\GdipBitmapLockBits"
-               ,    "ptr", pBitmap
-               ,    "ptr", &Rect
-               ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
-               ,    "int", 0x26200A     ; Format32bppArgb
-               ,    "ptr", &BitmapData)
-
-      ; Write pixels to global memory.
-      DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
-
-      ; Free the pixels later.
-      buf := new ImagePut.BitmapBuffer(ptr, size, width, height)
-      buf.free := [Func("DllCall").bind("GlobalFree", "ptr", ptr)]
-      return buf
-   }
-
-   SharedBufferToSharedBuffer(image) {
-      hMap := DllCall("OpenFileMapping", "uint", 0x2, "int", 0, "str", image, "ptr")
-      pMap := DllCall("MapViewOfFile", "ptr", hMap, "uint", 0x2, "uint", 0, "uint", 0, "uptr", 0, "ptr")
-
-      width := NumGet(pMap + 0, "uint")
-      height := NumGet(pMap + 4, "uint")
-      size := 4 * width * height
-      ptr := pMap + 8
-
-      ; Free the pixels later.
-      buf := new ImagePut.BitmapBuffer(ptr, size, width, height)
-      buf.free := [Func("DllCall").bind("UnmapViewOfFile", "ptr", pMap), Func("DllCall").bind("CloseHandle", "ptr", hMap)]
-      buf.name := image
-      return buf
-   }
-
-   SharedBufferToBitmap(image) {
-      hMap := DllCall("OpenFileMapping", "uint", 0x2, "int", 0, "str", image, "ptr")
-      pMap := DllCall("MapViewOfFile", "ptr", hMap, "uint", 0x2, "uint", 0, "uint", 0, "uptr", 0, "ptr")
-
-      width := NumGet(pMap + 0, "uint")
-      height := NumGet(pMap + 4, "uint")
-      size := 4 * width * height
-      ptr := pMap + 8
-
-      ; Create a destination GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
-      DllCall("gdiplus\GdipCreateBitmapFromScan0"
-               , "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
-
-      ; Create a Scan0 buffer pointing to pBits.
-      VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
-         NumPut(  width, Rect,  8,   "uint") ; Width
-         NumPut( height, Rect, 12,   "uint") ; Height
-      VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
-         NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
-         NumPut(       ptr, BitmapData, 16,    "ptr") ; Scan0
-
-      ; Use LockBits to create a writable buffer that converts pARGB to ARGB.
-      DllCall("gdiplus\GdipBitmapLockBits"
-               ,    "ptr", pBitmap
-               ,    "ptr", &Rect
-               ,   "uint", 6            ; ImageLockMode.UserInputBuffer | ImageLockMode.WriteOnly
-               ,    "int", 0x26200A     ; Format32bppArgb
-               ,    "ptr", &BitmapData) ; Contains the pointer (pBits) to the hbm.
-
-      ; Convert the pARGB pixels copied into the device independent bitmap (hbm) to ARGB.
-      DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
-
-      DllCall("UnmapViewOfFile", "ptr", pMap)
-      DllCall("CloseHandle", "ptr", hMap)
-
-      return pBitmap
    }
 
    BitmapToSharedBuffer(pBitmap, name := "Alice") {
@@ -2359,6 +2352,38 @@ class ImagePut {
       buf := new ImagePut.BitmapBuffer(ptr, size, width, height)
       buf.free := [Func("DllCall").bind("UnmapViewOfFile", "ptr", pMap), Func("DllCall").bind("CloseHandle", "ptr", hMap)]
       buf.name := name
+      return buf
+   }
+   
+   BitmapToBuffer(pBitmap) {
+      ; Get Bitmap width and height.
+      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
+      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
+
+      ; Allocate global memory.
+      size := 4 * width * height
+      ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr")
+
+      ; Create a pixel buffer.
+      VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
+         NumPut(  width, Rect,  8,   "uint") ; Width
+         NumPut( height, Rect, 12,   "uint") ; Height
+      VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
+         NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
+         NumPut(       ptr, BitmapData, 16,    "ptr") ; Scan0
+      DllCall("gdiplus\GdipBitmapLockBits"
+               ,    "ptr", pBitmap
+               ,    "ptr", &Rect
+               ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
+               ,    "int", 0x26200A     ; Format32bppArgb
+               ,    "ptr", &BitmapData)
+
+      ; Write pixels to global memory.
+      DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
+
+      ; Free the pixels later.
+      buf := new ImagePut.BitmapBuffer(ptr, size, width, height)
+      buf.free := [Func("DllCall").bind("GlobalFree", "ptr", ptr)]
       return buf
    }
 
@@ -3152,6 +3177,7 @@ class ImagePut {
          return xys
       }
    }
+
 
 
 
@@ -4132,7 +4158,6 @@ class ImagePut {
       return pcb
    }
 
-
    BitmapToDesktop(pBitmap, title:="", pos:="", style:="", styleEx:="", parent:="", playback:="", cache:="") {
       ; Thanks Gerald Degeneve - https://www.codeproject.com/Articles/856020/Draw-Behind-Desktop-Icons-in-Windows-plus
       ; Post-Creator's Update Windows 10. WM_SPAWN_WORKER = 0x052C
@@ -4708,45 +4733,20 @@ class ImagePut {
       return wicbitmap
    }
 
-   StreamToSafeArray(stream) {
-      ; Allocate a one-dimensional SAFEARRAY based on the size of the stream.
-      DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", size:=0, "uint")
-      safearray := ComObjArray(0x11, size) ; VT_UI1
-      pvData := NumGet(ComObjValue(safearray), 8 + A_PtrSize, "ptr")
+   SharedBufferToSharedBuffer(image) {
+      hMap := DllCall("OpenFileMapping", "uint", 0x2, "int", 0, "str", image, "ptr")
+      pMap := DllCall("MapViewOfFile", "ptr", hMap, "uint", 0x2, "uint", 0, "uint", 0, "uptr", 0, "ptr")
 
-      ; Copy the stream to the SAFEARRAY.
-      DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
-      DllCall("shlwapi\IStream_Read", "ptr", stream, "ptr", pvData, "uint", size, "uint")
-      DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
+      width := NumGet(pMap + 0, "uint")
+      height := NumGet(pMap + 4, "uint")
+      size := 4 * width * height
+      ptr := pMap + 8
 
-      return safearray
-   }
-
-   BitmapToSafeArray(pBitmap, extension := "", quality := "") {
-      ; Thanks tmplinshi - https://www.autohotkey.com/boards/viewtopic.php?p=354007#p354007
-
-      ; Create an IStream backed with movable memory.
-      handle := DllCall("GlobalAlloc", "uint", 0x2, "uptr", 0, "ptr")
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", handle, "int", True, "ptr*", stream:=0, "uint")
-
-      ; Save pBitmap to the IStream.
-      this.select_codec(pBitmap, extension, quality, pCodec, ep) ; Defaults to PNG for small sizes!
-      DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", stream, "ptr", &pCodec, "ptr", &ep)
-
-      ; Get the pointer and size of the IStream's movable memory.
-      ptr := DllCall("GlobalLock", "ptr", handle, "ptr")
-      size := DllCall("GlobalSize", "ptr", handle, "uptr")
-
-      ; Copy the encoded image to a SAFEARRAY.
-      safearray := ComObjArray(0x11, size) ; VT_UI1
-      pvData := NumGet(ComObjValue(safearray), 8 + A_PtrSize, "ptr")
-      DllCall("RtlMoveMemory", "ptr", pvData, "ptr", ptr, "uptr", size)
-
-      ; Release the IStream and call GlobalFree.
-      DllCall("GlobalUnlock", "ptr", handle)
-      ObjRelease(stream)
-
-      return safearray
+      ; Free the pixels later.
+      buf := new ImagePut.BitmapBuffer(ptr, size, width, height)
+      buf.free := [Func("DllCall").bind("UnmapViewOfFile", "ptr", pMap), Func("DllCall").bind("CloseHandle", "ptr", hMap)]
+      buf.name := image
+      return buf
    }
 
    ParseWebp(stream, ByRef pDelays, ByRef pCount) {
