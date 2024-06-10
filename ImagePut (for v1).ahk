@@ -126,11 +126,18 @@ ImagePutStream(image, extension := "", quality := "") {
    return ImagePut("stream", image, extension, quality)
 }
 
-; Puts the image into a file format and returns a URI string.
+; Puts the image into a base64 string and returns a Uniform Resource Identifier.
 ;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
-ImagePutURI(image, extension := "", quality := "") {
+ImagePutUri(image, extension := "", quality := "") {
    return ImagePut("uri", image, extension, quality)
+}
+
+; Uploads the image onto Imgur and returns the URL hyperlink.
+;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
+;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
+ImagePutUrl(image, extension := "", quality := "") {
+   return ImagePut("url", image, extension, quality)
 }
 
 ; Puts the image as the desktop wallpaper and returns the string "wallpaper".
@@ -4245,6 +4252,30 @@ class ImagePut {
 
       ; Returns the string A_Cursor to avoid evaluation.
       return "A_Cursor"
+   }
+
+   BitmapToUrl(pBitmap, extension := "", quality := "") {
+      body := this.BitmapToSafeArray(pBitmap, extension, quality)
+
+      req := ComObjCreate("WinHttp.WinHttpRequest.5.1")
+      req.Open("POST", "https://api.imgur.com/3/image", true)
+      req.Send(body)
+      req.WaitForResponse()
+   
+      url := RegExReplace(req.ResponseText, "^.*?link\x22:\x22(.*?)\x22.*$", "$1")
+      return url
+   }
+
+   StreamToURL(stream) {
+      body := this.StreamToSafeArray(stream)
+
+      req := ComObjCreate("WinHttp.WinHttpRequest.5.1")
+      req.Open("POST", "https://api.imgur.com/3/image", true)
+      req.Send(body)
+      req.WaitForResponse()
+   
+      url := RegExReplace(req.ResponseText, "^.*?link\x22:\x22(.*?)\x22.*$", "$1")
+      return url
    }
 
    BitmapToExplorer(pBitmap, default := "") {
