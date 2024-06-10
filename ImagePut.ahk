@@ -4253,7 +4253,7 @@ class ImagePut {
       ; Returns the string A_Cursor to avoid evaluation.
       return "A_Cursor"
    }
-   
+
    static BitmapToUrl(pBitmap, extension := "", quality := "") {
       body := this.BitmapToSafeArray(pBitmap, extension, quality)
 
@@ -4261,7 +4261,7 @@ class ImagePut {
       req.Open("POST", "https://api.imgur.com/3/image", true)
       req.Send(body)
       req.WaitForResponse()
-   
+
       url := RegExReplace(req.ResponseText, "^.*?link\x22:\x22(.*?)\x22.*$", "$1")
       return url
    }
@@ -4273,7 +4273,7 @@ class ImagePut {
       req.Open("POST", "https://api.imgur.com/3/image", true)
       req.Send(body)
       req.WaitForResponse()
-   
+
       url := RegExReplace(req.ResponseText, "^.*?link\x22:\x22(.*?)\x22.*$", "$1")
       return url
    }

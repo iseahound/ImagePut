@@ -2361,7 +2361,7 @@ class ImagePut {
       buf.name := name
       return buf
    }
-   
+
    BitmapToBuffer(pBitmap) {
       ; Get Bitmap width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
@@ -4261,7 +4261,7 @@ class ImagePut {
       req.Open("POST", "https://api.imgur.com/3/image", true)
       req.Send(body)
       req.WaitForResponse()
-   
+
       url := RegExReplace(req.ResponseText, "^.*?link\x22:\x22(.*?)\x22.*$", "$1")
       return url
    }
@@ -4273,7 +4273,7 @@ class ImagePut {
       req.Open("POST", "https://api.imgur.com/3/image", true)
       req.Send(body)
       req.WaitForResponse()
-   
+
       url := RegExReplace(req.ResponseText, "^.*?link\x22:\x22(.*?)\x22.*$", "$1")
       return url
    }
