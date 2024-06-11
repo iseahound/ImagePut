@@ -114,8 +114,8 @@ ImagePutScreenshot(image, screenshot := "", alpha := "") {
 }
 
 ; Puts the image into a file mapping and returns a buffer object sharable across processes.
-;   name       -  Global Name             |  string   ->   "Alice"
-ImagePutSharedBuffer(image, name := "default") {
+;   name       -  Global Name             |  string   ->   "SharedBuffer"
+ImagePutSharedBuffer(image, name := "SharedBuffer") {
    return ImagePut("SharedBuffer", image, name)
 }
 
@@ -2329,14 +2329,14 @@ class ImagePut {
       return buf
    }
 
-   BitmapToSharedBuffer(pBitmap, name := "default") {
+   BitmapToSharedBuffer(pBitmap, name := "SharedBuffer") {
 
-      if (name == "default") {
-         MsgBox %       "You have not specified a name for the SharedBuffer. Defaulting to 'default'."
+      if (name == "SharedBuffer") {
+         MsgBox %       "You have not specified a name for the SharedBuffer. Defaulting to 'SharedBuffer'."
          . "`n"       . "Note that names are case-sensitive and must be unique."
          . "`n"       . "To access the shared buffer in a different script, use:"
          . "`n`n`t`t" . "#include ImagePut.ahk"
-         . "`n`t`t"   . "shared := ImagePutSharedBuffer(" Chr(34) "default" Chr(34) ")"
+         . "`n`t`t"   . "shared := ImagePutSharedBuffer(" Chr(34) "SharedBuffer" Chr(34) ")"
          . "`n`t`t"   . "shared.show()"
          . "`n`n"     . "You can copy this message with Ctrl + c."
          . "`n"       . "Press OK to continue."
