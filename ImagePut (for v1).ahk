@@ -115,7 +115,7 @@ ImagePutScreenshot(image, screenshot := "", alpha := "") {
 
 ; Puts the image into a file mapping and returns a buffer object sharable across processes.
 ;   name       -  Global Name             |  string   ->   "Alice"
-ImagePutSharedBuffer(image, name := "") {
+ImagePutSharedBuffer(image, name := "default") {
    return ImagePut("SharedBuffer", image, name)
 }
 
@@ -515,7 +515,7 @@ class ImagePut {
          return "Window"
 
       ; A "sharedbuffer" is a file mapping kernel object.
-      if DllCall("CloseHandle", "ptr", DllCall("OpenFileMapping", "uint", 2, "int", 0, "str", image, "ptr"))
+      if DllCall("CloseHandle", "ptr", DllCall("OpenFileMapping", "uint", 2, "int", 0, "str", "ImagePut_" image, "ptr"))
          return "SharedBuffer"
 
       ; A "hex" string is binary image data encoded into text using hexadecimal.
@@ -1172,7 +1172,7 @@ class ImagePut {
    }
 
    SharedBufferToBitmap(image) {
-      hMap := DllCall("OpenFileMapping", "uint", 0x2, "int", 0, "str", image, "ptr")
+      hMap := DllCall("OpenFileMapping", "uint", 0x2, "int", 0, "str", "ImagePut_" image, "ptr")
       pMap := DllCall("MapViewOfFile", "ptr", hMap, "uint", 0x2, "uint", 0, "uint", 0, "uptr", 0, "ptr")
 
       width := NumGet(pMap + 0, "uint")
@@ -2329,15 +2329,14 @@ class ImagePut {
       return buf
    }
 
-   BitmapToSharedBuffer(pBitmap, name := "") {
+   BitmapToSharedBuffer(pBitmap, name := "default") {
 
-      if (name == "") {
-         name := "alice"
-         MsgBox %       "You have not specified a name for the SharedBuffer. Defaulting to 'alice'."
+      if (name == "default") {
+         MsgBox %       "You have not specified a name for the SharedBuffer. Defaulting to 'default'."
          . "`n"       . "Note that names are case-sensitive and must be unique."
          . "`n"       . "To access the shared buffer in a different script, use:"
          . "`n`n`t`t" . "#include ImagePut.ahk"
-         . "`n`t`t"   . "shared := ImagePutSharedBuffer(" Chr(34) "alice" Chr(34) ")"
+         . "`n`t`t"   . "shared := ImagePutSharedBuffer(" Chr(34) "default" Chr(34) ")"
          . "`n`t`t"   . "shared.show()"
          . "`n`n"     . "You can copy this message with Ctrl + c."
          . "`n"       . "Press OK to continue."
@@ -2350,7 +2349,7 @@ class ImagePut {
       ; Allocate shared memory.
       size := 4 * width * height
       capacity := size + 8
-      hMap := DllCall("CreateFileMapping", "ptr", -1, "ptr", 0, "uint", 0x4, "uint", 0, "uint", capacity, "str", name, "ptr")
+      hMap := DllCall("CreateFileMapping", "ptr", -1, "ptr", 0, "uint", 0x4, "uint", 0, "uint", capacity, "str", "ImagePut_" name, "ptr")
       pMap := DllCall("MapViewOfFile", "ptr", hMap, "uint", 0x2, "uint", 0, "uint", 0, "uptr", 0, "ptr")
 
       ; Store width and height in the first 8 bytes.
@@ -4786,7 +4785,7 @@ class ImagePut {
    }
 
    SharedBufferToSharedBuffer(image) {
-      hMap := DllCall("OpenFileMapping", "uint", 0x2, "int", 0, "str", image, "ptr")
+      hMap := DllCall("OpenFileMapping", "uint", 0x2, "int", 0, "str", "ImagePut_" image, "ptr")
       pMap := DllCall("MapViewOfFile", "ptr", hMap, "uint", 0x2, "uint", 0, "uint", 0, "uptr", 0, "ptr")
 
       width := NumGet(pMap + 0, "uint")
