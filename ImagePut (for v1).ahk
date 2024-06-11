@@ -2498,6 +2498,7 @@ class ImagePut {
 
 
 
+
       Frequency() {
          if this.HasKey(map)
             return

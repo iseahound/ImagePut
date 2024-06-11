@@ -2459,9 +2459,10 @@ class ImagePut {
             start += 4,                                                ; do block
             True))                                                     ; continue?
 
-         case 2: return (&i, &c) => ((start < end) && (
-            c := Format("0x{:08X}", NumGet(this.ptr + start, "uint")),
+         case 2: return (&x, &y) => ((start < end) && (
             i := start // 4,
+            x := mod(i, this.width),
+            y := i // this.width,
             start += 4,
             True))
 
