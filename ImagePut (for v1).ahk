@@ -218,6 +218,12 @@ class ImagePut {
       ; Keywords are for (input -> intermediate).
       try index := keywords.index
 
+      ; #0 - Special cases.
+      if (type = "SharedBuffer" && cotype = "SharedBuffer") {
+         coimage := this.SharedBufferToSharedBuffer(image)
+         goto exit
+      }
+
       cleanup := ""
 
       ; #1 - Stream as the intermediate representation.
@@ -2323,7 +2329,20 @@ class ImagePut {
       return buf
    }
 
-   BitmapToSharedBuffer(pBitmap, name := "Alice") {
+   BitmapToSharedBuffer(pBitmap, name := "") {
+
+      if (name == "") {
+         name := "alice"
+         MsgBox %       "You have not specified a name for the SharedBuffer. Defaulting to 'alice'."
+         . "`n"       . "Note that names are case-sensitive and must be unique."
+         . "`n"       . "To access the shared buffer in a different script, use:"
+         . "`n`n`t`t" . "#include ImagePut.ahk"
+         . "`n`t`t"   . "shared := ImagePutSharedBuffer(" Chr(34) "alice" Chr(34) ")"
+         . "`n`t`t"   . "shared.show()"
+         . "`n`n"     . "You can copy this message with Ctrl + c."
+         . "`n"       . "Press OK to continue."
+      }
+
       ; Get Bitmap width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
