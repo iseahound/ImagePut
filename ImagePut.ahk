@@ -2829,8 +2829,8 @@ class ImagePut {
 
             ; Fill the struct by iterating through the input array.
             for c in color {
-                (c >> 24) || c |= 0xFF000000             ; Lift colors to 32-bit ARGB.
-                NumPut("uint", c, colors, 4*(A_Index-1)) ; Place the unsigned int at each offset.
+               (c >> 24) || c |= 0xFF000000             ; Lift colors to 32-bit ARGB.
+               NumPut("uint", c, colors, 4*(A_Index-1)) ; Place the unsigned int at each offset.
             }
 
             address := DllCall(pixelsearch3, "ptr", this.ptr, "ptr", this.ptr + this.size, "ptr", colors, "uint", color.length, "cdecl ptr")
