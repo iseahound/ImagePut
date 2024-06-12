@@ -586,35 +586,35 @@ class ImagePut {
 
       try index := keywords.index
 
-      if (type = "ClipboardPng")
-         return this.ClipboardPngToBitmap()
+      if (type = "Object")
+         return this.BitmapToBitmap(image.pBitmap)
 
       if (type = "Clipboard")
          return this.ClipboardToBitmap()
 
+      if (type = "ClipboardPng")
+         return this.ClipboardPngToBitmap()
+
       if (type = "SafeArray")
          return this.SafeArrayToBitmap(image)
+
+      if (type = "EncodedBuffer")
+         return this.EncodedBufferToBitmap(image)
+
+      if (type = "SharedBuffer")
+         return this.SharedBufferToBitmap(image)
+
+      if (type = "Buffer")
+         return this.BufferToBitmap(image)
+
+      if (type = "Monitor")
+         return this.MonitorToBitmap(image)
 
       if (type = "Screenshot")
          return this.ScreenshotToBitmap(image)
 
       if (type = "Window")
          return this.WindowToBitmap(image)
-
-      if (type = "Object")
-         return this.BitmapToBitmap(image.pBitmap)
-
-      if (type = "EncodedBuffer")
-         return this.EncodedBufferToBitmap(image)
-
-      if (type = "Buffer")
-         return this.BufferToBitmap(image)
-
-      if (type = "SharedBuffer")
-         return this.SharedBufferToBitmap(image)
-
-      if (type = "Monitor")
-         return this.MonitorToBitmap(image)
 
       if (type = "Desktop")
          return this.DesktopToBitmap()
@@ -669,6 +669,18 @@ class ImagePut {
       if (cotype = "Clipboard") ; (pBitmap)
          return this.BitmapToClipboard(pBitmap)
 
+      if (cotype = "SafeArray") ; (pBitmap, extension, quality)
+         return this.BitmapToSafeArray(pBitmap, p1, p2)
+
+      if (cotype = "EncodedBuffer") ; (pBitmap, extension, quality)
+         return this.BitmapToEncodedBuffer(pBitmap, p1, p2)
+
+      if (cotype = "SharedBuffer") ; (pBitmap, name)
+         return this.BitmapToSharedBuffer(pBitmap, p1)
+
+      if (cotype = "Buffer") ; (pBitmap)
+         return this.BitmapToBuffer(pBitmap)
+
       if (cotype = "Screenshot") ; (pBitmap, pos, alpha)
          return this.BitmapToScreenshot(pBitmap, p1, p2)
 
@@ -677,15 +689,6 @@ class ImagePut {
 
       if (cotype = "Show") ; (pBitmap, title, pos, style, styleEx, parent, playback, cache)
          return this.Show(pBitmap, p1, p2, p3, p4, p5, p6, p7)
-
-      if (cotype = "EncodedBuffer") ; (pBitmap, extension, quality)
-         return this.BitmapToEncodedBuffer(pBitmap, p1, p2)
-
-      if (cotype = "Buffer") ; (pBitmap)
-         return this.BitmapToBuffer(pBitmap)
-
-      if (cotype = "SharedBuffer") ; (pBitmap, name)
-         return this.BitmapToSharedBuffer(pBitmap, p1)
 
       if (cotype = "Desktop") ; (pBitmap, title, pos, style, styleEx, parent, playback, cache)
          return this.BitmapToDesktop(pBitmap, p1, p2, p3, p4, p5, p6, p7)
@@ -698,6 +701,9 @@ class ImagePut {
 
       if (cotype = "Url") ; (pBitmap)
          return this.BitmapToUrl(pBitmap)
+
+      if (cotype = "Explorer") ; (pBitmap, default)
+         return this.BitmapToExplorer(pBitmap, p1)
 
       if (cotype = "File") ; (pBitmap, filepath, quality)
          return this.BitmapToFile(pBitmap, p1, p2)
@@ -731,12 +737,6 @@ class ImagePut {
 
       if (cotype = "WicBitmap") ; (pBitmap)
          return this.BitmapToWicBitmap(pBitmap)
-
-      if (cotype = "Explorer") ; (pBitmap, default)
-         return this.BitmapToExplorer(pBitmap, p1)
-
-      if (cotype = "SafeArray") ; (pBitmap, extension, quality)
-         return this.BitmapToSafeArray(pBitmap, p1, p2)
 
       if (cotype = "FormData") ; (pBitmap, boundary, extension, quality)
          return this.BitmapToFormData(pBitmap, p1, p2, p3)
@@ -783,8 +783,17 @@ class ImagePut {
       if (cotype = "Clipboard") ; (stream)
          return this.StreamToClipboard(stream)
 
+      if (cotype = "SafeArray") ; (stream)
+         return this.StreamToSafeArray(stream)
+
       if (cotype = "EncodedBuffer") ; (stream)
          return this.StreamToEncodedBuffer(stream)
+
+      if (cotype = "Url") ; (stream)
+         return this.StreamToUrl(stream)
+
+      if (cotype = "Explorer") ; (stream, default)
+         return this.StreamToExplorer(stream, p1)
 
       if (cotype = "File") ; (stream, filepath)
          return this.StreamToFile(stream, p1)
@@ -803,12 +812,6 @@ class ImagePut {
 
       if (cotype = "RandomAccessStream") ; (stream)
          return this.StreamToRandomAccessStream(stream)
-
-      if (cotype = "Explorer") ; (stream, default)
-         return this.StreamToExplorer(stream, p1)
-
-      if (cotype = "SafeArray") ; (stream)
-         return this.StreamToSafeArray(stream)
 
       if (cotype = "FormData") ; (stream, boundary)
          return this.StreamToFormData(stream, p1)
@@ -2435,7 +2438,7 @@ class ImagePut {
 
       __Delete() {
          DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap)
-	 for callback in this.free
+         for callback in this.free
             callback.call()
          ImagePut.gdiplusShutdown()
       }
@@ -4279,6 +4282,7 @@ class ImagePut {
 
       req := ComObjCreate("WinHttp.WinHttpRequest.5.1")
       req.Open("POST", "https://api.imgur.com/3/image", true)
+      req.SetRequestHeader("Authorization", "Client-ID " . "fbf77" "ff49" "c42c8a")
       req.Send(body)
       req.WaitForResponse()
 
@@ -4286,11 +4290,12 @@ class ImagePut {
       return url
    }
 
-   StreamToURL(stream) {
+   StreamToUrl(stream) {
       body := this.StreamToSafeArray(stream)
 
       req := ComObjCreate("WinHttp.WinHttpRequest.5.1")
       req.Open("POST", "https://api.imgur.com/3/image", true)
+      req.SetRequestHeader("Authorization", "Client-ID " . "fbf77" "ff49" "c42c8a")
       req.Send(body)
       req.WaitForResponse()
 
