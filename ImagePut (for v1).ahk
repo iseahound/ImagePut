@@ -2329,9 +2329,9 @@ class ImagePut {
       return buf
    }
 
-   BitmapToSharedBuffer(pBitmap, name := "SharedBuffer") {
+   BitmapToSharedBuffer(pBitmap, name := "") {
 
-      if (name == "SharedBuffer") {
+      if (name == "") {
          MsgBox %       "You have not specified a name for the SharedBuffer. Defaulting to 'SharedBuffer'."
          . "`n"       . "Note that names are case-sensitive and must be unique."
          . "`n"       . "To access the shared buffer in a different script, use:"
