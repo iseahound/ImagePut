@@ -4734,6 +4734,7 @@ class ImagePut {
       this.select_codec(pBitmap, extension, quality, &pCodec, &ep) ; Defaults to PNG for small sizes!
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", True, "ptr*", &stream:=0, "hresult")
       DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", stream, "ptr", pCodec, "ptr", ep)
+      DllCall("shlwapi\IStream_Reset", "ptr", stream, "hresult")
       return stream
    }
 
