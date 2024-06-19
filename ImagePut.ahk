@@ -2274,7 +2274,7 @@ class ImagePut {
       ; Copy the encoded image to a SAFEARRAY.
       safearray := ComObjArray(0x11, size) ; VT_UI1
       pvData := NumGet(ComObjValue(safearray), 8 + A_PtrSize, "ptr")
-      DllCall("RtlMoveMemory", "ptr", pvData, "ptr", ptr, "uptr", size)
+      DllCall("RtlMoveMemory", "ptr", pvData, "ptr", bin, "uptr", size)
 
       ; Release the IStream and call GlobalFree.
       DllCall("GlobalUnlock", "ptr", handle)
@@ -2307,7 +2307,7 @@ class ImagePut {
 
       ; Copy data into a buffer.
       buf := Buffer(size)
-      DllCall("RtlMoveMemory", "ptr", buf.ptr, "ptr", ptr, "uptr", size)
+      DllCall("RtlMoveMemory", "ptr", buf.ptr, "ptr", bin, "uptr", size)
 
       ; Release binary data and stream.
       DllCall("GlobalUnlock", "ptr", handle)
