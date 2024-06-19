@@ -196,9 +196,9 @@ class ImagePut {
    static validate := False  ; Always copies pixels to new memory immediately instead of copy-on-read/write.
 
    call(cotype, image, p*) {
-      this.gdiplusStartup() ; Start!
-      coimage := this.convert(cotype, image, p*)
-      this.gdiplusShutdown(cotype)
+      this.gdiplusStartup()                      ; Start!
+      coimage := this.convert(cotype, image, p*) ; Convert!
+      this.gdiplusShutdown(cotype)               ; Check if GDI+ is still needed.
       return coimage
    }
 
@@ -3198,7 +3198,6 @@ class ImagePut {
          return xys
       }
    }
-
 
 
 
