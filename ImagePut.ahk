@@ -2264,17 +2264,11 @@ class ImagePut {
 
    static BitmapToSafeArray(pBitmap, extension := "", quality := "") {
       ; Thanks tmplinshi - https://www.autohotkey.com/boards/viewtopic.php?p=354007#p354007
+      stream := this.BitmapToStream(pBitmap, extension, quality) ; Defaults to PNG for small sizes!
 
-      ; Create an IStream backed with movable memory.
-      handle := DllCall("GlobalAlloc", "uint", 0x2, "uptr", 0, "ptr")
-      DllCall("ole32\CreateStreamOnHGlobal", "ptr", handle, "int", True, "ptr*", &stream:=0, "hresult")
-
-      ; Save pBitmap to the IStream.
-      this.select_codec(pBitmap, extension, quality, &pCodec, &ep) ; Defaults to PNG for small sizes!
-      DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", stream, "ptr", pCodec, "ptr", ep)
-
-      ; Get the pointer and size of the IStream's movable memory.
-      ptr := DllCall("GlobalLock", "ptr", handle, "ptr")
+      ; Get a pointer to binary data.
+      DllCall("ole32\GetHGlobalFromStream", "ptr", stream, "ptr*", &handle:=0, "hresult")
+      bin := DllCall("GlobalLock", "ptr", handle, "ptr")
       size := DllCall("GlobalSize", "ptr", handle, "uptr")
 
       ; Copy the encoded image to a SAFEARRAY.
@@ -2304,12 +2298,11 @@ class ImagePut {
    }
 
    static BitmapToEncodedBuffer(pBitmap, extension := "", quality := "") {
-      ; Defaults to PNG for small sizes!
-      stream := this.BitmapToStream(pBitmap, (extension) ? extension : "png", quality)
+      stream := this.BitmapToStream(pBitmap, extension, quality) ; Defaults to PNG for small sizes!
 
-      ; Get a pointer to the encoded image data.
+      ; Get a pointer to binary data.
       DllCall("ole32\GetHGlobalFromStream", "ptr", stream, "ptr*", &handle:=0, "hresult")
-      ptr := DllCall("GlobalLock", "ptr", handle, "ptr")
+      bin := DllCall("GlobalLock", "ptr", handle, "ptr")
       size := DllCall("GlobalSize", "ptr", handle, "uptr")
 
       ; Copy data into a buffer.
@@ -4739,7 +4732,7 @@ class ImagePut {
    }
 
    static BitmapToRandomAccessStream(pBitmap, extension := "", quality := "") {
-      stream := this.BitmapToStream(pBitmap, extension, quality)
+      stream := this.BitmapToStream(pBitmap, extension, quality) ; Defaults to PNG for small sizes!
       IRandomAccessStream := this.StreamToRandomAccessStream(stream)
       ObjRelease(stream) ; Decrement the reference count of the IStream interface.
       return IRandomAccessStream
