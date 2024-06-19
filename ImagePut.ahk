@@ -196,10 +196,13 @@ class ImagePut {
    static validate := False  ; Always copies pixels to new memory immediately instead of copy-on-read/write.
 
    static call(cotype, image, p*) {
+      this.gdiplusStartup() ; Start!
+      coimage := this.convert(cotype, image, p*)
+      this.gdiplusShutdown(cotype)
+      return coimage
+   }
 
-      ; Start!
-      this.gdiplusStartup()
-
+   static convert(cotype, image, p*) {
       ; Take a guess as to what the image might be. (>95% accuracy!)
       try type := this.DontVerifyImageType(&image, &keywords)
       catch
@@ -219,10 +222,8 @@ class ImagePut {
       try index := keywords.index
 
       ; #0 - Special cases.
-      if (type = "SharedBuffer" && cotype = "SharedBuffer") {
-         coimage := this.SharedBufferToSharedBuffer(image)
-         goto exit
-      }
+      if (type = "SharedBuffer" && cotype = "SharedBuffer")
+         return this.SharedBufferToSharedBuffer(image)
 
       cleanup := ""
 
@@ -316,7 +317,7 @@ class ImagePut {
       if (cotype != "stream")
          ObjRelease(stream)
 
-      goto exit
+      return coimage
 
       ; Otherwise export the image as a stream.
       clean_stream:
@@ -354,10 +355,6 @@ class ImagePut {
 
       if (cleanup = "stream")
          ObjRelease(stream)
-
-      exit:
-      ; Check for dangling pointers.
-      this.gdiplusShutdown(cotype)
 
       return coimage
    }
