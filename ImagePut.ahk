@@ -2043,7 +2043,7 @@ class ImagePut {
       stride := NumGet(BitmapData, 8, "int")
 
       ; Write from the IWICBitmap to the temporary buffer.
-      ComCall(CopyPixels := 7, IWICBitmap, "ptr", Rect, "uint", stride, "uint", stride * height, "ptr", Scan0)
+      ComCall(CopyPixels := 7, image, "ptr", Rect, "uint", stride, "uint", stride * height, "ptr", Scan0)
 
       ; Write pixels from the temporary buffer to the pBitmap.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
@@ -4991,7 +4991,7 @@ class ImagePut {
       ComCall(CreateBitmap := 17, IWICImagingFactory, "uint", width, "uint", height, "ptr", GUID_WICPixelFormat32bppPBGRA, "int", 1, "ptr*", &IWICBitmap:=0)
 
       ; Initialize Direct2D
-      IID_ID2D1Factory:=Buffer(16)
+      IID_ID2D1Factory := Buffer(16)
       DllCall("ole32\IIDFromString", "wstr", "{06152247-6f50-465a-9245-118bfd3b6007}", "ptr", IID_ID2D1Factory, "hresult")
       DllCall("GetModuleHandleA",  "AStr",  "d2d1") || DllCall("LoadLibraryA",  "AStr",  "d2d1") ;this is needed to avoid "Critical Error: Invalid memory read/write"
       DllCall("d2d1\D2D1CreateFactory", "int", 0, "ptr", IID_ID2D1Factory, "ptr", 0, "ptr*", &ID2D1Factory:=0) ;0=D2D1_FACTORY_TYPE_SINGLE_THREADED,  3=D2D1_DEBUG_LEVEL_INFORMATION
@@ -5003,7 +5003,7 @@ class ImagePut {
       ComCall(CreateWicBitmapRenderTarget := 13, ID2D1Factory, "ptr", IWICBitmap, "ptr", D2D1_RENDER_TARGET_PROPERTIES, "ptr*", &ID2D1RenderTarget:=0)
 
       ; Set the output size of the SVG vector to raster conversion.
-      D2D1_SIZE_F:=Buffer(8)
+      D2D1_SIZE_F := Buffer(8)
       NumPut("float", width, D2D1_SIZE_F, 0x0)
       NumPut("float", height, D2D1_SIZE_F, 0x4)
       ComCall(CreateSvgDocument := 115, ID2D1RenderTarget, "ptr", IStream, "uint64", NumGet(D2D1_SIZE_F, "uint64"), "ptr*", &ID2D1SvgDocument:=0) ;ID2D1DeviceContext5::

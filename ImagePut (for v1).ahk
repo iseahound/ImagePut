@@ -279,7 +279,7 @@ class ImagePut {
       ; Convert vectorized formats to rasterized formats.
       if (render && extension ~= "^(?i:pdf|svg)$") {
          (extension = "pdf") && this.RenderPdf(stream, index)
-         ; (extension = "svg") && pBitmap := this.RenderSvg(&stream, 800, 800)
+         (extension = "svg") && pBitmap := this.RenderSvg(stream, width, height)
          goto % IsSet(pBitmap) ? "bitmap" : "stream"
       }
 
@@ -4972,6 +4972,75 @@ class ImagePut {
          try return ObjRelease(Object)
          finally Object := ""
       }
+   }
+
+   RenderSvg(ByRef IStream, width, height) {
+      ; Thanks MrDoge - https://www.autohotkey.com/boards/viewtopic.php?f=83&t=121834
+      ;https://gist.github.com/smourier/5b770d32043121d477a8079ef6be0995
+      ;https://stackoverflow.com/questions/75917247/convert-svg-files-to-bitmap-using-direct2d-in-mfc#75935717
+      ; ID2D1DeviceContext5::CreateSvgDocument is the carrying api
+
+      (width == "") && width := 1000
+      (height == "") && height := 1000
+
+      IWICImagingFactory := ComObjCreate("{CACAF262-9370-4615-A13B-9F5539DA4C0A}", "{EC5EC8A9-C395-4314-9C77-54D7A935FF70}")
+
+      ; Initialize bitmap with backing memory. WICBitmapCacheOnDemand = 1
+      VarSetCapacity(GUID_WICPixelFormat32bppPBGRA, 16)
+      DllCall("ole32\CLSIDFromString", "wstr", "{6fddc324-4e03-4bfe-b185-3d77768dc910}", "ptr", &GUID_WICPixelFormat32bppPBGRA, "uint")
+      DllCall(NumGet(NumGet(IWICImagingFactory+0)+A_PtrSize* 17), "ptr", IWICImagingFactory, "uint", width, "uint", height, "ptr", &GUID_WICPixelFormat32bppPBGRA, "int", 1, "ptr*", IWICBitmap:=0)
+
+      ; Initialize Direct2D
+      VarSetCapacity(IID_ID2D1Factory, 16)
+      DllCall("ole32\IIDFromString", "wstr", "{06152247-6f50-465a-9245-118bfd3b6007}", "ptr", &IID_ID2D1Factory, "uint")
+      DllCall("GetModuleHandleA",  "AStr",  "d2d1") || DllCall("LoadLibraryA",  "AStr",  "d2d1") ;this is needed to avoid "Critical Error: Invalid memory read/write"
+      DllCall("d2d1\D2D1CreateFactory", "int", 0, "ptr", &IID_ID2D1Factory, "ptr", 0, "ptr*", ID2D1Factory:=0) ;0=D2D1_FACTORY_TYPE_SINGLE_THREADED,  3=D2D1_DEBUG_LEVEL_INFORMATION
+
+      ; Create a render target using the default pixel format specified by the IWICBitmap,
+      VarSetCapacity(D2D1_RENDER_TARGET_PROPERTIES, 0x1c, 0)
+      NumPut(87, D2D1_RENDER_TARGET_PROPERTIES, 0x4, "int") ; DXGI_FORMAT_B8G8R8A8_UNORM
+      NumPut( 1, D2D1_RENDER_TARGET_PROPERTIES, 0x8, "int") ; D2D1_ALPHA_MODE_PREMULTIPLIED
+      DllCall(NumGet(NumGet(ID2D1Factory+0)+A_PtrSize* 13), "ptr", ID2D1Factory, "ptr", IWICBitmap, "ptr", &D2D1_RENDER_TARGET_PROPERTIES, "ptr*", ID2D1RenderTarget:=0)
+
+      ; Set the output size of the SVG vector to raster conversion.
+      VarSetCapacity(D2D1_SIZE_F, 8)
+      NumPut(width, D2D1_SIZE_F, 0x0, "float")
+      NumPut(height, D2D1_SIZE_F, 0x4, "float")
+      DllCall(NumGet(NumGet(ID2D1RenderTarget+0)+A_PtrSize* 115), "ptr", ID2D1RenderTarget, "ptr", IStream, "uint64", NumGet(D2D1_SIZE_F, "uint64"), "ptr*", ID2D1SvgDocument:=0) ;ID2D1DeviceContext5::
+
+      ; Render the SVG to the IWICBitmap.
+      DllCall(NumGet(NumGet(ID2D1RenderTarget+0)+A_PtrSize* 48), "ptr", ID2D1RenderTarget, "char")
+      DllCall(NumGet(NumGet(ID2D1RenderTarget+0)+A_PtrSize* 116), "ptr", ID2D1RenderTarget, "ptr", ID2D1SvgDocument, "char") ;ID2D1DeviceContext5::
+      DllCall(NumGet(NumGet(ID2D1RenderTarget+0)+A_PtrSize* 49), "ptr", ID2D1RenderTarget, "ptr", 0, "ptr", 0)
+
+      ; Cleanup
+      ObjRelease(IStream)
+
+      ; Create a destination GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
+      DllCall("gdiplus\GdipCreateBitmapFromScan0"
+               , "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
+
+      ; Create a pixel buffer.
+      VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
+         NumPut(  width, Rect,  8,   "uint") ; Width
+         NumPut( height, Rect, 12,   "uint") ; Height
+      VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
+      DllCall("gdiplus\GdipBitmapLockBits"
+               ,    "ptr", pBitmap
+               ,    "ptr", &Rect
+               ,   "uint", 2            ; ImageLockMode.WriteOnly
+               ,    "int", 0xE200B      ; Format32bppPArgb
+               ,    "ptr", &BitmapData)
+      Scan0 := NumGet(BitmapData, 16, "ptr")
+      stride := NumGet(BitmapData, 8, "int")
+
+      ; Write from the IWICBitmap to the temporary buffer.
+      DllCall(NumGet(NumGet(IWICBitmap+0)+A_PtrSize* 7), "ptr", IWICBitmap, "ptr", &Rect, "uint", stride, "uint", stride * height, "ptr", Scan0)
+
+      ; Write pixels from the temporary buffer to the pBitmap.
+      DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
+
+      return pBitmap
    }
 
    select_codec(pBitmap, extension, quality, ByRef pCodec, ByRef ep) {
