@@ -447,6 +447,7 @@ class ImagePut {
       ; A "screenshot" is an array of 4 numbers with an optional window.
       if image.HasProp("__Item") && image.HasProp("length") && image.length ~= "4|5"
       && image[1] ~= "^-?\d+$" && image[2] ~= "^-?\d+$" && image[3] ~= "^(?!0+$)\d+$" && image[4] ~= "^(?!0+$)\d+$"
+      && image[1] > -65536 && image[1] < 65536 && image[2] > -65536 && image[2] < 65536 && image[3] < 65536 && image[4] < 65536
       && (image.Has(5) ? WinExist(image[5]) : True)
          return "Screenshot"
 
