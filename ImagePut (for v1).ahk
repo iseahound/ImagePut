@@ -881,7 +881,7 @@ class ImagePut {
    }
 
    BitmapScale(ByRef pBitmap, scale, direction := 0) {
-      if not (IsObject(scale) && ((scale[1] ~= "^(?!0+$)\d+$") || (scale[2] ~= "^(?!0+$)\d+$")) || (scale ~= "^\d+(\.\d+)?$"))
+      if not (IsObject(scale) && ((scale[1] ~= "^(?!0+$)\d+$") || (scale[2] ~= "^(?!0+$)\d+$")) || (scale ~= "^(?!0+$)\d+(\.\d+)?$"))
          throw Exception("Invalid scale.")
 
       ; Get Bitmap width, height, and format.
