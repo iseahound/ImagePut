@@ -217,6 +217,8 @@ class ImagePut {
       decode    := keywords.HasProp("decode")    ? keywords.decode    : this.decode
       render    := keywords.HasProp("render")    ? keywords.render    : this.render
       validate  := keywords.HasProp("validate")  ? keywords.validate  : this.validate
+      width     := keywords.HasProp("width") && keywords.width ~= "^(?!0+$)\d+$" ? keywords.width : ""
+      height    := keywords.HasProp("height") && keywords.height ~= "^(?!0+$)\d+$" ? keywords.height : ""
 
       ; Keywords are for (image -> intermediate).
       try index := keywords.index
@@ -277,7 +279,7 @@ class ImagePut {
       ; Convert vectorized formats to rasterized formats.
       if (render && extension ~= "^(?i:pdf|svg)$") {
          (extension = "pdf") && this.RenderPdf(&stream, index?)
-         (extension = "svg") && pBitmap := this.RenderSvg(&stream, 800, 800)
+         (extension = "svg") && pBitmap := this.RenderSvg(&stream, width, height)
          goto( IsSet(pBitmap) ? "bitmap" : "stream" )
       }
 
@@ -4976,6 +4978,9 @@ class ImagePut {
       ;https://stackoverflow.com/questions/75917247/convert-svg-files-to-bitmap-using-direct2d-in-mfc#75935717
       ; ID2D1DeviceContext5::CreateSvgDocument is the carrying api
 
+      (width == "") && width := 1000
+      (height == "") && height := 1000
+
       IWICImagingFactory := ComObject("{CACAF262-9370-4615-A13B-9F5539DA4C0A}", "{EC5EC8A9-C395-4314-9C77-54D7A935FF70}")
 
       ; Initialize bitmap with backing memory. WICBitmapCacheOnDemand = 1
@@ -5005,8 +5010,6 @@ class ImagePut {
       ComCall(BeginDraw := 48, ID2D1RenderTarget, "char")
       ComCall(DrawSvgDocument := 116, ID2D1RenderTarget, "ptr", ID2D1SvgDocument, "char") ;ID2D1DeviceContext5::
       ComCall(EndDraw := 49, ID2D1RenderTarget, "ptr", 0, "ptr", 0)
-
-      ImageShow(IWICBitmap)
 
       ; Cleanup
       ObjRelease(IStream)
