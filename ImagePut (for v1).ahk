@@ -446,7 +446,7 @@ class ImagePut {
 
       ; A "screenshot" is an array of 4 numbers with an optional window.
       if image.length() ~= "4|5"
-      && image[1] ~= "^-?\d+$" && image[2] ~= "^-?\d+$" && image[3] ~= "^\d+$" && image[4] ~= "^\d+$"
+      && image[1] ~= "^-?\d+$" && image[2] ~= "^-?\d+$" && image[3] ~= "^(?!0+$)\d+$" && image[4] ~= "^(?!0+$)\d+$"
       && (image.HasKey(5) ? WinExist(image[5]) : True)
          return "Screenshot"
 
@@ -881,7 +881,7 @@ class ImagePut {
    }
 
    BitmapScale(ByRef pBitmap, scale, direction := 0) {
-      if not (IsObject(scale) && ((scale[1] ~= "^\d+$") || (scale[2] ~= "^\d+$")) || (scale ~= "^\d+(\.\d+)?$"))
+      if not (IsObject(scale) && ((scale[1] ~= "^(?!0+$)\d+$") || (scale[2] ~= "^(?!0+$)\d+$")) || (scale ~= "^\d+(\.\d+)?$"))
          throw Exception("Invalid scale.")
 
       ; Get Bitmap width, height, and format.
@@ -890,8 +890,8 @@ class ImagePut {
       DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", pBitmap, "int*", format:=0)
 
       if IsObject(scale) {
-         safe_w := (scale[1] ~= "^\d+$") ? scale[1] : Round(width / height * scale[2])
-         safe_h := (scale[2] ~= "^\d+$") ? scale[2] : Round(height / width * scale[1])
+         safe_w := (scale[1] ~= "^(?!0+$)\d+$") ? scale[1] : Round(width / height * scale[2])
+         safe_h := (scale[2] ~= "^(?!0+$)\d+$") ? scale[2] : Round(height / width * scale[1])
       } else {
          safe_w := Ceil(width * scale)
          safe_h := Ceil(height * scale)
