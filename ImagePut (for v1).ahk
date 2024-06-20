@@ -2042,9 +2042,10 @@ class ImagePut {
       Scan0 := NumGet(BitmapData, 16, "ptr")
       stride := NumGet(BitmapData, 8, "int")
 
+      ; Write from the IWICBitmap to the temporary buffer.
       DllCall(NumGet(NumGet(image+0)+A_PtrSize* 7), "ptr", image, "ptr", &Rect, "uint", stride, "uint", stride * height, "ptr", Scan0)
 
-      ; Write pixels to bitmap.
+      ; Write pixels from the temporary buffer to the pBitmap.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
 
       return pBitmap

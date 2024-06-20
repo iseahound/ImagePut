@@ -2042,9 +2042,10 @@ class ImagePut {
       Scan0 := NumGet(BitmapData, 16, "ptr")
       stride := NumGet(BitmapData, 8, "int")
 
-      ComCall(CopyPixels := 7, image, "ptr", Rect, "uint", stride, "uint", stride * height, "ptr", Scan0)
+      ; Write from the IWICBitmap to the temporary buffer.
+      ComCall(CopyPixels := 7, IWICBitmap, "ptr", Rect, "uint", stride, "uint", stride * height, "ptr", Scan0)
 
-      ; Write pixels to bitmap.
+      ; Write pixels from the temporary buffer to the pBitmap.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
 
       return pBitmap
@@ -5033,10 +5034,10 @@ class ImagePut {
       Scan0 := NumGet(BitmapData, 16, "ptr")
       stride := NumGet(BitmapData, 8, "int")
 
-      ; Write the IWICBitmap to the GDI+ Bitmap.
-      ComCall(7, IWICBitmap, "ptr", 0, "uint", stride, "uint", stride * height, "ptr", Scan0) ;IWICBitmapSource::CopyPixels
+      ; Write from the IWICBitmap to the temporary buffer.
+      ComCall(CopyPixels := 7, IWICBitmap, "ptr", Rect, "uint", stride, "uint", stride * height, "ptr", Scan0)
 
-      ; Write pixels to bitmap.
+      ; Write pixels from the temporary buffer to the pBitmap.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
 
       return pBitmap
