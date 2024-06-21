@@ -948,10 +948,12 @@ class ImagePut {
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
 
-      ; Create a pixel buffer.
+      ; Describes the portion of the source to be copied. READ: source = buffer. WRITE: source = bitmap.
       VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
          NumPut(  width, rect,  8,   "uint") ; Width
          NumPut( height, rect, 12,   "uint") ; Height
+
+      ; Create a pixel buffer.
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
@@ -1083,10 +1085,12 @@ class ImagePut {
       ; Create a destination GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
 
-      ; Describe the current buffer holding the pixel data.
+      ; Describes the portion of the source to be copied. READ: source = buffer. WRITE: source = bitmap.
       VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
          NumPut(  width, rect,  8,   "uint") ; Width
          NumPut( height, rect, 12,   "uint") ; Height
+
+      ; Describe the current buffer holding the pixel data.
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
          NumPut(    stride, BitmapData,  8,    "int") ; Stride
          NumPut(     Scan0, BitmapData, 16,    "ptr") ; Scan0
@@ -1189,10 +1193,12 @@ class ImagePut {
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height
          , "int", size // height, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
 
-      ; Create a Scan0 buffer pointing to pBits.
+      ; Describes the portion of the source to be copied. READ: source = buffer. WRITE: source = bitmap.
       VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
          NumPut(  width, rect,  8,   "uint") ; Width
          NumPut( height, rect, 12,   "uint") ; Height
+
+      ; Create a Scan0 buffer pointing to pBits.
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
          NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
          NumPut(       ptr, BitmapData, 16,    "ptr") ; Scan0
@@ -1808,10 +1814,12 @@ class ImagePut {
       ; Create a destination GDI+ Bitmap that owns its memory to receive the final converted pixels. The pixel format is 32-bit ARGB.
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
 
-      ; Create a Scan0 buffer pointing to pBits. The buffer has pixel format pARGB.
+      ; Describes the portion of the source to be copied. READ: source = buffer. WRITE: source = bitmap.
       VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
          NumPut(  width, rect,  8,   "uint") ; Width
          NumPut( height, rect, 12,   "uint") ; Height
+
+      ; Create a Scan0 buffer pointing to pBits. The buffer has pixel format pARGB.
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
          NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
          NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
@@ -1873,10 +1881,12 @@ class ImagePut {
       ; Create a destination GDI+ Bitmap that owns its memory to receive the final converted pixels. The pixel format is 32-bit ARGB.
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
 
-      ; Create a Scan0 buffer pointing to pBits. The buffer has pixel format pARGB.
+      ; Describes the portion of the source to be copied. READ: source = buffer. WRITE: source = bitmap.
       VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
          NumPut(  width, rect,  8,   "uint") ; Width
          NumPut( height, rect, 12,   "uint") ; Height
+
+      ; Create a Scan0 buffer pointing to pBits. The buffer has pixel format pARGB.
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
          NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
          NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
@@ -1949,10 +1959,12 @@ class ImagePut {
       ; Create a destination GDI+ Bitmap that owns its memory to receive the final converted pixels. The pixel format is 32-bit ARGB.
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
 
-      ; Create a Scan0 buffer pointing to pBits. The buffer has pixel format pARGB.
+      ; Describes the portion of the source to be copied. READ: source = buffer. WRITE: source = bitmap.
       VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
          NumPut(  width, rect,  8,   "uint") ; Width
          NumPut( height, rect, 12,   "uint") ; Height
+
+      ; Create a Scan0 buffer pointing to pBits. The buffer has pixel format pARGB.
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
          NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
          NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
@@ -2026,10 +2038,12 @@ class ImagePut {
       ; Create a destination GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
 
-      ; Create a pixel buffer.
+      ; Describes the portion of the source to be copied. READ: source = buffer. WRITE: source = bitmap.
       VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
          NumPut(  width, rect,  8,   "uint") ; Width
          NumPut( height, rect, 12,   "uint") ; Height
+
+      ; Create a pixel buffer.
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
@@ -2352,10 +2366,12 @@ class ImagePut {
       NumPut(height, pMap + 4, "uint")
       ptr := pMap + 8
 
-      ; Target a pixel buffer.
+      ; Describes the portion of the source to be copied. READ: source = buffer. WRITE: source = bitmap.
       VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
          NumPut(  width, rect,  8,   "uint") ; Width
          NumPut( height, rect, 12,   "uint") ; Height
+
+      ; Target a pixel buffer.
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
          NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
          NumPut(       ptr, BitmapData, 16,    "ptr") ; Scan0
@@ -2385,10 +2401,12 @@ class ImagePut {
       size := 4 * width * height
       ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr")
 
-      ; Create a pixel buffer.
+      ; Describes the portion of the source to be copied. READ: source = buffer. WRITE: source = bitmap.
       VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
          NumPut(  width, rect,  8,   "uint") ; Width
          NumPut( height, rect, 12,   "uint") ; Height
+
+      ; Create a pixel buffer.
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
          NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
          NumPut(       ptr, BitmapData, 16,    "ptr") ; Scan0
@@ -3445,7 +3463,7 @@ class ImagePut {
       if IsObject(pos) && pos.HasKey(5) && (WinExist(pos[5]) || DllCall("IsWindow", "ptr", pos[5])) {
          try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
          pos[5] := (hwnd := WinExist(pos[5])) ? hwnd : pos[5]
-         VarSetCapacity(rect, 16, 0)
+         VarSetCapacity(rect, 16)
          DllCall("GetClientRect", "ptr", pos[5], "ptr", &rect)
          DllCall("ClientToScreen", "ptr", pos[5], "ptr", &rect)
          try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
@@ -3475,10 +3493,12 @@ class ImagePut {
 
       ; Case 1: Image is not scaled.
       if (w == width && h == height) {
-         ; Transfer data from source pBitmap to an hBitmap manually.
+         ; Describes the portion of the source to be copied. READ: source = buffer. WRITE: source = bitmap.
          VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
             NumPut(  width, rect,  8,   "uint") ; Width
             NumPut( height, rect, 12,   "uint") ; Height
+
+         ; Transfer data from source pBitmap to an hBitmap manually.
          VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
             NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
             NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
@@ -4042,10 +4062,12 @@ class ImagePut {
                DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
                DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
 
-               ; Transfer data from source pBitmap to an hBitmap manually.
+               ; Describes the portion of the source to be copied. READ: source = buffer. WRITE: source = bitmap.
                VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
                   NumPut(  width, rect,  8,   "uint") ; Width
                   NumPut( height, rect, 12,   "uint") ; Height
+
+               ; Transfer data from source pBitmap to an hBitmap manually.
                VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
                   NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
                   NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
@@ -4644,10 +4666,12 @@ class ImagePut {
       hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
-      ; Transfer data from source pBitmap to an hBitmap manually.
+      ; Describes the portion of the source to be copied. READ: source = buffer. WRITE: source = bitmap.
       VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
          NumPut(  width, rect,  8,   "uint") ; Width
          NumPut( height, rect, 12,   "uint") ; Height
+
+      ; Transfer data from source pBitmap to an hBitmap manually.
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
          NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
          NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
@@ -4687,10 +4711,12 @@ class ImagePut {
       hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
-      ; Transfer data from source pBitmap to an hBitmap manually.
+      ; Describes the portion of the source to be copied. READ: source = buffer. WRITE: source = bitmap.
       VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
          NumPut(  width, rect,  8,   "uint") ; Width
          NumPut( height, rect, 12,   "uint") ; Height
+
+      ; Transfer data from source pBitmap to an hBitmap manually.
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
          NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
          NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
@@ -4750,10 +4776,12 @@ class ImagePut {
       DllCall("ole32\CLSIDFromString", "wstr", "{6fddc324-4e03-4bfe-b185-3d77768dc90f}", "ptr", &GUID_WICPixelFormat32bppBGRA, "uint")
       DllCall(NumGet(NumGet(IWICImagingFactory+0)+A_PtrSize* 17), "ptr", IWICImagingFactory, "uint", width, "uint", height, "ptr", &GUID_WICPixelFormat32bppBGRA, "int", 1, "ptr*", wicbitmap:=0)
 
-      ; Lock the WIC bitmap with write access only and get a pointer to its pixel buffer.
+      ; Describes the portion of the source to be copied. READ: source = buffer. WRITE: source = bitmap.
       VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
          NumPut(  width, rect,  8,   "uint") ; Width
          NumPut( height, rect, 12,   "uint") ; Height
+
+      ; Lock the WIC bitmap with write access only and get a pointer to its pixel buffer.
       DllCall(NumGet(NumGet(wicbitmap+0)+A_PtrSize* 8), "ptr", wicbitmap, "ptr", &rect, "uint", 0x1, "ptr*", IWICBitmapLock:=0)
       DllCall(NumGet(NumGet(IWICBitmapLock+0)+A_PtrSize* 5), "ptr", IWICBitmapLock, "uint*", size:=0, "ptr*", Scan0:=0)
 
@@ -5010,10 +5038,12 @@ class ImagePut {
       ; Create a destination GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
 
-      ; Create a pixel buffer.
+      ; Describes the portion of the source to be copied. READ: source = buffer. WRITE: source = bitmap.
       VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
          NumPut(  width, rect,  8,   "uint") ; Width
          NumPut( height, rect, 12,   "uint") ; Height
+
+      ; Create a pixel buffer.
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
@@ -5385,10 +5415,12 @@ class ImageEqual extends ImagePut {
       if (format1 != format3)
          throw Exception("Report this error to the developer.")
 
-      ; struct rect - https://referencesource.microsoft.com/#System.Drawing/commonui/System/Drawing/Rectangle.cs,32
-      VarSetCapacity(rect, 16, 0)                 ; sizeof(rect) = 16
-         NumPut(  width1, rect,  8,   "uint")     ; Width
-         NumPut( height1, rect, 12,   "uint")     ; Height
+      width := width1, height := height1
+
+      ; Describes the portion of the source to be copied. READ: source = buffer. WRITE: source = bitmap.
+      VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
+         NumPut(  width, rect,  8,   "uint") ; Width
+         NumPut( height, rect, 12,   "uint") ; Height
 
       ; Create a BitmapData structure.
       VarSetCapacity(BitmapData1, 16+2*A_PtrSize) ; sizeof(BitmapData) = 24, 32
