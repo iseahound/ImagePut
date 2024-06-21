@@ -3664,10 +3664,8 @@ class ImagePut {
                hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
                obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
-               ; Create a graphics context from the device context.
+               ; Create a graphics context as the rendering destination.
                DllCall("gdiplus\GdipCreateFromHDC", "ptr", hdc , "ptr*", pGraphics:=0)
-
-               ; Set settings in graphics context.
                DllCall("gdiplus\GdipSetPixelOffsetMode",    "ptr", pGraphics, "int", 2) ; Half pixel offset.
                DllCall("gdiplus\GdipSetCompositingMode",    "ptr", pGraphics, "int", 1) ; Overwrite/SourceCopy.
                DllCall("gdiplus\GdipSetInterpolationMode",  "ptr", pGraphics, "int", 7) ; HighQualityBicubic
