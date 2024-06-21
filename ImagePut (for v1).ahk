@@ -278,8 +278,8 @@ class ImagePut {
 
       ; Convert vectorized formats to rasterized formats.
       if (render && extension ~= "^(?i:pdf|svg)$") {
-         (extension = "pdf") && this.RenderPdf(stream, index)
-         (extension = "svg") && pBitmap := this.RenderSvg(stream, width, height)
+         (extension = "pdf") && this.RenderPDF(stream, index)
+         (extension = "svg") && pBitmap := this.RenderSVG(stream, width, height)
          goto % IsSet(pBitmap) ? "bitmap" : "stream"
       }
 
@@ -343,7 +343,7 @@ class ImagePut {
 
       ; Save frame delays and loop count for webp.
       if (type = "stream" && extension = "webp" && cotype ~= "^(?i:show|window|desktop)$") {
-         this.ParseWebp(stream, pDelays, pCount)
+         this.ParseWEBP(stream, pDelays, pCount)
          DllCall("gdiplus\GdipSetPropertyItem", "ptr", pBitmap, "ptr", pDelays)
          DllCall("gdiplus\GdipSetPropertyItem", "ptr", pBitmap, "ptr", pCount)
       }
@@ -364,7 +364,7 @@ class ImagePut {
    static inputs :=
    ( Join
    [
-      "ClipboardPng",
+      "ClipboardPNG",
       "Clipboard",
       "SafeArray",
       "Screenshot",
@@ -376,7 +376,7 @@ class ImagePut {
       "Desktop",
       "Wallpaper",
       "Cursor",
-      "Url",
+      "URL",
       "File",
       "SharedBuffer",
       "Hex",
@@ -387,8 +387,8 @@ class ImagePut {
       "Bitmap",
       "Stream",
       "RandomAccessStream",
-      "WicBitmap",
-      "D2dBitmap"
+      "WICBitmap",
+      "D2DBitmap"
    ]
    )
    DontVerifyImageType(ByRef image, ByRef keywords := "") {
@@ -427,7 +427,7 @@ class ImagePut {
       if (image == "")
          ; A "clipboardpng" is a pointer to a PNG stream saved as the "png" clipboard format.
          if DllCall("IsClipboardFormatAvailable", "uint", DllCall("RegisterClipboardFormat", "str", "png", "uint"))
-            return "ClipboardPng"
+            return "ClipboardPNG"
 
          ; A "clipboard" is a handle to a GDI bitmap saved as CF_BITMAP.
          else if DllCall("IsClipboardFormatAvailable", "uint", 2)
@@ -503,8 +503,8 @@ class ImagePut {
          return "Cursor"
 
       ; A "url" satisfies the url format.
-      if this.IsUrl(image)
-         return "Url"
+      if this.IsURL(image)
+         return "URL"
 
       ; A "file" is stored on the disk or network.
       if FileExist(image)
@@ -572,11 +572,11 @@ class ImagePut {
 
       ; A "wicbitmap" is a pointer to a IWICBitmapSource.
       try if ComObjQuery(image, "{00000120-A8F2-4877-BA0A-FD2B6645FB94}")
-         return "WicBitmap", ObjRelease(image)
+         return "WICBitmap", ObjRelease(image)
 
       ; A "d2dbitmap" is a pointer to a ID2D1Bitmap.
       try if ComObjQuery(image, "{A2296057-EA42-4099-983B-539FB6505426}")
-         return "D2dBitmap", ObjRelease(image)
+         return "D2DBitmap", ObjRelease(image)
 
       end:
       throw Exception("Image type could not be identified.")
@@ -592,8 +592,8 @@ class ImagePut {
       if (type = "Clipboard")
          return this.ClipboardToBitmap()
 
-      if (type = "ClipboardPng")
-         return this.ClipboardPngToBitmap()
+      if (type = "ClipboardPNG")
+         return this.ClipboardPNGToBitmap()
 
       if (type = "SafeArray")
          return this.SafeArrayToBitmap(image)
@@ -625,8 +625,8 @@ class ImagePut {
       if (type = "Cursor")
          return this.CursorToBitmap()
 
-      if (type = "Url")
-         return this.UrlToBitmap(image)
+      if (type = "URL")
+         return this.URLToBitmap(image)
 
       if (type = "File")
          return this.FileToBitmap(image)
@@ -655,11 +655,11 @@ class ImagePut {
       if (type = "RandomAccessStream")
          return this.RandomAccessStreamToBitmap(image)
 
-      if (type = "WicBitmap")
-         return this.WicBitmapToBitmap(image)
+      if (type = "WICBitmap")
+         return this.WICBitmapToBitmap(image)
 
-      if (type = "D2dBitmap")
-         return this.D2dBitmapToBitmap(image)
+      if (type = "D2DBitmap")
+         return this.D2DBitmapToBitmap(image)
 
       throw Exception("Conversion from " type " to bitmap is not supported.")
    }
@@ -699,8 +699,8 @@ class ImagePut {
       if (cotype = "Cursor") ; (pBitmap, xHotspot, yHotspot)
          return this.BitmapToCursor(pBitmap, p1, p2)
 
-      if (cotype = "Url") ; (pBitmap)
-         return this.BitmapToUrl(pBitmap)
+      if (cotype = "URL") ; (pBitmap)
+         return this.BitmapToURL(pBitmap)
 
       if (cotype = "Explorer") ; (pBitmap, default)
          return this.BitmapToExplorer(pBitmap, p1)
@@ -714,8 +714,8 @@ class ImagePut {
       if (cotype = "Base64") ; (pBitmap, extension, quality)
          return this.BitmapToBase64(pBitmap, p1, p2)
 
-      if (cotype = "Uri") ; (pBitmap, extension, quality)
-         return this.BitmapToUri(pBitmap, p1, p2)
+      if (cotype = "URI") ; (pBitmap, extension, quality)
+         return this.BitmapToURI(pBitmap, p1, p2)
 
       if (cotype = "DC") ; (pBitmap, alpha)
          return this.BitmapToDC(pBitmap, p1)
@@ -735,8 +735,11 @@ class ImagePut {
       if (cotype = "RandomAccessStream") ; (pBitmap, extension, quality)
          return this.BitmapToRandomAccessStream(pBitmap, p1, p2)
 
-      if (cotype = "WicBitmap") ; (pBitmap)
-         return this.BitmapToWicBitmap(pBitmap)
+      if (cotype = "WICBitmap") ; (pBitmap)
+         return this.BitmapToWICBitmap(pBitmap)
+
+      if (cotype = "D2DBitmap") ; (pBitmap)
+         return this.BitmapToD2DBitmap(pBitmap)
 
       if (cotype = "FormData") ; (pBitmap, boundary, extension, quality)
          return this.BitmapToFormData(pBitmap, p1, p2, p3)
@@ -748,8 +751,8 @@ class ImagePut {
 
       try index := keywords.index
 
-      if (type = "ClipboardPng")
-         return this.ClipboardPngToStream()
+      if (type = "ClipboardPNG")
+         return this.ClipboardPNGToStream()
 
       if (type = "SafeArray")
          return this.SafeArrayToStream(image)
@@ -757,8 +760,8 @@ class ImagePut {
       if (type = "EncodedBuffer")
          return this.EncodedBufferToStream(image)
 
-      if (type = "Url")
-         return this.UrlToStream(image)
+      if (type = "URL")
+         return this.URLToStream(image)
 
       if (type = "File")
          return this.FileToStream(image)
@@ -789,8 +792,8 @@ class ImagePut {
       if (cotype = "EncodedBuffer") ; (stream)
          return this.StreamToEncodedBuffer(stream)
 
-      if (cotype = "Url") ; (stream)
-         return this.StreamToUrl(stream)
+      if (cotype = "URL") ; (stream)
+         return this.StreamToURL(stream)
 
       if (cotype = "Explorer") ; (stream, default)
          return this.StreamToExplorer(stream, p1)
@@ -804,8 +807,8 @@ class ImagePut {
       if (cotype = "Base64") ; (stream)
          return this.StreamToBase64(stream)
 
-      if (cotype = "Uri") ; (stream)
-         return this.StreamToUri(stream)
+      if (cotype = "URI") ; (stream)
+         return this.StreamToURI(stream)
 
       if (cotype = "Stream")
          return stream
@@ -1020,7 +1023,7 @@ class ImagePut {
       return False
    }
 
-   IsUrl(url) {
+   IsURL(url) {
       ; Thanks dperini - https://gist.github.com/dperini/729294
       ; Also see for comparisons: https://mathiasbynens.be/demo/url-regex
       ; Modified to be compatible with AutoHotkey. \u0000 -> \x{0000}.
@@ -1103,14 +1106,14 @@ class ImagePut {
       return pBitmap
    }
 
-   ClipboardPngToBitmap() {
-      stream := this.ClipboardPngToStream()
+   ClipboardPNGToBitmap() {
+      stream := this.ClipboardPNGToStream()
       DllCall("gdiplus\GdipCreateBitmapFromStreamICM", "ptr", stream, "ptr*", pBitmap:=0)
       ObjRelease(stream)
       return pBitmap
    }
 
-   ClipboardPngToStream() {
+   ClipboardPNGToStream() {
       ; Open the clipboard with exponential backoff.
       loop
          if DllCall("OpenClipboard", "ptr", A_ScriptHwnd)
@@ -1681,14 +1684,14 @@ class ImagePut {
       return pBitmap
    }
 
-   UrlToBitmap(image) {
-      stream := this.UrlToStream(image)
+   URLToBitmap(image) {
+      stream := this.URLToStream(image)
       DllCall("gdiplus\GdipCreateBitmapFromStreamICM", "ptr", stream, "ptr*", pBitmap:=0)
       ObjRelease(stream)
       return pBitmap
    }
 
-   UrlToStream(image) {
+   URLToStream(image) {
       req := ComObjCreate("WinHttp.WinHttpRequest.5.1")
       req.Open("GET", image, True)
       req.Send()
@@ -2022,7 +2025,7 @@ class ImagePut {
       return ClonedStream
    }
 
-   WicBitmapToBitmap(image) {
+   WICBitmapToBitmap(image) {
       DllCall(NumGet(NumGet(image+0)+A_PtrSize* 3), "ptr", image, "uint*", width:=0, "uint*", height:=0)
 
       ; Create a destination GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
@@ -4271,7 +4274,7 @@ class ImagePut {
       return "A_Cursor"
    }
 
-   BitmapToUrl(pBitmap, extension := "", quality := "") {
+   BitmapToURL(pBitmap, extension := "", quality := "") {
       body := this.BitmapToSafeArray(pBitmap, extension, quality)
 
       req := ComObjCreate("WinHttp.WinHttpRequest.5.1")
@@ -4284,7 +4287,7 @@ class ImagePut {
       return url
    }
 
-   StreamToUrl(stream) {
+   StreamToURL(stream) {
       body := this.StreamToSafeArray(stream)
 
       req := ComObjCreate("WinHttp.WinHttpRequest.5.1")
@@ -4560,7 +4563,7 @@ class ImagePut {
       return str
    }
 
-   BitmapToUri(pBitmap, extension := "", quality := "") {
+   BitmapToURI(pBitmap, extension := "", quality := "") {
       extension := RegExReplace(extension, "^(\*?\.)?") ; Trim leading "*." or "." from the extension
       extension :=  extension ~= "^(avif|avifs)$"           ? "avif"
                   : extension ~= "^(bmp|dib|rle)$"          ? "bmp"
@@ -4573,7 +4576,7 @@ class ImagePut {
       return "data:image/" extension ";base64," this.BitmapToBase64(pBitmap, extension, quality)
    }
 
-   StreamToUri(stream) {
+   StreamToURI(stream) {
       ; 2048 characters should be good enough to identify the file correctly.
       DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", size:=0, "uint")
       size := min(size, 2048)
@@ -4745,7 +4748,7 @@ class ImagePut {
       return IRandomAccessStream
    }
 
-   BitmapToWicBitmap(pBitmap) {
+   BitmapToWICBitmap(pBitmap) {
       ; Get Bitmap width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
@@ -4798,7 +4801,7 @@ class ImagePut {
       return buf
    }
 
-   ParseWebp(stream, ByRef pDelays, ByRef pCount) {
+   ParseWEBP(stream, ByRef pDelays, ByRef pCount) {
       ; Gets the size of the stream.
       DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", end:=0, "uint")
 
@@ -4890,7 +4893,7 @@ class ImagePut {
       NumPut(pDelays + 8 + 2*A_PtrSize, pDelays + 8 + A_PtrSize, "ptr")
    }
 
-   RenderPdf(ByRef IStreamIn, index := "") {
+   RenderPDF(ByRef IStreamIn, index := "") {
       ; Thanks malcev - https://www.autohotkey.com/boards/viewtopic.php?t=80735
       (index == "") && index := 1
 
@@ -4972,7 +4975,7 @@ class ImagePut {
       }
    }
 
-   RenderSvg(ByRef IStream, width, height) {
+   RenderSVG(ByRef IStream, width, height) {
       ; Thanks MrDoge - https://www.autohotkey.com/boards/viewtopic.php?f=83&t=121834
       ;https://gist.github.com/smourier/5b770d32043121d477a8079ef6be0995
       ;https://stackoverflow.com/questions/75917247/convert-svg-files-to-bitmap-using-direct2d-in-mfc#75935717
