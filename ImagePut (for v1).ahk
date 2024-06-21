@@ -12,41 +12,41 @@
 ;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
 ImagePutBase64(image, extension := "", quality := "") {
-   return ImagePut("base64", image, extension, quality)
+   return ImagePut("Base64", image, extension, quality)
 }
 
 ; Puts the image into a GDI+ Bitmap and returns a pointer.
 ImagePutBitmap(image) {
-   return ImagePut("bitmap", image)
+   return ImagePut("Bitmap", image)
 }
 
 ; Puts the image into a GDI+ Bitmap and returns a buffer object with GDI+ scope.
 ImagePutBuffer(image) {
-   return ImagePut("buffer", image)
+   return ImagePut("Buffer", image)
 }
 
 ; Puts the image onto the clipboard and returns an empty string.
 ImagePutClipboard(image) {
-   return ImagePut("clipboard", image)
+   return ImagePut("Clipboard", image)
 }
 
 ; Puts the image as the cursor and returns the variable A_Cursor.
 ;   xHotspot   -  X Click Point           |  pixel    ->   0 - width
 ;   yHotspot   -  Y Click Point           |  pixel    ->   0 - height
 ImagePutCursor(image, xHotspot := "", yHotspot := "") {
-   return ImagePut("cursor", image, xHotspot, yHotspot)
+   return ImagePut("Cursor", image, xHotspot, yHotspot)
 }
 
 ; Puts the image onto a device context and returns the handle.
 ;   alpha      -  Alpha Replacement Color |  RGB      ->   0xFFFFFF
 ImagePutDC(image, alpha := "") {
-   return ImagePut("dc", image, alpha)
+   return ImagePut("DC", image, alpha)
 }
 
 ; Puts the image behind the desktop icons and returns the string "desktop".
 ;   See ImageShow for parameter descriptions.
 ImagePutDesktop(image, title := "", pos := "", style := 0x50000000, styleEx := 0x80000, parent := "", playback := True, cache := False) {
-   return ImagePut("desktop", image, title, pos, style, styleEx, parent, playback, cache)
+   return ImagePut("Desktop", image, title, pos, style, styleEx, parent, playback, cache)
 }
 
 ; Puts the image as an encoded format into a binary data object.
@@ -58,38 +58,38 @@ ImagePutEncodedBuffer(image, extension := "", quality := "") {
 
 ; Puts the image into the most recently active explorer window.
 ImagePutExplorer(image, default := "") {
-   return ImagePut("explorer", image, default)
+   return ImagePut("Explorer", image, default)
 }
 
 ; Puts the image into a file and returns its filepath.
 ;   filepath   -  Filepath + Extension    |  string   ->   *.bmp, *.gif, *.jpg, *.png, *.tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
 ImagePutFile(image, filepath := "", quality := "") {
-   return ImagePut("file", image, filepath, quality)
+   return ImagePut("File", image, filepath, quality)
 }
 
 ; Puts the image into a multipart/form-data in binary and returns a SafeArray COM Object.
 ;   boundary   -  Content-Type            |  string   ->   multipart/form-data; boundary=something
 ImagePutFormData(image, boundary := "--ImagePut abc 321 xyz--") {
-   return ImagePut("formdata", image, boundary)
+   return ImagePut("FormData", image, boundary)
 }
 
 ; Puts the image into a device independent bitmap and returns the handle.
 ;   alpha      -  Alpha Replacement Color |  RGB      ->   0xFFFFFF
 ImagePutHBitmap(image, alpha := "") {
-   return ImagePut("hBitmap", image, alpha)
+   return ImagePut("HBitmap", image, alpha)
 }
 
 ; Puts the image into a file format and returns a hexadecimal encoded string.
 ;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
 ImagePutHex(image, extension := "", quality := "") {
-   return ImagePut("hex", image, extension, quality)
+   return ImagePut("Hex", image, extension, quality)
 }
 
 ; Puts the image into an icon and returns the handle.
 ImagePutHIcon(image) {
-   return ImagePut("hIcon", image)
+   return ImagePut("HIcon", image)
 }
 
 ; Puts the image into a file format and returns a pointer to a RandomAccessStream.
@@ -103,14 +103,14 @@ ImagePutRandomAccessStream(image, extension := "", quality := "") {
 ;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
 ImagePutSafeArray(image, extension := "", quality := "") {
-   return ImagePut("safeArray", image, extension, quality)
+   return ImagePut("SafeArray", image, extension, quality)
 }
 
 ; Puts the image on the shared screen device context and returns an array of coordinates.
 ;   screenshot -  Screen Coordinates      |  array    ->   [x,y,w,h] or [0,0]
 ;   alpha      -  Alpha Replacement Color |  RGB      ->   0xFFFFFF
 ImagePutScreenshot(image, screenshot := "", alpha := "") {
-   return ImagePut("screenshot", image, screenshot, alpha)
+   return ImagePut("Screenshot", image, screenshot, alpha)
 }
 
 ; Puts the image into a file mapping and returns a buffer object sharable across processes.
@@ -123,37 +123,37 @@ ImagePutSharedBuffer(image, name := "") {
 ;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
 ImagePutStream(image, extension := "", quality := "") {
-   return ImagePut("stream", image, extension, quality)
+   return ImagePut("Stream", image, extension, quality)
 }
 
 ; Puts the image into a base64 string and returns a Uniform Resource Identifier.
 ;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
-ImagePutUri(image, extension := "", quality := "") {
-   return ImagePut("uri", image, extension, quality)
+ImagePutURI(image, extension := "", quality := "") {
+   return ImagePut("URI", image, extension, quality)
 }
 
 ; Uploads the image onto Imgur and returns the URL hyperlink.
 ;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
-ImagePutUrl(image, extension := "", quality := "") {
-   return ImagePut("url", image, extension, quality)
+ImagePutURL(image, extension := "", quality := "") {
+   return ImagePut("URL", image, extension, quality)
 }
 
 ; Puts the image as the desktop wallpaper and returns the string "wallpaper".
 ImagePutWallpaper(image) {
-   return ImagePut("wallpaper", image)
+   return ImagePut("Wallpaper", image)
 }
 
 ; Puts the image into a WICBitmap and returns the pointer to the interface.
 ImagePutWICBitmap(image) {
-   return ImagePut("wicBitmap", image)
+   return ImagePut("WICBitmap", image)
 }
 
 ; Puts the image in a window (with a border) and returns a handle to a window.
 ;   See ImageShow for parameter descriptions.
 ImagePutWindow(image, title := "", pos := "", style := 0x82C80000, styleEx := 0x9, parent := "", playback := True, cache := False) {
-   return ImagePut("window", image, title, pos, style, styleEx, parent, playback, cache)
+   return ImagePut("Window", image, title, pos, style, styleEx, parent, playback, cache)
 }
 
 ; Shows the image in a window (without a border) and returns a handle to a window.
@@ -165,7 +165,7 @@ ImagePutWindow(image, title := "", pos := "", style := 0x82C80000, styleEx := 0x
 ;   playback   -  Animate Window?         |  bool     ->   True
 ;   cache      -  Cache Animation Frames? |  bool     ->   False
 ImageShow(image, title := "", pos := "", style := 0x90000000, styleEx := 0x80088, parent := "", playback := True, cache := False) {
-   return ImagePut("show", image, title, pos, style, styleEx, parent, playback, cache)
+   return ImagePut("Show", image, title, pos, style, styleEx, parent, playback, cache)
 }
 
 ImageDestroy(image) {
