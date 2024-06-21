@@ -948,7 +948,7 @@ class ImagePut {
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
 
-      ; Describes the portion of the source to be copied. READ: source = buffer. WRITE: source = bitmap.
+      ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
       rect := Buffer(16, 0)                  ; sizeof(rect) = 16
          NumPut(  "uint",   width, rect,  8) ; Width
          NumPut(  "uint",  height, rect, 12) ; Height
@@ -1085,7 +1085,7 @@ class ImagePut {
       ; Create a destination GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", &pBitmap:=0)
 
-      ; Describes the portion of the source to be copied. READ: source = buffer. WRITE: source = bitmap.
+      ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
       rect := Buffer(16, 0)                  ; sizeof(rect) = 16
          NumPut(  "uint",   width, rect,  8) ; Width
          NumPut(  "uint",  height, rect, 12) ; Height
@@ -1193,7 +1193,7 @@ class ImagePut {
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height
          , "int", size // height, "int", 0x26200A, "ptr", 0, "ptr*", &pBitmap:=0)
 
-      ; Describes the portion of the source to be copied. READ: source = buffer. WRITE: source = bitmap.
+      ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
       rect := Buffer(16, 0)                  ; sizeof(rect) = 16
          NumPut(  "uint",   width, rect,  8) ; Width
          NumPut(  "uint",  height, rect, 12) ; Height
@@ -1480,7 +1480,7 @@ class ImagePut {
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height
          , "int", size // height, "int", 0xE200B, "ptr", 0, "ptr*", &pBitmap:=0)
 
-      ; Describes the portion of the source to be copied. READ: source = buffer. WRITE: source = bitmap.
+      ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
       rect := Buffer(16, 0)                  ; sizeof(rect) = 16
          NumPut(  "uint",   width, rect,  8) ; Width
          NumPut(  "uint",  height, rect, 12) ; Height
@@ -1816,7 +1816,7 @@ class ImagePut {
       ; Create a destination GDI+ Bitmap that owns its memory to receive the final converted pixels. The pixel format is 32-bit ARGB.
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", &pBitmap:=0)
 
-      ; Describes the portion of the source to be copied. READ: source = buffer. WRITE: source = bitmap.
+      ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
       rect := Buffer(16, 0)                  ; sizeof(rect) = 16
          NumPut(  "uint",   width, rect,  8) ; Width
          NumPut(  "uint",  height, rect, 12) ; Height
@@ -1883,7 +1883,7 @@ class ImagePut {
       ; Create a destination GDI+ Bitmap that owns its memory to receive the final converted pixels. The pixel format is 32-bit ARGB.
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", &pBitmap:=0)
 
-      ; Describes the portion of the source to be copied. READ: source = buffer. WRITE: source = bitmap.
+      ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
       rect := Buffer(16, 0)                  ; sizeof(rect) = 16
          NumPut(  "uint",   width, rect,  8) ; Width
          NumPut(  "uint",  height, rect, 12) ; Height
@@ -1961,7 +1961,7 @@ class ImagePut {
       ; Create a destination GDI+ Bitmap that owns its memory to receive the final converted pixels. The pixel format is 32-bit ARGB.
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", &pBitmap:=0)
 
-      ; Describes the portion of the source to be copied. READ: source = buffer. WRITE: source = bitmap.
+      ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
       rect := Buffer(16, 0)                  ; sizeof(rect) = 16
          NumPut(  "uint",   width, rect,  8) ; Width
          NumPut(  "uint",  height, rect, 12) ; Height
@@ -2040,7 +2040,7 @@ class ImagePut {
       ; Create a destination GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", &pBitmap:=0)
 
-      ; Describes the portion of the source to be copied. READ: source = buffer. WRITE: source = bitmap.
+      ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
       rect := Buffer(16, 0)                  ; sizeof(rect) = 16
          NumPut(  "uint",   width, rect,  8) ; Width
          NumPut(  "uint",  height, rect, 12) ; Height
@@ -2367,7 +2367,7 @@ class ImagePut {
       NumPut("uint", height, pMap + 4)
       ptr := pMap + 8
 
-      ; Describes the portion of the source to be copied. READ: source = buffer. WRITE: source = bitmap.
+      ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
       rect := Buffer(16, 0)                  ; sizeof(rect) = 16
          NumPut(  "uint",   width, rect,  8) ; Width
          NumPut(  "uint",  height, rect, 12) ; Height
@@ -2402,7 +2402,7 @@ class ImagePut {
       size := 4 * width * height
       ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr")
 
-      ; Describes the portion of the source to be copied. READ: source = buffer. WRITE: source = bitmap.
+      ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
       rect := Buffer(16, 0)                  ; sizeof(rect) = 16
          NumPut(  "uint",   width, rect,  8) ; Width
          NumPut(  "uint",  height, rect, 12) ; Height
@@ -3495,7 +3495,7 @@ class ImagePut {
 
       ; Case 1: Image is not scaled.
       if (w == width && h == height) {
-         ; Describes the portion of the source to be copied. READ: source = buffer. WRITE: source = bitmap.
+         ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
          rect := Buffer(16, 0)                  ; sizeof(rect) = 16
             NumPut(  "uint",   width, rect,  8) ; Width
             NumPut(  "uint",  height, rect, 12) ; Height
@@ -4064,7 +4064,7 @@ class ImagePut {
                DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
                DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
 
-               ; Describes the portion of the source to be copied. READ: source = buffer. WRITE: source = bitmap.
+               ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
                rect := Buffer(16, 0)                  ; sizeof(rect) = 16
                   NumPut(  "uint",   width, rect,  8) ; Width
                   NumPut(  "uint",  height, rect, 12) ; Height
@@ -4668,7 +4668,7 @@ class ImagePut {
       hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", bi, "uint", 0, "ptr*", &pBits:=0, "ptr", 0, "uint", 0, "ptr")
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
-      ; Describes the portion of the source to be copied. READ: source = buffer. WRITE: source = bitmap.
+      ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
       rect := Buffer(16, 0)                  ; sizeof(rect) = 16
          NumPut(  "uint",   width, rect,  8) ; Width
          NumPut(  "uint",  height, rect, 12) ; Height
@@ -4713,7 +4713,7 @@ class ImagePut {
       hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", bi, "uint", 0, "ptr*", &pBits:=0, "ptr", 0, "uint", 0, "ptr")
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
-      ; Describes the portion of the source to be copied. READ: source = buffer. WRITE: source = bitmap.
+      ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
       rect := Buffer(16, 0)                  ; sizeof(rect) = 16
          NumPut(  "uint",   width, rect,  8) ; Width
          NumPut(  "uint",  height, rect, 12) ; Height
@@ -4778,7 +4778,7 @@ class ImagePut {
       DllCall("ole32\CLSIDFromString", "wstr", "{6fddc324-4e03-4bfe-b185-3d77768dc90f}", "ptr", GUID_WICPixelFormat32bppBGRA, "hresult")
       ComCall(CreateBitmap := 17, IWICImagingFactory, "uint", width, "uint", height, "ptr", GUID_WICPixelFormat32bppBGRA, "int", 1, "ptr*", &wicbitmap:=0)
 
-      ; Describes the portion of the source to be copied. READ: source = buffer. WRITE: source = bitmap.
+      ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
       rect := Buffer(16, 0)                  ; sizeof(rect) = 16
          NumPut(  "uint",   width, rect,  8) ; Width
          NumPut(  "uint",  height, rect, 12) ; Height
@@ -5040,7 +5040,7 @@ class ImagePut {
       ; Create a destination GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", &pBitmap:=0)
 
-      ; Describes the portion of the source to be copied. READ: source = buffer. WRITE: source = bitmap.
+      ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
       rect := Buffer(16, 0)                  ; sizeof(rect) = 16
          NumPut(  "uint",   width, rect,  8) ; Width
          NumPut(  "uint",  height, rect, 12) ; Height
@@ -5419,7 +5419,7 @@ class ImageEqual extends ImagePut {
 
       width := width1, height := height1
 
-      ; Describes the portion of the source to be copied. READ: source = buffer. WRITE: source = bitmap.
+      ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
       rect := Buffer(16, 0)                  ; sizeof(rect) = 16
          NumPut(  "uint",   width, rect,  8) ; Width
          NumPut(  "uint",  height, rect, 12) ; Height
