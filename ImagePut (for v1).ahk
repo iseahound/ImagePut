@@ -240,14 +240,13 @@ class ImagePut {
 
       ; Check the file signature for magic numbers.
       stream:
-      DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", size:=0, "uint")
-      DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
-
       ; 2048 characters should be good enough to identify the file correctly.
+      DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", size:=0, "uint")
       size := min(size, 2048)
       VarSetCapacity(bin, size)
-
+      
       ; Get the first few bytes of the image.
+      DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
       DllCall("shlwapi\IStream_Read", "ptr", stream, "ptr", &bin, "uint", size, "uint")
       DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
 
@@ -2114,14 +2113,13 @@ class ImagePut {
    }
 
    StreamToClipboard(stream) {
-      DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", size:=0, "uint")
-      DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
-
       ; 2048 characters should be good enough to identify the file correctly.
+      DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", size:=0, "uint")
       size := min(size, 2048)
       VarSetCapacity(bin, size)
-
+      
       ; Get the first few bytes of the image.
+      DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
       DllCall("shlwapi\IStream_Read", "ptr", stream, "ptr", &bin, "uint", size, "uint")
       DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
 
@@ -4391,14 +4389,13 @@ class ImagePut {
    }
 
    StreamToFile(stream, filepath := "") {
-      DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", size:=0, "uint")
-      DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
-
       ; 2048 characters should be good enough to identify the file correctly.
+      DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", size:=0, "uint")
       size := min(size, 2048)
       VarSetCapacity(bin, size)
-
+      
       ; Get the first few bytes of the image.
+      DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
       DllCall("shlwapi\IStream_Read", "ptr", stream, "ptr", &bin, "uint", size, "uint")
       DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
 
@@ -4575,14 +4572,13 @@ class ImagePut {
    }
 
    StreamToUri(stream) {
-      DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", size:=0, "uint")
-      DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
-
       ; 2048 characters should be good enough to identify the file correctly.
+      DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", size:=0, "uint")
       size := min(size, 2048)
       VarSetCapacity(bin, size)
-
+      
       ; Get the first few bytes of the image.
+      DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
       DllCall("shlwapi\IStream_Read", "ptr", stream, "ptr", &bin, "uint", size, "uint")
       DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
 
