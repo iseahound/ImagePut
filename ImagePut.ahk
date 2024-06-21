@@ -994,14 +994,14 @@ class ImagePut {
       return pos + 4 == size && !NumGet(ptr + pos, "uint") ; 4 byte null terminator
    }
 
-   static IsImage(ptr, size) {
+   static IsImage(bin, size) {
       ; Shortest possible image is 24 bytes.
       if (size < 24)
          return False
 
       size := min(size, 2048)
       length := VarSetStrCapacity(&str, 2*size + (size-1) + 1)
-      DllCall("crypt32\CryptBinaryToString", "ptr", ptr, "uint", size, "uint", 0x40000004, "str", str, "uint*", &length)
+      DllCall("crypt32\CryptBinaryToString", "ptr", bin, "uint", size, "uint", 0x40000004, "str", str, "uint*", &length)
       if str ~= "(?i)66 74 79 70 61 76 69 66"                                      ; "avif"
       || str ~= "(?i)^42 4d (.. ){36}00 00 .. 00 00 00"                            ; "bmp"
       || str ~= "(?i)^01 00 00 00 (.. ){36}20 45 4D 46"                            ; "emf"
