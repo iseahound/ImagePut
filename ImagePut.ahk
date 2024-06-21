@@ -245,7 +245,7 @@ class ImagePut {
       DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", &size:=0, "hresult")
       size := min(size, 2048)
       bin := Buffer(size)
-      
+
       ; Get the first few bytes of the image.
       DllCall("shlwapi\IStream_Reset", "ptr", stream, "hresult")
       DllCall("shlwapi\IStream_Read", "ptr", stream, "ptr", bin, "uint", size, "hresult")
@@ -1132,6 +1132,7 @@ class ImagePut {
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", handle, "int", False, "ptr*", &PngStream:=0, "hresult")
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", True, "ptr*", &stream:=0, "hresult")
       DllCall("shlwapi\IStream_Copy", "ptr", PngStream, "ptr", stream, "uint", size, "hresult")
+      DllCall("shlwapi\IStream_Reset", "ptr", stream, "hresult")
 
       DllCall("CloseClipboard")
       return stream
@@ -2118,7 +2119,7 @@ class ImagePut {
       DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", &size:=0, "hresult")
       size := min(size, 2048)
       bin := Buffer(size)
-      
+
       ; Get the first few bytes of the image.
       DllCall("shlwapi\IStream_Reset", "ptr", stream, "hresult")
       DllCall("shlwapi\IStream_Read", "ptr", stream, "ptr", bin, "uint", size, "hresult")
@@ -4394,7 +4395,7 @@ class ImagePut {
       DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", &size:=0, "hresult")
       size := min(size, 2048)
       bin := Buffer(size)
-      
+
       ; Get the first few bytes of the image.
       DllCall("shlwapi\IStream_Reset", "ptr", stream, "hresult")
       DllCall("shlwapi\IStream_Read", "ptr", stream, "ptr", bin, "uint", size, "hresult")
@@ -4577,7 +4578,7 @@ class ImagePut {
       DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", &size:=0, "hresult")
       size := min(size, 2048)
       bin := Buffer(size)
-      
+
       ; Get the first few bytes of the image.
       DllCall("shlwapi\IStream_Reset", "ptr", stream, "hresult")
       DllCall("shlwapi\IStream_Read", "ptr", stream, "ptr", bin, "uint", size, "hresult")

@@ -240,11 +240,12 @@ class ImagePut {
 
       ; Check the file signature for magic numbers.
       stream:
+
       ; 2048 characters should be good enough to identify the file correctly.
       DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", size:=0, "uint")
       size := min(size, 2048)
       VarSetCapacity(bin, size)
-      
+
       ; Get the first few bytes of the image.
       DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
       DllCall("shlwapi\IStream_Read", "ptr", stream, "ptr", &bin, "uint", size, "uint")
@@ -1131,6 +1132,7 @@ class ImagePut {
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", handle, "int", False, "ptr*", PngStream:=0, "uint")
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", True, "ptr*", stream:=0, "uint")
       DllCall("shlwapi\IStream_Copy", "ptr", PngStream, "ptr", stream, "uint", size, "uint")
+      DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
 
       DllCall("CloseClipboard")
       return stream
@@ -2117,7 +2119,7 @@ class ImagePut {
       DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", size:=0, "uint")
       size := min(size, 2048)
       VarSetCapacity(bin, size)
-      
+
       ; Get the first few bytes of the image.
       DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
       DllCall("shlwapi\IStream_Read", "ptr", stream, "ptr", &bin, "uint", size, "uint")
@@ -4393,7 +4395,7 @@ class ImagePut {
       DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", size:=0, "uint")
       size := min(size, 2048)
       VarSetCapacity(bin, size)
-      
+
       ; Get the first few bytes of the image.
       DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
       DllCall("shlwapi\IStream_Read", "ptr", stream, "ptr", &bin, "uint", size, "uint")
@@ -4576,7 +4578,7 @@ class ImagePut {
       DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", size:=0, "uint")
       size := min(size, 2048)
       VarSetCapacity(bin, size)
-      
+
       ; Get the first few bytes of the image.
       DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
       DllCall("shlwapi\IStream_Read", "ptr", stream, "ptr", &bin, "uint", size, "uint")
