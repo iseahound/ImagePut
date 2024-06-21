@@ -1503,7 +1503,7 @@ class ImagePut {
       if !IsObject(image) and WinExist(image) || DllCall("IsWindow", "ptr", image) {
          try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
          image := (hwnd := IsObject(image) ? image.hwnd : WinExist(image)) ? hwnd : image
-         VarSetCapacity(rect, 16, 0)
+         VarSetCapacity(rect, 16)
          DllCall("GetClientRect", "ptr", image, "ptr", &rect)
          DllCall("ClientToScreen", "ptr", image, "ptr", &rect)
          try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
