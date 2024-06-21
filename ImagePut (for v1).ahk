@@ -936,7 +936,7 @@ class ImagePut {
                ,    "ptr", 0)
       DllCall("gdiplus\GdipDisposeImageAttributes", "ptr", ImageAttr)
 
-      ; Clean up the graphics context.
+      ; Cleanup!
       DllCall("gdiplus\GdipDeleteGraphics", "ptr", pGraphics)
       DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
 
@@ -3513,7 +3513,7 @@ class ImagePut {
                   ,    "ptr", 0)
          DllCall("gdiplus\GdipDisposeImageAttributes", "ptr", ImageAttr)
 
-         ; Clean up the graphics context.
+         ; Cleanup!
          DllCall("gdiplus\GdipDeleteGraphics", "ptr", pGraphics)
       }
 
@@ -3684,7 +3684,7 @@ class ImagePut {
                         ,    "ptr", 0)
                DllCall("gdiplus\GdipDisposeImageAttributes", "ptr", ImageAttr)
 
-               ; Clean up the graphics context.
+               ; Cleanup!
                DllCall("gdiplus\GdipDeleteGraphics", "ptr", pGraphics)
 
                ; Save rendered frame.
