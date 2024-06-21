@@ -949,13 +949,13 @@ class ImagePut {
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
 
       ; Create a pixel buffer.
-      VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
-         NumPut(  width, Rect,  8,   "uint") ; Width
-         NumPut( height, Rect, 12,   "uint") ; Height
+      VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
+         NumPut(  width, rect,  8,   "uint") ; Width
+         NumPut( height, rect, 12,   "uint") ; Height
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
-               ,    "ptr", &Rect
+               ,    "ptr", &rect
                ,   "uint", 3            ; ImageLockMode.ReadWrite
                ,    "int", 0x26200A     ; Format32bppArgb
                ,    "ptr", &BitmapData)
@@ -1084,9 +1084,9 @@ class ImagePut {
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
 
       ; Describe the current buffer holding the pixel data.
-      VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
-         NumPut(  width, Rect,  8,   "uint") ; Width
-         NumPut( height, Rect, 12,   "uint") ; Height
+      VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
+         NumPut(  width, rect,  8,   "uint") ; Width
+         NumPut( height, rect, 12,   "uint") ; Height
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
          NumPut(    stride, BitmapData,  8,    "int") ; Stride
          NumPut(     Scan0, BitmapData, 16,    "ptr") ; Scan0
@@ -1094,7 +1094,7 @@ class ImagePut {
       ; Use LockBits to copy pixel data from an external buffer into the internal GDI+ Bitmap.
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
-               ,    "ptr", Rect
+               ,    "ptr", rect
                ,   "uint", 6            ; ImageLockMode.UserInputBuffer | ImageLockMode.WriteOnly
                ,    "int", 0x26200A     ; Format32bppArgb (external buffer)
                ,    "ptr", &BitmapData) ; Contains the pointer to the external buffer.
@@ -1190,9 +1190,9 @@ class ImagePut {
          , "int", size // height, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
 
       ; Create a Scan0 buffer pointing to pBits.
-      VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
-         NumPut(  width, Rect,  8,   "uint") ; Width
-         NumPut( height, Rect, 12,   "uint") ; Height
+      VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
+         NumPut(  width, rect,  8,   "uint") ; Width
+         NumPut( height, rect, 12,   "uint") ; Height
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
          NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
          NumPut(       ptr, BitmapData, 16,    "ptr") ; Scan0
@@ -1200,7 +1200,7 @@ class ImagePut {
       ; Use LockBits to create a writable buffer that converts pARGB to ARGB.
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
-               ,    "ptr", &Rect
+               ,    "ptr", &rect
                ,   "uint", 6            ; ImageLockMode.UserInputBuffer | ImageLockMode.WriteOnly
                ,    "int", 0x26200A     ; Format32bppArgb
                ,    "ptr", &BitmapData) ; Contains the pointer (pBits) to the hbm.
@@ -1514,7 +1514,7 @@ class ImagePut {
       if image.HasKey(5) && (WinExist(image[5]) || DllCall("IsWindow", "ptr", image[5])) {
          try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
          image[5] := (hwnd := WinExist(image[5])) ? hwnd : image[5]
-         VarSetCapacity(rect, 16, 0)
+         VarSetCapacity(rect, 16)
          DllCall("GetClientRect", "ptr", image[5], "ptr", &rect)
          DllCall("ClientToScreen", "ptr", image[5], "ptr", &rect)
          try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
@@ -1573,9 +1573,9 @@ class ImagePut {
 
       ; Get the width and height of the client window.
       try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
-      DllCall("GetClientRect", "ptr", image, "ptr", &Rect := VarSetCapacity(Rect, 16)) ; sizeof(RECT) = 16
-         , width  := NumGet(Rect, 8, "int")
-         , height := NumGet(Rect, 12, "int")
+      DllCall("GetClientRect", "ptr", image, "ptr", &rect := VarSetCapacity(rect, 16)) ; sizeof(rect) = 16
+         , width  := NumGet(rect, 8, "int")
+         , height := NumGet(rect, 12, "int")
       try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
 
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
@@ -1809,9 +1809,9 @@ class ImagePut {
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
 
       ; Create a Scan0 buffer pointing to pBits. The buffer has pixel format pARGB.
-      VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
-         NumPut(  width, Rect,  8,   "uint") ; Width
-         NumPut( height, Rect, 12,   "uint") ; Height
+      VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
+         NumPut(  width, rect,  8,   "uint") ; Width
+         NumPut( height, rect, 12,   "uint") ; Height
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
          NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
          NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
@@ -1819,7 +1819,7 @@ class ImagePut {
       ; Use LockBits to create a writable buffer that converts pARGB to ARGB.
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
-               ,    "ptr", &Rect
+               ,    "ptr", &rect
                ,   "uint", 6            ; ImageLockMode.UserInputBuffer | ImageLockMode.WriteOnly
                ,    "int", 0xE200B      ; Format32bppPArgb
                ,    "ptr", &BitmapData) ; Contains the pointer (pBits) to the hbm.
@@ -1874,9 +1874,9 @@ class ImagePut {
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
 
       ; Create a Scan0 buffer pointing to pBits. The buffer has pixel format pARGB.
-      VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
-         NumPut(  width, Rect,  8,   "uint") ; Width
-         NumPut( height, Rect, 12,   "uint") ; Height
+      VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
+         NumPut(  width, rect,  8,   "uint") ; Width
+         NumPut( height, rect, 12,   "uint") ; Height
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
          NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
          NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
@@ -1884,7 +1884,7 @@ class ImagePut {
       ; Use LockBits to create a copy-from buffer on pBits that converts pARGB to ARGB.
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
-               ,    "ptr", &Rect
+               ,    "ptr", &rect
                ,   "uint", 6            ; ImageLockMode.UserInputBuffer | ImageLockMode.WriteOnly
                ,    "int", 0xE200B      ; Format32bppPArgb
                ,    "ptr", &BitmapData) ; Contains the pointer (pBits) to the hbm.
@@ -1950,9 +1950,9 @@ class ImagePut {
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
 
       ; Create a Scan0 buffer pointing to pBits. The buffer has pixel format pARGB.
-      VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
-         NumPut(  width, Rect,  8,   "uint") ; Width
-         NumPut( height, Rect, 12,   "uint") ; Height
+      VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
+         NumPut(  width, rect,  8,   "uint") ; Width
+         NumPut( height, rect, 12,   "uint") ; Height
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
          NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
          NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
@@ -1960,7 +1960,7 @@ class ImagePut {
       ; Use LockBits to create a writable buffer that converts pARGB to ARGB.
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
-               ,    "ptr", &Rect
+               ,    "ptr", &rect
                ,   "uint", 6            ; ImageLockMode.UserInputBuffer | ImageLockMode.WriteOnly
                ,    "int", 0xE200B      ; Format32bppPArgb
                ,    "ptr", &BitmapData) ; Contains the pointer (pBits) to the hbm.
@@ -2027,13 +2027,13 @@ class ImagePut {
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
 
       ; Create a pixel buffer.
-      VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
-         NumPut(  width, Rect,  8,   "uint") ; Width
-         NumPut( height, Rect, 12,   "uint") ; Height
+      VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
+         NumPut(  width, rect,  8,   "uint") ; Width
+         NumPut( height, rect, 12,   "uint") ; Height
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
-               ,    "ptr", &Rect
+               ,    "ptr", &rect
                ,   "uint", 2            ; ImageLockMode.WriteOnly
                ,    "int", 0x26200A     ; Format32bppArgb
                ,    "ptr", &BitmapData)
@@ -2041,7 +2041,7 @@ class ImagePut {
       stride := NumGet(BitmapData, 8, "int")
 
       ; Write from the IWICBitmap to the temporary buffer.
-      DllCall(NumGet(NumGet(image+0)+A_PtrSize* 7), "ptr", image, "ptr", &Rect, "uint", stride, "uint", stride * height, "ptr", Scan0)
+      DllCall(NumGet(NumGet(image+0)+A_PtrSize* 7), "ptr", image, "ptr", &rect, "uint", stride, "uint", stride * height, "ptr", Scan0)
 
       ; Write pixels from the temporary buffer to the pBitmap.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
@@ -2353,15 +2353,15 @@ class ImagePut {
       ptr := pMap + 8
 
       ; Target a pixel buffer.
-      VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
-         NumPut(  width, Rect,  8,   "uint") ; Width
-         NumPut( height, Rect, 12,   "uint") ; Height
+      VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
+         NumPut(  width, rect,  8,   "uint") ; Width
+         NumPut( height, rect, 12,   "uint") ; Height
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
          NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
          NumPut(       ptr, BitmapData, 16,    "ptr") ; Scan0
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
-               ,    "ptr", &Rect
+               ,    "ptr", &rect
                ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
                ,    "int", 0x26200A     ; Format32bppArgb
                ,    "ptr", &BitmapData)
@@ -2386,15 +2386,15 @@ class ImagePut {
       ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr")
 
       ; Create a pixel buffer.
-      VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
-         NumPut(  width, Rect,  8,   "uint") ; Width
-         NumPut( height, Rect, 12,   "uint") ; Height
+      VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
+         NumPut(  width, rect,  8,   "uint") ; Width
+         NumPut( height, rect, 12,   "uint") ; Height
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
          NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
          NumPut(       ptr, BitmapData, 16,    "ptr") ; Scan0
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
-               ,    "ptr", &Rect
+               ,    "ptr", &rect
                ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
                ,    "int", 0x26200A     ; Format32bppArgb
                ,    "ptr", &BitmapData)
@@ -3342,7 +3342,7 @@ class ImagePut {
       if IsObject(pos) && pos.HasKey(5) && (WinExist(pos[5]) || DllCall("IsWindow", "ptr", pos[5])) {
          try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
          pos[5] := (hwnd := WinExist(pos[5])) ? hwnd : pos[5]
-         VarSetCapacity(rect, 16, 0)
+         VarSetCapacity(rect, 16)
          DllCall("GetClientRect", "ptr", pos[5], "ptr", &rect)
          DllCall("ClientToScreen", "ptr", pos[5], "ptr", &rect)
          try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
@@ -3476,15 +3476,15 @@ class ImagePut {
       ; Case 1: Image is not scaled.
       if (w == width && h == height) {
          ; Transfer data from source pBitmap to an hBitmap manually.
-         VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
-            NumPut(  width, Rect,  8,   "uint") ; Width
-            NumPut( height, Rect, 12,   "uint") ; Height
+         VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
+            NumPut(  width, rect,  8,   "uint") ; Width
+            NumPut( height, rect, 12,   "uint") ; Height
          VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
             NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
             NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
          DllCall("gdiplus\GdipBitmapLockBits"
                   ,    "ptr", pBitmap
-                  ,    "ptr", &Rect
+                  ,    "ptr", &rect
                   ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
                   ,    "int", 0xE200B      ; Format32bppPArgb
                   ,    "ptr", &BitmapData) ; Contains the pointer (pBits) to the hbm.
@@ -4043,15 +4043,15 @@ class ImagePut {
                DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
 
                ; Transfer data from source pBitmap to an hBitmap manually.
-               VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
-                  NumPut(  width, Rect,  8,   "uint") ; Width
-                  NumPut( height, Rect, 12,   "uint") ; Height
+               VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
+                  NumPut(  width, rect,  8,   "uint") ; Width
+                  NumPut( height, rect, 12,   "uint") ; Height
                VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
                   NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
                   NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
                DllCall("gdiplus\GdipBitmapLockBits"
                         ,    "ptr", pBitmap
-                        ,    "ptr", &Rect
+                        ,    "ptr", &rect
                         ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
                         ,    "int", 0xE200B      ; Format32bppPArgb
                         ,    "ptr", &BitmapData) ; Contains the pointer (pBits) to the hbm.
@@ -4645,15 +4645,15 @@ class ImagePut {
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
       ; Transfer data from source pBitmap to an hBitmap manually.
-      VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
-         NumPut(  width, Rect,  8,   "uint") ; Width
-         NumPut( height, Rect, 12,   "uint") ; Height
+      VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
+         NumPut(  width, rect,  8,   "uint") ; Width
+         NumPut( height, rect, 12,   "uint") ; Height
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
          NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
          NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
-               ,    "ptr", &Rect
+               ,    "ptr", &rect
                ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
                ,    "int", 0xE200B      ; Format32bppPArgb
                ,    "ptr", &BitmapData) ; Contains the pointer (pBits) to the hbm.
@@ -4688,15 +4688,15 @@ class ImagePut {
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
       ; Transfer data from source pBitmap to an hBitmap manually.
-      VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
-         NumPut(  width, Rect,  8,   "uint") ; Width
-         NumPut( height, Rect, 12,   "uint") ; Height
+      VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
+         NumPut(  width, rect,  8,   "uint") ; Width
+         NumPut( height, rect, 12,   "uint") ; Height
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
          NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
          NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
-               ,    "ptr", &Rect
+               ,    "ptr", &rect
                ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
                ,    "int", 0xE200B      ; Format32bppPArgb
                ,    "ptr", &BitmapData) ; Contains the pointer (pBits) to the hbm.
@@ -4751,10 +4751,10 @@ class ImagePut {
       DllCall(NumGet(NumGet(IWICImagingFactory+0)+A_PtrSize* 17), "ptr", IWICImagingFactory, "uint", width, "uint", height, "ptr", &GUID_WICPixelFormat32bppBGRA, "int", 1, "ptr*", wicbitmap:=0)
 
       ; Lock the WIC bitmap with write access only and get a pointer to its pixel buffer.
-      VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
-         NumPut(  width, Rect,  8,   "uint") ; Width
-         NumPut( height, Rect, 12,   "uint") ; Height
-      DllCall(NumGet(NumGet(wicbitmap+0)+A_PtrSize* 8), "ptr", wicbitmap, "ptr", &Rect, "uint", 0x1, "ptr*", IWICBitmapLock:=0)
+      VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
+         NumPut(  width, rect,  8,   "uint") ; Width
+         NumPut( height, rect, 12,   "uint") ; Height
+      DllCall(NumGet(NumGet(wicbitmap+0)+A_PtrSize* 8), "ptr", wicbitmap, "ptr", &rect, "uint", 0x1, "ptr*", IWICBitmapLock:=0)
       DllCall(NumGet(NumGet(IWICBitmapLock+0)+A_PtrSize* 5), "ptr", IWICBitmapLock, "uint*", size:=0, "ptr*", Scan0:=0)
 
       ; Transfer data from source pBitmap to a WIC Bitmap manually.
@@ -4763,7 +4763,7 @@ class ImagePut {
          NumPut(     Scan0, BitmapData, 16,    "ptr") ; Scan0
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
-               ,    "ptr", &Rect
+               ,    "ptr", &rect
                ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
                ,    "int", 0x26200A     ; Format32bppArgb
                ,    "ptr", &BitmapData) ; Contains the pointer (Scan0) to the IWICBitmap.
@@ -5011,13 +5011,13 @@ class ImagePut {
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
 
       ; Create a pixel buffer.
-      VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
-         NumPut(  width, Rect,  8,   "uint") ; Width
-         NumPut( height, Rect, 12,   "uint") ; Height
+      VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
+         NumPut(  width, rect,  8,   "uint") ; Width
+         NumPut( height, rect, 12,   "uint") ; Height
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
-               ,    "ptr", &Rect
+               ,    "ptr", &rect
                ,   "uint", 2            ; ImageLockMode.WriteOnly
                ,    "int", 0xE200B      ; Format32bppPArgb
                ,    "ptr", &BitmapData)
@@ -5025,7 +5025,7 @@ class ImagePut {
       stride := NumGet(BitmapData, 8, "int")
 
       ; Write from the IWICBitmap to the temporary buffer.
-      DllCall(NumGet(NumGet(IWICBitmap+0)+A_PtrSize* 7), "ptr", IWICBitmap, "ptr", &Rect, "uint", stride, "uint", stride * height, "ptr", Scan0)
+      DllCall(NumGet(NumGet(IWICBitmap+0)+A_PtrSize* 7), "ptr", IWICBitmap, "ptr", &rect, "uint", stride, "uint", stride * height, "ptr", Scan0)
 
       ; Write pixels from the temporary buffer to the pBitmap.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
@@ -5385,10 +5385,10 @@ class ImageEqual extends ImagePut {
       if (format1 != format3)
          throw Exception("Report this error to the developer.")
 
-      ; struct RECT - https://referencesource.microsoft.com/#System.Drawing/commonui/System/Drawing/Rectangle.cs,32
-      VarSetCapacity(Rect, 16, 0)                 ; sizeof(Rect) = 16
-         NumPut(  width1, Rect,  8,   "uint")     ; Width
-         NumPut( height1, Rect, 12,   "uint")     ; Height
+      ; struct rect - https://referencesource.microsoft.com/#System.Drawing/commonui/System/Drawing/Rectangle.cs,32
+      VarSetCapacity(rect, 16, 0)                 ; sizeof(rect) = 16
+         NumPut(  width1, rect,  8,   "uint")     ; Width
+         NumPut( height1, rect, 12,   "uint")     ; Height
 
       ; Create a BitmapData structure.
       VarSetCapacity(BitmapData1, 16+2*A_PtrSize) ; sizeof(BitmapData) = 24, 32
@@ -5398,7 +5398,7 @@ class ImageEqual extends ImagePut {
       loop 2
          DllCall("gdiplus\GdipBitmapLockBits"
                   ,    "ptr", pBitmap%A_Index%
-                  ,    "ptr", &Rect
+                  ,    "ptr", &rect
                   ,   "uint", 1            ; ImageLockMode.ReadOnly
                   ,    "int", PixelFormat  ; Defaults to Format32bppArgb for comparison.
                   ,    "ptr", &BitmapData%A_Index%)
