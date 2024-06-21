@@ -914,8 +914,7 @@ class ImagePut {
          return pBitmap
 
       ; Create a destination GDI+ Bitmap that owns its memory.
-      DllCall("gdiplus\GdipCreateBitmapFromScan0"
-               , "int", safe_w, "int", safe_h, "int", 0, "int", format, "ptr", 0, "ptr*", pBitmapScale:=0)
+      DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", safe_w, "int", safe_h, "int", 0, "int", format, "ptr", 0, "ptr*", pBitmapScale:=0)
       DllCall("gdiplus\GdipGetImageGraphicsContext", "ptr", pBitmapScale, "ptr*", pGraphics:=0)
 
       ; Set settings in graphics context.
@@ -1082,8 +1081,7 @@ class ImagePut {
       Scan0 := (height < 0) ? pBits : pBits - stride*(height-1)
 
       ; Create a destination GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
-      DllCall("gdiplus\GdipCreateBitmapFromScan0"
-               , "int", width, "int", height, "int", 0, "uint", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
+      DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
 
       ; Describe the current buffer holding the pixel data.
       VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
@@ -1188,8 +1186,8 @@ class ImagePut {
       ptr := pMap + 8
 
       ; Create a destination GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
-      DllCall("gdiplus\GdipCreateBitmapFromScan0"
-               , "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
+      DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height
+         , "int", size // height, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
 
       ; Create a Scan0 buffer pointing to pBits.
       VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
@@ -1808,8 +1806,7 @@ class ImagePut {
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
       ; Create a destination GDI+ Bitmap that owns its memory to receive the final converted pixels. The pixel format is 32-bit ARGB.
-      DllCall("gdiplus\GdipCreateBitmapFromScan0"
-               , "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
+      DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
 
       ; Create a Scan0 buffer pointing to pBits. The buffer has pixel format pARGB.
       VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
@@ -1874,8 +1871,7 @@ class ImagePut {
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
       ; Create a destination GDI+ Bitmap that owns its memory to receive the final converted pixels. The pixel format is 32-bit ARGB.
-      DllCall("gdiplus\GdipCreateBitmapFromScan0"
-               , "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
+      DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
 
       ; Create a Scan0 buffer pointing to pBits. The buffer has pixel format pARGB.
       VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
@@ -1951,8 +1947,7 @@ class ImagePut {
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
       ; Create a destination GDI+ Bitmap that owns its memory to receive the final converted pixels. The pixel format is 32-bit ARGB.
-      DllCall("gdiplus\GdipCreateBitmapFromScan0"
-               , "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
+      DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
 
       ; Create a Scan0 buffer pointing to pBits. The buffer has pixel format pARGB.
       VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
@@ -2029,8 +2024,7 @@ class ImagePut {
       DllCall(NumGet(NumGet(image+0)+A_PtrSize* 3), "ptr", image, "uint*", width:=0, "uint*", height:=0)
 
       ; Create a destination GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
-      DllCall("gdiplus\GdipCreateBitmapFromScan0"
-               , "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
+      DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
 
       ; Create a pixel buffer.
       VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
@@ -2420,8 +2414,8 @@ class ImagePut {
          ImagePut.gdiplusStartup()
 
          ; Create a source GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
-         DllCall("gdiplus\GdipCreateBitmapFromScan0"
-                  , "int", width, "int", height, "int", size // height, "int", 0x26200A, "ptr", ptr, "ptr*", pBitmap:=0)
+         DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height
+            , "int", size // height, "int", 0x26200A, "ptr", ptr, "ptr*", pBitmap:=0)
 
          ; Wrap the pointer without copying the data.
          this.ptr := ptr
@@ -5018,8 +5012,7 @@ class ImagePut {
       ObjRelease(IStream)
 
       ; Create a destination GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
-      DllCall("gdiplus\GdipCreateBitmapFromScan0"
-               , "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
+      DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
 
       ; Create a pixel buffer.
       VarSetCapacity(Rect, 16, 0)            ; sizeof(Rect) = 16
