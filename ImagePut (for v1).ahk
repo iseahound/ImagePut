@@ -5088,13 +5088,13 @@ class ImagePut {
 
    select_codec(pBitmap, extension, quality, ByRef pCodec, ByRef ep) {
       extension := RegExReplace(extension, "^(\*?\.)?") ; Trim leading "*." or "." from the extension
-      extension :=  extension ~= "^(avif|avifs)$"           ? "avif"
-                  : extension ~= "^(bmp|dib|rle)$"          ? "bmp"
-                  : extension ~= "^(gif)$"                  ? "gif"
-                  : extension ~= "^(heic|heif|hif)$"        ? "heic"
-                  : extension ~= "^(jpg|jpeg|jpe|jfif)$"    ? "jpeg"
-                  : extension ~= "^(png)$"                  ? "png"
-                  : extension ~= "^(tif|tiff)$"             ? "tiff"
+      extension :=  extension ~= "^(?i:avif|avifs)$"           ? "avif"
+                  : extension ~= "^(?i:bmp|dib|rle)$"          ? "bmp"
+                  : extension ~= "^(?i:gif)$"                  ? "gif"
+                  : extension ~= "^(?i:heic|heif|hif)$"        ? "heic"
+                  : extension ~= "^(?i:jpg|jpeg|jpe|jfif)$"    ? "jpeg"
+                  : extension ~= "^(?i:png)$"                  ? "png"
+                  : extension ~= "^(?i:tif|tiff)$"             ? "tiff"
                   : "png" ; Defaults to PNG
 
       VarSetCapacity(pCodec, 16)

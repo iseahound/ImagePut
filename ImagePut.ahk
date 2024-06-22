@@ -5088,13 +5088,13 @@ class ImagePut {
 
    static select_codec(pBitmap, extension, quality, &pCodec, &ep) {
       extension := RegExReplace(extension, "^(\*?\.)?") ; Trim leading "*." or "." from the extension
-      extension :=  extension ~= "^(avif|avifs)$"           ? "avif"
-                  : extension ~= "^(bmp|dib|rle)$"          ? "bmp"
-                  : extension ~= "^(gif)$"                  ? "gif"
-                  : extension ~= "^(heic|heif|hif)$"        ? "heic"
-                  : extension ~= "^(jpg|jpeg|jpe|jfif)$"    ? "jpeg"
-                  : extension ~= "^(png)$"                  ? "png"
-                  : extension ~= "^(tif|tiff)$"             ? "tiff"
+      extension :=  extension ~= "^(?i:avif|avifs)$"           ? "avif"
+                  : extension ~= "^(?i:bmp|dib|rle)$"          ? "bmp"
+                  : extension ~= "^(?i:gif)$"                  ? "gif"
+                  : extension ~= "^(?i:heic|heif|hif)$"        ? "heic"
+                  : extension ~= "^(?i:jpg|jpeg|jpe|jfif)$"    ? "jpeg"
+                  : extension ~= "^(?i:png)$"                  ? "png"
+                  : extension ~= "^(?i:tif|tiff)$"             ? "tiff"
                   : "png" ; Defaults to PNG
 
       pCodec := Buffer(16)
@@ -5290,7 +5290,8 @@ class ImagePut {
          case "screenshot":
             DllCall("InvalidateRect", "ptr", 0, "ptr", 0, "int", 0)
 
-         case "window":
+         case "Window":
+         msgbox 'watr'
             image := WinExist(image)
             DllCall("DestroyWindow", "ptr", image)
 
