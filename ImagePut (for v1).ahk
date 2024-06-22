@@ -1502,6 +1502,8 @@ class ImagePut {
 
 
 
+
+
    ScreenshotToBitmap(image) {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
 
@@ -2033,7 +2035,10 @@ class ImagePut {
    }
 
    WICBitmapToBitmap(image) {
-      DllCall(NumGet(NumGet(image+0)+A_PtrSize* 3), "ptr", image, "uint*", width:=0, "uint*", height:=0)
+      IWICBitmap := image
+
+      ; Get Bitmap width and height.
+      DllCall(NumGet(NumGet(IWICBitmap+0)+A_PtrSize* 3), "ptr", IWICBitmap, "uint*", width:=0, "uint*", height:=0)
 
       ; Create a destination GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
@@ -2042,23 +2047,60 @@ class ImagePut {
       VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
          NumPut(  width, rect,  8,   "uint") ; Width
          NumPut( height, rect, 12,   "uint") ; Height
+         
+      ; Check if the pixel format needs to be converted.
+      DllCall(NumGet(NumGet(IWICBitmap+0)+A_PtrSize* 4), "ptr", IWICBitmap, "ptr", &format := VarSetCapacity(format, 16))
+      DllCall("ole32\CLSIDFromString", "wstr", "{6fddc324-4e03-4bfe-b185-3d77768dc90f}", "ptr", &GUID_WICPixelFormat32bppBGRA := VarSetCapacity(GUID_WICPixelFormat32bppBGRA, 16), "uint")
+      convert :=  16 != DllCall("RtlCompareMemory", "ptr", &format, "ptr", &GUID_WICPixelFormat32bppBGRA, "uptr", 16)
+   
+      ; Case 1: Convert the pixel format to 32-bit ARGB. Preforms 2 memory copies.
+      if (convert) {
+         ; Create a 32-bit ARGB IWICBitmapSource.
+         DllCall("windowscodecs\WICConvertBitmapSource", "ptr", &GUID_WICPixelFormat32bppBGRA, "ptr", IWICBitmap, "ptr*", IWICBitmapSource:=0, "uint")
 
-      ; Create a pixel buffer.
-      VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
-      DllCall("gdiplus\GdipBitmapLockBits"
-               ,    "ptr", pBitmap
-               ,    "ptr", &rect
-               ,   "uint", 2            ; ImageLockMode.WriteOnly
-               ,    "int", 0x26200A     ; Format32bppArgb
-               ,    "ptr", &BitmapData)
-      Scan0 := NumGet(BitmapData, 16, "ptr")
-      stride := NumGet(BitmapData, 8, "int")
+         ; (Type 2) Allocate a temporary pixel buffer to be copied into the GDI+ Bitmap.
+         VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
+         DllCall("gdiplus\GdipBitmapLockBits"
+                  ,    "ptr", pBitmap
+                  ,    "ptr", &rect
+                  ,   "uint", 2            ; ImageLockMode.WriteOnly
+                  ,    "int", 0x26200A     ; Buffer: Format32bppArgb
+                  ,    "ptr", &BitmapData)
+         ptr := NumGet(BitmapData, 16, "ptr")
+         stride := NumGet(BitmapData, 8, "int")
 
-      ; Write from the IWICBitmap to the temporary buffer.
-      DllCall(NumGet(NumGet(image+0)+A_PtrSize* 7), "ptr", image, "ptr", &rect, "uint", stride, "uint", stride * height, "ptr", Scan0)
+         ; Write from the IWICBitmapSource to the temporary pixel buffer.
+         DllCall(NumGet(NumGet(IWICBitmapSource+0)+A_PtrSize* 7), "ptr", IWICBitmapSource, "ptr", &rect, "uint", stride, "uint", stride * height, "ptr", ptr)
 
-      ; Write pixels from the temporary buffer to the pBitmap.
-      DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
+         ; Copy pixels into the GDI+ Bitmap and free the pixel buffer.
+         DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
+
+         ; Cleanup!
+         ObjRelease(IWICBitmapSource)
+      }
+
+      ; Case 2: Access the underlying pixels directly. Preforms 1 memory copy.
+      else {
+         ; Lock the WIC bitmap to access to its pixel data.
+         DllCall(NumGet(NumGet(IWICBitmap+0)+A_PtrSize* 8), "ptr", IWICBitmap, "ptr", rect, "uint", 0x1, "ptr*", IWICBitmapLock:=0)
+         DllCall(NumGet(NumGet(IWICBitmapLock+0)+A_PtrSize* 5), "ptr", IWICBitmapLock, "uint*", size:=0, "ptr*", ptr:=0)
+         DllCall(NumGet(NumGet(IWICBitmapLock+0)+A_PtrSize* 4), "ptr", IWICBitmapLock, "uint*", stride:=0)
+
+         ; (Type 6) Copy external pixels into the GDI+ Bitmap.
+         VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
+            NumPut(    stride, BitmapData,  8,    "int") ; Stride
+            NumPut(       ptr, BitmapData, 16,    "ptr") ; Scan0
+         DllCall("gdiplus\GdipBitmapLockBits"
+                  ,    "ptr", pBitmap
+                  ,    "ptr", rect
+                  ,   "uint", 6            ; ImageLockMode.UserInputBuffer | ImageLockMode.WriteOnly
+                  ,    "int", 0x26200A     ; Buffer: Format32bppArgb
+                  ,    "ptr", &BitmapData) ; Contains the pointer (ptr) to the IWICBitmap.
+         DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
+
+         ; Cleanup!
+         ObjRelease(IWICBitmapLock)
+      }
 
       return pBitmap
    }
