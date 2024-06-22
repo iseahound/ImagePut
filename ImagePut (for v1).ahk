@@ -2047,12 +2047,12 @@ class ImagePut {
       VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
          NumPut(  width, rect,  8,   "uint") ; Width
          NumPut( height, rect, 12,   "uint") ; Height
-         
+
       ; Check if the pixel format needs to be converted.
       DllCall(NumGet(NumGet(IWICBitmap+0)+A_PtrSize* 4), "ptr", IWICBitmap, "ptr", &format := VarSetCapacity(format, 16))
       DllCall("ole32\CLSIDFromString", "wstr", "{6fddc324-4e03-4bfe-b185-3d77768dc90f}", "ptr", &GUID_WICPixelFormat32bppBGRA := VarSetCapacity(GUID_WICPixelFormat32bppBGRA, 16), "uint")
       convert :=  16 != DllCall("RtlCompareMemory", "ptr", &format, "ptr", &GUID_WICPixelFormat32bppBGRA, "uptr", 16)
-   
+
       ; Case 1: Convert the pixel format to 32-bit ARGB. Preforms 2 memory copies.
       if (convert) {
          ; Create a 32-bit ARGB IWICBitmapSource.
@@ -4814,35 +4814,35 @@ class ImagePut {
       IWICImagingFactory := ComObjCreate("{CACAF262-9370-4615-A13B-9F5539DA4C0A}", "{EC5EC8A9-C395-4314-9C77-54D7A935FF70}")
 
       ; Initialize bitmap with backing memory. WICBitmapCacheOnDemand = 1
-      VarSetCapacity(GUID_WICPixelFormat32bppBGRA, 16)
-      DllCall("ole32\CLSIDFromString", "wstr", "{6fddc324-4e03-4bfe-b185-3d77768dc90f}", "ptr", &GUID_WICPixelFormat32bppBGRA, "uint")
-      DllCall(NumGet(NumGet(IWICImagingFactory+0)+A_PtrSize* 17), "ptr", IWICImagingFactory, "uint", width, "uint", height, "ptr", &GUID_WICPixelFormat32bppBGRA, "int", 1, "ptr*", wicbitmap:=0)
+      DllCall("ole32\CLSIDFromString", "wstr", "{6fddc324-4e03-4bfe-b185-3d77768dc90f}", "ptr", &GUID_WICPixelFormat32bppBGRA := VarSetCapacity(GUID_WICPixelFormat32bppBGRA, 16), "uint")
+      DllCall(NumGet(NumGet(IWICImagingFactory+0)+A_PtrSize* 17), "ptr", IWICImagingFactory, "uint", width, "uint", height, "ptr", &GUID_WICPixelFormat32bppBGRA, "int", 1, "ptr*", IWICBitmap:=0)
 
       ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
       VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
          NumPut(  width, rect,  8,   "uint") ; Width
          NumPut( height, rect, 12,   "uint") ; Height
 
-      ; Lock the WIC bitmap with write access only and get a pointer to its pixel buffer.
-      DllCall(NumGet(NumGet(wicbitmap+0)+A_PtrSize* 8), "ptr", wicbitmap, "ptr", &rect, "uint", 0x1, "ptr*", IWICBitmapLock:=0)
-      DllCall(NumGet(NumGet(IWICBitmapLock+0)+A_PtrSize* 5), "ptr", IWICBitmapLock, "uint*", size:=0, "ptr*", Scan0:=0)
+      ; Expose the pointer to its underlying pixel buffer.
+      DllCall(NumGet(NumGet(IWICBitmap+0)+A_PtrSize* 8), "ptr", IWICBitmap, "ptr", &rect, "uint", 0x1, "ptr*", IWICBitmapLock:=0)
+      DllCall(NumGet(NumGet(IWICBitmapLock+0)+A_PtrSize* 5), "ptr", IWICBitmapLock, "uint*", size:=0, "ptr*", ptr:=0)
 
-      ; Transfer data from source pBitmap to a WIC Bitmap manually.
+      ; (Type 5) Transfer pixels from the GDI+ Bitmap to an external pointer.
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
          NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
-         NumPut(     Scan0, BitmapData, 16,    "ptr") ; Scan0
+         NumPut(       ptr, BitmapData, 16,    "ptr") ; Scan0
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
                ,    "ptr", &rect
                ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
-               ,    "int", 0x26200A     ; Format32bppArgb
-               ,    "ptr", &BitmapData) ; Contains the pointer (Scan0) to the IWICBitmap.
+               ,    "int", 0x26200A     ; Buffer: Format32bppArgb
+               ,    "ptr", &BitmapData) ; Contains the pointer (ptr) to the IWICBitmap.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
 
+      ; Cleanup!
       ObjRelease(IWICBitmapLock)
       ObjRelease(IWICImagingFactory)
 
-      return wicbitmap
+      return IWICBitmap
    }
 
    SharedBufferToSharedBuffer(image) {

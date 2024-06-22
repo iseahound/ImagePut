@@ -4814,20 +4814,19 @@ class ImagePut {
       IWICImagingFactory := ComObject("{CACAF262-9370-4615-A13B-9F5539DA4C0A}", "{EC5EC8A9-C395-4314-9C77-54D7A935FF70}")
 
       ; Initialize bitmap with backing memory. WICBitmapCacheOnDemand = 1
-      GUID_WICPixelFormat32bppBGRA := Buffer(16)
-      DllCall("ole32\CLSIDFromString", "wstr", "{6fddc324-4e03-4bfe-b185-3d77768dc90f}", "ptr", GUID_WICPixelFormat32bppBGRA, "hresult")
-      ComCall(CreateBitmap := 17, IWICImagingFactory, "uint", width, "uint", height, "ptr", GUID_WICPixelFormat32bppBGRA, "int", 1, "ptr*", &wicbitmap:=0)
+      DllCall("ole32\CLSIDFromString", "wstr", "{6fddc324-4e03-4bfe-b185-3d77768dc90f}", "ptr", GUID_WICPixelFormat32bppBGRA := Buffer(16), "hresult")
+      ComCall(CreateBitmap := 17, IWICImagingFactory, "uint", width, "uint", height, "ptr", GUID_WICPixelFormat32bppBGRA, "int", 1, "ptr*", &IWICBitmap:=0)
 
       ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
       rect := Buffer(16, 0)                  ; sizeof(rect) = 16
          NumPut(  "uint",   width, rect,  8) ; Width
          NumPut(  "uint",  height, rect, 12) ; Height
 
-      ; Lock the WIC bitmap with write access only and get a pointer to its pixel buffer.
-      ComCall(Lock := 8, wicbitmap, "ptr", rect, "uint", 0x2, "ptr*", &IWICBitmapLock:=0)
+      ; Expose the pointer to its underlying pixel buffer.
+      ComCall(Lock := 8, IWICBitmap, "ptr", rect, "uint", 0x2, "ptr*", &IWICBitmapLock:=0)
       ComCall(GetDataPointer := 5, IWICBitmapLock, "uint*", &size:=0, "ptr*", &ptr:=0)
 
-      ; Transfer data from source pBitmap to a WIC Bitmap manually.
+      ; (Type 5) Transfer pixels from the GDI+ Bitmap to an external pointer.
       BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
          NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
          NumPut(   "ptr",        ptr, BitmapData, 16) ; Scan0
@@ -4835,14 +4834,15 @@ class ImagePut {
                ,    "ptr", pBitmap
                ,    "ptr", rect
                ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
-               ,    "int", 0x26200A     ; Format32bppArgb
-               ,    "ptr", BitmapData)  ; Contains the pointer (Scan0) to the IWICBitmap.
+               ,    "int", 0x26200A     ; Buffer: Format32bppArgb
+               ,    "ptr", BitmapData)  ; Contains the pointer (ptr) to the IWICBitmap.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
 
+      ; Cleanup!
       ObjRelease(IWICBitmapLock)
       IWICImagingFactory := ""
 
-      return wicbitmap
+      return IWICBitmap
    }
 
    static SharedBufferToSharedBuffer(image) {
