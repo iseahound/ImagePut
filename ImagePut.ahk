@@ -5074,33 +5074,14 @@ class ImagePut {
       ComCall(DrawSvgDocument := 116, ID2D1RenderTarget, "ptr", ID2D1SvgDocument, "char") ;ID2D1DeviceContext5::
       ComCall(EndDraw := 49, ID2D1RenderTarget, "ptr", 0, "ptr", 0)
 
+      pBitmap := this.WICBitmapToBitmap(IWICBitmap)
+
       ; Cleanup
       ObjRelease(IStream)
-
-      ; Create a destination GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
-      DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", &pBitmap:=0)
-
-      ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
-      rect := Buffer(16, 0)                  ; sizeof(rect) = 16
-         NumPut(  "uint",   width, rect,  8) ; Width
-         NumPut(  "uint",  height, rect, 12) ; Height
-
-      ; Create a pixel buffer.
-      BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
-      DllCall("gdiplus\GdipBitmapLockBits"
-               ,    "ptr", pBitmap
-               ,    "ptr", rect
-               ,   "uint", 2            ; ImageLockMode.WriteOnly
-               ,    "int", 0xE200B      ; Format32bppPArgb
-               ,    "ptr", BitmapData)
-      Scan0 := NumGet(BitmapData, 16, "ptr")
-      stride := NumGet(BitmapData, 8, "int")
-
-      ; Write from the IWICBitmap to the temporary buffer.
-      ComCall(CopyPixels := 7, IWICBitmap, "ptr", rect, "uint", stride, "uint", stride * height, "ptr", Scan0)
-
-      ; Write pixels from the temporary buffer to the pBitmap.
-      DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
+      ObjRelease(IWICBitmap)
+      ObjRelease(ID2D1SvgDocument)
+      ObjRelease(ID2D1RenderTarget)
+      ObjRelease(ID2D1Factory)
 
       return pBitmap
    }
