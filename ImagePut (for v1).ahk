@@ -2025,13 +2025,15 @@ class ImagePut {
    }
 
    RandomAccessStreamToStream(image) {
-      ; Since an IStream returned from CreateStreamOverRandomAccessStream shares a reference count
-      ; with the internal IStream of the RandomAccessStream, clone it so that reference counting begins anew.
+      ; CreateStreamOverRandomAccessStream returns the original wrapped IStream.
+      ; Deceptively, the seek position is reset to zero by CreateStreamOverRandomAccessStream.
+      ; The returned IStream shares a seek position and reference count with the original IStream.
       VarSetCapacity(IID_IStream, 16)
       DllCall("ole32\IIDFromString", "wstr", "{0000000C-0000-0000-C000-000000000046}", "ptr", &IID_IStream, "uint")
-      DllCall("shcore\CreateStreamOverRandomAccessStream", "ptr", image, "ptr", &IID_IStream, "ptr*", stream:=0, "uint")
-      DllCall(NumGet(NumGet(stream+0)+A_PtrSize* 13), "ptr", stream, "ptr*", ClonedStream:=0)
-      return ClonedStream
+      DllCall("shcore\CreateStreamOverRandomAccessStream", "ptr", image, "ptr", &IID_IStream, "ptr*", IStream:=0, "uint")
+      DllCall(NumGet(NumGet(IStream+0)+A_PtrSize* 13), "ptr", IStream, "ptr*", stream:=0)
+      ObjRelease(IStream)
+      return stream
    }
 
    WICBitmapToBitmap(image) {
@@ -5287,23 +5289,23 @@ class ImagePut {
             DllCall("EmptyClipboard")
             DllCall("CloseClipboard")
 
-         case "screenshot":
+         case "Screenshot":
             DllCall("InvalidateRect", "ptr", 0, "ptr", 0, "int", 0)
 
-         case "window":
+         case "Window":
             image := (hwnd := IsObject(image) ? image.hwnd : WinExist(image)) ? hwnd : image
             DllCall("DestroyWindow", "ptr", image)
 
-         case "wallpaper":
+         case "Wallpaper":
             DllCall("SystemParametersInfo", "uint", SPI_SETDESKWALLPAPER := 0x14, "uint", 0, "ptr", 0, "uint", 2)
 
-         case "cursor":
+         case "Cursor":
             DllCall("SystemParametersInfo", "uint", SPI_SETCURSORS := 0x57, "uint", 0, "ptr", 0, "uint", 0)
 
-         case "file":
+         case "File":
             FileDelete % image
 
-         case "dc":
+         case "DC":
             if (DllCall("GetObjectType", "ptr", image, "uint") == 3) { ; OBJ_DC
                hwnd := DllCall("WindowFromDC", "ptr", image, "ptr")
                DllCall("ReleaseDC", "ptr", hwnd, "ptr", image)
@@ -5316,16 +5318,16 @@ class ImagePut {
                DllCall("DeleteDC", "ptr", image)
             }
 
-         case "hBitmap":
+         case "HBitmap":
             DllCall("DeleteObject", "ptr", image)
 
-         case "hIcon":
+         case "HIcon":
             DllCall("DestroyIcon", "ptr", image)
 
-         case "bitmap":
+         case "Bitmap":
             DllCall("gdiplus\GdipDisposeImage", "ptr", image)
 
-         case "RandomAccessStream", "stream", "wicBitmap":
+         case "RandomAccessStream", "Stream", "WICBitmap":
             ObjRelease(image)
          }
       }
