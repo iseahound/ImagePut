@@ -5280,7 +5280,8 @@ class ImagePut {
 
       static Destroy(type, image) {
          switch type {
-         case "clipboard":
+
+         case "Clipboard", "ClipboardPNG":
             if !DllCall("OpenClipboard", "ptr", A_ScriptHwnd)
                throw Error("Clipboard could not be opened.")
             DllCall("EmptyClipboard")
