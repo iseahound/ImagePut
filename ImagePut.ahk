@@ -2207,16 +2207,9 @@ class ImagePut {
       : str ~= "(?i)^d7 cd c6 9a"                                                 ? "wmf"
       : "" ; Extension must be blank for file pass-through as-is.
 
-      ; Creates a dummy window solely for the purpose of receiving clipboard messages.
-      if !(hwnd := DllCall("FindWindow", "str", "AutoHotkey", "str", "_StreamToClipboard", "ptr")) {
-         hwnd := DllCall("CreateWindowEx", "uint", 0, "str", "AutoHotkey", "str", "_StreamToClipboard"
-         , "uint", 0, "int", 0, "int", 0, "int", 0, "int", 0, "ptr", 0, "ptr", 0, "ptr", 0, "ptr", 0, "ptr")
-         DllCall("SetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", -4, "ptr", CallbackCreate(StreamToClipboardProc)) ; GWLP_WNDPROC
-      }
-
       ; Open the clipboard with exponential backoff.
       loop
-         if DllCall("OpenClipboard", "ptr", hwnd)
+         if DllCall("OpenClipboard", "ptr", A_ScriptHwnd)
             break
          else
             if A_Index < 6
@@ -2240,7 +2233,40 @@ class ImagePut {
          DllCall("SetClipboardData", "uint", png, "ptr", handle)
       }
 
-      ; #2 - Copy other formats to a file and pass a (15) DROPFILES struct.
+      ; #2 - Fallback to (8) CF_DIB format (bottom-up bitmap) for maximum compatibility.
+      if (extension ~= "^(?i:avif|bmp|emf|gif|heic|ico|jpg|png|tif|webp|wmf)$") {
+         ; Convert decodable formats into a DIB.
+         DllCall("gdiplus\GdipCreateBitmapFromStreamICM", "ptr", stream, "ptr*", &pBitmap:=0)
+         DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "ptr", pBitmap, "ptr*", &hbm:=0, "uint", 0)
+         DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
+         DllCall("shlwapi\IStream_Reset", "ptr", stream, "hresult")
+
+         ; struct DIBSECTION - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-dibsection
+         ; struct BITMAP - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmap
+         dib := Buffer(64+5*A_PtrSize) ; sizeof(DIBSECTION) = 84, 104
+         DllCall("GetObject", "ptr", hbm, "int", dib.size, "ptr", dib)
+            , pBits := NumGet(dib, A_PtrSize = 4 ? 20:24, "ptr")  ; bmBits
+            , size  := NumGet(dib, A_PtrSize = 4 ? 44:52, "uint") ; biSizeImage
+
+         ; Allocate space for a new device independent bitmap on movable memory.
+         hdib := DllCall("GlobalAlloc", "uint", 0x2, "uptr", 40 + size, "ptr") ; sizeof(BITMAPINFOHEADER) = 40
+         pdib := DllCall("GlobalLock", "ptr", hdib, "ptr")
+
+         ; Copy the BITMAPINFOHEADER and pixel data respectively.
+         DllCall("RtlMoveMemory", "ptr", pdib, "ptr", dib.ptr + (A_PtrSize = 4 ? 24:32), "uptr", 40)
+         DllCall("RtlMoveMemory", "ptr", pdib+40, "ptr", pBits, "uptr", size)
+
+         ; Unlock to moveable memory because the clipboard requires it.
+         DllCall("GlobalUnlock", "ptr", hdib)
+
+         ; CF_DIB (8) can be synthesized into CF_DIBV5 (17) or CF_BITMAP (2) with delayed rendering.
+         DllCall("SetClipboardData", "uint", 8, "ptr", hdib)
+
+         ; GlobalFree will be called when the clipboard is emptied.
+         DllCall("DeleteObject", "ptr", hbm)
+      }
+
+      ; #3 - Copy other formats to a file and pass a (15) DROPFILES struct.
       if (extension) {
          filepath := A_ScriptDir "\clipboard." extension
          filepath := RTrim(filepath, ".") ; Remove trailing periods.
@@ -2271,53 +2297,24 @@ class ImagePut {
          ; Set the file to the clipboard as a shared object.
          DllCall("SetClipboardData", "uint", 15, "ptr", hDropFiles)
 
-         ; Clean up the file when EmptyClipboard is called by another program.
-         obj := {filepath: filepath}
-         ptr := ObjPtr(obj)
-         ObjAddRef(ptr)
-         DllCall("SetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", -21, "ptr", ptr, "ptr") ; GWLP_USERDATA = -21
-      }
-
-      ; #3 - Fallback to (8) CF_DIB format (bottom-up bitmap) for maximum compatibility.
-      if (extension ~= "^(?i:avif|bmp|emf|gif|heic|ico|jpg|png|tif|webp|wmf)$") {
-         ; Convert decodable formats into a DIB.
-         DllCall("gdiplus\GdipCreateBitmapFromStreamICM", "ptr", stream, "ptr*", &pBitmap:=0)
-         DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "ptr", pBitmap, "ptr*", &hbm:=0, "uint", 0)
-
-         ; struct DIBSECTION - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-dibsection
-         ; struct BITMAP - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmap
-         dib := Buffer(64+5*A_PtrSize)                            ; sizeof(DIBSECTION) = 84, 104
-         DllCall("GetObject", "ptr", hbm, "int", dib.size, "ptr", dib)
-            , pBits := NumGet(dib, A_PtrSize = 4 ? 20:24, "ptr")  ; bmBits
-            , size  := NumGet(dib, A_PtrSize = 4 ? 44:52, "uint") ; biSizeImage
-
-         ; Allocate space for a new device independent bitmap on movable memory.
-         hdib := DllCall("GlobalAlloc", "uint", 0x2, "uptr", 40 + size, "ptr") ; sizeof(BITMAPINFOHEADER) = 40
-         pdib := DllCall("GlobalLock", "ptr", hdib, "ptr")
-
-         ; Copy the BITMAPINFOHEADER and pixel data respectively.
-         DllCall("RtlMoveMemory", "ptr", pdib, "ptr", dib.ptr + (A_PtrSize = 4 ? 24:32), "uptr", 40)
-         DllCall("RtlMoveMemory", "ptr", pdib+40, "ptr", pBits, "uptr", size)
-
-         ; Unlock to moveable memory because the clipboard requires it.
-         DllCall("GlobalUnlock", "ptr", hdib)
-         DllCall("DeleteObject", "ptr", hbm)
-
-         ; CF_DIB (8) can be synthesized into CF_DIBV5 (17), and also CF_BITMAP (2) with delayed rendering.
-         DllCall("SetClipboardData", "uint", 8, "ptr", hdib)
+         ; Clean up the files on script exit.
+         static extensions := []
+         if not extensions.Has(extension) {
+            extensions.push(extension)
+            OnExit(ObjBindMethod(this, "StreamToClipboardExit", filepath))
+         }
       }
 
       ; Close the clipboard.
       DllCall("CloseClipboard")
-      return ClipboardAll()
 
-      StreamToClipboardProc(hwnd, uMsg, wParam, lParam) {
+      ; Honestly why would the user use this return value? Use a sentinel instead.
+      return ClipboardAll
+   }
 
-         ; WM_DESTROYCLIPBOARD
-         if (uMsg = 0x0307) ; ObjFromPtr self-destructs at end of scope.
-            if obj := ObjFromPtr(DllCall("GetWindowLong" (A_PtrSize=8?"Ptr":""), "ptr", hwnd, "int", -21, "ptr"))
-               DllCall("DeleteFile", "str", obj.filepath)
-      }
+   static StreamToClipboardExit(filepath, p*) {
+      try FileDelete filepath
+      return 0 ; Required by OnExit to exit the script.
    }
 
    static BitmapToSafeArray(pBitmap, extension := "", quality := "") {
