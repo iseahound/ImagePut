@@ -234,7 +234,7 @@ class ImagePut {
       catch e
          if (e.Message ~= "^Conversion from")
             goto make_bitmap
-         else throw
+         else throw e
       if not stream
          throw Exception("Stream cannot be zero.")
 
