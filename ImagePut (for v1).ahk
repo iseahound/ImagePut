@@ -1090,18 +1090,16 @@ class ImagePut {
          NumPut(  width, rect,  8,   "uint") ; Width
          NumPut( height, rect, 12,   "uint") ; Height
 
-      ; Describe the current buffer holding the pixel data.
+      ; (Type 6) Copy external pixels into the GDI+ Bitmap.
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
          NumPut(    stride, BitmapData,  8,    "int") ; Stride
          NumPut(     Scan0, BitmapData, 16,    "ptr") ; Scan0
-
-      ; Use LockBits to copy pixel data from an external buffer into the internal GDI+ Bitmap.
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
                ,    "ptr", rect
                ,   "uint", 6            ; ImageLockMode.UserInputBuffer | ImageLockMode.WriteOnly
-               ,    "int", 0x26200A     ; Format32bppArgb (external buffer)
-               ,    "ptr", &BitmapData) ; Contains the pointer to the external buffer.
+               ,    "int", 0x26200A     ; Buffer: Format32bppArgb
+               ,    "ptr", &BitmapData) ; Contains the pointer (CF_DIB) to the IWICBitmap.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
 
       DllCall("CloseClipboard")
