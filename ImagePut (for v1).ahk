@@ -1184,6 +1184,7 @@ class ImagePut {
 
       width := NumGet(pMap + 0, "uint")
       height := NumGet(pMap + 4, "uint")
+      stride := 4 * width
       size := 4 * width * height
       ptr := pMap + 8
 
@@ -1196,20 +1197,16 @@ class ImagePut {
          NumPut(  width, rect,  8,   "uint") ; Width
          NumPut( height, rect, 12,   "uint") ; Height
 
-      ; Create a Scan0 buffer pointing to pBits.
+      ; (Type 6) Copy external pixels into the GDI+ Bitmap.
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
-         NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
+         NumPut(    stride, BitmapData,  8,    "int") ; Stride
          NumPut(       ptr, BitmapData, 16,    "ptr") ; Scan0
-
-      ; Use LockBits to create a writable buffer that converts pARGB to ARGB.
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
-               ,    "ptr", &rect
+               ,    "ptr", rect
                ,   "uint", 6            ; ImageLockMode.UserInputBuffer | ImageLockMode.WriteOnly
-               ,    "int", 0x26200A     ; Format32bppArgb
-               ,    "ptr", &BitmapData) ; Contains the pointer (pBits) to the hbm.
-
-      ; Convert the pARGB pixels copied into the device independent bitmap (hbm) to ARGB.
+               ,    "int", 0x26200A     ; Buffer: Format32bppArgb
+               ,    "ptr", &BitmapData) ; Contains the pointer (ptr) to the FileMapping.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
 
       DllCall("UnmapViewOfFile", "ptr", pMap)
@@ -1283,10 +1280,6 @@ class ImagePut {
       try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
       return this.ScreenshotToBitmap([x,y,w,h])
    }
-
-
-
-
 
 
 
@@ -1819,17 +1812,15 @@ class ImagePut {
          NumPut(  width, rect,  8,   "uint") ; Width
          NumPut( height, rect, 12,   "uint") ; Height
 
-      ; Create a Scan0 buffer pointing to pBits. The buffer has pixel format pARGB.
+      ; (Type 6c) Copy external pixels into the GDI+ Bitmap converting from pARGB to ARGB.
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
          NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
          NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
-
-      ; Use LockBits to create a writable buffer that converts pARGB to ARGB.
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
-               ,    "ptr", &rect
+               ,    "ptr", rect
                ,   "uint", 6            ; ImageLockMode.UserInputBuffer | ImageLockMode.WriteOnly
-               ,    "int", 0xE200B      ; Format32bppPArgb
+               ,    "int", 0xE200B      ; Buffer: Format32bppPArgb
                ,    "ptr", &BitmapData) ; Contains the pointer (pBits) to the hbm.
 
       ; Copies the image (hBitmap) to a top-down bitmap. Removes bottom-up-ness if present.
@@ -1886,17 +1877,15 @@ class ImagePut {
          NumPut(  width, rect,  8,   "uint") ; Width
          NumPut( height, rect, 12,   "uint") ; Height
 
-      ; Create a Scan0 buffer pointing to pBits. The buffer has pixel format pARGB.
+      ; (Type 6c) Copy external pixels into the GDI+ Bitmap converting from pARGB to ARGB.
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
          NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
          NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
-
-      ; Use LockBits to create a copy-from buffer on pBits that converts pARGB to ARGB.
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
-               ,    "ptr", &rect
+               ,    "ptr", rect
                ,   "uint", 6            ; ImageLockMode.UserInputBuffer | ImageLockMode.WriteOnly
-               ,    "int", 0xE200B      ; Format32bppPArgb
+               ,    "int", 0xE200B      ; Buffer: Format32bppPArgb
                ,    "ptr", &BitmapData) ; Contains the pointer (pBits) to the hbm.
 
       ; If the source image cannot be selected onto a device context BitBlt cannot be used.
@@ -1915,7 +1904,7 @@ class ImagePut {
       DllCall("SelectObject", "ptr", sdc, "ptr", obm)
       DllCall("DeleteDC",     "ptr", sdc)
 
-      ; Write the pARGB pixels from the device independent bitmap (hbm) to the ARGB pBitmap.
+      ; Convert the pARGB pixels copied into the device independent bitmap (hbm) to ARGB.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
 
       ; Cleanup the hBitmap and device contexts.
@@ -1964,17 +1953,15 @@ class ImagePut {
          NumPut(  width, rect,  8,   "uint") ; Width
          NumPut( height, rect, 12,   "uint") ; Height
 
-      ; Create a Scan0 buffer pointing to pBits. The buffer has pixel format pARGB.
+      ; (Type 6c) Copy external pixels into the GDI+ Bitmap converting from pARGB to ARGB.
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
          NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
          NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
-
-      ; Use LockBits to create a writable buffer that converts pARGB to ARGB.
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
-               ,    "ptr", &rect
+               ,    "ptr", rect
                ,   "uint", 6            ; ImageLockMode.UserInputBuffer | ImageLockMode.WriteOnly
-               ,    "int", 0xE200B      ; Format32bppPArgb
+               ,    "int", 0xE200B      ; Buffer: Format32bppPArgb
                ,    "ptr", &BitmapData) ; Contains the pointer (pBits) to the hbm.
 
       ; Don't use DI_DEFAULTSIZE to draw the icon like DrawIcon does as it will resize to 32 x 32.
