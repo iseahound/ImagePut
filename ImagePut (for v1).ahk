@@ -1096,7 +1096,7 @@ class ImagePut {
          NumPut(     Scan0, BitmapData, 16,    "ptr") ; Scan0
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
-               ,    "ptr", rect
+               ,    "ptr", &rect
                ,   "uint", 6            ; ImageLockMode.UserInputBuffer | ImageLockMode.WriteOnly
                ,    "int", 0x26200A     ; Buffer: Format32bppArgb
                ,    "ptr", &BitmapData) ; Contains the pointer (CF_DIB) to the IWICBitmap.
@@ -1203,7 +1203,7 @@ class ImagePut {
          NumPut(       ptr, BitmapData, 16,    "ptr") ; Scan0
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
-               ,    "ptr", rect
+               ,    "ptr", &rect
                ,   "uint", 6            ; ImageLockMode.UserInputBuffer | ImageLockMode.WriteOnly
                ,    "int", 0x26200A     ; Buffer: Format32bppArgb
                ,    "ptr", &BitmapData) ; Contains the pointer (ptr) to the FileMapping.
@@ -1818,7 +1818,7 @@ class ImagePut {
          NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
-               ,    "ptr", rect
+               ,    "ptr", &rect
                ,   "uint", 6            ; ImageLockMode.UserInputBuffer | ImageLockMode.WriteOnly
                ,    "int", 0xE200B      ; Buffer: Format32bppPArgb
                ,    "ptr", &BitmapData) ; Contains the pointer (pBits) to the hbm.
@@ -1883,7 +1883,7 @@ class ImagePut {
          NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
-               ,    "ptr", rect
+               ,    "ptr", &rect
                ,   "uint", 6            ; ImageLockMode.UserInputBuffer | ImageLockMode.WriteOnly
                ,    "int", 0xE200B      ; Buffer: Format32bppPArgb
                ,    "ptr", &BitmapData) ; Contains the pointer (pBits) to the hbm.
@@ -1959,7 +1959,7 @@ class ImagePut {
          NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
-               ,    "ptr", rect
+               ,    "ptr", &rect
                ,   "uint", 6            ; ImageLockMode.UserInputBuffer | ImageLockMode.WriteOnly
                ,    "int", 0xE200B      ; Buffer: Format32bppPArgb
                ,    "ptr", &BitmapData) ; Contains the pointer (pBits) to the hbm.
@@ -2069,7 +2069,7 @@ class ImagePut {
       ; Case 2: Access the underlying pixels directly. Preforms 1 memory copy.
       else {
          ; Lock the WIC bitmap to access to its pixel data.
-         DllCall(NumGet(NumGet(IWICBitmap+0)+A_PtrSize* 8), "ptr", IWICBitmap, "ptr", rect, "uint", 0x1, "ptr*", IWICBitmapLock:=0)
+         DllCall(NumGet(NumGet(IWICBitmap+0)+A_PtrSize* 8), "ptr", IWICBitmap, "ptr", &rect, "uint", 0x1, "ptr*", IWICBitmapLock:=0)
          DllCall(NumGet(NumGet(IWICBitmapLock+0)+A_PtrSize* 5), "ptr", IWICBitmapLock, "uint*", size:=0, "ptr*", ptr:=0)
          DllCall(NumGet(NumGet(IWICBitmapLock+0)+A_PtrSize* 4), "ptr", IWICBitmapLock, "uint*", stride:=0)
 
@@ -2079,7 +2079,7 @@ class ImagePut {
             NumPut(       ptr, BitmapData, 16,    "ptr") ; Scan0
          DllCall("gdiplus\GdipBitmapLockBits"
                   ,    "ptr", pBitmap
-                  ,    "ptr", rect
+                  ,    "ptr", &rect
                   ,   "uint", 6            ; ImageLockMode.UserInputBuffer | ImageLockMode.WriteOnly
                   ,    "int", 0x26200A     ; Buffer: Format32bppArgb
                   ,    "ptr", &BitmapData) ; Contains the pointer (ptr) to the IWICBitmap.
