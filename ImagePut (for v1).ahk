@@ -1812,7 +1812,7 @@ class ImagePut {
          NumPut(  width, rect,  8,   "uint") ; Width
          NumPut( height, rect, 12,   "uint") ; Height
 
-      ; (Type 6c) Copy external pixels into the GDI+ Bitmap converting from pARGB to ARGB.
+      ; (Type 6c) Prepare to copy pixels from pBits (pARGB) into the GDI+ Bitmap (ARGB).
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
          NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
          NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
@@ -1877,7 +1877,7 @@ class ImagePut {
          NumPut(  width, rect,  8,   "uint") ; Width
          NumPut( height, rect, 12,   "uint") ; Height
 
-      ; (Type 6c) Copy external pixels into the GDI+ Bitmap converting from pARGB to ARGB.
+      ; (Type 6c) Prepare to copy pixels from pBits (pARGB) into the GDI+ Bitmap (ARGB).
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
          NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
          NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0
@@ -1953,7 +1953,7 @@ class ImagePut {
          NumPut(  width, rect,  8,   "uint") ; Width
          NumPut( height, rect, 12,   "uint") ; Height
 
-      ; (Type 6c) Copy external pixels into the GDI+ Bitmap converting from pARGB to ARGB.
+      ; (Type 6c) Prepare to copy pixels from pBits (pARGB) into the GDI+ Bitmap (ARGB).
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
          NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
          NumPut(     pBits, BitmapData, 16,    "ptr") ; Scan0

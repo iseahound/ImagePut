@@ -1953,7 +1953,7 @@ class ImagePut {
          NumPut(  "uint",   width, rect,  8) ; Width
          NumPut(  "uint",  height, rect, 12) ; Height
 
-      ; (Type 6c) Copy external pixels into the GDI+ Bitmap converting from pARGB to ARGB.
+      ; (Type 6c) Prepare to copy pixels from pBits (pARGB) into the GDI+ Bitmap (ARGB).
       BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
          NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
          NumPut(   "ptr",      pBits, BitmapData, 16) ; Scan0
