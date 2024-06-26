@@ -953,13 +953,13 @@ class ImagePut {
          NumPut(  width, rect,  8,   "uint") ; Width
          NumPut( height, rect, 12,   "uint") ; Height
 
-      ; Create a pixel buffer.
+      ; (Type 3) Expose the pixel buffer for modification.
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
                ,    "ptr", &rect
                ,   "uint", 3            ; ImageLockMode.ReadWrite
-               ,    "int", 0x26200A     ; Format32bppArgb
+               ,    "int", 0x26200A     ; Buffer: Format32bppArgb
                ,    "ptr", &BitmapData)
       Scan0 := NumGet(BitmapData, 16, "ptr")
 
@@ -3530,7 +3530,7 @@ class ImagePut {
                   ,    "ptr", pBitmap
                   ,    "ptr", &rect
                   ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
-                  ,    "int", 0xE200B      ; Format32bppPArgb
+                  ,    "int", 0xE200B      ; Buffer: Format32bppPArgb
                   ,    "ptr", &BitmapData) ; Contains the pointer (pBits) to the hbm.
          DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
       }
@@ -4099,7 +4099,7 @@ class ImagePut {
                         ,    "ptr", pBitmap
                         ,    "ptr", &rect
                         ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
-                        ,    "int", 0xE200B      ; Format32bppPArgb
+                        ,    "int", 0xE200B      ; Buffer: Format32bppPArgb
                         ,    "ptr", &BitmapData) ; Contains the pointer (pBits) to the hbm.
                DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
 
@@ -4703,7 +4703,7 @@ class ImagePut {
                ,    "ptr", pBitmap
                ,    "ptr", &rect
                ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
-               ,    "int", 0xE200B      ; Format32bppPArgb
+               ,    "int", 0xE200B      ; Buffer: Format32bppPArgb
                ,    "ptr", &BitmapData) ; Contains the pointer (pBits) to the hbm.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
 
@@ -4748,7 +4748,7 @@ class ImagePut {
                ,    "ptr", pBitmap
                ,    "ptr", &rect
                ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
-               ,    "int", 0xE200B      ; Format32bppPArgb
+               ,    "int", 0xE200B      ; Buffer: Format32bppPArgb
                ,    "ptr", &BitmapData) ; Contains the pointer (pBits) to the hbm.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
 
