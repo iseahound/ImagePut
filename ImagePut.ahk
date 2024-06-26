@@ -2398,7 +2398,7 @@ class ImagePut {
          NumPut(  "uint",   width, rect,  8) ; Width
          NumPut(  "uint",  height, rect, 12) ; Height
 
-      ; Target a pixel buffer.
+      ; (Type 5) Copy pixels to an external pointer.
       BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
          NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
          NumPut(   "ptr",        ptr, BitmapData, 16) ; Scan0
@@ -2406,10 +2406,8 @@ class ImagePut {
                ,    "ptr", pBitmap
                ,    "ptr", rect
                ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
-               ,    "int", 0x26200A     ; Format32bppArgb
-               ,    "ptr", BitmapData)
-
-      ; Write pixels to buffer.
+               ,    "int", 0x26200A     ; Buffer: Format32bppArgb
+               ,    "ptr", BitmapData)  ; Contains the pointer (ptr) to the FileMapping.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
 
       ; Free the pixels later.
@@ -2433,7 +2431,7 @@ class ImagePut {
          NumPut(  "uint",   width, rect,  8) ; Width
          NumPut(  "uint",  height, rect, 12) ; Height
 
-      ; Create a pixel buffer.
+      ; (Type 5) Copy pixels to an external pointer.
       BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
          NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
          NumPut(   "ptr",        ptr, BitmapData, 16) ; Scan0
@@ -2441,11 +2439,10 @@ class ImagePut {
                ,    "ptr", pBitmap
                ,    "ptr", rect
                ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
-               ,    "int", 0x26200A     ; Format32bppArgb
-               ,    "ptr", BitmapData)
-
-      ; Write pixels to global memory.
+               ,    "int", 0x26200A     ; Buffer: Format32bppArgb
+               ,    "ptr", BitmapData)  ; Contains the pointer (ptr) to the Buffer Object.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
+
 
       ; Free the pixels later.
       buf := ImagePut.BitmapBuffer(ptr, size, width, height)
@@ -3526,7 +3523,7 @@ class ImagePut {
             NumPut(  "uint",   width, rect,  8) ; Width
             NumPut(  "uint",  height, rect, 12) ; Height
 
-         ; Transfer data from source pBitmap to an hBitmap manually.
+         ; (Type 5c) Transfer pixels from the GDI+ Bitmap (ARGB) to the pBits (pARGB).
          BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
             NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
             NumPut(   "ptr",      pBits, BitmapData, 16) ; Scan0
@@ -4095,7 +4092,7 @@ class ImagePut {
                   NumPut(  "uint",   width, rect,  8) ; Width
                   NumPut(  "uint",  height, rect, 12) ; Height
 
-               ; Transfer data from source pBitmap to an hBitmap manually.
+               ; (Type 5c) Transfer pixels from the GDI+ Bitmap (ARGB) to the pBits (pARGB).
                BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
                   NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
                   NumPut(   "ptr",      pBits, BitmapData, 16) ; Scan0
@@ -4699,7 +4696,7 @@ class ImagePut {
          NumPut(  "uint",   width, rect,  8) ; Width
          NumPut(  "uint",  height, rect, 12) ; Height
 
-      ; Transfer data from source pBitmap to an hBitmap manually.
+      ; (Type 5c) Transfer pixels from the GDI+ Bitmap (ARGB) to the pBits (pARGB).
       BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
          NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
          NumPut(   "ptr",      pBits, BitmapData, 16) ; Scan0
@@ -4812,7 +4809,7 @@ class ImagePut {
       ComCall(Lock := 8, IWICBitmap, "ptr", rect, "uint", 0x2, "ptr*", &IWICBitmapLock:=0)
       ComCall(GetDataPointer := 5, IWICBitmapLock, "uint*", &size:=0, "ptr*", &ptr:=0)
 
-      ; (Type 5) Transfer pixels from the GDI+ Bitmap to an external pointer.
+      ; (Type 5) Copy pixels to an external pointer.
       BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
          NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
          NumPut(   "ptr",        ptr, BitmapData, 16) ; Scan0
