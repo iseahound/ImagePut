@@ -344,8 +344,8 @@ class ImagePut {
       ; Save frame delays and loop count for webp.
       if (type = "stream" && extension = "webp" && cotype ~= "^(?i:show|window|desktop)$") {
          this.ParseWEBP(stream, &pDelays, &pCount)
-         DllCall("gdiplus\GdipSetPropertyItem", "ptr", pBitmap, "ptr", pDelays)
-         DllCall("gdiplus\GdipSetPropertyItem", "ptr", pBitmap, "ptr", pCount)
+         IsSet(pDelays) && DllCall("gdiplus\GdipSetPropertyItem", "ptr", pBitmap, "ptr", pDelays)
+         IsSet(pCount) && DllCall("gdiplus\GdipSetPropertyItem", "ptr", pBitmap, "ptr", pCount)
       }
 
       ; Attempt conversion using BitmapToCoimage.
@@ -4245,7 +4245,7 @@ class ImagePut {
       WS_CHILD                  := 0x40000000   ; Creates a child window.
       WS_VISIBLE                := 0x10000000   ; Show on creation.
       (style == "") && style := WS_CHILD | WS_VISIBLE
-      return this.show(pBitmap, title, pos, style | WS_CHILD, styleEx, WorkerW, playback, cache)
+      return this.Show(pBitmap, title, pos, style | WS_CHILD, styleEx, WorkerW, playback, cache)
    }
 
    static BitmapToWallpaper(pBitmap) {
