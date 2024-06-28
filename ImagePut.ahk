@@ -4,7 +4,7 @@
 ; Github:    https://github.com/iseahound/ImagePut
 ; Date:      2023-03-02
 ; Version:   1.10
-#DefaultReturn unset
+
 #Requires AutoHotkey v2.0-beta.13+
 
 
