@@ -2012,8 +2012,7 @@ class ImagePut {
       ; CreateStreamOverRandomAccessStream returns the original wrapped IStream.
       ; Deceptively, the seek position is reset to zero by CreateStreamOverRandomAccessStream.
       ; The returned IStream shares a seek position and reference count with the original IStream.
-      VarSetCapacity(IID_IStream, 16)
-      DllCall("ole32\IIDFromString", "wstr", "{0000000C-0000-0000-C000-000000000046}", "ptr", &IID_IStream, "uint")
+      DllCall("ole32\IIDFromString", "wstr", "{0000000C-0000-0000-C000-000000000046}", "ptr", &IID_IStream := VarSetCapacity(IID_IStream, 16), "uint")
       DllCall("shcore\CreateStreamOverRandomAccessStream", "ptr", image, "ptr", &IID_IStream, "ptr*", IStream:=0, "uint")
       DllCall(NumGet(NumGet(IStream+0)+A_PtrSize* 13), "ptr", IStream, "ptr*", stream:=0)
       ObjRelease(IStream)
@@ -4783,8 +4782,7 @@ class ImagePut {
 
    StreamToRandomAccessStream(stream) {
       ; Create a RandomAccessStream that loads the memory immediately (BSOS_PREFERDESTINATIONSTREAM = 1)
-      VarSetCapacity(IID_IRandomAccessStream, 16)
-      DllCall("ole32\IIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", &IID_IRandomAccessStream, "uint")
+      DllCall("ole32\IIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", &IID_IRandomAccessStream := VarSetCapacity(IID_IRandomAccessStream, 16), "uint")
       DllCall("shcore\CreateRandomAccessStreamOverStream", "ptr", stream, "uint", 1, "ptr", &IID_IRandomAccessStream, "ptr*", IRandomAccessStream:=0, "uint")
       return IRandomAccessStream
    }
@@ -4942,13 +4940,11 @@ class ImagePut {
       (index == "") && index := 1
 
       ; Create a RandomAccessStream with BSOS_PREFERDESTINATIONSTREAM.
-      VarSetCapacity(IID_IRandomAccessStream, 16)
-      DllCall("ole32\IIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", &IID_IRandomAccessStream, "uint")
+      DllCall("ole32\IIDFromString", "wstr", "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}", "ptr", &IID_IRandomAccessStream := VarSetCapacity(IID_IRandomAccessStream, 16), "uint")
       DllCall("shcore\CreateRandomAccessStreamOverStream", "ptr", IStreamIn, "uint", 1, "ptr", &IID_IRandomAccessStream, "ptr*", IRandomAccessStreamIn:=0, "uint")
 
       ; Create the "Windows.Data.Pdf.PdfDocument" class using IPdfDocumentStatics.
-      VarSetCapacity(IID_IPdfDocumentStatics, 16)
-      DllCall("ole32\IIDFromString", "wstr", "{433A0B5F-C007-4788-90F2-08143D922599}", "ptr", &IID_IPdfDocumentStatics, "uint")
+      DllCall("ole32\IIDFromString", "wstr", "{433A0B5F-C007-4788-90F2-08143D922599}", "ptr", &IID_IPdfDocumentStatics := VarSetCapacity(IID_IPdfDocumentStatics, 16), "uint")
       DllCall("combase\WindowsCreateString", "wstr", "Windows.Data.Pdf.PdfDocument", "uint", 28, "ptr*", hString:=0, "uint")
       DllCall("combase\RoGetActivationFactory", "ptr", hString, "ptr", &IID_IPdfDocumentStatics, "ptr*", PdfDocumentStatics:=0, "uint")
       DllCall("combase\WindowsDeleteString", "ptr", hString, "uint")
@@ -5031,14 +5027,12 @@ class ImagePut {
       IWICImagingFactory := ComObjCreate("{CACAF262-9370-4615-A13B-9F5539DA4C0A}", "{EC5EC8A9-C395-4314-9C77-54D7A935FF70}")
 
       ; Initialize bitmap with backing memory. WICBitmapCacheOnDemand = 1
-      VarSetCapacity(GUID_WICPixelFormat32bppPBGRA, 16)
-      DllCall("ole32\CLSIDFromString", "wstr", "{6fddc324-4e03-4bfe-b185-3d77768dc910}", "ptr", &GUID_WICPixelFormat32bppPBGRA, "uint")
+      DllCall("ole32\CLSIDFromString", "wstr", "{6fddc324-4e03-4bfe-b185-3d77768dc910}", "ptr", &GUID_WICPixelFormat32bppPBGRA := VarSetCapacity(GUID_WICPixelFormat32bppPBGRA, 16), "uint")
       DllCall(NumGet(NumGet(IWICImagingFactory+0)+A_PtrSize* 17), "ptr", IWICImagingFactory, "uint", width, "uint", height, "ptr", &GUID_WICPixelFormat32bppPBGRA, "int", 1, "ptr*", IWICBitmap:=0)
 
       ; Initialize Direct2D
-      VarSetCapacity(IID_ID2D1Factory, 16)
-      DllCall("ole32\IIDFromString", "wstr", "{06152247-6f50-465a-9245-118bfd3b6007}", "ptr", &IID_ID2D1Factory, "uint")
       DllCall("GetModuleHandleA",  "AStr",  "d2d1") || DllCall("LoadLibraryA",  "AStr",  "d2d1") ;this is needed to avoid "Critical Error: Invalid memory read/write"
+      DllCall("ole32\IIDFromString", "wstr", "{06152247-6f50-465a-9245-118bfd3b6007}", "ptr", &IID_ID2D1Factory := VarSetCapacity(IID_ID2D1Factory, 16), "uint")
       DllCall("d2d1\D2D1CreateFactory", "int", 0, "ptr", &IID_ID2D1Factory, "ptr", 0, "ptr*", ID2D1Factory:=0) ;0=D2D1_FACTORY_TYPE_SINGLE_THREADED,  3=D2D1_DEBUG_LEVEL_INFORMATION
 
       ; Create a render target using the default pixel format specified by the IWICBitmap,
