@@ -300,8 +300,8 @@ class ImagePut {
                || !(RegExReplace(p[1], "^.*(?:^|:|\\|\.)(.*)$", "$1")
                ~= "^(?i:avif|avifs|bmp|dib|rle|gif|heic|heif|hif|jpg|jpeg|jpe|jfif|png|tif|tiff)$"))
 
-         ; Pass through all other cotypes.
-         || cotype)
+         ; Pass through all functions that don't specify an extension.
+         || cotype ~= "^(?i:clipboard|url|explorer)")
 
          ; MsgBox % weight ? "convert to pixels" : "stay as stream"
 

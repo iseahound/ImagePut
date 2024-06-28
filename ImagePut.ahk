@@ -287,7 +287,7 @@ class ImagePut {
       weight := decode || crop || scale || upscale || downscale || sprite ||
 
          ; Check if the 1st parameter matches the extension.
-         !( cotype ~= "^(?i:encodedbuffer|url|hex|base64|uri|stream|randomaccessstream|safearray)$"
+         !( cotype ~= "^(?i:safearray|encodedbuffer|hex|base64|uri|stream|randomaccessstream|)$"
             && (!p.Has(1) || p[1] == "" || p[1] = extension)
 
          ; Check if the 2nd parameter matches the extension.
@@ -300,8 +300,8 @@ class ImagePut {
                || !(RegExReplace(p[1], "^.*(?:^|:|\\|\.)(.*)$", "$1")
                ~= "^(?i:avif|avifs|bmp|dib|rle|gif|heic|heif|hif|jpg|jpeg|jpe|jfif|png|tif|tiff)$"))
 
-         ; Pass through all other cotypes.
-         || cotype)
+         ; Pass through all functions that don't specify an extension.
+         || cotype ~= "^(?i:clipboard|url|explorer)")
 
          ; MsgBox weight ? "convert to pixels" : "stay as stream"
 
