@@ -287,7 +287,7 @@ class ImagePut {
       weight := decode || crop || scale || upscale || downscale || sprite ||
 
          ; Check if the 1st parameter matches the extension.
-         !( cotype ~= "^(?i:encodedbuffer|url|hex|base64|uri|stream|randomaccessstream|safearray)$"
+         !( cotype ~= "^(?i:safearray|encodedbuffer|hex|base64|uri|stream|randomaccessstream|)$"
             && (!p.HasKey(1) || p[1] == "" || p[1] = extension)
 
          ; Check if the 2nd parameter matches the extension.
@@ -1184,9 +1184,9 @@ class ImagePut {
 
       width := NumGet(pMap + 0, "uint")
       height := NumGet(pMap + 4, "uint")
-      stride := 4 * width
-      size := 4 * width * height
-      ptr := pMap + 8
+      stride := NumGet(pMap + 8, "uint") ? NumGet(pMap + 8, "uint") : 4 * width
+      size := stride * height
+      ptr := pMap + 12
 
       ; Create a destination GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
@@ -2383,15 +2383,17 @@ class ImagePut {
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
 
       ; Allocate shared memory.
-      size := 4 * width * height
-      capacity := size + 8
+      stride := 4 * width
+      size := stride * height
+      capacity := size + 12
       hMap := DllCall("CreateFileMapping", "ptr", -1, "ptr", 0, "uint", 0x4, "uint", 0, "uint", capacity, "str", "ImagePut_" name, "ptr")
       pMap := DllCall("MapViewOfFile", "ptr", hMap, "uint", 0x2, "uint", 0, "uint", 0, "uptr", 0, "ptr")
 
-      ; Store width and height in the first 8 bytes.
+      ; Store width x height and stride in the first 12 bytes.
       NumPut( width, pMap + 0, "uint")
       NumPut(height, pMap + 4, "uint")
-      ptr := pMap + 8
+      NumPut(stride, pMap + 8, "uint") ; Optional
+      ptr := pMap + 12
 
       ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
       VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
@@ -2400,7 +2402,7 @@ class ImagePut {
 
       ; (Type 5) Copy pixels to an external pointer.
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)   ; sizeof(BitmapData) = 24, 32
-         NumPut( 4 * width, BitmapData,  8,    "int") ; Stride
+         NumPut(    stride, BitmapData,  8,    "int") ; Stride
          NumPut(       ptr, BitmapData, 16,    "ptr") ; Scan0
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
@@ -2411,7 +2413,7 @@ class ImagePut {
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
 
       ; Free the pixels later.
-      buf := new ImagePut.BitmapBuffer(ptr, size, width, height)
+      buf := new ImagePut.BitmapBuffer(ptr, size, width, height) ; Stride can be calculated via size // height
       buf.free := [Func("DllCall").bind("UnmapViewOfFile", "ptr", pMap), Func("DllCall").bind("CloseHandle", "ptr", hMap)]
       buf.name := name
       return buf
@@ -4832,8 +4834,9 @@ class ImagePut {
 
       width := NumGet(pMap + 0, "uint")
       height := NumGet(pMap + 4, "uint")
-      size := 4 * width * height
-      ptr := pMap + 8
+      stride := NumGet(pMap + 8, "uint") ? NumGet(pMap + 8, "uint") : 4 * width
+      size := stride * height
+      ptr := pMap + 12
 
       ; Free the pixels later.
       buf := new ImagePut.BitmapBuffer(ptr, size, width, height)
