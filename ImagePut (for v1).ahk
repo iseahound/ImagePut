@@ -1189,8 +1189,7 @@ class ImagePut {
       ptr := pMap + 8
 
       ; Create a destination GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
-      DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height
-         , "int", size // height, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
+      DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
 
       ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
       VarSetCapacity(rect, 16, 0)            ; sizeof(rect) = 16
@@ -2452,7 +2451,7 @@ class ImagePut {
 
    class BitmapBuffer {
 
-      __New(ptr, size, width, height, stride:="") {
+      __New(ptr, size, width, height) {
          ImagePut.gdiplusStartup()
 
          ; Create a source GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
@@ -2464,6 +2463,7 @@ class ImagePut {
          this.size := size
          this.width := width
          this.height := height
+         this.stride := size // height
          this.pBitmap := pBitmap
 
          ; A series of callbacks to be called in order to free the memory.
@@ -4412,7 +4412,6 @@ class ImagePut {
    }
 
    BitmapToFile(pBitmap, filepath := "", quality := "") {
-      ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
       extension := "png"
       this.select_filepath(filepath, extension)
       this.select_codec(pBitmap, extension, quality, pCodec, ep)
