@@ -1524,7 +1524,7 @@ class ImagePut {
       buf := ImagePut.BitmapBuffer(pBits, 4 * image[3] * image[4], image[3], image[4])
 
       ; Copies a portion of the screen to a new device context.
-      buf.draw := DllCall.Bind("gdi32\BitBlt"
+      buf.draw := () => DllCall("gdi32\BitBlt"
                , "ptr", hdc, "int", 0, "int", 0, "int", image[3], "int", image[4]
                , "ptr", sdc, "int", image[1], "int", image[2], "uint", 0x00CC0020 | 0x40000000) ; SRCCOPY | CAPTUREBLT
 
@@ -2463,7 +2463,7 @@ class ImagePut {
 
       ; Free the pixels later.
       buf := ImagePut.BitmapBuffer(ptr, size, width, height) ; Stride can be calculated via size // height
-      buf.free := [() => DllCall("UnmapViewOfFile", "ptr", pMap), () => DllCall("CloseHandle", "ptr", hMap)]
+      buf.free := () => (DllCall("UnmapViewOfFile", "ptr", pMap), DllCall("CloseHandle", "ptr", hMap))
       buf.name := name
       return buf
    }
@@ -2497,7 +2497,7 @@ class ImagePut {
 
       ; Free the pixels later.
       buf := ImagePut.BitmapBuffer(ptr, size, width, height)
-      buf.free := [DllCall.bind("GlobalFree", "ptr", ptr)]
+      buf.free := () => DllCall("GlobalFree", "ptr", ptr)
       return buf
    }
 
@@ -2623,7 +2623,7 @@ class ImagePut {
          ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", this.size, "ptr")
          DllCall("RtlMoveMemory", "ptr", ptr, "ptr", this.ptr, "uptr", this.size)
          buf := ImagePut.BitmapBuffer(ptr, this.size, this.width, this.height)
-         buf.free := [DllCall.bind("GlobalFree", "ptr", ptr)]
+         buf.free := () => DllCall("GlobalFree", "ptr", ptr)
          return buf
       }
 
@@ -4333,7 +4333,7 @@ class ImagePut {
       DllCall("SystemParametersInfo", "uint", SPI_SETDESKWALLPAPER := 0x14, "uint", 0, "str", buf, "uint", 2)
 
       ; This is a delayed delete call. #Persistent may be required on v1.
-      DeleteFile := DllCall.Bind("DeleteFile", "str", filepath)
+      DeleteFile := () => DllCall("DeleteFile", "str", filepath)
       SetTimer DeleteFile, -2000
 
       return "wallpaper"
@@ -4901,7 +4901,7 @@ class ImagePut {
 
       ; Free the pixels later.
       buf := ImagePut.BitmapBuffer(ptr, size, width, height)
-      buf.free := [() => DllCall("UnmapViewOfFile", "ptr", pMap), () => DllCall("CloseHandle", "ptr", hMap)]
+      buf.free := () => (DllCall("UnmapViewOfFile", "ptr", pMap), DllCall("CloseHandle", "ptr", hMap))
       buf.name := image
       return buf
    }

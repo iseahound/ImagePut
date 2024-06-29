@@ -2396,7 +2396,7 @@ class ImagePut {
       size := DllCall("GlobalSize", "ptr", handle, "uptr")
 
       ; Copy data into a buffer.
-      buf := {ptr: _ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr"), size: size, base: {__Delete: Func("DllCall").bind("GlobalFree", "ptr", _ptr)}}
+      buf := {ptr: _ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr"), size: size, base: {__Delete: Func("DllCall").Bind("GlobalFree", "ptr", _ptr)}}
       DllCall("RtlMoveMemory", "ptr", buf.ptr, "ptr", bin, "uptr", size)
 
       ; Release binary data and stream.
@@ -2408,7 +2408,7 @@ class ImagePut {
 
    StreamToEncodedBuffer(stream) {
       DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", size:=0, "uint")
-      buf := {ptr: _ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr"), size: size, base: {__Delete: Func("DllCall").bind("GlobalFree", "ptr", _ptr)}}
+      buf := {ptr: _ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr"), size: size, base: {__Delete: Func("DllCall").Bind("GlobalFree", "ptr", _ptr)}}
       DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
       DllCall("shlwapi\IStream_Read", "ptr", stream, "ptr", buf.ptr, "uint", size, "uint")
       DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
@@ -2464,7 +2464,7 @@ class ImagePut {
 
       ; Free the pixels later.
       buf := new ImagePut.BitmapBuffer(ptr, size, width, height) ; Stride can be calculated via size // height
-      buf.free := [Func("DllCall").bind("UnmapViewOfFile", "ptr", pMap), Func("DllCall").bind("CloseHandle", "ptr", hMap)]
+      buf.free := [Func("DllCall").Bind("UnmapViewOfFile", "ptr", pMap), Func("DllCall").Bind("CloseHandle", "ptr", hMap)]
       buf.name := name
       return buf
    }
@@ -2497,7 +2497,7 @@ class ImagePut {
 
       ; Free the pixels later.
       buf := new ImagePut.BitmapBuffer(ptr, size, width, height)
-      buf.free := [Func("DllCall").bind("GlobalFree", "ptr", ptr)]
+      buf.free := Func("DllCall").Bind("GlobalFree", "ptr", ptr)
       return buf
    }
 
@@ -2623,7 +2623,7 @@ class ImagePut {
          ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", this.size, "ptr")
          DllCall("RtlMoveMemory", "ptr", ptr, "ptr", this.ptr, "uptr", this.size)
          buf := new ImagePut.BitmapBuffer(ptr, this.size, this.width, this.height)
-         buf.free := [Func("DllCall").bind("GlobalFree", "ptr", ptr)]
+         buf.free := Func("DllCall").Bind("GlobalFree", "ptr", ptr)
          return buf
       }
 
@@ -4901,7 +4901,7 @@ class ImagePut {
 
       ; Free the pixels later.
       buf := new ImagePut.BitmapBuffer(ptr, size, width, height)
-      buf.free := [Func("DllCall").bind("UnmapViewOfFile", "ptr", pMap), Func("DllCall").bind("CloseHandle", "ptr", hMap)]
+      buf.free := [Func("DllCall").Bind("UnmapViewOfFile", "ptr", pMap), Func("DllCall").Bind("CloseHandle", "ptr", hMap)]
       buf.name := image
       return buf
    }
