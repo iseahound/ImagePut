@@ -219,7 +219,7 @@ class ImagePut {
       validate  := keywords.HasKey("validate")   ? keywords.validate  : this.validate
       width     := keywords.HasKey("width") && keywords.width ~= "^(?!0+$)\d+$" ? keywords.width : ""
       height    := keywords.HasKey("height") && keywords.height ~= "^(?!0+$)\d+$" ? keywords.height : ""
-msgbox % width ", " height
+
       ; Keywords are for (input -> intermediate).
       try index := keywords.index
 
