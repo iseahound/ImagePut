@@ -1482,17 +1482,68 @@ class ImagePut {
 
 
 
+   ScreenshotToBuffer(image) {
+      ; Allow the image to be a window handle.
+      if !IsObject(image) and WinExist(image) || DllCall("IsWindow", "ptr", image) {
+         try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+         image := (hwnd := IsObject(image) ? image.hwnd : WinExist(image)) ? hwnd : image
+         VarSetCapacity(rect, 16)
+         DllCall("GetClientRect", "ptr", image, "ptr", &rect)
+         DllCall("ClientToScreen", "ptr", image, "ptr", &rect)
+         try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+         image := [NumGet(rect, 0, "int"), NumGet(rect, 4, "int"), NumGet(rect, 8, "int"), NumGet(rect, 12, "int")]
+      }
 
+      ; Adjust coordinates relative to specified window.
+      if image.HasKey(5) && (WinExist(image[5]) || DllCall("IsWindow", "ptr", image[5])) {
+         try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+         image[5] := (hwnd := WinExist(image[5])) ? hwnd : image[5]
+         VarSetCapacity(rect, 16)
+         DllCall("GetClientRect", "ptr", image[5], "ptr", &rect)
+         DllCall("ClientToScreen", "ptr", image[5], "ptr", &rect)
+         try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+         image[1] += NumGet(rect, 0, "int")
+         image[2] += NumGet(rect, 4, "int")
+      }
 
+      ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
+      hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
+      VarSetCapacity(bi, 40, 0)              ; sizeof(bi) = 40
+         NumPut(       40, bi,  0,   "uint") ; Size
+         NumPut( image[3], bi,  4,   "uint") ; Width
+         NumPut(-image[4], bi,  8,    "int") ; Height - Negative so (0, 0) is top-left.
+         NumPut(        1, bi, 12, "ushort") ; Planes
+         NumPut(       32, bi, 14, "ushort") ; BitCount / BitsPerPixel
+      hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", &bi, "uint", 0, "ptr*", pBits:=0, "ptr", 0, "uint", 0, "ptr")
+      obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
+      ; Retrieve the device context for the screen.
+      sdc := DllCall("GetDC", "ptr", 0, "ptr")
 
+      ; Wrap the pointer to the pixels in a buffer object.
+      buf := new ImagePut.BitmapBuffer(pBits, 4 * image[3] * image[4], image[3], image[4])
 
+      ; Copies a portion of the screen to a new device context.
+      buf.draw := Func("DllCall").Bind("gdi32\BitBlt"
+               , "ptr", hdc, "int", 0, "int", 0, "int", image[3], "int", image[4]
+               , "ptr", sdc, "int", image[1], "int", image[2], "uint", 0x00CC0020 | 0x40000000) ; SRCCOPY | CAPTUREBLT
 
+      ; Draw the first frame.
+      buf.Update()
 
+      ; Cleanup!
+      buf.free := [
+      ( Join Comments ; Release the device context to the screen.
+         Func("DllCall").Bind("ReleaseDC", "ptr", 0, "ptr", sdc),
 
-
-
-
+         ; Cleanup the hBitmap and device contexts.
+         Func("DllCall").Bind("SelectObject", "ptr", hdc, "ptr", obm),
+         Func("DllCall").Bind("DeleteObject", "ptr", hbm),
+         Func("DllCall").Bind("DeleteDC",     "ptr", hdc)
+      ]
+      )
+      return buf
+   }
 
    ScreenshotToBitmap(image) {
       ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
@@ -2473,7 +2524,7 @@ class ImagePut {
          DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap)
 
          ; Call the cleanup functions.
-         if IsFunc(this.free)
+         if IsFunc(this.free.call)
             this.free.call()
          if IsObject(this.free) && this.free.length() > 0
             for callback in this.free
@@ -2540,6 +2591,14 @@ class ImagePut {
 
 
 
+      Update() {
+         if IsFunc(this.draw.call)
+            this.draw.call()
+         if IsObject(this.draw) && this.draw.length() > 0
+            for callback in this.draw
+               callback.call()
+      }
+      
       Frequency() {
          if this.HasKey(map)
             return

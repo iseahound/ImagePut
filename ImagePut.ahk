@@ -1520,27 +1520,28 @@ class ImagePut {
       ; Retrieve the device context for the screen.
       sdc := DllCall("GetDC", "ptr", 0, "ptr")      
 
-      Update(self) {
-         ; Copies a portion of the screen to a new device context.
-         DllCall("gdi32\BitBlt"
-                  , "ptr", hdc, "int", 0, "int", 0, "int", image[3], "int", image[4]
-                  , "ptr", sdc, "int", image[1], "int", image[2], "uint", 0x00CC0020 | 0x40000000) ; SRCCOPY | CAPTUREBLT
-      }
+      ; Wrap the pointer to the pixels in a buffer object.
+      buf := ImagePut.BitmapBuffer(pBits, 4 * image[3] * image[4], image[3], image[4])
 
-      Cleanup() {
+      ; Copies a portion of the screen to a new device context.
+      buf.draw := DllCall.Bind("gdi32\BitBlt"
+               , "ptr", hdc, "int", 0, "int", 0, "int", image[3], "int", image[4]
+               , "ptr", sdc, "int", image[1], "int", image[2], "uint", 0x00CC0020 | 0x40000000) ; SRCCOPY | CAPTUREBLT
+
+      ; Draw the first frame.
+      buf.Update()
+
+      ; Cleanup!
+      buf.free := () => (
          ; Release the device context to the screen.
-         DllCall("ReleaseDC", "ptr", 0, "ptr", sdc)
+         DllCall("ReleaseDC", "ptr", 0, "ptr", sdc),
 
          ; Cleanup the hBitmap and device contexts.
-         DllCall("SelectObject", "ptr", hdc, "ptr", obm)
-         DllCall("DeleteObject", "ptr", hbm)
+         DllCall("SelectObject", "ptr", hdc, "ptr", obm),
+         DllCall("DeleteObject", "ptr", hbm),
          DllCall("DeleteDC",     "ptr", hdc)
-      }
+      )
 
-      buf := ImagePut.BitmapBuffer(pBits, 4 * image[3] * image[4], image[3], image[4])
-      buf.free := [Cleanup]
-      buf.Update := Update
-      buf.Update()
       return buf
    }
 
@@ -2523,7 +2524,7 @@ class ImagePut {
          DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap)
 
          ; Call the cleanup functions.
-         if HasMethod(this.free)
+         if HasMethod(this.free.call)
             this.free.call()
          if Type(this.free) = "Array"
             for callback in this.free
@@ -2588,6 +2589,14 @@ class ImagePut {
             start += 4,
             True))
          }
+      }
+
+      Update() {
+         if HasMethod(this.draw.call)
+            this.draw.call()
+         if Type(this.draw) = "Array"
+            for callback in this.draw
+               callback.call()
       }
 
       Frequency() {
