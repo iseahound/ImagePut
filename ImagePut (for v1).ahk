@@ -2466,15 +2466,19 @@ class ImagePut {
          this.height := height
          this.stride := size // height
          this.pBitmap := pBitmap
-
-         ; A series of callbacks to be called in order to free the memory.
-         this.free := []
       }
 
       __Delete() {
+         ; Dispose the GDI+ Bitmap and free the memory.
          DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap)
-         for callback in this.free
-            callback.call()
+
+         ; Call the cleanup functions.
+         if IsFunc(this.free)
+            this.free.call()
+         if IsObject(this.free) && this.free.length() > 0
+            for callback in this.free
+               callback.call()
+
          ImagePut.gdiplusShutdown()
       }
 
