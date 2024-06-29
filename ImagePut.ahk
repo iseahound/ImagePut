@@ -1282,28 +1282,16 @@ class ImagePut {
 
    static DirectX11ToBuffer() {
 
-      assert(statement, message) {
-         if !statement
-            throw ValueError(message, -1, statement)
-      }
-
       ; Load DirectX
-      assert IDXGIFactory := CreateDXGIFactory(), "Create IDXGIFactory failed."
+      DllCall("GetModuleHandle", "str", "DXGI") || DllCall("LoadLibrary", "str", "DXGI")
+      DllCall("GetModuleHandle", "str", "D3D11") || DllCall("LoadLibrary", "str", "D3D11")
 
-      CreateDXGIFactory() {
-         if !DllCall("GetModuleHandle", "str", "DXGI")
-            DllCall("LoadLibrary", "str", "DXGI")
-         if !DllCall("GetModuleHandle", "str", "D3D11")
-            DllCall("LoadLibrary", "str", "D3D11")
-
-         DllCall("ole32\IIDFromString", "wstr", "{770aae78-f26f-4dba-a829-253c83d1b387}", "ptr", IID_IDXGIFactory1 := Buffer(16), "hresult")
-         DllCall("DXGI\CreateDXGIFactory1", "ptr", IID_IDXGIFactory1, "ptr*", &IDXGIFactory1:=0, "hresult")
-         return IDXGIFactory1
-      }
+      DllCall("ole32\IIDFromString", "wstr", "{770aae78-f26f-4dba-a829-253c83d1b387}", "ptr", IID_IDXGIFactory1 := Buffer(16), "hresult")
+      DllCall("DXGI\CreateDXGIFactory1", "ptr", IID_IDXGIFactory1, "ptr*", &IDXGIFactory1:=0, "hresult")
 
       ; Get monitor?
       loop {
-         ComCall(EnumAdapters := 7, IDXGIFactory, "uint", A_Index-1, "ptr*", &IDXGIAdapter:=0)
+         ComCall(EnumAdapters := 7, IDXGIFactory1, "uint", A_Index-1, "ptr*", &IDXGIAdapter:=0)
 
          loop {
             try ComCall(EnumOutputs := 7, IDXGIAdapter, "uint", A_Index-1, "ptr*", &IDXGIOutput:=0)
@@ -1317,13 +1305,14 @@ class ImagePut {
             Height            := NumGet(DXGI_OUTPUT_DESC, 76, "int")
             AttachedToDesktop := NumGet(DXGI_OUTPUT_DESC, 80, "int")
             if (AttachedToDesktop = 1)
-               break 2
+               goto Direct3D11
          }
       }
 
       ; Ensure the desktop is connected.
-      assert AttachedToDesktop, "No adapter attached to desktop."
+      throw Error("No adapter attached to desktop.")
 
+      Direct3D11:
       ; Load direct3d
       DllCall("D3D11\D3D11CreateDevice"
                ,    "ptr", IDXGIAdapter                 ; pAdapter
@@ -1444,7 +1433,7 @@ class ImagePut {
          IDXGIOutput1 := ""
          ObjRelease(IDXGIOutput)
          ObjRelease(IDXGIAdapter)
-         ObjRelease(IDXGIFactory)
+         ObjRelease(IDXGIFactory1)
       }
 
       ; Get true virtual screen coordinates.
@@ -1462,7 +1451,7 @@ class ImagePut {
    }
 
    static Screenshot2ToBitmap(image) {
-      obj := this.read_screen()
+      obj := this.DirectX11ToBuffer()
 
       width := obj.width
       height := obj.height
