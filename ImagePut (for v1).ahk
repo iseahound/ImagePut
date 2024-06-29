@@ -217,9 +217,9 @@ class ImagePut {
       decode    := keywords.HasKey("decode")     ? keywords.decode    : this.decode
       render    := keywords.HasKey("render")     ? keywords.render    : this.render
       validate  := keywords.HasKey("validate")   ? keywords.validate  : this.validate
-      width     := keywords.HasProp("width") && keywords.width ~= "^(?!0+$)\d+$" ? keywords.width : ""
-      height    := keywords.HasProp("height") && keywords.height ~= "^(?!0+$)\d+$" ? keywords.height : ""
-
+      width     := keywords.HasKey("width") && keywords.width ~= "^(?!0+$)\d+$" ? keywords.width : ""
+      height    := keywords.HasKey("height") && keywords.height ~= "^(?!0+$)\d+$" ? keywords.height : ""
+msgbox % width ", " height
       ; Keywords are for (input -> intermediate).
       try index := keywords.index
 
