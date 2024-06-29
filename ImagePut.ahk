@@ -2503,7 +2503,7 @@ class ImagePut {
 
    class BitmapBuffer {
 
-      __New(ptr, size, width, height) {
+      __New(ptr, size, width, height) { ; Remember to set .free and .draw!
          ImagePut.gdiplusStartup()
 
          ; Create a source GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
