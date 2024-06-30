@@ -227,6 +227,12 @@ class ImagePut {
       if (type = "SharedBuffer" && cotype = "SharedBuffer")
          return this.SharedBufferToSharedBuffer(image)
 
+      if (type = "Monitor" && cotype = "Buffer")
+         return this.MonitorToBuffer(image)
+
+      if (type = "Screenshot" && cotype = "Buffer")
+         return this.ScreenshotToBuffer(image)
+
       cleanup := ""
 
       ; #1 - Stream as the intermediate representation.
@@ -1262,6 +1268,24 @@ class ImagePut {
       return pBitmap
    }
 
+   static MonitorToBuffer(image) {
+      try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+      if (image > 0) {
+         MonitorGet(image, &Left, &Top, &Right, &Bottom)
+         x := Left
+         y := Top
+         w := Right - Left
+         h := Bottom - Top
+      } else {
+         x := DllCall("GetSystemMetrics", "int", 76, "int")
+         y := DllCall("GetSystemMetrics", "int", 77, "int")
+         w := DllCall("GetSystemMetrics", "int", 78, "int")
+         h := DllCall("GetSystemMetrics", "int", 79, "int")
+      }
+      try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+      return this.ScreenshotToBuffer([x,y,w,h])
+   }
+
    static MonitorToBitmap(image) {
       try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
       if (image > 0) {
@@ -1278,6 +1302,128 @@ class ImagePut {
       }
       try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
       return this.ScreenshotToBitmap([x,y,w,h])
+   }
+
+   static ScreenshotToBuffer(image) {
+      ; Allow the image to be a window handle.
+      if !IsObject(image) and WinExist(image) {
+         try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+         WinGetClientPos &x, &y, &w, &h, image
+         try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+         image := [x, y, w, h]
+      }
+
+
+
+
+      ; Adjust coordinates relative to specified window.
+      if image.Has(5) and WinExist(image[5]) {
+         try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+         WinGetClientPos &xr, &yr,,, image[5]
+         try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+         image[1] += xr
+         image[2] += yr
+      }
+
+
+
+
+      ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
+      hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
+      bi := Buffer(40, 0)                    ; sizeof(bi) = 40
+         NumPut(  "uint",        40, bi,  0) ; Size
+         NumPut(   "int",  image[3], bi,  4) ; Width
+         NumPut(   "int", -image[4], bi,  8) ; Height - Negative so (0, 0) is top-left.
+         NumPut("ushort",         1, bi, 12) ; Planes
+         NumPut("ushort",        32, bi, 14) ; BitCount / BitsPerPixel
+      hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", bi, "uint", 0, "ptr*", &pBits:=0, "ptr", 0, "uint", 0, "ptr")
+      obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
+
+      ; Retrieve the device context for the screen.
+      sdc := DllCall("GetDC", "ptr", 0, "ptr")      
+
+      ; Wrap the pointer to the pixels in a buffer object.
+      buf := ImagePut.BitmapBuffer(pBits, 4 * image[3] * image[4], image[3], image[4])
+
+      ; Copies a portion of the screen to a new device context.
+      buf.draw := () => DllCall("gdi32\BitBlt"
+               , "ptr", hdc, "int", 0, "int", 0, "int", image[3], "int", image[4]
+               , "ptr", sdc, "int", image[1], "int", image[2], "uint", 0x00CC0020 | 0x40000000) ; SRCCOPY | CAPTUREBLT
+
+      ; Draw the first frame.
+      buf.Update()
+
+      ; Cleanup!
+      buf.free := () => (
+         ; Release the device context to the screen.
+         DllCall("ReleaseDC", "ptr", 0, "ptr", sdc),
+
+         ; Cleanup the hBitmap and device contexts.
+         DllCall("SelectObject", "ptr", hdc, "ptr", obm),
+         DllCall("DeleteObject", "ptr", hbm),
+         DllCall("DeleteDC",     "ptr", hdc)
+      )
+
+      return buf
+   }
+
+   static ScreenshotToBitmap(image) {
+      ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
+
+      ; Allow the image to be a window handle.
+      if !IsObject(image) and WinExist(image) {
+         try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+         WinGetClientPos &x, &y, &w, &h, image
+         try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+         image := [x, y, w, h]
+      }
+
+
+
+
+      ; Adjust coordinates relative to specified window.
+      if image.Has(5) and WinExist(image[5]) {
+         try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+         WinGetClientPos &xr, &yr,,, image[5]
+         try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+         image[1] += xr
+         image[2] += yr
+      }
+
+
+
+
+      ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
+      hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
+      bi := Buffer(40, 0)                    ; sizeof(bi) = 40
+         NumPut(  "uint",        40, bi,  0) ; Size
+         NumPut(   "int",  image[3], bi,  4) ; Width
+         NumPut(   "int", -image[4], bi,  8) ; Height - Negative so (0, 0) is top-left.
+         NumPut("ushort",         1, bi, 12) ; Planes
+         NumPut("ushort",        32, bi, 14) ; BitCount / BitsPerPixel
+      hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", bi, "uint", 0, "ptr*", &pBits:=0, "ptr", 0, "uint", 0, "ptr")
+      obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
+
+      ; Retrieve the device context for the screen.
+      sdc := DllCall("GetDC", "ptr", 0, "ptr")
+
+      ; Copies a portion of the screen to a new device context.
+      DllCall("gdi32\BitBlt"
+               , "ptr", hdc, "int", 0, "int", 0, "int", image[3], "int", image[4]
+               , "ptr", sdc, "int", image[1], "int", image[2], "uint", 0x00CC0020 | 0x40000000) ; SRCCOPY | CAPTUREBLT
+
+      ; Release the device context to the screen.
+      DllCall("ReleaseDC", "ptr", 0, "ptr", sdc)
+
+      ; Convert the hBitmap to a Bitmap using a built in function as there is no transparency.
+      DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", hbm, "ptr", 0, "ptr*", &pBitmap:=0)
+
+      ; Cleanup the hBitmap and device contexts.
+      DllCall("SelectObject", "ptr", hdc, "ptr", obm)
+      DllCall("DeleteObject", "ptr", hbm)
+      DllCall("DeleteDC",     "ptr", hdc)
+
+      return pBitmap
    }
 
    static DesktopDuplicationToBuffer(image) {
@@ -1443,7 +1589,7 @@ class ImagePut {
       }
 
       ; Get true virtual screen coordinates.
-      return {x:0, y:0, width: width,
+      return {width: width,
          height: height,
          Update: Update,
       Cleanup : Cleanup}.update() ; init ptr && size.
@@ -1477,128 +1623,6 @@ class ImagePut {
                ,    "int", 0xE200B      ; Buffer: Format32bppPArgb
                ,    "ptr", BitmapData)  ; Contains the pointer (pBits) to the Direct X bitmap???.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
-
-      return pBitmap
-   }
-
-   static ScreenshotToBuffer(image) {
-      ; Allow the image to be a window handle.
-      if !IsObject(image) and WinExist(image) {
-         try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
-         WinGetClientPos &x, &y, &w, &h, image
-         try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
-         image := [x, y, w, h]
-      }
-
-
-
-
-      ; Adjust coordinates relative to specified window.
-      if image.Has(5) and WinExist(image[5]) {
-         try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
-         WinGetClientPos &xr, &yr,,, image[5]
-         try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
-         image[1] += xr
-         image[2] += yr
-      }
-
-
-
-
-      ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
-      hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
-      bi := Buffer(40, 0)                    ; sizeof(bi) = 40
-         NumPut(  "uint",        40, bi,  0) ; Size
-         NumPut(   "int",  image[3], bi,  4) ; Width
-         NumPut(   "int", -image[4], bi,  8) ; Height - Negative so (0, 0) is top-left.
-         NumPut("ushort",         1, bi, 12) ; Planes
-         NumPut("ushort",        32, bi, 14) ; BitCount / BitsPerPixel
-      hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", bi, "uint", 0, "ptr*", &pBits:=0, "ptr", 0, "uint", 0, "ptr")
-      obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
-
-      ; Retrieve the device context for the screen.
-      sdc := DllCall("GetDC", "ptr", 0, "ptr")      
-
-      ; Wrap the pointer to the pixels in a buffer object.
-      buf := ImagePut.BitmapBuffer(pBits, 4 * image[3] * image[4], image[3], image[4])
-
-      ; Copies a portion of the screen to a new device context.
-      buf.draw := () => DllCall("gdi32\BitBlt"
-               , "ptr", hdc, "int", 0, "int", 0, "int", image[3], "int", image[4]
-               , "ptr", sdc, "int", image[1], "int", image[2], "uint", 0x00CC0020 | 0x40000000) ; SRCCOPY | CAPTUREBLT
-
-      ; Draw the first frame.
-      buf.Update()
-
-      ; Cleanup!
-      buf.free := () => (
-         ; Release the device context to the screen.
-         DllCall("ReleaseDC", "ptr", 0, "ptr", sdc),
-
-         ; Cleanup the hBitmap and device contexts.
-         DllCall("SelectObject", "ptr", hdc, "ptr", obm),
-         DllCall("DeleteObject", "ptr", hbm),
-         DllCall("DeleteDC",     "ptr", hdc)
-      )
-
-      return buf
-   }
-
-   static ScreenshotToBitmap(image) {
-      ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
-
-      ; Allow the image to be a window handle.
-      if !IsObject(image) and WinExist(image) {
-         try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
-         WinGetClientPos &x, &y, &w, &h, image
-         try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
-         image := [x, y, w, h]
-      }
-
-
-
-
-      ; Adjust coordinates relative to specified window.
-      if image.Has(5) and WinExist(image[5]) {
-         try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
-         WinGetClientPos &xr, &yr,,, image[5]
-         try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
-         image[1] += xr
-         image[2] += yr
-      }
-
-
-
-
-      ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
-      hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
-      bi := Buffer(40, 0)                    ; sizeof(bi) = 40
-         NumPut(  "uint",        40, bi,  0) ; Size
-         NumPut(   "int",  image[3], bi,  4) ; Width
-         NumPut(   "int", -image[4], bi,  8) ; Height - Negative so (0, 0) is top-left.
-         NumPut("ushort",         1, bi, 12) ; Planes
-         NumPut("ushort",        32, bi, 14) ; BitCount / BitsPerPixel
-      hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", bi, "uint", 0, "ptr*", &pBits:=0, "ptr", 0, "uint", 0, "ptr")
-      obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
-
-      ; Retrieve the device context for the screen.
-      sdc := DllCall("GetDC", "ptr", 0, "ptr")
-
-      ; Copies a portion of the screen to a new device context.
-      DllCall("gdi32\BitBlt"
-               , "ptr", hdc, "int", 0, "int", 0, "int", image[3], "int", image[4]
-               , "ptr", sdc, "int", image[1], "int", image[2], "uint", 0x00CC0020 | 0x40000000) ; SRCCOPY | CAPTUREBLT
-
-      ; Release the device context to the screen.
-      DllCall("ReleaseDC", "ptr", 0, "ptr", sdc)
-
-      ; Convert the hBitmap to a Bitmap using a built in function as there is no transparency.
-      DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "ptr", hbm, "ptr", 0, "ptr*", &pBitmap:=0)
-
-      ; Cleanup the hBitmap and device contexts.
-      DllCall("SelectObject", "ptr", hdc, "ptr", obm)
-      DllCall("DeleteObject", "ptr", hbm)
-      DllCall("DeleteDC",     "ptr", hdc)
 
       return pBitmap
    }
