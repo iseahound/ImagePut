@@ -1280,31 +1280,32 @@ class ImagePut {
       return this.ScreenshotToBitmap([x,y,w,h])
    }
 
-   static DirectX11ToBuffer() {
+   static DesktopDuplicationToBuffer(image) {
 
-      ; Load DirectX
+      ; A correct monitor name must look like: \\.\DISPLAY1
+      if image ~= "^(?!0+$)\d+$"
+         image := MonitorGetName(image)
+
+      ; Load DirectX Graphics Infrastructure 1.2 and Direct3D 11.
       DllCall("GetModuleHandle", "str", "DXGI") || DllCall("LoadLibrary", "str", "DXGI")
       DllCall("GetModuleHandle", "str", "D3D11") || DllCall("LoadLibrary", "str", "D3D11")
 
+      ; Create a DXGI factory.
       DllCall("ole32\IIDFromString", "wstr", "{770aae78-f26f-4dba-a829-253c83d1b387}", "ptr", IID_IDXGIFactory1 := Buffer(16), "hresult")
-      DllCall("DXGI\CreateDXGIFactory1", "ptr", IID_IDXGIFactory1, "ptr*", &IDXGIFactory1:=0, "hresult")
+      DllCall("dxgi\CreateDXGIFactory1", "ptr", IID_IDXGIFactory1, "ptr*", &IDXGIFactory1:=0, "hresult")
 
       ; Get monitor?
-      loop {
-         ComCall(EnumAdapters := 7, IDXGIFactory1, "uint", A_Index-1, "ptr*", &IDXGIAdapter:=0)
+      while (0x887A0002 != ComCall(EnumAdapters := 7, IDXGIFactory1, "uint", A_Index-1, "ptr*", &IDXGIAdapter:=0, "uint")) {
+         ;ComCall(GetDesc := 8, IDXGIAdapter, "ptr", DXGI_OUTPUT_DESC := Buffer(4000))
+         ;   MsgBox StrGet(DXGI_OUTPUT_DESC, 128, "UTF-16")
 
-         loop {
-            try ComCall(EnumOutputs := 7, IDXGIAdapter, "uint", A_Index-1, "ptr*", &IDXGIOutput:=0)
-            catch OSError as e
-               if e.number = 0x887A0002 ; DXGI_ERROR_NOT_FOUND
-                  break
-               else throw
-
-            ComCall(GetDesc := 7, IDXGIOutput, "ptr", DXGI_OUTPUT_DESC := Buffer(88+A_PtrSize, 0))
-            Width             := NumGet(DXGI_OUTPUT_DESC, 72, "int")
-            Height            := NumGet(DXGI_OUTPUT_DESC, 76, "int")
-            AttachedToDesktop := NumGet(DXGI_OUTPUT_DESC, 80, "int")
-            if (AttachedToDesktop = 1)
+         while (0x887A0002 != ComCall(EnumOutputs := 7, IDXGIAdapter, "uint", A_Index-1, "ptr*", &IDXGIOutput:=0, "uint")) {
+            ComCall(GetDesc := 7, IDXGIOutput, "ptr", DXGI_OUTPUT_DESC := Buffer(88+A_PtrSize))
+               DeviceName        := StrGet(DXGI_OUTPUT_DESC, 32, "UTF-16")
+               Width             := NumGet(DXGI_OUTPUT_DESC, 72, "int")
+               Height            := NumGet(DXGI_OUTPUT_DESC, 76, "int")
+               AttachedToDesktop := NumGet(DXGI_OUTPUT_DESC, 80, "int")
+            if (AttachedToDesktop = 1 && DeviceName = image)
                goto Direct3D11
          }
       }
@@ -1437,21 +1438,14 @@ class ImagePut {
       }
 
       ; Get true virtual screen coordinates.
-      try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
-      x := DllCall("GetSystemMetrics", "int", 76, "int")
-      y := DllCall("GetSystemMetrics", "int", 77, "int")
-      width := DllCall("GetSystemMetrics", "int", 78, "int")
-      height := DllCall("GetSystemMetrics", "int", 79, "int")
-      try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
-
-      return {x:x, y:y, width: width,
+      return {x:0, y:0, width: width,
          height: height,
          Update: Update,
       Cleanup : Cleanup}.update() ; init ptr && size.
    }
 
    static Screenshot2ToBitmap(image) {
-      obj := this.DirectX11ToBuffer()
+      obj := this.DesktopDuplicationToBuffer(image)
 
       width := obj.width
       height := obj.height
