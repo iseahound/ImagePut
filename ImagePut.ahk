@@ -1305,13 +1305,18 @@ class ImagePut {
                Width             := NumGet(DXGI_OUTPUT_DESC, 72, "int")
                Height            := NumGet(DXGI_OUTPUT_DESC, 76, "int")
                AttachedToDesktop := NumGet(DXGI_OUTPUT_DESC, 80, "int")
+
+            ; Match the specified monitor with its gpu adapter.
             if (AttachedToDesktop = 1 && DeviceName = image)
                goto Direct3D11
-         }
-      }
 
-      ; Ensure the desktop is connected.
-      throw Error("No adapter attached to desktop.")
+            ObjRelease(IDXGIOutput)
+         }
+         ObjRelease(IDXGIAdapter)
+      }
+      throw Error("Could not find a matching adapter for the Desktop Duplication API."
+         . "`n" . "Note that only one Desktop Duplication can be active per process."
+         . "`n" . "For laptops with hybrid graphics this process must be using the same GPU as the display.")
 
       Direct3D11:
       ; Load direct3d
@@ -1328,12 +1333,12 @@ class ImagePut {
                ,   "ptr*", &d3d_context:=0              ; ppImmediateContext
                ,"hresult")
 
-      ; Retrieve the desktop duplication API
+      ; Retrieve the desktop duplication API. Requires DXGI 1.2 or higher to cast to IDXGIOutput1.
       IDXGIOutput1 := ComObjQuery(IDXGIOutput, "{00cddea8-939b-4b83-a340-a685226666cc}")
-      ComCall(DuplicateOutput := 22, IDXGIOutput1, "ptr", d3d_device, "ptr*", &Duplication:=0)
-      ComCall(GetDesc := 7, Duplication, "ptr", DXGI_OUTDUPL_DESC := Buffer(36, 0))
+      ComCall(DuplicateOutput := 22, IDXGIOutput1, "ptr", d3d_device, "ptr*", &IDXGIOutputDuplication:=0)
+      ComCall(GetDesc := 7, IDXGIOutputDuplication, "ptr", DXGI_OUTDUPL_DESC := Buffer(36))
       DesktopImageInSystemMemory := NumGet(DXGI_OUTDUPL_DESC, 32, "uint")
-      Sleep 50   ; As I understand - need some sleep for successful connecting to IDXGIOutputDuplication interface
+      ; Sleep 50   ; As I understand - need some sleep for successful connecting to IDXGIOutputDuplication interface
 
       ; Create the texture onto which the desktop will be copied to.
       D3D11_TEXTURE2D_DESC := Buffer(44, 0)
@@ -1365,7 +1370,7 @@ class ImagePut {
             ; The following loop structure repeatedly checks for a new frame.
             loop {
                ; Ask if there is a new frame available immediately.
-               try ComCall(AcquireNextFrame := 8, Duplication, "uint", 0, "ptr", DXGI_OUTDUPL_FRAME_INFO, "ptr*", &desktop_resource:=0)
+               try ComCall(AcquireNextFrame := 8, IDXGIOutputDuplication, "uint", 0, "ptr", DXGI_OUTDUPL_FRAME_INFO, "ptr*", &desktop_resource:=0)
                catch OSError as e
                   if e.number = 0x887A0027 ; DXGI_ERROR_WAIT_TIMEOUT
                      continue
@@ -1377,10 +1382,10 @@ class ImagePut {
 
                ; Continue the loop by releasing resources.
                ObjRelease(desktop_resource)
-               ComCall(ReleaseFrame := 14, Duplication)
+               ComCall(ReleaseFrame := 14, IDXGIOutputDuplication)
             }
          } else {
-            try ComCall(AcquireNextFrame := 8, Duplication, "uint", timeout, "ptr", DXGI_OUTDUPL_FRAME_INFO, "ptr*", &desktop_resource:=0)
+            try ComCall(AcquireNextFrame := 8, IDXGIOutputDuplication, "uint", timeout, "ptr", DXGI_OUTDUPL_FRAME_INFO, "ptr*", &desktop_resource:=0)
             catch OSError as e
                if e.number = 0x887A0027 ; DXGI_ERROR_WAIT_TIMEOUT
                   return this ; Remember to enable method chaining.
@@ -1393,7 +1398,7 @@ class ImagePut {
          ; map new resources.
          if (DesktopImageInSystemMemory = 1) {
             static DXGI_MAPPED_RECT := Buffer(A_PtrSize*2, 0)
-            ComCall(MapDesktopSurface := 12, Duplication, "ptr", DXGI_MAPPED_RECT)
+            ComCall(MapDesktopSurface := 12, IDXGIOutputDuplication, "ptr", DXGI_MAPPED_RECT)
             pitch := NumGet(DXGI_MAPPED_RECT, 0, "int")
             pBits := NumGet(DXGI_MAPPED_RECT, A_PtrSize, "ptr")
          }
@@ -1416,19 +1421,19 @@ class ImagePut {
       Unbind() {
          if IsSet(desktop_resource) && desktop_resource != 0 {
             if (DesktopImageInSystemMemory = 1)
-               ComCall(UnMapDesktopSurface := 13, Duplication)
+               ComCall(UnMapDesktopSurface := 13, IDXGIOutputDuplication)
             else
                ComCall(Unmap := 15, d3d_context, "ptr", staging_tex, "uint", 0)
 
             ObjRelease(desktop_resource)
-            ComCall(ReleaseFrame := 14, Duplication)
+            ComCall(ReleaseFrame := 14, IDXGIOutputDuplication)
          }
       }
 
       Cleanup(this) {
          Unbind()
          ObjRelease(staging_tex)
-         ObjRelease(duplication)
+         ObjRelease(IDXGIOutputDuplication)
          ObjRelease(d3d_context)
          ObjRelease(d3d_device)
          IDXGIOutput1 := ""
