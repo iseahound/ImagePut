@@ -1432,7 +1432,7 @@ class ImagePut {
       if image ~= "^(?!0+$)\d+$"
          image := MonitorGetName(image)
 
-      ; Load DirectX Graphics Infrastructure 1.2 and Direct3D 11.
+      ; Load DirectX Graphics Infrastructure 1.2+ and Direct3D 11.
       DllCall("GetModuleHandle", "str", "DXGI") || DllCall("LoadLibrary", "str", "DXGI")
       DllCall("GetModuleHandle", "str", "D3D11") || DllCall("LoadLibrary", "str", "D3D11")
 
@@ -1440,21 +1440,18 @@ class ImagePut {
       DllCall("ole32\IIDFromString", "wstr", "{770aae78-f26f-4dba-a829-253c83d1b387}", "ptr", IID_IDXGIFactory1 := Buffer(16), "hresult")
       DllCall("dxgi\CreateDXGIFactory1", "ptr", IID_IDXGIFactory1, "ptr*", &IDXGIFactory1:=0, "hresult")
 
-      ; Get monitor?
+      ; Find the correct adapter attached to the specified monitor. DXGI_ERROR_NOT_FOUND = 0x887A0002
       while (0x887A0002 != ComCall(EnumAdapters := 7, IDXGIFactory1, "uint", A_Index-1, "ptr*", &IDXGIAdapter:=0, "uint")) {
-         ;ComCall(GetDesc := 8, IDXGIAdapter, "ptr", DXGI_OUTPUT_DESC := Buffer(4000))
-         ;   MsgBox StrGet(DXGI_OUTPUT_DESC, 128, "UTF-16")
-
          while (0x887A0002 != ComCall(EnumOutputs := 7, IDXGIAdapter, "uint", A_Index-1, "ptr*", &IDXGIOutput:=0, "uint")) {
+
+            ; Get the description of the adapter output.
             ComCall(GetDesc := 7, IDXGIOutput, "ptr", DXGI_OUTPUT_DESC := Buffer(88+A_PtrSize))
                DeviceName        := StrGet(DXGI_OUTPUT_DESC, 32, "UTF-16")
-               Width             := NumGet(DXGI_OUTPUT_DESC, 72, "int")
-               Height            := NumGet(DXGI_OUTPUT_DESC, 76, "int")
                AttachedToDesktop := NumGet(DXGI_OUTPUT_DESC, 80, "int")
 
             ; Match the specified monitor with its gpu adapter.
             if (AttachedToDesktop = 1 && DeviceName = image)
-               goto Direct3D11
+               goto AdapterFound
 
             ObjRelease(IDXGIOutput)
          }
@@ -1464,8 +1461,8 @@ class ImagePut {
          . "`n" . "Note that only one Desktop Duplication can be active per process."
          . "`n" . "For laptops with hybrid graphics this process must be using the same GPU as the display.")
 
-      Direct3D11:
-      ; Load direct3d
+      AdapterFound:
+      ; Creates a device that represents the display adapter.
       DllCall("D3D11\D3D11CreateDevice"
                ,    "ptr", IDXGIAdapter                 ; pAdapter
                ,    "int", D3D_DRIVER_TYPE_UNKNOWN := 0 ; DriverType
@@ -1474,19 +1471,23 @@ class ImagePut {
                ,    "ptr", 0                            ; pFeatureLevels
                ,   "uint", 0                            ; FeatureLevels
                ,   "uint", D3D11_SDK_VERSION := 7       ; SDKVersion
-               ,   "ptr*", &d3d_device:=0               ; ppDevice
+               ,   "ptr*", &ID3D11Device:=0             ; ppDevice
                ,   "ptr*", 0                            ; pFeatureLevel
-               ,   "ptr*", &d3d_context:=0              ; ppImmediateContext
+               ,   "ptr*", &ID3D11DeviceContext:=0      ; ppImmediateContext
                ,"hresult")
 
-      ; Retrieve the desktop duplication API. Requires DXGI 1.2 or higher to cast to IDXGIOutput1.
+      ; Cast to IDXGIOutput1 to access the Desktop Duplication API.
       IDXGIOutput1 := ComObjQuery(IDXGIOutput, "{00cddea8-939b-4b83-a340-a685226666cc}")
-      ComCall(DuplicateOutput := 22, IDXGIOutput1, "ptr", d3d_device, "ptr*", &IDXGIOutputDuplication:=0)
+      ComCall(DuplicateOutput := 22, IDXGIOutput1, "ptr", ID3D11Device, "ptr*", &IDXGIOutputDuplication:=0)
+
+      ; Get the description of the output. Currently doesn't account for rotation of the monitor...
       ComCall(GetDesc := 7, IDXGIOutputDuplication, "ptr", DXGI_OUTDUPL_DESC := Buffer(36))
-      DesktopImageInSystemMemory := NumGet(DXGI_OUTDUPL_DESC, 32, "uint")
+         width := NumGet(DXGI_OUTDUPL_DESC,  0, "uint")
+         height := NumGet(DXGI_OUTDUPL_DESC,  4, "uint")
+         DesktopImageInSystemMemory := NumGet(DXGI_OUTDUPL_DESC, 32, "uint")
       ; Sleep 50   ; As I understand - need some sleep for successful connecting to IDXGIOutputDuplication interface
 
-      ; Create the texture onto which the desktop will be copied to.
+      ; Creates a CPU accessable texture, also known as a staging texture.
       D3D11_TEXTURE2D_DESC := Buffer(44, 0)
          NumPut("uint",                            width, D3D11_TEXTURE2D_DESC,  0)   ; Width
          NumPut("uint",                           height, D3D11_TEXTURE2D_DESC,  4)   ; Height
@@ -1499,8 +1500,11 @@ class ImagePut {
          NumPut("uint",                                0, D3D11_TEXTURE2D_DESC, 32)   ; BindFlags
          NumPut("uint", D3D11_CPU_ACCESS_READ := 0x20000, D3D11_TEXTURE2D_DESC, 36)   ; CPUAccessFlags
          NumPut("uint",                                0, D3D11_TEXTURE2D_DESC, 40)   ; MiscFlags
-      ComCall(CreateTexture2D := 5, d3d_device, "ptr", D3D11_TEXTURE2D_DESC, "ptr", 0, "ptr*", &staging_tex:=0)
+      ComCall(CreateTexture2D := 5, ID3D11Device, "ptr", D3D11_TEXTURE2D_DESC, "ptr", 0, "ptr*", &staging_texture:=0)
 
+
+      ; Allocate a shared buffer for all calls of AcquireNextFrame.
+      DXGI_OUTDUPL_FRAME_INFO := Buffer(48)
 
       ; Persist the concept of a desktop_resource as a closure???
       local desktop_resource
@@ -1508,9 +1512,6 @@ class ImagePut {
       Update(this, timeout := unset) {
          ; Unbind resources.
          Unbind()
-
-         ; Allocate a shared buffer for all calls of AcquireNextFrame.
-         static DXGI_OUTDUPL_FRAME_INFO := Buffer(48, 0)
 
          if !IsSet(timeout) {
             ; The following loop structure repeatedly checks for a new frame.
@@ -1524,7 +1525,7 @@ class ImagePut {
 
                ; Exclude mouse movement events by ensuring LastPresentTime is greater than zero.
                if NumGet(DXGI_OUTDUPL_FRAME_INFO, 0, "int64") > 0
-                  break
+                  goto FrameAcquired
 
                ; Continue the loop by releasing resources.
                ObjRelease(desktop_resource)
@@ -1541,6 +1542,7 @@ class ImagePut {
                return this ; Remember to enable method chaining.
          }
 
+         FrameAcquired:
          ; map new resources.
          if (DesktopImageInSystemMemory = 1) {
             static DXGI_MAPPED_RECT := Buffer(A_PtrSize*2, 0)
@@ -1550,9 +1552,9 @@ class ImagePut {
          }
          else {
             tex := ComObjQuery(desktop_resource, "{6f15aaf2-d208-4e89-9ab4-489535d34f9c}") ; ID3D11Texture2D
-            ComCall(CopyResource := 47, d3d_context, "ptr", staging_tex, "ptr", tex)
+            ComCall(CopyResource := 47, ID3D11DeviceContext, "ptr", staging_texture, "ptr", tex)
             static D3D11_MAPPED_SUBRESOURCE := Buffer(8+A_PtrSize, 0)
-            ComCall(_Map := 14, d3d_context, "ptr", staging_tex, "uint", 0, "uint", D3D11_MAP_READ := 1, "uint", 0, "ptr", D3D11_MAPPED_SUBRESOURCE)
+            ComCall(_Map := 14, ID3D11DeviceContext, "ptr", staging_texture, "uint", 0, "uint", D3D11_MAP_READ := 1, "uint", 0, "ptr", D3D11_MAPPED_SUBRESOURCE)
             pBits := NumGet(D3D11_MAPPED_SUBRESOURCE, 0, "ptr")
             pitch := NumGet(D3D11_MAPPED_SUBRESOURCE, A_PtrSize, "uint")
          }
@@ -1569,7 +1571,7 @@ class ImagePut {
             if (DesktopImageInSystemMemory = 1)
                ComCall(UnMapDesktopSurface := 13, IDXGIOutputDuplication)
             else
-               ComCall(Unmap := 15, d3d_context, "ptr", staging_tex, "uint", 0)
+               ComCall(Unmap := 15, ID3D11DeviceContext, "ptr", staging_texture, "uint", 0)
 
             ObjRelease(desktop_resource)
             ComCall(ReleaseFrame := 14, IDXGIOutputDuplication)
@@ -1578,10 +1580,10 @@ class ImagePut {
 
       Cleanup(this) {
          Unbind()
-         ObjRelease(staging_tex)
+         ObjRelease(staging_texture)
          ObjRelease(IDXGIOutputDuplication)
-         ObjRelease(d3d_context)
-         ObjRelease(d3d_device)
+         ObjRelease(ID3D11DeviceContext)
+         ObjRelease(ID3D11Device)
          IDXGIOutput1 := ""
          ObjRelease(IDXGIOutput)
          ObjRelease(IDXGIAdapter)
