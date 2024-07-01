@@ -227,6 +227,12 @@ class ImagePut {
       if (type = "SharedBuffer" && cotype = "SharedBuffer")
          return this.SharedBufferToSharedBuffer(image)
 
+      if (type = "Monitor" && cotype = "Buffer")
+         return this.MonitorToBuffer(image)
+
+      if (type = "Screenshot" && cotype = "Buffer")
+         return this.ScreenshotToBuffer(image)
+
       cleanup := ""
 
       ; #1 - Stream as the intermediate representation.
@@ -1262,6 +1268,24 @@ class ImagePut {
       return pBitmap
    }
 
+   MonitorToBuffer(image) {
+      try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
+      if (image > 0) {
+         SysGet _, Monitor, % image
+         x := _Left
+         y := _Top
+         w := _Right - _Left
+         h := _Bottom - _Top
+      } else {
+         x := DllCall("GetSystemMetrics", "int", 76, "int")
+         y := DllCall("GetSystemMetrics", "int", 77, "int")
+         w := DllCall("GetSystemMetrics", "int", 78, "int")
+         h := DllCall("GetSystemMetrics", "int", 79, "int")
+      }
+      try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
+      return this.ScreenshotToBuffer([x,y,w,h])
+   }
+
    MonitorToBitmap(image) {
       try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
       if (image > 0) {
@@ -1279,208 +1303,6 @@ class ImagePut {
       try DllCall("SetThreadDpiAwarenessContext", "ptr", dpi, "ptr")
       return this.ScreenshotToBitmap([x,y,w,h])
    }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
    ScreenshotToBuffer(image) {
       ; Allow the image to be a window handle.
@@ -1602,6 +1424,10 @@ class ImagePut {
       DllCall("DeleteDC",     "ptr", hdc)
 
       return pBitmap
+   }
+
+   DesktopDuplicationToBuffer(image) {
+
    }
 
    WindowToBitmap(image) {
@@ -2590,6 +2416,15 @@ class ImagePut {
 
 
 
+      ; (1) You MUST manually free any hanging resources.
+      ; (2) Then you MUST overwrite this.free with a new set of cleanup functions.
+      Renew(ptr) {
+         DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap)
+         DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.width, "int", this.height
+            , "int", this.stride, "int", 0x26200A, "ptr", ptr, "ptr*", pBitmap:=0)
+         this.ptr := ptr
+         this.pBitmap := pBitmap
+      }
 
       Update() {
          if IsFunc(this.draw.call)

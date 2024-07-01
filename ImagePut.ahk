@@ -2543,16 +2543,8 @@ class ImagePut {
       }
 
       __Delete() {
-         ; Dispose the GDI+ Bitmap and free the memory.
          DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap)
-
-         ; Call the cleanup functions.
-         if HasMethod(this.free.call)
-            this.free.call()
-         if Type(this.free) = "Array"
-            for callback in this.free
-               callback.call()
-
+         this.Cleanup()
          ImagePut.gdiplusShutdown()
       }
 
@@ -2612,6 +2604,24 @@ class ImagePut {
             start += 4,
             True))
          }
+      }
+
+      ; (1) You MUST manually free any hanging resources.
+      ; (2) Then you MUST overwrite this.free with a new set of cleanup functions.
+      Renew(ptr) {
+         DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap)
+         DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.width, "int", this.height
+            , "int", this.stride, "int", 0x26200A, "ptr", ptr, "ptr*", &pBitmap:=0)
+         this.ptr := ptr
+         this.pBitmap := pBitmap
+      }
+
+      Cleanup() {
+         if HasMethod(this.free.call)
+            this.free.call()
+         if Type(this.free) = "Array"
+            for callback in this.free
+               callback.call()
       }
 
       Update() {
