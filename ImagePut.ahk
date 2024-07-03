@@ -1509,6 +1509,8 @@ class ImagePut {
       ; Persist the concept of a desktop_resource as a closure???
       local desktop_resource
 
+      buf := ImagePut.BitmapBuffer(0, 0, width, height)
+
       Update(this, timeout := unset) {
          ; Unbind resources.
          Unbind()
@@ -1535,11 +1537,11 @@ class ImagePut {
             try ComCall(AcquireNextFrame := 8, IDXGIOutputDuplication, "uint", timeout, "ptr", DXGI_OUTDUPL_FRAME_INFO, "ptr*", &desktop_resource:=0)
             catch OSError as e
                if e.number = 0x887A0027 ; DXGI_ERROR_WAIT_TIMEOUT
-                  return this ; Remember to enable method chaining.
+                  return
                else throw
 
             if NumGet(DXGI_OUTDUPL_FRAME_INFO, 0, "int64") = 0
-               return this ; Remember to enable method chaining.
+               return
          }
 
          FrameAcquired:
@@ -1559,12 +1561,10 @@ class ImagePut {
             pitch := NumGet(D3D11_MAPPED_SUBRESOURCE, A_PtrSize, "uint")
          }
 
-         this.ptr := pBits
-         this.size := pitch * height
-
-         ; Remember to enable method chaining.
-         return this
+         this.Renew(pBits, pitch * height)
       }
+      
+      buf.Update := Update
 
       Unbind() {
          if IsSet(desktop_resource) && desktop_resource != 0 {
@@ -1590,11 +1590,10 @@ class ImagePut {
          ObjRelease(IDXGIFactory1)
       }
 
-      ; Get true virtual screen coordinates.
-      return {width: width,
-         height: height,
-         Update: Update,
-      Cleanup : Cleanup}.update() ; init ptr && size.
+      buf.Cleanup := Cleanup
+      buf.Update()
+
+      return buf
    }
 
    static Screenshot2ToBitmap(image) {
@@ -2550,6 +2549,24 @@ class ImagePut {
          ImagePut.gdiplusShutdown()
       }
 
+      __Call(name, p) {
+         if (name = "Cleanup") {
+            if HasMethod(this.free.call)
+               this.free.call()
+            if Type(this.free) = "Array"
+               for callback in this.free
+                  callback.call()
+         }
+   
+         if (name = "Update") {
+            if HasMethod(this.draw.call)
+               this.draw.call()
+            if Type(this.draw) = "Array"
+               for callback in this.draw
+                  callback.call()
+         }
+      }
+
       __Item[x, y] {
          get => Format("0x{:08X}", NumGet(this.ptr + 4*(y*this.width + x), "uint"))
          set => ((value >> 24) || value |= 0xFF000000,
@@ -2610,28 +2627,14 @@ class ImagePut {
 
       ; (1) You MUST manually free any hanging resources.
       ; (2) Then you MUST overwrite this.free with a new set of cleanup functions.
-      Renew(ptr) {
+      Renew(ptr, size := "") {
+         (size) || size := this.size
          DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap)
          DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.width, "int", this.height
-            , "int", this.stride, "int", 0x26200A, "ptr", ptr, "ptr*", &pBitmap:=0)
+            , "int", size // this.height, "int", 0x26200A, "ptr", ptr, "ptr*", &pBitmap:=0)
          this.ptr := ptr
+         this.size := size
          this.pBitmap := pBitmap
-      }
-
-      Cleanup() {
-         if HasMethod(this.free.call)
-            this.free.call()
-         if Type(this.free) = "Array"
-            for callback in this.free
-               callback.call()
-      }
-
-      Update() {
-         if HasMethod(this.draw.call)
-            this.draw.call()
-         if Type(this.draw) = "Array"
-            for callback in this.draw
-               callback.call()
       }
 
       Frequency() {
