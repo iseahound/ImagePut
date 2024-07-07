@@ -2213,7 +2213,6 @@ class ImagePut {
    }
 
    BitmapToEncodedBuffer(pBitmap, extension := "", quality := "") {
-      ; Defaults to PNG for small sizes!
       stream := this.BitmapToStream(pBitmap, extension, quality) ; Defaults to PNG for small sizes!
 
       ; Get a pointer to binary data.

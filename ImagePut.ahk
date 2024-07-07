@@ -1537,11 +1537,11 @@ class ImagePut {
             try ComCall(AcquireNextFrame := 8, IDXGIOutputDuplication, "uint", timeout, "ptr", DXGI_OUTDUPL_FRAME_INFO, "ptr*", &desktop_resource:=0)
             catch OSError as e
                if e.number = 0x887A0027 ; DXGI_ERROR_WAIT_TIMEOUT
-                  return
+                  return this
                else throw
 
             if NumGet(DXGI_OUTDUPL_FRAME_INFO, 0, "int64") = 0
-               return
+               return this
          }
 
          FrameAcquired:
@@ -1562,6 +1562,7 @@ class ImagePut {
          }
 
          this.Renew(pBits, pitch * height)
+         return this
       }
       
       buf.Update := Update
@@ -2564,6 +2565,7 @@ class ImagePut {
             if Type(this.draw) = "Array"
                for callback in this.draw
                   callback.call()
+            return this
          }
       }
 
