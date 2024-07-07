@@ -1211,7 +1211,7 @@ class ImagePut {
                ,    "ptr", rect
                ,   "uint", 6            ; ImageLockMode.UserInputBuffer | ImageLockMode.WriteOnly
                ,    "int", 0x26200A     ; Buffer: Format32bppArgb
-               ,    "ptr", BitmapData)  ; Contains the pointer (ptr) to the IWICBitmap.
+               ,    "ptr", BitmapData)  ; Contains the pointer (ptr) to the FileMapping.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
 
       DllCall("UnmapViewOfFile", "ptr", pMap)
@@ -1459,7 +1459,7 @@ class ImagePut {
       }
       throw Error("Could not find a matching adapter for the Desktop Duplication API."
          . "`n" . "Note that only one Desktop Duplication can be active per process."
-         . "`n" . "For laptops with hybrid graphics this process must be using the same GPU as the display.")
+         . "`n" . "Laptops with hybrid graphics must have this process be running on the same GPU as the display.")
 
       AdapterFound:
       ; Creates a device that represents the display adapter.
@@ -1487,7 +1487,7 @@ class ImagePut {
          DesktopImageInSystemMemory := NumGet(DXGI_OUTDUPL_DESC, 32, "uint")
       ; Sleep 50   ; As I understand - need some sleep for successful connecting to IDXGIOutputDuplication interface
 
-      ; Creates a CPU accessable texture, also known as a staging texture.
+      ; Creates a CPU accessable texture called as a staging texture.
       D3D11_TEXTURE2D_DESC := Buffer(44, 0)
          NumPut("uint",                            width, D3D11_TEXTURE2D_DESC,  0)   ; Width
          NumPut("uint",                           height, D3D11_TEXTURE2D_DESC,  4)   ; Height
@@ -1515,37 +1515,33 @@ class ImagePut {
          ; Unbind resources.
          Unbind()
 
-         if !IsSet(timeout) {
-            ; The following loop structure repeatedly checks for a new frame.
-            loop {
-               ; Ask if there is a new frame available immediately.
-               try ComCall(AcquireNextFrame := 8, IDXGIOutputDuplication, "uint", 0, "ptr", DXGI_OUTDUPL_FRAME_INFO, "ptr*", &desktop_resource:=0)
-               catch OSError as e
-                  if e.number = 0x887A0027 ; DXGI_ERROR_WAIT_TIMEOUT
-                     continue
-                  else throw
-
-               ; Exclude mouse movement events by ensuring LastPresentTime is greater than zero.
-               if NumGet(DXGI_OUTDUPL_FRAME_INFO, 0, "int64") > 0
-                  goto FrameAcquired
-
-               ; Continue the loop by releasing resources.
-               ObjRelease(desktop_resource)
-               ComCall(ReleaseFrame := 14, IDXGIOutputDuplication)
-            }
-         } else {
-            try ComCall(AcquireNextFrame := 8, IDXGIOutputDuplication, "uint", timeout, "ptr", DXGI_OUTDUPL_FRAME_INFO, "ptr*", &desktop_resource:=0)
+         ; The following loop structure repeatedly checks for a new frame.
+         loop {
+            ; Ask if there is a new frame available immediately.
+            try ComCall(AcquireNextFrame := 8, IDXGIOutputDuplication, "uint", 0, "ptr", DXGI_OUTDUPL_FRAME_INFO, "ptr*", &desktop_resource:=0)
             catch OSError as e
                if e.number = 0x887A0027 ; DXGI_ERROR_WAIT_TIMEOUT
-                  return this
+                  if IsSet(timeout)
+                     return this
+                  else
+                     continue
                else throw
 
-            if NumGet(DXGI_OUTDUPL_FRAME_INFO, 0, "int64") = 0
+            ; Exclude mouse movement events by ensuring LastPresentTime is greater than zero.
+            if NumGet(DXGI_OUTDUPL_FRAME_INFO, 0, "int64") > 0
+               goto FrameAcquired
+
+            ; If the frame is not new, return the existing frame when a timeout is set.
+            else if IsSet(timeout)
                return this
+
+            ; Otherwise, continue the loop to search for a new frame.
+            ObjRelease(desktop_resource)
+            ComCall(ReleaseFrame := 14, IDXGIOutputDuplication)
          }
 
          FrameAcquired:
-         ; map new resources.
+         ; Maybe the laptop uses a unified RAM for the CPU and the GPU?
          if (DesktopImageInSystemMemory = 1) {
             static DXGI_MAPPED_RECT := Buffer(A_PtrSize*2, 0)
             ComCall(MapDesktopSurface := 12, IDXGIOutputDuplication, "ptr", DXGI_MAPPED_RECT)
@@ -1563,7 +1559,7 @@ class ImagePut {
 
          this.Renew(pBits, pitch * height)
          return this
-      }
+      } ; End of Update() closure.
       
       buf.Update := Update
 
