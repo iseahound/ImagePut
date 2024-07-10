@@ -1065,6 +1065,10 @@ class ImagePut {
    }
 
    static ClipboardToBitmap() {
+      ; Check for CF_DIB to retrieve transparent pixels when possible.
+      if !DllCall("IsClipboardFormatAvailable", "uint", 8)
+         throw Error("Clipboard does not have CF_DIB image data.")
+
       ; Open the clipboard with exponential backoff.
       loop
          if DllCall("OpenClipboard", "ptr", A_ScriptHwnd)
@@ -1074,19 +1078,23 @@ class ImagePut {
                Sleep (2**(A_Index-1) * 30)
             else throw Error("Clipboard could not be opened.")
 
-      ; Check for CF_DIB to retrieve transparent pixels when possible.
-      if DllCall("IsClipboardFormatAvailable", "uint", 8)
-         if !(handle := DllCall("GetClipboardData", "uint", 8, "ptr"))
-            throw Error("Shared clipboard data has been deleted.")
+      ; CF_DIB (8) can be synthesized from CF_DIBV5 (17) or CF_BITMAP (2).
+      if !(handle := DllCall("GetClipboardData", "uint", 8, "ptr")) {
+         DllCall("CloseClipboard")
+         throw Error("Shared clipboard data has been deleted.")
+      }
 
-      ; Adjust Scan0 for top-down or bottom-up bitmaps.
+      ; CF_DIB (8) - A memory object containing a BITMAPINFO structure followed by the bitmap bits.
+      ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
       ptr := DllCall("GlobalLock", "ptr", handle, "ptr")
-      width := NumGet(ptr + 4, "int")
-      height := NumGet(ptr + 8, "int")
-      bpp := NumGet(ptr + 14, "ushort")
-      stride := ((height < 0) ? 1 : -1) * (width * bpp + 31) // 32 * 4
-      pBits := ptr + 40
-      Scan0 := (height < 0) ? pBits : pBits - stride*(height-1)
+         , width := NumGet(ptr + 4, "int")
+         , height := NumGet(ptr + 8, "int")
+         , bpp := NumGet(ptr + 14, "ushort")
+
+      ; Note: Bottom-up is assumed by EVERY APPLICATION. A top-down bitmap will be upaide down.
+      stride := -(width * bpp + 31) // 32 * 4
+      pBits := ptr + 40 ; Todo: This is likely not true.
+      Scan0 := pBits - (height-1)*stride
 
       ; Create a destination GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", &pBitmap:=0)
@@ -1258,13 +1266,18 @@ class ImagePut {
          throw Error("Image dimensions exceed the size of the buffer.")
 
       ; Create a source GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
-      if (height > 0) ; top-down bitmap
+      ; Case 1: (+) height (+) stride -> Use ptr or Scan0 (top-down bitmap)
+      ; Case 2: (+) height (-) stride -> Use Scan0 only (bottom-up bitmap)
+      ; Case 3: (-) height (+) stride -> Use ptr only (bottom-up bitmap)
+      ; Case 4: (-) height (-) stride -> Use Scan0 only (top-down bitmap)
+      if (height > 0)
          DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height
          , "int", stride, "int", 0x26200A, "ptr", image.ptr, "ptr*", &pBitmap:=0)
-      else            ; bottom-up bitmap
+      else {
+         height := abs(height)
          DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height
          , "int", -stride, "int", 0x26200A, "ptr", image.ptr + (height-1)*stride, "ptr*", &pBitmap:=0)
-
+      }
       return pBitmap
    }
 
@@ -1340,7 +1353,7 @@ class ImagePut {
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
       ; Retrieve the device context for the screen.
-      sdc := DllCall("GetDC", "ptr", 0, "ptr")      
+      sdc := DllCall("GetDC", "ptr", 0, "ptr")
 
       ; Wrap the pointer to the pixels in a buffer object.
       buf := ImagePut.BitmapBuffer(pBits, 4 * image[3] * image[4], image[3], image[4])
@@ -1560,7 +1573,7 @@ class ImagePut {
          this.Renew(pBits, pitch * height)
          return this
       } ; End of Update() closure.
-      
+
       buf.Update := Update
 
       Unbind() {
@@ -1911,6 +1924,8 @@ class ImagePut {
    }
 
    static HBitmapToBitmap(image) {
+      ; Thanks Florence - https://discord.com/channels/115993023636176902/1258513077679292517
+
       ; struct DIBSECTION - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-dibsection
       ; struct BITMAP - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmap
       dib := Buffer(64+5*A_PtrSize) ; sizeof(DIBSECTION) = 84, 104
@@ -1926,19 +1941,32 @@ class ImagePut {
          return pBitmap
       }
 
-      ; Create a device independent bitmap with negative height. All DIBs use the screen pixel format (pARGB).
-      ; Use hbm to buffer the image such that top-down and bottom-up images are mapped to this top-down buffer.
-      ; pBits is the pointer to (top-down) pixel values. The Scan0 will point to the pBits.
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
       hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
       bi := Buffer(40, 0)                    ; sizeof(bi) = 40
          NumPut(  "uint",        40, bi,  0) ; Size
-         NumPut(   "int",     width, bi,  4) ; Width
-         NumPut(   "int",   -height, bi,  8) ; Height - Negative so (0, 0) is top-left.
+         NumPut(   "int",         1, bi,  4) ; Width
+         NumPut(   "int",        -1, bi,  8) ; Height - Negative so (0, 0) is top-left.
          NumPut("ushort",         1, bi, 12) ; Planes
          NumPut("ushort",        32, bi, 14) ; BitCount / BitsPerPixel
-      hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", bi, "uint", 0, "ptr*", &pBits:=0, "ptr", 0, "uint", 0, "ptr")
-      obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
+
+      ; Test a single pixel to determine if the image is top-down or bottom-up.
+      bottomup := True
+      ARGB_0 := NumGet(pBits, "uint")         ; Backup the original pixel
+      NumPut("uint", 0xB0BA1234, pBits)       ; Test first pixel
+      DllCall("GetDIBits", "ptr", hdc, "ptr", image, "uint", 0, "uint", 1, "uint*", &ARGB_1:=0, "ptr", bi, "uint", 0)
+      if (ARGB_1 == 0xB0BA1234) {             ; Could be by pure coincidence
+         NumPut("uint", 0xDECADEB4, pBits)    ; Test second pixel
+         DllCall("GetDIBits", "ptr", hdc, "ptr", image, "uint", 0, "uint", 1, "uint*", &ARGB_2:=0, "ptr", bi, "uint", 0)
+         if (ARGB_2 == 0xDECADEB4)
+            bottomup := False
+      }
+      NumPut("uint", ARGB_0, pBits)           ; Restore the original pixel
+      DllCall("DeleteDC", "ptr", hdc)         ; Device Context was for palette matching
+
+      ; pBits is the pointer to the start of the pixel data. The Scan0 points to the top-left pixel.
+      stride := (-1)**(bottomup) * Ceil(width * bpp / 32) * 4 ; Round up to the next 4 byte boundary
+      Scan0 := (bottomup) ? pBits - (height-1)*stride : pBits ; Points to the first scanline (horizontal row)
 
       ; Create a destination GDI+ Bitmap that owns its memory to receive the final converted pixels. The pixel format is 32-bit ARGB.
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", &pBitmap:=0)
@@ -1950,8 +1978,8 @@ class ImagePut {
 
       ; (Type 6c) Prepare to copy pixels from pBits (pARGB) into the GDI+ Bitmap (ARGB).
       BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
-         NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
-         NumPut(   "ptr",      pBits, BitmapData, 16) ; Scan0
+         NumPut(   "int",     stride, BitmapData,  8) ; Stride
+         NumPut(   "ptr",      Scan0, BitmapData, 16) ; Scan0
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
                ,    "ptr", rect
@@ -1959,29 +1987,8 @@ class ImagePut {
                ,    "int", 0xE200B      ; Buffer: Format32bppPArgb
                ,    "ptr", BitmapData)  ; Contains the pointer (pBits) to the hbm.
 
-      ; If the source image cannot be selected onto a device context BitBlt cannot be used.
-      sdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")           ; Creates a memory DC compatible with the current screen.
-      old := DllCall("SelectObject", "ptr", sdc, "ptr", image, "ptr") ; Returns 0 on failure.
-
-      ; Copies the image (hBitmap) to a top-down bitmap. Removes bottom-up-ness if present.
-      if (old) ; Using BitBlt is about 10% faster than GetDIBits.
-         DllCall("gdi32\BitBlt"
-                  , "ptr", hdc, "int", 0, "int", 0, "int", width, "int", height
-                  , "ptr", sdc, "int", 0, "int", 0, "uint", 0x00CC0020) ; SRCCOPY
-      else ; If already selected onto a device context...
-         DllCall("GetDIBits", "ptr", hdc, "ptr", image, "uint", 0, "uint", height, "ptr", pBits, "ptr", bi, "uint", 0)
-
-      ; The stock bitmap (obm) can never be leaked.
-      DllCall("SelectObject", "ptr", sdc, "ptr", obm)
-      DllCall("DeleteDC",     "ptr", sdc)
-
-      ; Convert the pARGB pixels copied into the device independent bitmap (hbm) to ARGB.
+      ; Convert pBits (pARGB) pixel data from the hBitmap into the pBitmap (ARGB).
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
-
-      ; Cleanup the hBitmap and device contexts.
-      DllCall("SelectObject", "ptr", hdc, "ptr", obm)
-      DllCall("DeleteObject", "ptr", hbm)
-      DllCall("DeleteDC",     "ptr", hdc)
 
       return pBitmap
    }
@@ -2193,6 +2200,7 @@ class ImagePut {
 
 
       ; #2 - Fallback to the CF_DIB format (bottom-up bitmap) for maximum compatibility.
+      ; Note: Bottom-up is assumed by EVERY APPLICATION. A top-down bitmap will be upaide down.
       DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "ptr", pBitmap, "ptr*", &hbm:=0, "uint", 0)
 
       ; struct DIBSECTION - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-dibsection
@@ -2554,7 +2562,7 @@ class ImagePut {
                for callback in this.free
                   callback.call()
          }
-   
+
          if (name = "Update") {
             if HasMethod(this.draw.call)
                this.draw.call()
