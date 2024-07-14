@@ -1515,23 +1515,36 @@ class ImagePut {
          NumPut("uint",                                0, D3D11_TEXTURE2D_DESC, 40)   ; MiscFlags
       ComCall(CreateTexture2D := 5, ID3D11Device, "ptr", D3D11_TEXTURE2D_DESC, "ptr", 0, "ptr*", &staging_texture:=0)
 
+      
+      buf := ImagePut.DesktopDuplicationBuffer(0, 0, width, height)
+      buf.staging_texture := staging_texture
+      buf.IDXGIOutputDuplication := IDXGIOutputDuplication
+      buf.ID3D11DeviceContext := ID3D11DeviceContext
+      buf.ID3D11Device := ID3D11Device
+      buf.IDXGIOutput1 := IDXGIOutput1
+      buf.IDXGIOutput := IDXGIOutput
+      buf.IDXGIAdapter := IDXGIAdapter
+      buf.IDXGIFactory1 := IDXGIFactory1
 
-      ; Allocate a shared buffer for all calls of AcquireNextFrame.
-      DXGI_OUTDUPL_FRAME_INFO := Buffer(48)
+      buf.DesktopImageInSystemMemory := DesktopImageInSystemMemory
 
-      ; Persist the concept of a desktop_resource as a closure???
-      local desktop_resource
+      buf.Update()
 
-      buf := ImagePut.BitmapBuffer(0, 0, width, height)
+      return buf
+   }
 
-      Update(this, timeout := unset) {
+   class DesktopDuplicationBuffer extends ImagePut.BitmapBuffer {
+      Update(timeout := unset) {
          ; Unbind resources.
-         Unbind()
+         this.Unbind()
+
+         ; Allocate a shared buffer for all calls of AcquireNextFrame.
+         ;DXGI_OUTDUPL_FRAME_INFO := Buffer(48)
 
          ; The following loop structure repeatedly checks for a new frame.
          loop {
             ; Ask if there is a new frame available immediately.
-            try ComCall(AcquireNextFrame := 8, IDXGIOutputDuplication, "uint", 0, "ptr", DXGI_OUTDUPL_FRAME_INFO, "ptr*", &desktop_resource:=0)
+            try ComCall(AcquireNextFrame := 8, this.IDXGIOutputDuplication, "uint", 0, "ptr", DXGI_OUTDUPL_FRAME_INFO := Buffer(48), "ptr*", &desktop_resource:=0)
             catch OSError as e
                if e.number = 0x887A0027 ; DXGI_ERROR_WAIT_TIMEOUT
                   if IsSet(timeout)
@@ -1550,60 +1563,55 @@ class ImagePut {
 
             ; Otherwise, continue the loop to search for a new frame.
             ObjRelease(desktop_resource)
-            ComCall(ReleaseFrame := 14, IDXGIOutputDuplication)
+            ComCall(ReleaseFrame := 14, this.IDXGIOutputDuplication)
          }
 
          FrameAcquired:
          ; Maybe the laptop uses a unified RAM for the CPU and the GPU?
-         if (DesktopImageInSystemMemory = 1) {
-            static DXGI_MAPPED_RECT := Buffer(A_PtrSize*2, 0)
-            ComCall(MapDesktopSurface := 12, IDXGIOutputDuplication, "ptr", DXGI_MAPPED_RECT)
+         if (this.DesktopImageInSystemMemory = 1) {
+            ;static DXGI_MAPPED_RECT 
+            ComCall(MapDesktopSurface := 12, this.IDXGIOutputDuplication, "ptr", DXGI_MAPPED_RECT := Buffer(A_PtrSize*2, 0))
             pitch := NumGet(DXGI_MAPPED_RECT, 0, "int")
             pBits := NumGet(DXGI_MAPPED_RECT, A_PtrSize, "ptr")
          }
          else {
             tex := ComObjQuery(desktop_resource, "{6f15aaf2-d208-4e89-9ab4-489535d34f9c}") ; ID3D11Texture2D
-            ComCall(CopyResource := 47, ID3D11DeviceContext, "ptr", staging_texture, "ptr", tex)
-            static D3D11_MAPPED_SUBRESOURCE := Buffer(8+A_PtrSize, 0)
-            ComCall(_Map := 14, ID3D11DeviceContext, "ptr", staging_texture, "uint", 0, "uint", D3D11_MAP_READ := 1, "uint", 0, "ptr", D3D11_MAPPED_SUBRESOURCE)
+            ComCall(CopyResource := 47, this.ID3D11DeviceContext, "ptr", this.staging_texture, "ptr", tex)
+            ComCall(_Map := 14, this.ID3D11DeviceContext, "ptr", this.staging_texture, "uint", 0, "uint", D3D11_MAP_READ := 1, "uint", 0, "ptr", D3D11_MAPPED_SUBRESOURCE := Buffer(8+A_PtrSize, 0))
             pBits := NumGet(D3D11_MAPPED_SUBRESOURCE, 0, "ptr")
             pitch := NumGet(D3D11_MAPPED_SUBRESOURCE, A_PtrSize, "uint")
          }
 
-         this.Renew(pBits, pitch * height)
-         return this
-      } ; End of Update() closure.
+         this.Renew(pBits, pitch * this.height)
+         this.desktop_resource := desktop_resource
 
-      buf.Update := Update
+         return this
+      }
 
       Unbind() {
-         if IsSet(desktop_resource) && desktop_resource != 0 {
-            if (DesktopImageInSystemMemory = 1)
-               ComCall(UnMapDesktopSurface := 13, IDXGIOutputDuplication)
+         if this.HasProp("desktop_resource") && this.desktop_resource != 0 {
+            if (this.DesktopImageInSystemMemory = 1)
+               ComCall(UnMapDesktopSurface := 13, this.IDXGIOutputDuplication)
             else
-               ComCall(Unmap := 15, ID3D11DeviceContext, "ptr", staging_texture, "uint", 0)
+               ComCall(Unmap := 15, this.ID3D11DeviceContext, "ptr", this.staging_texture, "uint", 0)
 
-            ObjRelease(desktop_resource)
-            ComCall(ReleaseFrame := 14, IDXGIOutputDuplication)
+            ObjRelease(this.desktop_resource)
+            ComCall(ReleaseFrame := 14, this.IDXGIOutputDuplication)
+            this.desktop_resource := 0
          }
       }
 
-      Cleanup(this) {
-         Unbind()
-         ObjRelease(staging_texture)
-         ObjRelease(IDXGIOutputDuplication)
-         ObjRelease(ID3D11DeviceContext)
-         ObjRelease(ID3D11Device)
-         IDXGIOutput1 := ""
-         ObjRelease(IDXGIOutput)
-         ObjRelease(IDXGIAdapter)
-         ObjRelease(IDXGIFactory1)
+      Cleanup() {
+         this.Unbind()
+         ObjRelease(this.staging_texture)
+         ObjRelease(this.IDXGIOutputDuplication)
+         ObjRelease(this.ID3D11DeviceContext)
+         ObjRelease(this.ID3D11Device)
+         this.IDXGIOutput1 := ""
+         ObjRelease(this.IDXGIOutput)
+         ObjRelease(this.IDXGIAdapter)
+         ObjRelease(this.IDXGIFactory1)
       }
-
-      buf.Cleanup := Cleanup
-      buf.Update()
-
-      return buf
    }
 
    static Screenshot2ToBitmap(image) {
