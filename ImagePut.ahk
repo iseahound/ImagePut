@@ -1381,8 +1381,6 @@ class ImagePut {
    }
 
    static ScreenshotToBitmap(image) {
-      ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
-
       ; Allow the image to be a window handle.
       if !IsObject(image) and WinExist(image) {
          try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
@@ -1440,7 +1438,6 @@ class ImagePut {
    }
 
    static DesktopDuplicationToBuffer(image) {
-
       ; A correct monitor name must look like: \\.\DISPLAY1
       if image ~= "^(?!0+$)\d+$"
          image := MonitorGetName(image)
@@ -1498,7 +1495,7 @@ class ImagePut {
          width := NumGet(DXGI_OUTDUPL_DESC,  0, "uint")
          height := NumGet(DXGI_OUTDUPL_DESC,  4, "uint")
          DesktopImageInSystemMemory := NumGet(DXGI_OUTDUPL_DESC, 32, "uint")
-      ; Sleep 50   ; As I understand - need some sleep for successful connecting to IDXGIOutputDuplication interface
+      ; Sleep 50 ; (AutoHotkey v1 only) As I understand - need some sleep for successful connecting to IDXGIOutputDuplication interface
 
       ; Creates a CPU accessable texture called as a staging texture.
       D3D11_TEXTURE2D_DESC := Buffer(44, 0)
@@ -1514,7 +1511,6 @@ class ImagePut {
          NumPut("uint", D3D11_CPU_ACCESS_READ := 0x20000, D3D11_TEXTURE2D_DESC, 36)   ; CPUAccessFlags
          NumPut("uint",                                0, D3D11_TEXTURE2D_DESC, 40)   ; MiscFlags
       ComCall(CreateTexture2D := 5, ID3D11Device, "ptr", D3D11_TEXTURE2D_DESC, "ptr", 0, "ptr*", &staging_texture:=0)
-
       
       buf := ImagePut.DesktopDuplicationBuffer(0, 0, width, height)
       buf.staging_texture := staging_texture
@@ -1580,8 +1576,8 @@ class ImagePut {
             ComCall(_Map := 14, this.ID3D11DeviceContext, "ptr", this.staging_texture, "uint", 0, "uint", D3D11_MAP_READ := 1, "uint", 0, "ptr", D3D11_MAPPED_SUBRESOURCE := Buffer(8+A_PtrSize, 0))
             pBits := NumGet(D3D11_MAPPED_SUBRESOURCE, 0, "ptr")
             pitch := NumGet(D3D11_MAPPED_SUBRESOURCE, A_PtrSize, "uint")
+            ; Release tex here.
          }
-
          this.Renew(pBits, pitch * this.height)
          this.desktop_resource := desktop_resource
 

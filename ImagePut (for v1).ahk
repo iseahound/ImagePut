@@ -1381,8 +1381,6 @@ class ImagePut {
    }
 
    ScreenshotToBitmap(image) {
-      ; Thanks tic - https://www.autohotkey.com/boards/viewtopic.php?t=6517
-
       ; Allow the image to be a window handle.
       if !IsObject(image) and WinExist(image) || DllCall("IsWindow", "ptr", image) {
          try dpi := DllCall("SetThreadDpiAwarenessContext", "ptr", -3, "ptr")
@@ -1440,7 +1438,176 @@ class ImagePut {
    }
 
    DesktopDuplicationToBuffer(image) {
+      ; A correct monitor name must look like: \\.\DISPLAY1
+      if image ~= "^(?!0+$)\d+$"
+         SysGet image, MonitorName ,image
 
+      ; Load DirectX Graphics Infrastructure 1.2+ and Direct3D 11.
+      DllCall("GetModuleHandle", "str", "DXGI") || DllCall("LoadLibrary", "str", "DXGI")
+      DllCall("GetModuleHandle", "str", "D3D11") || DllCall("LoadLibrary", "str", "D3D11")
+
+      ; Create a DXGI factory.
+      DllCall("ole32\IIDFromString", "wstr", "{770aae78-f26f-4dba-a829-253c83d1b387}", "ptr", &IID_IDXGIFactory1 := VarSetCapacity(IID_IDXGIFactory1, 16), "uint")
+      DllCall("dxgi\CreateDXGIFactory1", "ptr", &IID_IDXGIFactory1, "ptr*", IDXGIFactory1:=0, "uint")
+
+      ; Find the correct adapter attached to the specified monitor. DXGI_ERROR_NOT_FOUND = 0x887A0002
+      while (0x887A0002 != DllCall(NumGet(NumGet(IDXGIFactory1+0)+A_PtrSize* 7), "ptr", IDXGIFactory1, "uint", A_Index-1, "ptr*", IDXGIAdapter:=0, "uint")) {
+         while (0x887A0002 != DllCall(NumGet(NumGet(IDXGIAdapter+0)+A_PtrSize* 7), "ptr", IDXGIAdapter, "uint", A_Index-1, "ptr*", IDXGIOutput:=0, "uint")) {
+
+            ; Get the description of the adapter output.
+            DllCall(NumGet(NumGet(IDXGIOutput+0)+A_PtrSize* 7), "ptr", IDXGIOutput, "ptr", &DXGI_OUTPUT_DESC := VarSetCapacity(DXGI_OUTPUT_DESC, 88+A_PtrSize))
+               DeviceName        := StrGet(&DXGI_OUTPUT_DESC, 32, "UTF-16")
+               AttachedToDesktop := NumGet(DXGI_OUTPUT_DESC, 80, "int")
+
+            ; Match the specified monitor with its gpu adapter.
+            if (AttachedToDesktop = 1 && DeviceName = image)
+               goto AdapterFound
+
+            ObjRelease(IDXGIOutput)
+         }
+         ObjRelease(IDXGIAdapter)
+      }
+      throw Exception("Could not find a matching adapter for the Desktop Duplication API."
+         . "`n" . "Note that only one Desktop Duplication can be active per process."
+         . "`n" . "Laptops with hybrid graphics must have this process be running on the same GPU as the display.")
+
+      AdapterFound:
+      ; Creates a device that represents the display adapter.
+      DllCall("D3D11\D3D11CreateDevice"
+               ,    "ptr", IDXGIAdapter                 ; pAdapter
+               ,    "int", D3D_DRIVER_TYPE_UNKNOWN := 0 ; DriverType
+               ,    "ptr", 0                            ; Software
+               ,   "uint", 0                            ; Flags
+               ,    "ptr", 0                            ; pFeatureLevels
+               ,   "uint", 0                            ; FeatureLevels
+               ,   "uint", D3D11_SDK_VERSION := 7       ; SDKVersion
+               ,   "ptr*", ID3D11Device:=0              ; ppDevice
+               ,   "ptr*", 0                            ; pFeatureLevel
+               ,   "ptr*", ID3D11DeviceContext:=0       ; ppImmediateContext
+               ,   "uint")
+
+      ; Cast to IDXGIOutput1 to access the Desktop Duplication API.
+      IDXGIOutput1 := ComObjQuery(IDXGIOutput, "{00cddea8-939b-4b83-a340-a685226666cc}")
+      DllCall(NumGet(NumGet(IDXGIOutput1+0)+A_PtrSize* 22), "ptr", IDXGIOutput1, "ptr", ID3D11Device, "ptr*", IDXGIOutputDuplication:=0)
+
+      ; Get the description of the output. Currently doesn't account for rotation of the monitor...
+      DllCall(NumGet(NumGet(IDXGIOutputDuplication+0)+A_PtrSize* 7), "ptr", IDXGIOutputDuplication, "ptr", &DXGI_OUTDUPL_DESC := VarSetCapacity(DXGI_OUTDUPL_DESC, 36))
+         width := NumGet(DXGI_OUTDUPL_DESC,  0, "uint")
+         height := NumGet(DXGI_OUTDUPL_DESC,  4, "uint")
+         DesktopImageInSystemMemory := NumGet(DXGI_OUTDUPL_DESC, 32, "uint")
+      Sleep 50 ; (AutoHotkey v1 only) As I understand - need some sleep for successful connecting to IDXGIOutputDuplication interface
+
+      ; Creates a CPU accessable texture called as a staging texture.
+      VarSetCapacity(D3D11_TEXTURE2D_DESC, 44, 0)
+         NumPut(                           width, D3D11_TEXTURE2D_DESC,  0, "uint")   ; Width
+         NumPut(                          height, D3D11_TEXTURE2D_DESC,  4, "uint")   ; Height
+         NumPut(                               1, D3D11_TEXTURE2D_DESC,  8, "uint")   ; MipLevels
+         NumPut(                               1, D3D11_TEXTURE2D_DESC, 12, "uint")   ; ArraySize
+         NumPut(DXGI_FORMAT_B8G8R8A8_UNORM := 87, D3D11_TEXTURE2D_DESC, 16, "uint")   ; Format
+         NumPut(                               1, D3D11_TEXTURE2D_DESC, 20, "uint")   ; SampleDescCount
+         NumPut(                               0, D3D11_TEXTURE2D_DESC, 24, "uint")   ; SampleDescQuality
+         NumPut(        D3D11_USAGE_STAGING := 3, D3D11_TEXTURE2D_DESC, 28, "uint")   ; Usage
+         NumPut(                               0, D3D11_TEXTURE2D_DESC, 32, "uint")   ; BindFlags
+         NumPut(D3D11_CPU_ACCESS_READ := 0x20000, D3D11_TEXTURE2D_DESC, 36, "uint")   ; CPUAccessFlags
+         NumPut(                               0, D3D11_TEXTURE2D_DESC, 40, "uint")   ; MiscFlags
+      DllCall(NumGet(NumGet(ID3D11Device+0)+A_PtrSize* 5), "ptr", ID3D11Device, "ptr", &D3D11_TEXTURE2D_DESC, "ptr", 0, "ptr*", staging_texture:=0)
+
+      buf := new ImagePut.DesktopDuplicationBuffer(0, 0, width, height)
+      buf.staging_texture := staging_texture
+      buf.IDXGIOutputDuplication := IDXGIOutputDuplication
+      buf.ID3D11DeviceContext := ID3D11DeviceContext
+      buf.ID3D11Device := ID3D11Device
+      buf.IDXGIOutput1 := IDXGIOutput1
+      buf.IDXGIOutput := IDXGIOutput
+      buf.IDXGIAdapter := IDXGIAdapter
+      buf.IDXGIFactory1 := IDXGIFactory1
+
+      buf.DesktopImageInSystemMemory := DesktopImageInSystemMemory
+
+      buf.Update()
+
+      return buf
+   }
+
+   class DesktopDuplicationBuffer extends ImagePut.BitmapBuffer {
+      Update(timeout := "") {
+         ; Unbind resources.
+         this.Unbind()
+
+         ; Allocate a shared buffer for all calls of AcquireNextFrame.
+         ;DXGI_OUTDUPL_FRAME_INFO := Buffer(48)
+
+         ; The following loop structure repeatedly checks for a new frame.
+         loop {
+            ; Ask if there is a new frame available immediately.
+            hr := DllCall(NumGet(NumGet(this.IDXGIOutputDuplication+0)+A_PtrSize* 8), "ptr", this.IDXGIOutputDuplication, "uint", 0, "ptr", &DXGI_OUTDUPL_FRAME_INFO := VarSetCapacity(DXGI_OUTDUPL_FRAME_INFO, 48), "ptr*", desktop_resource:=0, "uint")
+            if (hr != 0)
+               if hr = 0x887A0027 ; DXGI_ERROR_WAIT_TIMEOUT
+                  if (timeout == "")
+                     return this
+                  else
+                     continue
+               else throw Format("{:X}", hr)
+
+            ; Exclude mouse movement events by ensuring LastPresentTime is greater than zero.
+            if NumGet(DXGI_OUTDUPL_FRAME_INFO, 0, "int64") > 0
+               goto FrameAcquired
+
+            ; If the frame is not new, return the existing frame when a timeout is set.
+            else if IsSet(timeout)
+               return this
+
+            ; Otherwise, continue the loop to search for a new frame.
+            ObjRelease(desktop_resource)
+            DllCall(NumGet(NumGet(this.IDXGIOutputDuplication+0)+A_PtrSize* 14), "ptr", this.IDXGIOutputDuplication)
+         }
+
+         FrameAcquired:
+         ; Maybe the laptop uses a unified RAM for the CPU and the GPU?
+         if (this.DesktopImageInSystemMemory = 1) {
+            ;static DXGI_MAPPED_RECT 
+            DllCall(NumGet(NumGet(this.IDXGIOutputDuplication+0)+A_PtrSize* 12), "ptr", this.IDXGIOutputDuplication, "ptr", &DXGI_MAPPED_RECT := VarSetCapacity(DXGI_MAPPED_RECT, A_PtrSize*2, 0))
+            pitch := NumGet(DXGI_MAPPED_RECT, 0, "int")
+            pBits := NumGet(DXGI_MAPPED_RECT, A_PtrSize, "ptr")
+         }
+         else {
+            tex := ComObjQuery(desktop_resource, "{6f15aaf2-d208-4e89-9ab4-489535d34f9c}") ; ID3D11Texture2D
+            DllCall(NumGet(NumGet(this.ID3D11DeviceContext+0)+A_PtrSize* 47), "ptr", this.ID3D11DeviceContext, "ptr", this.staging_texture, "ptr", tex)
+            DllCall(NumGet(NumGet(this.ID3D11DeviceContext+0)+A_PtrSize* 14), "ptr", this.ID3D11DeviceContext, "ptr", this.staging_texture, "uint", 0, "uint", D3D11_MAP_READ := 1, "uint", 0, "ptr", &D3D11_MAPPED_SUBRESOURCE := VarSetCapacity(D3D11_MAPPED_SUBRESOURCE, 8+A_PtrSize, 0))
+            pBits := NumGet(D3D11_MAPPED_SUBRESOURCE, 0, "ptr")
+            pitch := NumGet(D3D11_MAPPED_SUBRESOURCE, A_PtrSize, "uint")
+            ObjRelease(tex)
+         }
+         this.Renew(pBits, pitch * this.height)
+         this.desktop_resource := desktop_resource
+
+         return this
+      }
+
+      Unbind() {
+         if this.HasKey("desktop_resource") && this.desktop_resource != 0 {
+            if (this.DesktopImageInSystemMemory = 1)
+               DllCall(NumGet(NumGet(this.IDXGIOutputDuplication+0)+A_PtrSize* 13), "ptr", this.IDXGIOutputDuplication)
+            else
+               DllCall(NumGet(NumGet(this.ID3D11DeviceContext+0)+A_PtrSize* 15), "ptr", this.ID3D11DeviceContext, "ptr", this.staging_texture, "uint", 0)
+
+            ObjRelease(this.desktop_resource)
+            DllCall(NumGet(NumGet(this.IDXGIOutputDuplication+0)+A_PtrSize* 14), "ptr", this.IDXGIOutputDuplication)
+            this.desktop_resource := 0
+         }
+      }
+
+      Cleanup() {
+         this.Unbind()
+         ObjRelease(this.staging_texture)
+         ObjRelease(this.IDXGIOutputDuplication)
+         ObjRelease(this.ID3D11DeviceContext)
+         ObjRelease(this.ID3D11Device)
+         ObjRelease(this.IDXGIOutput1)
+         ObjRelease(this.IDXGIOutput)
+         ObjRelease(this.IDXGIAdapter)
+         ObjRelease(this.IDXGIFactory1)
+      }
    }
 
    WindowToBitmap(image) {
@@ -2363,6 +2530,25 @@ class ImagePut {
          ImagePut.gdiplusShutdown()
       }
 
+      __Call(name, p*) {
+         if (name = "Cleanup") {
+            if IsFunc(this.free.call)
+               this.free.call()
+            if IsObject(this.free) && this.free.length() > 0
+               for callback in this.free
+                  callback.call()
+         }
+
+         if (name = "Update") {
+            if IsFunc(this.draw.call)
+               this.draw.call()
+            if IsObject(this.draw) && this.draw.length() > 0
+               for callback in this.draw
+                  callback.call()
+            return this
+         }
+      }
+
       __Get(x, y) {
          return Format("0x{:08X}", NumGet(this.ptr + 4*(y*this.width + x), "uint"))
       }
@@ -2422,28 +2608,14 @@ class ImagePut {
 
       ; (1) You MUST manually free any hanging resources.
       ; (2) Then you MUST overwrite this.free with a new set of cleanup functions.
-      Renew(ptr) {
+      Renew(ptr, size := "") {
+         (size) || size := this.size
          DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap)
          DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.width, "int", this.height
-            , "int", this.stride, "int", 0x26200A, "ptr", ptr, "ptr*", pBitmap:=0)
+            , "int", size // this.height, "int", 0x26200A, "ptr", ptr, "ptr*", pBitmap:=0)
          this.ptr := ptr
+         this.size := size
          this.pBitmap := pBitmap
-      }
-
-      Cleanup() {
-         if IsFunc(this.free.call)
-            this.free.call()
-         if IsObject(this.free) && this.free.length() > 0
-            for callback in this.free
-               callback.call()
-      }
-
-      Update() {
-         if IsFunc(this.draw.call)
-            this.draw.call()
-         if IsObject(this.draw) && this.draw.length() > 0
-            for callback in this.draw
-               callback.call()
       }
 
       Frequency() {
