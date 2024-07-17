@@ -411,7 +411,7 @@ class ImagePut {
          throw Exception("Must be an object.")
 
       ; Goto ImageType.
-      if image.HasKey("image") {
+      if image.HasKey("image") && !IsFunc(image.image) {
          keywords := image
          image := image.image
          throw Exception("Must catch this error with ImageType.")
@@ -419,7 +419,7 @@ class ImagePut {
 
       ; Skip ImageType.
       for i, type in this.inputs
-         if image.HasKey(type) {
+         if image.HasKey(type) && !IsFunc(image[type]) {
             keywords := image
             image := image[type]
             return type
@@ -2534,17 +2534,18 @@ class ImagePut {
          ImagePut.gdiplusShutdown()
       }
 
-      __Call(name, p*) {
-         if (name = "Cleanup") {
-            if IsFunc(this.free.call)
+      __Call(name, p*) { ; Note: Only Functors have a .call property and methods do not.
+
+         if (name = "Cleanup") && this.HasKey("free") {
+            if IsFunc(this.free)
                this.free.call()
             if IsObject(this.free) && this.free.length() > 0
                for callback in this.free
                   callback.call()
          }
 
-         if (name = "Update") {
-            if IsFunc(this.draw.call)
+         if (name = "Update") && this.HasKey("draw") {
+            if IsFunc(this.draw)
                this.draw.call()
             if IsObject(this.draw) && this.draw.length() > 0
                for callback in this.draw
