@@ -5182,7 +5182,7 @@ class ImagePut {
       }
 
       ; Default encoding parameter.
-      ep := 0
+      ep := {ptr: 0}
 
       ; JPEG default quality is 75. Otherwise set a quality value from [0-100].
       if (extension = "jpeg") && (quality ~= "^\d+$") {
