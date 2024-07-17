@@ -3872,6 +3872,7 @@ class ImagePut {
       return cls
    }
 
+   ; (v2 only) Pass as a closure, otherwise hwnd := this would be needed.
    WindowProc(uMsg, wParam, lParam) {
       hwnd := this
       ; Prevent the script from exiting early.
@@ -4248,6 +4249,7 @@ class ImagePut {
       default:
       return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
    }
+
 
    SyncWindowProc(hwnd, uMsg, wParam := 0, lParam := 0) {
       hModule := DllCall("GetModuleHandle", "str", "user32.dll", "ptr")

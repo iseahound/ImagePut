@@ -3900,8 +3900,8 @@ class ImagePut {
 
       ; Return the class name as a string.
       return cls
-   }
 
+   ; (v2 only) Pass as a closure, otherwise hwnd := this would be needed.
    static WindowProc(hwnd, uMsg, wParam, lParam) {
 
       ; Prevent the script from exiting early.
@@ -4277,6 +4277,7 @@ class ImagePut {
 
       default:
       return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
+   }
    }
 
    static SyncWindowProc(hwnd, uMsg, wParam := 0, lParam := 0) {
