@@ -4339,15 +4339,6 @@ class ImagePut {
       VarSetCapacity(buf, length * (A_IsUnicode?2:1))
       DllCall("GetFullPathName", "str", filepath, "uint", length, "str", buf, "ptr", 0, "uint")
 
-      ; Keep waiting until the file has been created. (It should be instant!)
-      loop
-         if FileExist(filepath)
-            break
-         else
-            if A_Index < 6
-               Sleep (2**(A_Index-1) * 30)
-            else throw Exception("Unable to create temporary image file.")
-
       ; Set the temporary image file as the new desktop wallpaper.
       DllCall("SystemParametersInfo", "uint", SPI_SETDESKWALLPAPER := 0x14, "uint", 0, "str", buf, "uint", 2)
 
@@ -4498,16 +4489,7 @@ class ImagePut {
       extension := "png"
       this.select_filepath(filepath, extension)
       this.select_codec(pBitmap, extension, quality, pCodec, ep)
-
-      ; Write the file to disk using the specified encoder and encoding parameters with exponential backoff.
-      loop
-         if !DllCall("gdiplus\GdipSaveImageToFile", "ptr", pBitmap, "wstr", filepath, "ptr", &pCodec, "ptr", &ep)
-            break
-         else
-            if A_Index < 6
-               Sleep (2**(A_Index-1) * 30)
-            else throw Exception("Could not save file to disk.")
-
+      DllCall("gdiplus\GdipSaveImageToFile", "ptr", pBitmap, "wstr", filepath, "ptr", &pCodec, "ptr", &ep)
       return filepath
    }
 

@@ -2559,7 +2559,7 @@ class ImagePut {
       }
 
       __Call(name, p) {
-         if (name = "Cleanup") {
+         if (name = "Cleanup") && this.HasProp("free") {
             if HasMethod(this.free.call)
                this.free.call()
             if Type(this.free) = "Array"
@@ -2567,14 +2567,15 @@ class ImagePut {
                   callback.call()
          }
 
-         if (name = "Update") {
+         if (name = "Update") && this.HasProp("draw") {
             if HasMethod(this.draw.call)
                this.draw.call()
             if Type(this.draw) = "Array"
                for callback in this.draw
                   callback.call()
-            return this
          }
+
+         return this
       }
 
       __Item[x, y] {
@@ -4368,15 +4369,6 @@ class ImagePut {
       VarSetStrCapacity(&buf, length)
       DllCall("GetFullPathName", "str", filepath, "uint", length, "str", buf, "ptr", 0, "uint")
 
-      ; Keep waiting until the file has been created. (It should be instant!)
-      loop
-         if FileExist(filepath)
-            break
-         else
-            if A_Index < 6
-               Sleep (2**(A_Index-1) * 30)
-            else throw Error("Unable to create temporary image file.")
-
       ; Set the temporary image file as the new desktop wallpaper.
       DllCall("SystemParametersInfo", "uint", SPI_SETDESKWALLPAPER := 0x14, "uint", 0, "str", buf, "uint", 2)
 
@@ -4527,16 +4519,7 @@ class ImagePut {
       extension := "png"
       this.select_filepath(&filepath, &extension)
       this.select_codec(pBitmap, extension, quality, &pCodec, &ep)
-
-      ; Write the file to disk using the specified encoder and encoding parameters with exponential backoff.
-      loop
-         if !DllCall("gdiplus\GdipSaveImageToFile", "ptr", pBitmap, "wstr", filepath, "ptr", pCodec, "ptr", ep)
-            break
-         else
-            if A_Index < 6
-               Sleep (2**(A_Index-1) * 30)
-            else throw Error("Could not save file to disk.")
-
+      DllCall("gdiplus\GdipSaveImageToFile", "ptr", pBitmap, "wstr", filepath, "ptr", pCodec, "ptr", ep)
       return filepath
    }
 
