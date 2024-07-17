@@ -3975,13 +3975,9 @@ class ImagePut {
                , height := NumGet(dib, 8, "uint")
                , pBits  := NumGet(dib, A_PtrSize = 4 ? 20:24, "ptr")
 
-            ; Convert from unsigned int to signed shorts.
-            VarSetCapacity(xy, 4)
-            NumPut(lParam, xy, "uint")
-            x := NumGet(xy, 0, "short")
-            y := NumGet(xy, 2, "short")
-
             ; Safe limits for x and y.
+            x := lParam << 48 >> 48
+            y := lParam << 32 >> 48
             (x < 0) && x := 0
             (x >= width) && x := width-1
             (y < 0) && y := 0
