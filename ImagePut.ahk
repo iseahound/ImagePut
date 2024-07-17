@@ -3876,7 +3876,7 @@ class ImagePut {
          return cls
 
       ; Create window data.
-      pWndProc := CallbackCreate(WindowProc)
+      pWndProc := CallbackCreate((hwnd, uMsg, wParam, lParam) => this.WindowProc(hwnd, uMsg, wParam, lParam))
       hCursor := DllCall("LoadCursor", "ptr", 0, "ptr", 32512, "ptr") ; IDC_ARROW
       hBrush := DllCall("GetStockObject", "int", 5, "ptr") ; Hollow_brush
 
@@ -3901,9 +3901,10 @@ class ImagePut {
 
       ; Return the class name as a string.
       return cls
+   }
 
-   ; (v2 only) Pass as a closure, otherwise hwnd := this would be needed.
    static WindowProc(hwnd, uMsg, wParam, lParam) {
+      ; (v2 only) Pass as a closure, otherwise hwnd := this would be needed.
 
       ; Prevent the script from exiting early.
       static active_windows := Persistent()
@@ -4278,7 +4279,6 @@ class ImagePut {
 
       default:
       return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
-   }
    }
 
    static SyncWindowProc(hwnd, uMsg, wParam := 0, lParam := 0) {

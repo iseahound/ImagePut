@@ -3873,9 +3873,9 @@ class ImagePut {
       return cls
    }
 
-   ; (v2 only) Pass as a closure, otherwise hwnd := this would be needed.
    WindowProc(uMsg, wParam, lParam) {
-      hwnd := this
+      hwnd := this ; (v1 only) The first parameter has been replaced by the hwnd.
+
       ; Prevent the script from exiting early.
       static void := ObjBindMethod({}, {})
 
