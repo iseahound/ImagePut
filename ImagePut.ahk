@@ -289,20 +289,24 @@ class ImagePut {
          goto( IsSet(pBitmap) ? "bitmap" : "stream" )
       }
 
-      ; Determine whether the stream should be decoded into pixels.
+      ; To determine whether the stream should be decoded into pixels:
+      ; (1) Check for scaling or cropping, etc.
+      ; (2) Check if the source encoding is different from the destination.
       weight := decode || crop || scale || upscale || downscale || sprite ||
 
-         ; Check if the 1st parameter matches the extension.
+         ; The 1st parameter holds the destination encoding.
          !( cotype ~= "^(?i:safearray|encodedbuffer|hex|base64|uri|stream|randomaccessstream|)$"
-            && (!p.Has(1) || p[1] == "" || p[1] = extension)
+            && (!p.Has(1) || p[1] == "" || p[1] = extension                    && !(extension = "jpg" && p.Has(2) && p[2] != ""))
 
-         ; Check if the 2nd parameter matches the extension.
+         ; The 2nd parameter holds the destination encoding.
          || cotype = "formdata"
-            && (!p.Has(2) || p[2] == "" || p[2] = extension)
+            && (!p.Has(2) || p[2] == "" || p[2] = extension                    && !(extension = "jpg" && p.Has(3) && p[3] != ""))
 
-         ; For files, if the desired extension is not supported, it is ignored.
+         ; Filepaths have the destination encoding as part of the filepath.
          || cotype = "file"
-            && (!p.Has(1) || p[1] == "" || p[1] ~= "(^|:|\\|\.)" extension "$"
+            && (!p.Has(1) || p[1] == "" || p[1] ~= "(^|:|\\|\.)" extension "$" && !(extension = "jpg" && p.Has(2) && p[2] != "")
+
+               ; If the desired extension is not supported, it is ignored.
                || !(RegExReplace(p[1], "^.*(?:^|:|\\|\.)(.*)$", "$1")
                ~= "^(?i:avif|avifs|bmp|dib|rle|gif|heic|heif|hif|jpg|jpeg|jpe|jfif|png|tif|tiff)$"))
 
