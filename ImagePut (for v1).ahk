@@ -433,6 +433,7 @@ class ImagePut {
 
 
 
+
       ; Throw if the image is an empty string.
       if (image == "")
          ; A "clipboardpng" is a pointer to a PNG stream saved as the "png" clipboard format.
@@ -444,7 +445,6 @@ class ImagePut {
             return "Clipboard"
 
          else throw Exception("Image data is an empty string.")
-
 
       if not IsObject(image)
          goto string
