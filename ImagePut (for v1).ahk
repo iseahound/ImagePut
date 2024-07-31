@@ -1582,7 +1582,8 @@ class ImagePut {
             pitch := NumGet(D3D11_MAPPED_SUBRESOURCE, A_PtrSize, "uint")
             ObjRelease(tex)
          }
-         this.Renew(pBits, pitch * this.height)
+         this.ptr := pBits
+         this.size := pitch * this.height
          this.desktop_resource := desktop_resource
 
          return this
@@ -2186,8 +2187,6 @@ class ImagePut {
       ; struct BITMAP - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmap
       VarSetCapacity(dib, size := 64+5*A_PtrSize) ; sizeof(DIBSECTION) = 84, 104
       DllCall("GetObject", "ptr", hbm, "int", size, "ptr", &dib)
-         , width  := NumGet(dib, 4, "uint")
-         , height := NumGet(dib, 8, "uint")
          , pBits := NumGet(dib, A_PtrSize = 4 ? 20:24, "ptr")  ; bmBits
          , size  := NumGet(dib, A_PtrSize = 4 ? 44:52, "uint") ; biSizeImage
 
@@ -2512,26 +2511,47 @@ class ImagePut {
 
    class BitmapBuffer {
 
-      __New(ptr, size, width, height) { ; Remember to set .free and .draw!
+      __New(ptr:="", size:="", width:="", height:="") { ; Remember to set .free and .draw!
          ImagePut.gdiplusStartup()
 
-         ; Create a source GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
-         DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height
-            , "int", size // height, "int", 0x26200A, "ptr", ptr, "ptr*", pBitmap:=0)
-
          ; Wrap the pointer without copying the data.
-         this.ptr := ptr
-         this.size := size
-         this.width := width
-         this.height := height
-         this.stride := size // height
-         this.pBitmap := pBitmap
+         (ptr != "") && this.ptr := ptr
+         (size != "") && this.size := size
+         (width != "") && this.width := width
+         (height != "") && this.height := height
       }
 
       __Delete() {
          DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap)
          this.Cleanup()
          ImagePut.gdiplusShutdown()
+      }
+
+      pBitmap {
+         get {
+            ; Test if the cached bitmap (this.pBitmap2) already exists.
+            renew := False
+            renew |= this.HasProp("ptr2") && this.ptr != this.ptr2
+
+            ; Delete the old bitmap.
+            (renew) && DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap2)
+
+            ; Test if the cached bitmap needs to be created.
+            renew |= !this.HasProp("pBitmap2") 
+            try renew |= !DllCall("gdiplus\GdipGetImageType", "ptr", this.pBitmap2, "ptr*", &_type:=0) && (_type == 1)
+
+            if (renew) {
+               ; Create a source GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
+               DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.width, "int", this.height
+               , "int", this.size // this.height, "int", 0x26200A, "ptr", this.ptr, "ptr*", &pBitmap:=0)
+               this.pBitmap2 := pBitmap
+               this.ptr2 := this.ptr
+            }
+            return pBitmap
+         }
+         set {
+            this.pBitmap2 := value
+         }
       }
 
       __Call(name, p*) { ; Note: Only Functors have a .call property and methods do not.
@@ -2550,8 +2570,9 @@ class ImagePut {
             if IsObject(this.draw) && this.draw.length() > 0
                for callback in this.draw
                   callback.call()
-            return this
          }
+
+         return this
       }
 
       __Get(x, y) {
@@ -2611,17 +2632,6 @@ class ImagePut {
 
 
 
-      ; (1) You MUST manually free any hanging resources.
-      ; (2) Then you MUST overwrite this.free with a new set of cleanup functions.
-      Renew(ptr, size := "") {
-         (size) || size := this.size
-         DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap)
-         DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.width, "int", this.height
-            , "int", size // this.height, "int", 0x26200A, "ptr", ptr, "ptr*", pBitmap:=0)
-         this.ptr := ptr
-         this.size := size
-         this.pBitmap := pBitmap
-      }
 
       Frequency() {
          if this.HasKey(map)

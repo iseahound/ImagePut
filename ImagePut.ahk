@@ -1516,7 +1516,7 @@ class ImagePut {
          NumPut("uint",                                0, D3D11_TEXTURE2D_DESC, 40)   ; MiscFlags
       ComCall(CreateTexture2D := 5, ID3D11Device, "ptr", D3D11_TEXTURE2D_DESC, "ptr", 0, "ptr*", &staging_texture:=0)
       
-      buf := ImagePut.DesktopDuplicationBuffer(0, 0, width, height)
+      buf := ImagePut.DesktopDuplicationBuffer(,, width, height)
       buf.staging_texture := staging_texture
       buf.IDXGIOutputDuplication := IDXGIOutputDuplication
       buf.ID3D11DeviceContext := ID3D11DeviceContext
@@ -1582,7 +1582,8 @@ class ImagePut {
             pitch := NumGet(D3D11_MAPPED_SUBRESOURCE, A_PtrSize, "uint")
             ; Release tex here.
          }
-         this.Renew(pBits, pitch * this.height)
+         this.ptr := pBits
+         this.size := pitch * this.height
          this.desktop_resource := desktop_resource
 
          return this
@@ -1612,38 +1613,6 @@ class ImagePut {
          ObjRelease(this.IDXGIAdapter)
          ObjRelease(this.IDXGIFactory1)
       }
-   }
-
-   static Screenshot2ToBitmap(image) {
-      obj := this.DesktopDuplicationToBuffer(image)
-
-      width := obj.width
-      height := obj.height
-      pBits := obj.ptr
-      size := obj.size
-
-      ; Create a destination GDI+ Bitmap that owns its memory. The pixel format is 32-bit pre-multiplied ARGB.
-      DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height
-         , "int", size // height, "int", 0xE200B, "ptr", 0, "ptr*", &pBitmap:=0)
-
-      ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
-      rect := Buffer(16, 0)                  ; sizeof(rect) = 16
-         NumPut(  "uint",   width, rect,  8) ; Width
-         NumPut(  "uint",  height, rect, 12) ; Height
-
-      ; (Type 6) Copy external pixels into the GDI+ Bitmap.
-      BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
-         NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
-         NumPut(   "ptr",      pBits, BitmapData, 16) ; Scan0
-      DllCall("gdiplus\GdipBitmapLockBits"
-               ,    "ptr", pBitmap
-               ,    "ptr", rect
-               ,   "uint", 6            ; ImageLockMode.UserInputBuffer | ImageLockMode.WriteOnly
-               ,    "int", 0xE200B      ; Buffer: Format32bppPArgb
-               ,    "ptr", BitmapData)  ; Contains the pointer (pBits) to the Direct X bitmap???.
-      DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
-
-      return pBitmap
    }
 
    static WindowToBitmap(image) {
@@ -2020,6 +1989,9 @@ class ImagePut {
       DllCall("DeleteObject", "ptr", hbmMask)
       DllCall("DeleteObject", "ptr", hbmColor)
 
+      ; Create a device independent bitmap with negative height. All DIBs use the screen pixel format (pARGB).
+      ; Use hbm to buffer the image such that top-down and bottom-up images are mapped to this top-down buffer.
+      ; pBits is the pointer to (top-down) pixel values. The Scan0 will point to the pBits.     
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
       hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
       bi := Buffer(40, 0)                    ; sizeof(bi) = 40
@@ -2531,7 +2503,6 @@ class ImagePut {
                ,    "ptr", BitmapData)  ; Contains the pointer (ptr) to the Buffer Object.
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
 
-
       ; Free the pixels later.
       buf := ImagePut.BitmapBuffer(ptr, size, width, height)
       buf.free := () => DllCall("GlobalFree", "ptr", ptr)
@@ -2540,26 +2511,47 @@ class ImagePut {
 
    class BitmapBuffer {
 
-      __New(ptr, size, width, height) { ; Remember to set .free and .draw!
+      __New(ptr:="", size:="", width:="", height:="") { ; Remember to set .free and .draw!
          ImagePut.gdiplusStartup()
 
-         ; Create a source GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
-         DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height
-            , "int", size // height, "int", 0x26200A, "ptr", ptr, "ptr*", &pBitmap:=0)
-
          ; Wrap the pointer without copying the data.
-         this.ptr := ptr
-         this.size := size
-         this.width := width
-         this.height := height
-         this.stride := size // height
-         this.pBitmap := pBitmap
+         (ptr != "") && this.ptr := ptr
+         (size != "") && this.size := size
+         (width != "") && this.width := width
+         (height != "") && this.height := height
       }
 
       __Delete() {
          DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap)
          this.Cleanup()
          ImagePut.gdiplusShutdown()
+      }
+
+      pBitmap {
+         get {
+            ; Test if the cached bitmap (this.pBitmap2) already exists.
+            renew := False
+            renew |= this.HasProp("ptr2") && this.ptr != this.ptr2
+
+            ; Delete the old bitmap.
+            (renew) && DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap2)
+
+            ; Test if the cached bitmap needs to be created.
+            renew |= !this.HasProp("pBitmap2") 
+            try renew |= !DllCall("gdiplus\GdipGetImageType", "ptr", this.pBitmap2, "ptr*", &_type:=0) && (_type == 1)
+
+            if (renew) {
+               ; Create a source GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
+               DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.width, "int", this.height
+               , "int", this.size // this.height, "int", 0x26200A, "ptr", this.ptr, "ptr*", &pBitmap:=0)
+               this.pBitmap2 := pBitmap
+               this.ptr2 := this.ptr
+            }
+            return pBitmap
+         }
+         set {
+            this.pBitmap2 := value
+         }
       }
 
       __Call(name, p) { ; Note: Only Functors have a .call property and methods do not.
@@ -2639,18 +2631,6 @@ class ImagePut {
             start += 4,
             True))
          }
-      }
-
-      ; (1) You MUST manually free any hanging resources.
-      ; (2) Then you MUST overwrite this.free with a new set of cleanup functions.
-      Renew(ptr, size := "") {
-         (size) || size := this.size
-         DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap)
-         DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.width, "int", this.height
-            , "int", size // this.height, "int", 0x26200A, "ptr", ptr, "ptr*", &pBitmap:=0)
-         this.ptr := ptr
-         this.size := size
-         this.pBitmap := pBitmap
       }
 
       Frequency() {
