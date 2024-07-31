@@ -1516,7 +1516,9 @@ class ImagePut {
          NumPut(                               0, D3D11_TEXTURE2D_DESC, 40, "uint")   ; MiscFlags
       DllCall(NumGet(NumGet(ID3D11Device+0)+A_PtrSize* 5), "ptr", ID3D11Device, "ptr", &D3D11_TEXTURE2D_DESC, "ptr", 0, "ptr*", staging_texture:=0)
 
-      buf := new ImagePut.DesktopDuplicationBuffer(0, 0, width, height)
+      buf := new ImagePut.DesktopDuplicationBuffer()
+      buf.width := width
+      buf.height := height
       buf.staging_texture := staging_texture
       buf.IDXGIOutputDuplication := IDXGIOutputDuplication
       buf.ID3D11DeviceContext := ID3D11DeviceContext
@@ -1533,7 +1535,7 @@ class ImagePut {
       return buf
    }
 
-   class DesktopDuplicationBuffer extends ImagePut.BitmapBuffer {
+   class DesktopDuplicationBuffer extends ImagePut.BitmapBuffer { ; Extending is optional!
       Update(timeout := "") {
          ; Unbind resources.
          this.Unbind()
