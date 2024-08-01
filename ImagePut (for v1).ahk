@@ -1537,7 +1537,11 @@ class ImagePut {
 
    class DesktopDuplicationBuffer extends ImagePut.BitmapBuffer { ; Extending is optional!
       Update(timeout := "") {
-         ; Unbind resources.
+
+         ; Reset the timeout error state.
+         this.timeout := False
+
+         ; Release the current frame to acquire a new frame.
          this.Unbind()
 
          ; Allocate a shared buffer for all calls of AcquireNextFrame.
@@ -1546,12 +1550,13 @@ class ImagePut {
          ; The following loop structure repeatedly checks for a new frame.
          loop {
             ; Ask if there is a new frame available immediately.
-            hr := DllCall(NumGet(NumGet(this.IDXGIOutputDuplication+0)+A_PtrSize* 8), "ptr", this.IDXGIOutputDuplication, "uint", 0, "ptr", &DXGI_OUTDUPL_FRAME_INFO := VarSetCapacity(DXGI_OUTDUPL_FRAME_INFO, 48), "ptr*", desktop_resource:=0, "uint")
+            hr := DllCall(NumGet(NumGet(this.IDXGIOutputDuplication+0)+A_PtrSize* 8), "ptr", this.IDXGIOutputDuplication, "uint", (timeout == "") ? 0 : timeout, "ptr", &DXGI_OUTDUPL_FRAME_INFO := VarSetCapacity(DXGI_OUTDUPL_FRAME_INFO, 48), "ptr*", desktop_resource:=0, "uint")
             if (hr != 0)
                if hr = 0x887A0027 ; DXGI_ERROR_WAIT_TIMEOUT
-                  if (timeout == "")
-                     return this
-                  else
+                  if (timeout != "") {
+                     this.timeout := True
+                     return this ; Note: The bitmap is in an invalid state. However, it has already been cached by BitmapBuffer.
+                  } else
                      continue
                else throw Format("{:X}", hr)
 
@@ -1561,7 +1566,7 @@ class ImagePut {
 
             ; If the frame is not new, return the existing frame when a timeout is set.
             else if IsSet(timeout)
-               return this
+               goto FrameAcquired
 
             ; Otherwise, continue the loop to search for a new frame.
             ObjRelease(desktop_resource)
@@ -1569,6 +1574,8 @@ class ImagePut {
          }
 
          FrameAcquired:
+         this.desktop_resource := desktop_resource
+
          ; Maybe the laptop uses a unified RAM for the CPU and the GPU?
          if (this.DesktopImageInSystemMemory = 1) {
             ;static DXGI_MAPPED_RECT 
@@ -1577,7 +1584,7 @@ class ImagePut {
             pBits := NumGet(DXGI_MAPPED_RECT, A_PtrSize, "ptr")
          }
          else {
-            tex := ComObjQuery(desktop_resource, "{6f15aaf2-d208-4e89-9ab4-489535d34f9c}") ; ID3D11Texture2D
+            tex := ComObjQuery(this.desktop_resource, "{6f15aaf2-d208-4e89-9ab4-489535d34f9c}") ; ID3D11Texture2D
             DllCall(NumGet(NumGet(this.ID3D11DeviceContext+0)+A_PtrSize* 47), "ptr", this.ID3D11DeviceContext, "ptr", this.staging_texture, "ptr", tex)
             DllCall(NumGet(NumGet(this.ID3D11DeviceContext+0)+A_PtrSize* 14), "ptr", this.ID3D11DeviceContext, "ptr", this.staging_texture, "uint", 0, "uint", D3D11_MAP_READ := 1, "uint", 0, "ptr", &D3D11_MAPPED_SUBRESOURCE := VarSetCapacity(D3D11_MAPPED_SUBRESOURCE, 8+A_PtrSize, 0))
             pBits := NumGet(D3D11_MAPPED_SUBRESOURCE, 0, "ptr")
@@ -1586,21 +1593,24 @@ class ImagePut {
          }
          this.ptr := pBits
          this.size := pitch * this.height
-         this.desktop_resource := desktop_resource
 
          return this
       }
 
       Unbind() {
-         if this.HasKey("desktop_resource") && this.desktop_resource != 0 {
+         if this.HasKey("desktop_resource") {
+            ObjRelease(this.desktop_resource)
+            DllCall(NumGet(NumGet(this.IDXGIOutputDuplication+0)+A_PtrSize* 14), "ptr", this.IDXGIOutputDuplication)
+            this.Delete("desktop_resource")
+         }
+
+         if this.HasKey("ptr") && this.HasKey("size") {
             if (this.DesktopImageInSystemMemory = 1)
                DllCall(NumGet(NumGet(this.IDXGIOutputDuplication+0)+A_PtrSize* 13), "ptr", this.IDXGIOutputDuplication)
             else
                DllCall(NumGet(NumGet(this.ID3D11DeviceContext+0)+A_PtrSize* 15), "ptr", this.ID3D11DeviceContext, "ptr", this.staging_texture, "uint", 0)
-
-            ObjRelease(this.desktop_resource)
-            DllCall(NumGet(NumGet(this.IDXGIOutputDuplication+0)+A_PtrSize* 14), "ptr", this.IDXGIOutputDuplication)
-            this.desktop_resource := 0
+            this.Delete("ptr")
+            this.Delete("size")
          }
       }
 
@@ -2540,16 +2550,18 @@ class ImagePut {
 
             ; Test if the cached bitmap needs to be created.
             renew |= !this.HasProp("pBitmap2") 
-            try renew |= !DllCall("gdiplus\GdipGetImageType", "ptr", this.pBitmap2, "ptr*", &_type:=0) && (_type == 1)
+            try renew |= DllCall("gdiplus\GdipGetImageType", "ptr", this.pBitmap2, "ptr*", _type:=0) or (_type != 1)
 
+            ; Create a source GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
             if (renew) {
-               ; Create a source GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
                DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.width, "int", this.height
-               , "int", this.size // this.height, "int", 0x26200A, "ptr", this.ptr, "ptr*", &pBitmap:=0)
+               , "int", this.size // this.height, "int", 0x26200A, "ptr", this.ptr, "ptr*", pBitmap:=0)
                this.pBitmap2 := pBitmap
                this.ptr2 := this.ptr
             }
-            return pBitmap
+
+            ; Return the cached bitmap.
+            return this.pBitmap2
          }
          set {
             this.pBitmap2 := value
