@@ -2691,43 +2691,7 @@ class ImagePut {
       }
 
       Save(filepath := "", quality := "")  {
-
-         ; Process filepath and set extension.
-         extension := "bmp"
-         ImagePut.select_filepath(&filepath, &extension)
-
-         ; If extension is not .bmp, use to_file routine.
-         if (extension != "bmp")
-            return ImagePut.BitmapToFile(this.pBitmap, filepath, quality)
-
-         ; Note because the ARGB values are 4-byte aligned it's not a "packed" bitmap.
-         bm := Buffer(56)
-
-         StrPut("BM", bm, "CP0")                ; identifier
-         NumPut(  "uint", 56+this.size, bm,  2) ; file size
-         NumPut(  "uint",            0, bm,  6) ; reserved
-         NumPut(  "uint",           56, bm, 10) ; bitmap data offset
-
-         ; BITMAPINFOHEADER struct
-         NumPut(  "uint",           40, bm, 14) ; Size
-         NumPut(  "uint",   this.width, bm, 18) ; Width
-         NumPut(   "int", -this.height, bm, 22) ; Height - Negative so (0, 0) is top-left.
-         NumPut("ushort",            1, bm, 26) ; Planes
-         NumPut("ushort",           32, bm, 28) ; BitCount / BitsPerPixel
-
-         NumPut(  "uint",            0, bm, 30) ; biCompression
-         NumPut(  "uint",    this.size, bm, 34) ; biSizeImage
-         NumPut(   "int",            0, bm, 38) ; biXPelsPerMeter
-         NumPut(   "int",            0, bm, 42) ; biYPelsPerMeter
-         NumPut(  "uint",            0, bm, 46) ; biClrUsed
-         NumPut(  "uint",            0, bm, 50) ; biClrImportant
-
-         file := FileOpen(filepath, "w")
-         file.RawWrite(bm)                    ; Writes 54 bytes of bitmap file header.
-         file.RawWrite(this)                  ; Writes raw 32-bit ARGB pixel data.
-         file.Close()
-
-         return filepath
+         return ImagePut.BitmapToFile(this.pBitmap, filepath, quality)
       }
 
       Base64Code(b64) {
