@@ -1515,7 +1515,7 @@ class ImagePut {
          NumPut("uint", D3D11_CPU_ACCESS_READ := 0x20000, D3D11_TEXTURE2D_DESC, 36)   ; CPUAccessFlags
          NumPut("uint",                                0, D3D11_TEXTURE2D_DESC, 40)   ; MiscFlags
       ComCall(CreateTexture2D := 5, ID3D11Device, "ptr", D3D11_TEXTURE2D_DESC, "ptr", 0, "ptr*", &staging_texture:=0)
-      
+
       buf := ImagePut.DesktopDuplicationBuffer()
       buf.width := width
       buf.height := height
@@ -1578,7 +1578,7 @@ class ImagePut {
 
          ; Maybe the laptop uses a unified RAM for the CPU and the GPU?
          if (this.DesktopImageInSystemMemory = 1) {
-            ;static DXGI_MAPPED_RECT 
+            ;static DXGI_MAPPED_RECT
             ComCall(MapDesktopSurface := 12, this.IDXGIOutputDuplication, "ptr", DXGI_MAPPED_RECT := Buffer(A_PtrSize*2, 0))
             pitch := NumGet(DXGI_MAPPED_RECT, 0, "int")
             pBits := NumGet(DXGI_MAPPED_RECT, A_PtrSize, "ptr")
@@ -2003,7 +2003,7 @@ class ImagePut {
 
       ; Create a device independent bitmap with negative height. All DIBs use the screen pixel format (pARGB).
       ; Use hbm to buffer the image such that top-down and bottom-up images are mapped to this top-down buffer.
-      ; pBits is the pointer to (top-down) pixel values. The Scan0 will point to the pBits.     
+      ; pBits is the pointer to (top-down) pixel values. The Scan0 will point to the pBits.
       ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
       hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
       bi := Buffer(40, 0)                    ; sizeof(bi) = 40
@@ -2549,8 +2549,10 @@ class ImagePut {
             (renew) && DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap2)
 
             ; Test if the cached bitmap needs to be created.
-            renew |= !this.HasProp("pBitmap2") 
+            renew |= !this.HasProp("pBitmap2")
             try renew |= DllCall("gdiplus\GdipGetImageType", "ptr", this.pBitmap2, "ptr*", &_type:=0) or (_type != 1)
+            catch
+               renew := True
 
             ; Create a source GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
             if (renew) {

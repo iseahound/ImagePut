@@ -1578,7 +1578,7 @@ class ImagePut {
 
          ; Maybe the laptop uses a unified RAM for the CPU and the GPU?
          if (this.DesktopImageInSystemMemory = 1) {
-            ;static DXGI_MAPPED_RECT 
+            ;static DXGI_MAPPED_RECT
             DllCall(NumGet(NumGet(this.IDXGIOutputDuplication+0)+A_PtrSize* 12), "ptr", this.IDXGIOutputDuplication, "ptr", &DXGI_MAPPED_RECT := VarSetCapacity(DXGI_MAPPED_RECT, A_PtrSize*2, 0))
             pitch := NumGet(DXGI_MAPPED_RECT, 0, "int")
             pBits := NumGet(DXGI_MAPPED_RECT, A_PtrSize, "ptr")
@@ -2549,8 +2549,10 @@ class ImagePut {
             (renew) && DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap2)
 
             ; Test if the cached bitmap needs to be created.
-            renew |= !this.HasProp("pBitmap2") 
+            renew |= !this.HasProp("pBitmap2")
             try renew |= DllCall("gdiplus\GdipGetImageType", "ptr", this.pBitmap2, "ptr*", _type:=0) or (_type != 1)
+            catch
+               renew := True
 
             ; Create a source GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
             if (renew) {
