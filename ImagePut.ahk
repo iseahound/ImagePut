@@ -1519,6 +1519,8 @@ class ImagePut {
       buf := ImagePut.DesktopDuplicationBuffer()
       buf.width := width
       buf.height := height
+      buf.DesktopImageInSystemMemory := DesktopImageInSystemMemory
+
       buf.staging_texture := staging_texture
       buf.IDXGIOutputDuplication := IDXGIOutputDuplication
       buf.ID3D11DeviceContext := ID3D11DeviceContext
@@ -1527,8 +1529,6 @@ class ImagePut {
       buf.IDXGIOutput := IDXGIOutput
       buf.IDXGIAdapter := IDXGIAdapter
       buf.IDXGIFactory1 := IDXGIFactory1
-
-      buf.DesktopImageInSystemMemory := DesktopImageInSystemMemory
 
       buf.Update()
 
@@ -1543,9 +1543,6 @@ class ImagePut {
 
          ; Release the current frame to acquire a new frame.
          this.Unbind()
-
-         ; Allocate a shared buffer for all calls of AcquireNextFrame.
-         ;DXGI_OUTDUPL_FRAME_INFO := Buffer(48)
 
          ; The following loop structure repeatedly checks for a new frame.
          loop {
@@ -1578,7 +1575,6 @@ class ImagePut {
 
          ; Maybe the laptop uses a unified RAM for the CPU and the GPU?
          if (this.DesktopImageInSystemMemory = 1) {
-            ;static DXGI_MAPPED_RECT
             ComCall(MapDesktopSurface := 12, this.IDXGIOutputDuplication, "ptr", DXGI_MAPPED_RECT := Buffer(A_PtrSize*2, 0))
             pitch := NumGet(DXGI_MAPPED_RECT, 0, "int")
             pBits := NumGet(DXGI_MAPPED_RECT, A_PtrSize, "ptr")
@@ -1589,7 +1585,7 @@ class ImagePut {
             ComCall(_Map := 14, this.ID3D11DeviceContext, "ptr", this.staging_texture, "uint", 0, "uint", D3D11_MAP_READ := 1, "uint", 0, "ptr", D3D11_MAPPED_SUBRESOURCE := Buffer(8+A_PtrSize, 0))
             pBits := NumGet(D3D11_MAPPED_SUBRESOURCE, 0, "ptr")
             pitch := NumGet(D3D11_MAPPED_SUBRESOURCE, A_PtrSize, "uint")
-            ; Release tex here.
+            ; (v1 only) ObjRelease(tex)
          }
          this.ptr := pBits
          this.size := pitch * this.height
@@ -3998,88 +3994,6 @@ class ImagePut {
          Reset_Tooltip() {
             Tooltip(,,, 16)
          }
-      }
-
-      ; WM_MOUSEWHEEL - Zoom in and out.
-      if (uMsg = 0x020A) {
-         uMsg := 0x8003
-         Sleep 100 ; Debounce or block subsequent WM_MOUSEWHEEL messages.
-      }
-
-      if (uMsg = 0x8003) {
-         ; Convert from unsigned int to signed shorts.
-         wBuf := Buffer(4)
-         NumPut("uint", wParam, wBuf)
-         keystate := NumGet(wBuf, 0, "short")
-         wheeldelta := NumGet(wBuf, 2, "short")
-
-         ; Convert from unsigned int to signed shorts.
-         xy := Buffer(4)
-         NumPut("uint", lParam, xy)
-         x := NumGet(xy, 0, "short")
-         y := NumGet(xy, 2, "short")
-
-         sdc := DllCall("GetWindowLong", "ptr", child, "int", 2*A_PtrSize, "ptr")
-         sbm := DllCall("GetCurrentObject", "ptr", sdc, "uint", 7)
-         dib := Buffer(64+5*A_PtrSize) ; sizeof(DIBSECTION) = 84, 104
-         DllCall("GetObject", "ptr", sbm, "int", dib.size, "ptr", dib)
-            , width  := NumGet(dib, 4, "uint")
-            , height := NumGet(dib, 8, "uint")
-            , pBits  := NumGet(dib, A_PtrSize = 4 ? 20:24, "ptr")
-
-         scale := obj.scale
-         (wheeldelta > 1) ? scale++ : scale--
-         (scale < 1) && scale := 1
-         (scale > obj.scales.length) && scale := obj.scales.length
-
-         ; Disallow downscaling if ImagePutWindow is called.
-         if (parent != child)
-            if obj.scales[scale] < 1
-               for i, _scale in obj.scales
-                  if (_scale = 1)
-                     scale := i
-
-         if (scale = obj.scale)
-            return
-
-         obj.scale := scale
-         s := obj.scales[scale]
-         x := Ceil(x * s) - x
-         y := Ceil(y * s) - y
-         w := Ceil(width * s)
-         h := Ceil(height * s)
-
-         hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
-         bi := Buffer(40, 0)                    ; sizeof(bi) = 40
-            NumPut(  "uint",        40, bi,  0) ; Size
-            NumPut(   "int",         w, bi,  4) ; Width
-            NumPut(   "int",        -h, bi,  8) ; Height - Negative so (0, 0) is top-left.
-            NumPut("ushort",         1, bi, 12) ; Planes
-            NumPut("ushort",        32, bi, 14) ; BitCount / BitsPerPixel
-         hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", bi, "uint", 0, "ptr*", &pBits:=0, "ptr", 0, "uint", 0, "ptr")
-         obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
-
-         DllCall("SetStretchBltMode", "ptr", hdc, "int", 3) ; Nearest Neighbor
-         DllCall("StretchBlt", "ptr", hdc, "int", 0, "int", 0, "int", w, "int", h, "ptr", sdc, "int", 0, "int", 0, "int", width, "int", height, "uint", 0xCC0020) ; SRCCOPY | CAPTUREBLT
-
-         pptDst := Buffer(8, 0)
-         NumPut("int", x, pptDst, 0)
-         NumPut("int", y, pptDst, 4)
-
-         DllCall("UpdateLayeredWindow"
-                  ,    "ptr", child                    ; hWnd
-                  ,    "ptr", 0                        ; hdcDst
-                  ,    "ptr", 0                        ; *pptDst
-                  ,"uint64*", w | h << 32              ; *psize
-                  ,    "ptr", hdc                      ; hdcSrc
-                  , "int64*", 0                        ; *pptSrc
-                  ,   "uint", 0                        ; crKey
-                  ,  "uint*", 0xFF << 16 | 0x01 << 24  ; *pblend
-                  ,   "uint", 2)                       ; dwFlags
-
-         DllCall("SelectObject", "ptr", hdc, "ptr", obm, "ptr")
-         DllCall("DeleteObject", "ptr", hbm)
-         DllCall("DeleteDC", "ptr", hdc)
       }
 
       ; WM_APP - Animate GIFs

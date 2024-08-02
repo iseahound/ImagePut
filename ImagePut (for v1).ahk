@@ -1519,6 +1519,8 @@ class ImagePut {
       buf := new ImagePut.DesktopDuplicationBuffer()
       buf.width := width
       buf.height := height
+      buf.DesktopImageInSystemMemory := DesktopImageInSystemMemory
+
       buf.staging_texture := staging_texture
       buf.IDXGIOutputDuplication := IDXGIOutputDuplication
       buf.ID3D11DeviceContext := ID3D11DeviceContext
@@ -1527,8 +1529,6 @@ class ImagePut {
       buf.IDXGIOutput := IDXGIOutput
       buf.IDXGIAdapter := IDXGIAdapter
       buf.IDXGIFactory1 := IDXGIFactory1
-
-      buf.DesktopImageInSystemMemory := DesktopImageInSystemMemory
 
       buf.Update()
 
@@ -1543,9 +1543,6 @@ class ImagePut {
 
          ; Release the current frame to acquire a new frame.
          this.Unbind()
-
-         ; Allocate a shared buffer for all calls of AcquireNextFrame.
-         ;DXGI_OUTDUPL_FRAME_INFO := Buffer(48)
 
          ; The following loop structure repeatedly checks for a new frame.
          loop {
@@ -1578,7 +1575,6 @@ class ImagePut {
 
          ; Maybe the laptop uses a unified RAM for the CPU and the GPU?
          if (this.DesktopImageInSystemMemory = 1) {
-            ;static DXGI_MAPPED_RECT
             DllCall(NumGet(NumGet(this.IDXGIOutputDuplication+0)+A_PtrSize* 12), "ptr", this.IDXGIOutputDuplication, "ptr", &DXGI_MAPPED_RECT := VarSetCapacity(DXGI_MAPPED_RECT, A_PtrSize*2, 0))
             pitch := NumGet(DXGI_MAPPED_RECT, 0, "int")
             pBits := NumGet(DXGI_MAPPED_RECT, A_PtrSize, "ptr")
@@ -3999,88 +3995,6 @@ class ImagePut {
             Tooltip,,,, 16
          return
       }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
       ; WM_APP - Animate GIFs
       if (uMsg = 0x8000) {
