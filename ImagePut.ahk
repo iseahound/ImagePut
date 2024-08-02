@@ -982,7 +982,7 @@ class ImagePut {
          s64 := StrLen(RTrim(b64, "=")) * 3 // 4
          code := DllCall("GlobalAlloc", "uint", 0, "uptr", s64, "ptr")
          DllCall("crypt32\CryptStringToBinary", "str", b64, "uint", 0, "uint", 0x1, "ptr", code, "uint*", s64, "ptr", 0, "ptr", 0)
-         DllCall("VirtualProtect", "ptr", code, "ptr", s64, "uint", 0x40, "uint*", 0)
+         DllCall("VirtualProtect", "ptr", code, "uptr", s64, "uint", 0x40, "uint*", 0)
       }
 
       ; Sample the top-left pixel and set all matching pixels to be transparent.
@@ -2699,7 +2699,7 @@ class ImagePut {
          s64 := StrLen(RTrim(b64, "=")) * 3 // 4
          code := DllCall("GlobalAlloc", "uint", 0, "uptr", s64, "ptr")
          DllCall("crypt32\CryptStringToBinary", "str", b64, "uint", 0, "uint", 0x1, "ptr", code, "uint*", s64, "ptr", 0, "ptr", 0)
-         DllCall("VirtualProtect", "ptr", code, "ptr", s64, "uint", 0x40, "uint*", 0)
+         DllCall("VirtualProtect", "ptr", code, "uptr", s64, "uint", 0x40, "uint*", 0)
 
          return codes[b64] := code
       }
@@ -2726,7 +2726,7 @@ class ImagePut {
             s64 := StrLen(RTrim(b64, "=")) * 3 // 4
             code := DllCall("GlobalAlloc", "uint", 0, "uptr", s64, "ptr")
             DllCall("crypt32\CryptStringToBinary", "str", b64, "uint", 0, "uint", 0x1, "ptr", code, "uint*", s64, "ptr", 0, "ptr", 0)
-            DllCall("VirtualProtect", "ptr", code, "ptr", s64, "uint", 0x40, "uint*", 0)
+            DllCall("VirtualProtect", "ptr", code, "uptr", s64, "uint", 0x40, "uint*", 0)
 
             ; Set eax flag to 1 to retrieve supported CPU features.
             ; See this for CPU features: https://wiki.osdev.org/CPUID
@@ -4159,28 +4159,29 @@ class ImagePut {
       hModule := DllCall("GetModuleHandle", "str", "user32.dll", "ptr")
       SendMessageW := DllCall("GetProcAddress", "ptr", hModule, "astr", "SendMessageW", "ptr")
 
-      pcb := DllCall("GlobalAlloc", "uint", 0, "uptr", 71, "ptr")
-      DllCall("VirtualProtect", "ptr", pcb, "ptr", 71, "uint", 0x40, "uint*", 0)
+      ncb := (A_PtrSize = 8) ? 71 : 28
+      pcb := DllCall("GlobalAlloc", "uint", 0, "uptr", ncb, "ptr")
+      DllCall("VirtualProtect", "ptr", pcb, "uptr", ncb, "uint", 0x40, "uint*", 0)
 
       ; Retract the hex representation to binary.
       if (A_PtrSize = 8) {
          assembly := "
             ( Join`s Comments
-            48 89 4c 24 08                 ; mov [rsp+8], rcx
-            48 89 54 24 10                 ; mov [rsp+16], rdx
-            4c 89 44 24 18                 ; mov [rsp+24], r8
-            4c 89 4c 24 20                 ; mov [rsp+32], r9
-            48 83 ec 28                    ; sub rsp, 40
-            49 b9 00 00 00 00 00 00 00 00  ; mov r9, .. (lParam)
-            49 b8 00 00 00 00 00 00 00 00  ; mov r8, .. (wParam)
-            ba 00 00 00 00                 ; mov edx, .. (uMsg)
-            b9 00 00 00 00                 ; mov ecx, .. (hwnd)
-            48 b8 00 00 00 00 00 00 00 00  ; mov rax, .. (SendMessageW)
-            ff d0                          ; call rax
-            48 83 c4 28                    ; add rsp, 40
-            c3                             ; ret
-            )"
-         DllCall("crypt32\CryptStringToBinary", "str", assembly, "uint", 0, "uint", 0x4, "ptr", pcb, "uint*", 71, "ptr", 0, "ptr", 0)
+            48 89 4c 24 08                 ;   0: mov [rsp+8], rcx
+            48 89 54 24 10                 ;   5: mov [rsp+16], rdx
+            4c 89 44 24 18                 ;  10: mov [rsp+24], r8
+            4c 89 4c 24 20                 ;  15: mov [rsp+32], r9
+            48 83 ec 28                    ;  20: sub rsp, 40
+            49 b9 00 00 00 00 00 00 00 00  ;  24: mov r9, .. (lParam)
+            49 b8 00 00 00 00 00 00 00 00  ;  34: mov r8, .. (wParam)
+            ba 00 00 00 00                 ;  44: mov edx, .. (uMsg)
+            b9 00 00 00 00                 ;  49: mov ecx, .. (hwnd)
+            48 b8 00 00 00 00 00 00 00 00  ;  54: mov rax, .. (SendMessageW)
+            ff d0                          ;  64: call rax
+            48 83 c4 28                    ;  66: add rsp, 40
+            c3                             ;  70: ret
+            )"                             ;  71:
+         DllCall("crypt32\CryptStringToBinary", "str", assembly, "uint", 0, "uint", 0x4, "ptr", pcb, "uint*", ncb, "ptr", 0, "ptr", 0)
          NumPut("ptr", SendMessageW, pcb + 56)
          NumPut("int", hwnd, pcb + 50)
          NumPut("int", uMsg, pcb + 45)
@@ -4190,22 +4191,21 @@ class ImagePut {
       else {
          assembly := "
             ( Join`s Comments
-            68 00 00 00 00                 ; push .. (lParam)
-            68 00 00 00 00                 ; push .. (wParam)
-            68 00 00 00 00                 ; push .. (uMsg)
-            68 00 00 00 00                 ; push .. (hwnd)
-            b8 00 00 00 00                 ; mov eax, .. (SendMessageW)
-            ff d0                          ; call eax
-            c3                             ; ret
-            )"
-         DllCall("crypt32\CryptStringToBinary", "str", assembly, "uint", 0, "uint", 0x4, "ptr", pcb, "uint*", 28, "ptr", 0, "ptr", 0)
+            68 00 00 00 00                 ;   0: push .. (lParam)
+            68 00 00 00 00                 ;   5: push .. (wParam)
+            68 00 00 00 00                 ;  10: push .. (uMsg)
+            68 00 00 00 00                 ;  15: push .. (hwnd)
+            b8 00 00 00 00                 ;  20: mov eax, .. (SendMessageW)
+            ff d0                          ;  25: call eax
+            c3                             ;  27: ret
+            )"                             ;  28:
+         DllCall("crypt32\CryptStringToBinary", "str", assembly, "uint", 0, "uint", 0x4, "ptr", pcb, "uint*", ncb, "ptr", 0, "ptr", 0)
          NumPut("int", SendMessageW, pcb + 21)
          NumPut("int", hwnd, pcb + 16)
          NumPut("int", uMsg, pcb + 11)
          NumPut("int", wParam, pcb + 6)
          NumPut("int", lParam, pcb + 1)
       }
-
       return pcb
    }
 
@@ -4474,7 +4474,7 @@ class ImagePut {
          s64 := StrLen(RTrim(b64, "=")) * 3 // 4
          code := DllCall("GlobalAlloc", "uint", 0, "uptr", s64, "ptr")
          DllCall("crypt32\CryptStringToBinary", "str", b64, "uint", 0, "uint", 0x1, "ptr", code, "uint*", s64, "ptr", 0, "ptr", 0)
-         DllCall("VirtualProtect", "ptr", code, "ptr", s64, "uint", 0x40, "uint*", 0)
+         DllCall("VirtualProtect", "ptr", code, "uptr", s64, "uint", 0x40, "uint*", 0)
       }
 
       ; Default to lowercase hex values. Or capitalize the string below.
@@ -4510,7 +4510,7 @@ class ImagePut {
          s64 := StrLen(RTrim(b64, "=")) * 3 // 4
          code := DllCall("GlobalAlloc", "uint", 0, "uptr", s64, "ptr")
          DllCall("crypt32\CryptStringToBinary", "str", b64, "uint", 0, "uint", 0x1, "ptr", code, "uint*", s64, "ptr", 0, "ptr", 0)
-         DllCall("VirtualProtect", "ptr", code, "ptr", s64, "uint", 0x40, "uint*", 0)
+         DllCall("VirtualProtect", "ptr", code, "uptr", s64, "uint", 0x40, "uint*", 0)
       }
 
       ; Default to lowercase hex values. Or capitalize the string below.
