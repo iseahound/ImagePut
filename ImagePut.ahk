@@ -979,10 +979,10 @@ class ImagePut {
          b64 := (A_PtrSize == 4)
             ? "VYnli0UIi1UMi00QOdBzDzkIdQbHAAAAAACDwATr7V3D"
             : "SDnRcw9EOQF1BDHAiQFIg8EE6+zD"
-         s64 := StrLen(RTrim(b64, "=")) * 3 // 4
-         code := DllCall("GlobalAlloc", "uint", 0, "uptr", s64, "ptr")
-         DllCall("crypt32\CryptStringToBinary", "str", b64, "uint", 0, "uint", 0x1, "ptr", code, "uint*", s64, "ptr", 0, "ptr", 0)
-         DllCall("VirtualProtect", "ptr", code, "uptr", s64, "uint", 0x40, "uint*", 0)
+         n64 := StrLen(RTrim(b64, "=")) * 3 // 4
+         code := DllCall("GlobalAlloc", "uint", 0, "uptr", n64, "ptr")
+         DllCall("crypt32\CryptStringToBinary", "str", b64, "uint", 0, "uint", 0x1, "ptr", code, "uint*", n64, "ptr", 0, "ptr", 0)
+         DllCall("VirtualProtect", "ptr", code, "uptr", n64, "uint", 0x40, "uint*", 0)
       }
 
       ; Sample the top-left pixel and set all matching pixels to be transparent.
@@ -2696,10 +2696,10 @@ class ImagePut {
          if codes.Has(b64)
             return codes[b64]
 
-         s64 := StrLen(RTrim(b64, "=")) * 3 // 4
-         code := DllCall("GlobalAlloc", "uint", 0, "uptr", s64, "ptr")
-         DllCall("crypt32\CryptStringToBinary", "str", b64, "uint", 0, "uint", 0x1, "ptr", code, "uint*", s64, "ptr", 0, "ptr", 0)
-         DllCall("VirtualProtect", "ptr", code, "uptr", s64, "uint", 0x40, "uint*", 0)
+         n64 := StrLen(RTrim(b64, "=")) * 3 // 4
+         code := DllCall("GlobalAlloc", "uint", 0, "uptr", n64, "ptr")
+         DllCall("crypt32\CryptStringToBinary", "str", b64, "uint", 0, "uint", 0x1, "ptr", code, "uint*", n64, "ptr", 0, "ptr", 0)
+         DllCall("VirtualProtect", "ptr", code, "uptr", n64, "uint", 0x40, "uint*", 0)
 
          return codes[b64] := code
       }
@@ -2723,10 +2723,10 @@ class ImagePut {
             b64 := (A_PtrSize == 4)
                ? "VYnlV4t9EFaLdQhTiw+LBg+iiQaLRQyJGItFFIkPiRBbXl9dww=="
                : "U4sBSYnKSYnTQYsID6JBiQJBiRtBiQhBiRFbww=="
-            s64 := StrLen(RTrim(b64, "=")) * 3 // 4
-            code := DllCall("GlobalAlloc", "uint", 0, "uptr", s64, "ptr")
-            DllCall("crypt32\CryptStringToBinary", "str", b64, "uint", 0, "uint", 0x1, "ptr", code, "uint*", s64, "ptr", 0, "ptr", 0)
-            DllCall("VirtualProtect", "ptr", code, "uptr", s64, "uint", 0x40, "uint*", 0)
+            n64 := StrLen(RTrim(b64, "=")) * 3 // 4
+            code := DllCall("GlobalAlloc", "uint", 0, "uptr", n64, "ptr")
+            DllCall("crypt32\CryptStringToBinary", "str", b64, "uint", 0, "uint", 0x1, "ptr", code, "uint*", n64, "ptr", 0, "ptr", 0)
+            DllCall("VirtualProtect", "ptr", code, "uptr", n64, "uint", 0x40, "uint*", 0)
 
             ; Set eax flag to 1 to retrieve supported CPU features.
             ; See this for CPU features: https://wiki.osdev.org/CPUID
@@ -4471,10 +4471,10 @@ class ImagePut {
          b64 := (A_PtrSize == 4)
             ? "VYnlVotFDIt1EFOLTRSLXQgBxjnwcyCKEIPBAkDA6gQPttKKFBOIUf6KUP+D4g+KFBOIUf/r3FteXcM="
             : "SQHQTDnCcyWKAkmDwQJI/8LA6AQPtsCKBAFBiEH+ikL/g+APigQBQYhB/+vWww=="
-         s64 := StrLen(RTrim(b64, "=")) * 3 // 4
-         code := DllCall("GlobalAlloc", "uint", 0, "uptr", s64, "ptr")
-         DllCall("crypt32\CryptStringToBinary", "str", b64, "uint", 0, "uint", 0x1, "ptr", code, "uint*", s64, "ptr", 0, "ptr", 0)
-         DllCall("VirtualProtect", "ptr", code, "uptr", s64, "uint", 0x40, "uint*", 0)
+         n64 := StrLen(RTrim(b64, "=")) * 3 // 4
+         code := DllCall("GlobalAlloc", "uint", 0, "uptr", n64, "ptr")
+         DllCall("crypt32\CryptStringToBinary", "str", b64, "uint", 0, "uint", 0x1, "ptr", code, "uint*", n64, "ptr", 0, "ptr", 0)
+         DllCall("VirtualProtect", "ptr", code, "uptr", n64, "uint", 0x40, "uint*", 0)
       }
 
       ; Default to lowercase hex values. Or capitalize the string below.
@@ -4507,10 +4507,10 @@ class ImagePut {
          b64 := (A_PtrSize == 4)
             ? "VYnlVotFDIt1EFOLTRSLXQgBxjnwcyCKEIPBAkDA6gQPttKKFBOIUf6KUP+D4g+KFBOIUf/r3FteXcM="
             : "SQHQTDnCcyWKAkmDwQJI/8LA6AQPtsCKBAFBiEH+ikL/g+APigQBQYhB/+vWww=="
-         s64 := StrLen(RTrim(b64, "=")) * 3 // 4
-         code := DllCall("GlobalAlloc", "uint", 0, "uptr", s64, "ptr")
-         DllCall("crypt32\CryptStringToBinary", "str", b64, "uint", 0, "uint", 0x1, "ptr", code, "uint*", s64, "ptr", 0, "ptr", 0)
-         DllCall("VirtualProtect", "ptr", code, "uptr", s64, "uint", 0x40, "uint*", 0)
+         n64 := StrLen(RTrim(b64, "=")) * 3 // 4
+         code := DllCall("GlobalAlloc", "uint", 0, "uptr", n64, "ptr")
+         DllCall("crypt32\CryptStringToBinary", "str", b64, "uint", 0, "uint", 0x1, "ptr", code, "uint*", n64, "ptr", 0, "ptr", 0)
+         DllCall("VirtualProtect", "ptr", code, "uptr", n64, "uint", 0x40, "uint*", 0)
       }
 
       ; Default to lowercase hex values. Or capitalize the string below.
