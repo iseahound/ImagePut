@@ -213,6 +213,8 @@ class ImagePut {
       scale     := keywords.HasKey("scale")      ? keywords.scale     : ""
       upscale   := keywords.HasKey("upscale")    ? keywords.upscale   : ""
       downscale := keywords.HasKey("downscale")  ? keywords.downscale : ""
+      minsize   := keywords.HasKey("minsize")    ? keywords.minsize   : ""
+      maxsize   := keywords.HasKey("maxsize")    ? keywords.maxsize   : ""
       sprite    := keywords.HasKey("sprite")     ? keywords.sprite    : ""
       decode    := keywords.HasKey("decode")     ? keywords.decode    : this.decode
       render    := keywords.HasKey("render")     ? keywords.render    : this.render
@@ -223,6 +225,11 @@ class ImagePut {
       ; Keywords are for (input -> intermediate).
       try index := keywords.index
 
+      weight := crop || scale || upscale || downscale || minsize || maxsize || sprite || decode
+      cleanup := ""
+      if (weight)
+         goto make_bitmap
+
       ; #0 - Special cases.
       if (type = "SharedBuffer" && cotype = "SharedBuffer")
          return this.SharedBufferToSharedBuffer(image)
@@ -232,8 +239,6 @@ class ImagePut {
 
       if (type = "Screenshot" && cotype = "Buffer")
          return this.ScreenshotToBuffer(image)
-
-      cleanup := ""
 
       ; #1 - Stream as the intermediate representation.
       try stream := this.ImageToStream(type, image, keywords)
@@ -292,7 +297,7 @@ class ImagePut {
       ; To determine whether the stream should be decoded into pixels:
       ; (1) Check for scaling or cropping, etc.
       ; (2) Check if the source encoding is different from the destination.
-      weight := decode || crop || scale || upscale || downscale || sprite ||
+      weight |=
 
          ; The 1st parameter holds the destination encoding.
          !( cotype ~= "^(?i:safearray|encodedbuffer|hex|base64|uri|stream|randomaccessstream|)$"
@@ -349,6 +354,8 @@ class ImagePut {
       (scale) && this.BitmapScale(pBitmap, scale)
       (upscale) && this.BitmapScale(pBitmap, upscale, 1)
       (downscale) && this.BitmapScale(pBitmap, downscale, -1)
+      (minsize) && this.BitmapScale(pBitmap, minsize, 1, "join", True)
+      (maxsize) && this.BitmapScale(pBitmap, maxsize, -1, "meet", True)
       (sprite) && this.BitmapSprite(pBitmap)
 
       ; Save frame delays and loop count for webp.
@@ -894,22 +901,51 @@ class ImagePut {
       return pBitmap := pBitmapCrop
    }
 
-   BitmapScale(ByRef pBitmap, scale, direction := 0) {
-      if not (IsObject(scale) && ((scale[1] ~= "^(?!0+$)\d+$") || (scale[2] ~= "^(?!0+$)\d+$")) || (scale ~= "^(?!0+$)\d+(\.\d+)?$"))
-         throw Exception("Invalid scale.")
+   BitmapScale(ByRef pBitmap, scale, direction := 0, bound := "", preserveAspectRatio := False) {
+      ; min() specifies the greatest lower bound or the maximum size, fitting the image to the bounding box. 
+      ; max() specifies the least upper bound or the minimum size, filling the image to the bounding box. 
+      bound := !IsFunc(bound) && (bound ~= "^(?i:fit|meet|and|infimum)$") ? Func("min")
+            :  !IsFunc(bound) && (bound ~= "^(?i:fill|join|or|supremum)$") ? Func("max")
+            :  !IsFunc(bound) && (bound == "") ? ((direction < 0) ? Func("min") : Func("max"))
+            :  bound ; Please specify your own bound function
 
       ; Get Bitmap width, height, and format.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
       DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", pBitmap, "int*", format:=0)
 
-      if IsObject(scale) {
-         safe_w := (scale[1] ~= "^(?!0+$)\d+$") ? scale[1] : Round(width / height * scale[2])
-         safe_h := (scale[2] ~= "^(?!0+$)\d+$") ? scale[2] : Round(height / width * scale[1])
-      } else {
-         safe_w := Ceil(width * scale)
-         safe_h := Ceil(height * scale)
+      ; Scale using a real number greater than 0.
+      if !IsObject(scale) && scale ~= "^(?!0+$)\d+(\.\d+)?$" {
+         safe_w := Round(width * scale)
+         safe_h := Round(height * scale)
       }
+
+      ; Specify min or max as the bounding function to fit or fill to the specified edge length.
+      if IsObject(scale) && scale.length() = 1 && scale.HasKey(1) && scale[1] ~= "^(?!0+$)\d+$" {
+         safe_w := Round(width * %bound%(scale[1] / width, scale[1] / height))
+         safe_h := Round(height * %bound%(scale[1] / width, scale[1] / height))
+      }
+
+      ; (1) If either the width or the height is set to "auto", the other dimension is calculated from the aspect ratio.
+      ; (2) Preserve the aspect ratio using either the width or the height as the reference.
+      ; (3) Scale to the given width x height.
+      if IsObject(scale) && scale.length() = 2 && (scale.HasKey(1) && scale[1] ~= "^(?!0+$)\d+$" || scale.HasKey(2) && scale[2] ~= "^(?!0+$)\d+$") {
+         safe_w := !(scale[1] ~= "^(?!0+$)\d+$") ? Round(width / height * scale[2])
+               : (preserveAspectRatio) ? Round(width * %bound%(scale[1] / width, scale[2] / height))
+               : scale[1]
+         safe_h := !(scale[2] ~= "^(?!0+$)\d+$") ? Round(height / width * scale[1])
+               : (preserveAspectRatio) ? Round(height * %bound%(scale[1] / width, scale[2] / height))
+               : scale[2]
+      }
+
+      if IsObject(scale) && scale.length() = 1 && scale.HasKey(1) && scale[1] ~= "^(?!0+$)\d+$" && direction = 0
+         throw Exception("Single scale value requires a direction such as upscale or downscale.")
+      if !IsSet(safe_w) || !IsSet(safe_h)
+         throw Exception("Invalid scale.")
+
+      ; Minimum size is 1 x 1.
+      safe_w := max(1, safe_w)
+      safe_h := max(1, safe_h)
 
       ; Avoid drawing if no changes detected.
       if (safe_w = width && safe_h = height)
@@ -2539,13 +2575,13 @@ class ImagePut {
          get {
             ; Test if the cached bitmap (this.pBitmap2) already exists.
             renew := False
-            renew |= this.HasProp("ptr2") && this.ptr != this.ptr2
+            renew |= this.HasKey("ptr2") && this.ptr != this.ptr2
 
             ; Delete the old bitmap.
             (renew) && DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap2)
 
             ; Test if the cached bitmap needs to be created.
-            renew |= !this.HasProp("pBitmap2")
+            renew |= !this.HasKey("pBitmap2")
             try renew |= DllCall("gdiplus\GdipGetImageType", "ptr", this.pBitmap2, "ptr*", _type:=0) or (_type != 1)
             catch
                renew := True
@@ -2574,6 +2610,7 @@ class ImagePut {
             if IsObject(this.free) && this.free.length() > 0
                for callback in this.free
                   callback.call()
+            return this
          }
 
          if (name = "Update") && this.HasKey("draw") {
@@ -2582,9 +2619,8 @@ class ImagePut {
             if IsObject(this.draw) && this.draw.length() > 0
                for callback in this.draw
                   callback.call()
+            return this
          }
-
-         return this
       }
 
       __Get(x, y) {
