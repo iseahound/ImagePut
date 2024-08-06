@@ -906,7 +906,7 @@ class ImagePut {
       ; max() specifies the least upper bound or the minimum size, filling the image to the bounding box. 
       bound := !IsFunc(bound) && (bound ~= "^(?i:fit|meet|and|infimum)$") ? Func("min")
             :  !IsFunc(bound) && (bound ~= "^(?i:fill|join|or|supremum)$") ? Func("max")
-            :  !IsFunc(bound) && (bound == "") ? ((direction < 0) ? Func("min") : Func("max"))
+            :  !IsFunc(bound) && (bound == "") ? ((direction < 0) ? Func("max") : Func("min"))
             :  bound ; Please specify your own bound function
 
       ; Get Bitmap width, height, and format.
