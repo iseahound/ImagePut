@@ -2402,6 +2402,8 @@ class ImagePut {
 
    static StreamToClipboardExit(filepath, p*) {
       try FileDelete filepath
+      if DirExist(A_Temp "\ImagePut")
+         try DirDelete A_Temp "\ImagePut"
       return 0 ; Required by OnExit to exit the script.
    }
 
