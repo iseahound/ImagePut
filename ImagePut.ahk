@@ -2571,6 +2571,18 @@ class ImagePut {
          ImagePut.gdiplusShutdown()
       }
 
+      stride {
+         get {
+            return this.size // this.height
+         }
+      }
+
+      pitch {
+         get {
+            return this.size // this.height
+         }
+      }
+      
       pBitmap {
          get {
             ; Test if the cached bitmap (this.pBitmap2) already exists.
