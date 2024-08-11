@@ -2357,6 +2357,7 @@ class ImagePut {
       if (extension) {
          filepath := A_Temp "\ImagePut\clipboard." extension
          filepath := RTrim(filepath, ".") ; Remove trailing periods.
+         DirCreate(A_Temp "\ImagePut")
 
          ; For compatibility with SHCreateMemStream do not use GetHGlobalFromStream.
          DllCall("shlwapi\SHCreateStreamOnFileEx"
