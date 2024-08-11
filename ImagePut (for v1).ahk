@@ -2355,7 +2355,7 @@ class ImagePut {
 
       ; #3 - Copy other formats to a file and pass a (15) DROPFILES struct.
       if (extension) {
-         filepath := A_ScriptDir "\clipboard." extension
+         filepath := A_Temp "\ImagePut\clipboard." extension
          filepath := RTrim(filepath, ".") ; Remove trailing periods.
 
          ; For compatibility with SHCreateMemStream do not use GetHGlobalFromStream.
