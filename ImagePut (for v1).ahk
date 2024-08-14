@@ -56,9 +56,11 @@ ImagePutEncodedBuffer(image, extension := "", quality := "") {
    return ImagePut("EncodedBuffer", image, extension, quality)
 }
 
-; Puts the image into the most recently active explorer window.
-ImagePutExplorer(image, default := "") {
-   return ImagePut("Explorer", image, default)
+; Puts the image into the currently active explorer window.
+;   default_dir -  Default Directory       |  string   ->   C:\Users\Me\Pictures
+;   background  -  Find Inactive Windows?  |  bool     ->   False
+ImagePutExplorer(image, default_dir := "", background_window := False) {
+   return ImagePut("Explorer", default_dir, background_window)
 }
 
 ; Puts the image into a file and returns its filepath.
@@ -686,8 +688,8 @@ class ImagePut {
       if (cotype = "URL") ; (pBitmap)
          return this.BitmapToURL(pBitmap)
 
-      if (cotype = "Explorer") ; (pBitmap, default)
-         return this.BitmapToExplorer(pBitmap, p1)
+      if (cotype = "Explorer") ; (pBitmap, default_dir, background_window)
+         return this.BitmapToExplorer(pBitmap, p1, p2)
 
       if (cotype = "File") ; (pBitmap, filepath, quality)
          return this.BitmapToFile(pBitmap, p1, p2)
@@ -779,8 +781,8 @@ class ImagePut {
       if (cotype = "URL") ; (stream)
          return this.StreamToURL(stream)
 
-      if (cotype = "Explorer") ; (stream, default)
-         return this.StreamToExplorer(stream, p1)
+      if (cotype = "Explorer") ; (stream, default_dir, background_window)
+         return this.StreamToExplorer(stream, p1, p2)
 
       if (cotype = "File") ; (stream, filepath)
          return this.StreamToFile(stream, p1)
