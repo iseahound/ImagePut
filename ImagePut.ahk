@@ -4372,54 +4372,34 @@ class ImagePut {
       return url
    }
 
-   static BitmapToExplorer(pBitmap, default := "") {
-
-      ; Get path of active window.
-      if (hwnd := WinExist("ahk_class ExploreWClass")) || (hwnd := WinExist("ahk_class CabinetWClass")) {
-         ; script from Lexikos: https://www.autohotkey.com/boards/viewtopic.php?f=83&t=109907
-         ; modified for this by: @TheCrether
-         ; useful for windows 11 explorer tabs support (works with windows 10 explorers too)
-         tab := this.GetCurrentExplorerTab(hwnd)
-         if tab {
-            switch Type(tab.Document) {
-               case "ShellFolderView":
-                  directory := tab.Document.Folder.Self.Path
-               default: ; case "HTMLDocument"
-                  directory := tab.LocationURL
-            }
-         }
-      }
-      else if (default != "")
-         directory := default
-      else
-         return
-
-      return this.BitmapToFile(pBitmap, directory)
+   static BitmapToExplorer(pBitmap, default_dir := "", background_window := False) {
+      if directory := this.GetExplorerDirectory(default_dir, background_window)
+         return this.BitmapToFile(pBitmap, directory)
    }
 
-   static StreamToExplorer(stream, default := "") {
+   static StreamToExplorer(stream, default_dir := "", background_window := False) {
+      if directory := this.GetExplorerDirectory(default_dir, background_window)
+         return this.StreamToFile(stream, directory)
+   }
 
-      ; Get path of active window.
-      if (hwnd := WinExist("ahk_class ExploreWClass")) || (hwnd := WinExist("ahk_class CabinetWClass")) {
-         ; script from Lexikos: https://www.autohotkey.com/boards/viewtopic.php?f=83&t=109907
-         ; modified for this by: @TheCrether
-         ; useful for windows 11 explorer tabs support (works with windows 10 explorers too)
-         tab := this.GetCurrentExplorerTab(hwnd)
-         if tab {
+   static GetExplorerDirectory(default_dir := "", background_window := False) {
+      ; Thanks @TheCrether
+      GetExplorer := (background_window) ? WinExist : WinActive
+      if (hwnd := GetExplorer("ahk_class ExploreWClass"))
+      or (hwnd := GetExplorer("ahk_class CabinetWClass"))
+         if tab := this.GetCurrentExplorerTab(hwnd)
             switch Type(tab.Document) {
                case "ShellFolderView":
                   directory := tab.Document.Folder.Self.Path
                default: ; case "HTMLDocument"
                   directory := tab.LocationURL
             }
-         }
-      }
-      else if (default != "")
-         directory := default
-      else
-         return
 
-      return this.StreamToFile(stream, directory)
+      if WinActive("ahk_class WorkerW") or WinActive("ahk_class Progman")
+         directory := A_Desktop
+
+      ; Returns the empty string if the directory is not found.
+      return directory ?? default_dir
    }
 
    static GetCurrentExplorerTab(hwnd) {
