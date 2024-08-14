@@ -4423,28 +4423,23 @@ class ImagePut {
    }
 
    static GetCurrentExplorerTab(hwnd) {
-      ; script from Lexikos: https://www.autohotkey.com/boards/viewtopic.php?f=83&t=109907
-      ; modified for this by: @TheCrether
-      activeTab := 0
+      ; Thanks Lexikos - https://www.autohotkey.com/boards/viewtopic.php?f=83&t=109907
       try activeTab := ControlGetHwnd("ShellTabWindowClass1", hwnd) ; File Explorer (Windows 11)
       catch
-         try activeTab := ControlGetHwnd("TabWindowClass1", hwnd) ; IE
+      try activeTab := ControlGetHwnd("TabWindowClass1", hwnd) ; IE
       for w in ComObject("Shell.Application").Windows {
-         if w.hwnd != hwnd
+         if (w.hwnd != hwnd)
             continue
-         if activeTab { ; The window has tabs, so make sure this is the right one.
+         if IsSet(activeTab) { ; The window has tabs, so make sure this is the right one.
             static IID_IShellBrowser := "{000214E2-0000-0000-C000-000000000046}"
-            shellBrowser := ComObjQuery(w, IID_IShellBrowser, IID_IShellBrowser)
-            ComCall(3, shellBrowser, "uint*", &thisTab := 0)
-            if thisTab != activeTab
+            IShellBrowser := ComObjQuery(w, IID_IShellBrowser, IID_IShellBrowser)
+            ComCall(GetWindow := 3, IShellBrowser, "uint*", &thisTab := 0)
+            if (thisTab != activeTab)
                continue
          }
-         return w
+         return w ; Returns a ComObject with a .hwnd property
       }
-      return false
-
-
-
+      throw Error("Could not locate active tab in Explorer window.")
    }
 
    static BitmapToFile(pBitmap, filepath := "", quality := "") {

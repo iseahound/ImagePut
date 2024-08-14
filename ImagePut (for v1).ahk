@@ -4423,28 +4423,23 @@ class ImagePut {
    }
 
    GetCurrentExplorerTab(hwnd) {
-      ; script from Lexikos: https://www.autohotkey.com/boards/viewtopic.php?f=83&t=109907
-      ; modified for this by: @TheCrether
-      static IID_IShellBrowser := "{000214E2-0000-0000-C000-000000000046}"
-
-      activeTab := 0, hwnd := hwnd ? hwnd : WinExist("A")
-      try
-         ControlGet, activeTab, Hwnd,, ShellTabWindowClass1, ahk_id %hwnd% ; File Explorer (Windows 11)
+      ; Thanks Lexikos - https://www.autohotkey.com/boards/viewtopic.php?f=83&t=109907
+      try ControlGet activeTab, Hwnd,, ShellTabWindowClass1, ahk_id %hwnd% ; File Explorer (Windows 11)
       catch
-      try
-         ControlGet, activeTab, Hwnd,, TabWindowClass1, ahk_id %hwnd% ; IE
+      try ControlGet activeTab, Hwnd,, TabWindowClass1, ahk_id %hwnd% ; IE
       for w in ComObjCreate("Shell.Application").Windows {
          if (w.hwnd != hwnd)
+            continue
+         if IsSet(activeTab) { ; The window has tabs, so make sure this is the right one.
+            static IID_IShellBrowser := "{000214E2-0000-0000-C000-000000000046}"
+            IShellBrowser := ComObjQuery(w, IID_IShellBrowser, IID_IShellBrowser)
+            DllCall(NumGet(NumGet(IShellBrowser+0)+A_PtrSize* 3), "ptr", IShellBrowser, "uint*", thisTab:=0), ObjRelease(IShellBrowser)
+            if (thisTab != activeTab)
                continue
-         if (activeTab) { ; The window has tabs, so make sure this is the right one.
-            shellBrowser := ComObjQuery(w, IID_IShellBrowser, IID_IShellBrowser)
-               DllCall(NumGet(NumGet(shellBrowser+0), 3*A_PtrSize), "UPtr",shellBrowser, "UIntP",thisTab:=0)
-               if (thisTab != activeTab)
-                  continue
          }
-         return w
+         return w ; Returns a ComObject with a .hwnd property
       }
-      return 0
+      throw Exception("Could not locate active tab in Explorer window.")
    }
 
    BitmapToFile(pBitmap, filepath := "", quality := "") {
