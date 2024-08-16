@@ -2392,13 +2392,6 @@ class ImagePut {
 
          ; Set the file to the clipboard as a shared object.
          DllCall("SetClipboardData", "uint", 15, "ptr", hDropFiles)
-
-         ; Clean up the files on script exit.
-         static extensions := []
-         if not extensions.HasKey(extension) {
-            extensions.push(extension)
-            OnExit(ObjBindMethod(this, "StreamToClipboardExit", filepath))
-         }
       }
 
       ; Close the clipboard.
@@ -2406,13 +2399,6 @@ class ImagePut {
 
       ; Honestly why would the user use this return value? Use a sentinel instead.
       return ""
-   }
-
-   StreamToClipboardExit(filepath, p*) {
-      try FileDelete % filepath
-      if InStr(FileExist(A_Temp "\ImagePut"), "D")
-         try FileRemoveDir % A_Temp "\ImagePut"
-      return 0 ; Required by OnExit to exit the script.
    }
 
    BitmapToSafeArray(pBitmap, extension := "", quality := "") {
