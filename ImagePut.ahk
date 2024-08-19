@@ -60,7 +60,7 @@ ImagePutEncodedBuffer(image, extension := "", quality := "") {
 ;   default_dir -  Default Directory       |  string   ->   C:\Users\Me\Pictures
 ;   background  -  Find Inactive Windows?  |  bool     ->   False
 ImagePutExplorer(image, default_dir := "", background_window := False) {
-   return ImagePut("Explorer", default_dir, background_window)
+   return ImagePut("Explorer", image, default_dir, background_window)
 }
 
 ; Puts the image into a file and returns its filepath.
