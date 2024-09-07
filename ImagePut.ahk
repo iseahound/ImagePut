@@ -5454,9 +5454,9 @@ class ImageEqual extends ImagePut {
 
 ; Drag and drop files directly onto this script file.
 if (A_Args.length > 0 and A_LineFile == A_ScriptFullPath)
-   ImagePut_DragDropFiles() ; Mask variables from the global scope.
+   ImagePut_DragDropFiles() ; Mask variables from the global scope
    ImagePut_DragDropFiles() {
-      WinSetTitle WinGetTitle(A_ScriptHwnd) . A_ScriptHwnd, A_ScriptHwnd ; (v2) Avoid SingleInstance checks.
+      WinSetTitle WinGetTitle(A_ScriptHwnd) . A_ScriptHwnd, A_ScriptHwnd ; (v2) Avoid SingleInstance checks
       filepath := ""
       for each, arg in A_Args {
          filepath .= arg . A_Space
