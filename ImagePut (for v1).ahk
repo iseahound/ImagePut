@@ -4361,21 +4361,21 @@ class ImagePut {
    }
 
    BitmapToExplorer(pBitmap, default_dir := "", background_window := False) {
-      if directory := this.GetExplorerDirectory(default_dir, background_window)
+      if directory := this.Explorer(default_dir, background_window)
          return this.BitmapToFile(pBitmap, directory)
    }
 
    StreamToExplorer(stream, default_dir := "", background_window := False) {
-      if directory := this.GetExplorerDirectory(default_dir, background_window)
+      if directory := this.Explorer(default_dir, background_window)
          return this.StreamToFile(stream, directory)
    }
 
-   GetExplorerDirectory(default_dir := "", background_window := False) {
+   Explorer(default_dir := "", background_window := False) {
       ; Thanks @TheCrether
       GetExplorer := (background_window) ? Func("WinExist") : Func("WinActive")
       if (hwnd := %GetExplorer%("ahk_class ExploreWClass"))
       or (hwnd := %GetExplorer%("ahk_class CabinetWClass"))
-        if tab := this.GetCurrentExplorerTab(hwnd)
+        if tab := this.ExplorerTab(hwnd)
             switch ComObjType(tab.Document, "Class") {
                case "ShellFolderView":
                   directory := tab.Document.Folder.Self.Path
@@ -4389,26 +4389,26 @@ class ImagePut {
       ; Returns the empty string if the directory is not found.
       return directory ? directory : default_dir
    }
-
-   GetCurrentExplorerTab(hwnd) {
-      ; Thanks Lexikos - https://www.autohotkey.com/boards/viewtopic.php?f=83&t=109907
-      try ControlGet activeTab, Hwnd,, ShellTabWindowClass1, ahk_id %hwnd% ; File Explorer (Windows 11)
-      catch
-      try ControlGet activeTab, Hwnd,, TabWindowClass1, ahk_id %hwnd% ; IE
-      for w in ComObjCreate("Shell.Application").Windows {
-         if (w.hwnd != hwnd)
-            continue
-         if IsSet(activeTab) { ; The window has tabs, so make sure this is the right one.
-            static IID_IShellBrowser := "{000214E2-0000-0000-C000-000000000046}"
-            IShellBrowser := ComObjQuery(w, IID_IShellBrowser, IID_IShellBrowser)
-            DllCall(NumGet(NumGet(IShellBrowser+0)+A_PtrSize* 3), "ptr", IShellBrowser, "uint*", thisTab:=0), ObjRelease(IShellBrowser)
-            if (thisTab != activeTab)
+      ExplorerTab(hwnd) {
+         ; Thanks Lexikos - https://www.autohotkey.com/boards/viewtopic.php?f=83&t=109907
+         try ControlGet activeTab, Hwnd,, ShellTabWindowClass1, ahk_id %hwnd% ; File Explorer (Windows 11)
+         catch
+         try ControlGet activeTab, Hwnd,, TabWindowClass1, ahk_id %hwnd% ; IE
+         for window in ComObjCreate("Shell.Application").Windows {
+            if (window.hwnd != hwnd)
                continue
+            if IsSet(activeTab) { ; The window has tabs, so make sure this is the right one.
+               static IID_IShellBrowser := "{000214E2-0000-0000-C000-000000000046}"
+               IShellBrowser := ComObjQuery(window, IID_IShellBrowser, IID_IShellBrowser)
+               DllCall(NumGet(NumGet(IShellBrowser+0)+A_PtrSize* 3), "ptr", IShellBrowser, "uint*", thisTab:=0), ObjRelease(IShellBrowser)
+               if (thisTab != activeTab)
+                  continue
+            }
+            return window ; Returns a ComObject with a .hwnd property
          }
-         return w ; Returns a ComObject with a .hwnd property
+         throw Exception("Could not locate active tab in Explorer window.")
       }
-      throw Exception("Could not locate active tab in Explorer window.")
-   }
+
 
    BitmapToFile(pBitmap, filepath := "", quality := "") {
       extension := "png"
