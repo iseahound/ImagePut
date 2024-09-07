@@ -5454,16 +5454,16 @@ class ImageEqual extends ImagePut {
 
 ; Drag and drop files directly onto this script file.
 if (A_Args.length > 0 and A_LineFile == A_ScriptFullPath)
-{
-   ; Avoid SingleInstance checks. Only seems to be necessary on v2.
-   WinSetTitle WinGetTitle(A_ScriptHwnd) . A_ScriptHwnd, A_ScriptHwnd
-   filepath := ""
-   for each, arg in A_Args {
-      filepath .= arg . A_Space
-      if FileExist(Trim(filepath)) {
-         SplitPath filepath, &filename
-         ImageShow({file: filepath}, filename)
-         filepath := ""
+   ImagePut_DragDropFiles() ; Mask variables from the global scope.
+   ImagePut_DragDropFiles() {
+      WinSetTitle WinGetTitle(A_ScriptHwnd) . A_ScriptHwnd, A_ScriptHwnd ; (v2) Avoid SingleInstance checks.
+      filepath := ""
+      for each, arg in A_Args {
+         filepath .= arg . A_Space
+         if FileExist(Trim(filepath)) {
+            SplitPath filepath, &filename
+            ImageShow({file: filepath}, filename)
+            filepath := ""
+         }
       }
    }
-}
