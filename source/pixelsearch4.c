@@ -1,3 +1,4 @@
+// 0.5x slower. Searches for a range of pixels from a list.
 unsigned int * pixelsearch4(unsigned int * start, unsigned int * end, unsigned int * high, unsigned int * low, unsigned int length) {
     unsigned char r, g, b, rh, gh, bh, rl, gl, bl;
     while (start < end) {

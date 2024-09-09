@@ -1,3 +1,4 @@
+// 2x faster. Uses 128-bit registers, checks 3 pixel ranges, searching 12 pixels at once.
 #include <emmintrin.h>
 
 #define _mm_cmpge_epu8(a, b) _mm_cmpeq_epi8(_mm_max_epu8(a, b), a)

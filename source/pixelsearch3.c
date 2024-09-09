@@ -1,3 +1,4 @@
+// 0.5x slower. Searches for a single pixel from a list.
 unsigned int * pixelsearch3(unsigned int * start, unsigned int * end, unsigned int * colors, unsigned int length) {
     while (start < end) {
         for (int i = 0; i < length; i++)
