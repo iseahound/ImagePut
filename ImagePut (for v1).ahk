@@ -2874,36 +2874,37 @@ class ImagePut {
 
          ; ------------------------ Machine code generated with MCode4GCC using gcc 13.2.0 ------------------------
 
-         ; C source code - https://godbolt.org/z/zr71creqn
+         ; C source code - https://godbolt.org/z/KMcPeav79
          pixelsearch1 := this.Base64Code((A_PtrSize == 4)
-            ? "VYnlVotNEItVDFOLRQhmD27RjVr0Zg9wygA52HMbDxAAZg92wWYP1/CF9nUMg8AQ6+g5CHQHg8AEOdBy9VteXcM="
-            : "ZkEPbtBIichIjUr0Zg9wygBIOchzIA8QAGYPdsFmRA/XyEWFyXUPSIPAEOvkRDkAdAlIg8AESDnQcvLD")
+            ? "VYnlV4tNEItVDFZTi0UIZg9u0Y1y5GYPcMoAOfBzJw8QAGYPdsFmD9fYDxBAQGYPdsFmD9f4Cft1DIPAIOvcOQh0B4PABDnQcvVb"
+            . "Xl9dww=="            
+            : "ZkEPbtBIichMjUrkZg9wygBMOchzLA8QAGYPdsFmD9fIDxBAQGYPdsFmRA/X0EQJ0XUPSIPAIOvYRDkAdAlIg8AESDnQcvLD")
 
-         ; C source code - https://godbolt.org/z/65Yvsvs1G
+         ; C source code - https://godbolt.org/z/Gc8nbnPq3
          pixelsearch2 := this.Base64Code((A_PtrSize == 4)
             ? "VWYPduSJ5VdWU4Pk8IPsEIpFFItdEItNGItVHIt1DIt9IIhEJA6KRSSIXCQPD7bbiEwkDcHjEA+2yYhEJAsPtkUgweEIiFQkDA+2"
             . "0gnYweIICcgPtk0kDQAAAP8J0Q+2VRRmD27oi0UIZg9wzQDB4hAJ0Y1W9GYPbvFmD3DWADnQczkPEAAPEBgPEDhmD97BZg/e2mYP"
             . "dMFmD3TfD1TDZg92xGYP18iFyXURg8AQ68+KUAI4VCQPcwmDwAQ58HLw6yM6VCQOcvGKUAE4VCQNcug6VCQMcuKKEIn5ONFy2jpU"
-            . "JAty1I1l9FteX13D"
+            . "JAty1I1l9FteX13D"            
             : "QVZBVUFUVVdWU0SLbCRgi0QkaESLdCRwRItUJHhEie6Jx0UPtu0PtsBBweUIRIn1RQ+29kWJ1EWJw0UPtsBEicvB4AhBweAQRQ+2"
             . "0kUPtslFCfBECdBBweEQRQnoRAnIQYHIAAAA/2YPbuhIichmQQ9uyEiNSvRmD3DBAGYPcM0AZg927Ug5yHM8DxAgDyjQDyjcZg/e"
             . "1GYP3tlmD3TQZg903A9U02YPdtVmRA/XwkWFwHUSSIPAEOvLikgCQTjLcwtIg8AESDnQcu/rHTjZcvGKSAFAOM5y6UA4+XLkighA"
-            . "OM1y3UQ44XLYW15fXUFcQV1BXsM=")
+            . "OM1y3UQ44XLYW15fXUFcQV1BXsM=")            
 
-         ; C source code - https://godbolt.org/z/GaEE4r3aW
+         ; C source code - https://godbolt.org/z/cd1xaK5Ec
          pixelsearch3 := this.Base64Code((A_PtrSize == 4)
             ? "VTHSieVXVlOD5PCD7BCLfQyNR/SJRCQEi0UUKdAPhBkBAACD+AF0PoP4AnQhg/gDvgMAAAAPTHQkDIl0JAyLdRBmD25klghmD3Dc"
             . "AOsIx0QkDAIAAACLXRBmD25skwRmD3DVAOsIx0QkDAEAAACLdRBmD240lo0clolcJAhmD3DOAIP4AXR0g/gCi0UIdD6LTCQEOchz"
             . "Lg8QAGYPdsFmD9fYDxAAidlmD3bCZg/X2A8QAAnLZg92w2YP1/AJ83V0g8AQ68qDwgPpS////4139Dnwcx8PEABmD3bBZg/XyA8Q"
             . "AGYPdsJmD9fYCct1RoPAEOvdg8IC6R3///+LRQiNX/Q52HMUDxAAZg92wWYP1/CF9nUgg8AQ6+hC6fn+//+LTCQIiwyROQh0FEI5"
-            . "VCQMf+6DwAQ5+HMGMdLr74n4jWX0W15fXcM="
+            . "VCQMf+6DwAQ5+HMGMdLr74n4jWX0W15fXcM="            
             : "QVVBVFVXVlO9AwAAAEmJykiJ0THSSI1x9ESJyCnQD4QEAQAAg/gBSGPadC6D+AJ0FWZBD25smAiD+ANED03dZg9w3QDrBkG7AgAA"
             . "AGZBD25smARmD3DVAOsGQbsBAAAAZkEPbgyYSY08mGYPcMkAg/gBdHOD+AJMidB0Xkg58HMxDxAADyjhZg924GZED9fsDyjiZg92"
             . "4GYPdsNmD9fcZkQP1+BECetECeN1c0iDwBDryoPCA+lf////DxAADyjhZg924GYPdsJmRA/X5GYP19hECeN1SUiDwBBIOfBy24PC"
             . "Auky////TInQSDnwcxUPEABmD3bBZg/X2IXbdSFIg8AQ6+b/wukO////SP/Ci3SX/DkwdBVBOdN/8EiDwARIOchzBzHS6+5Iichb"
             . "Xl9dQVxBXcM=")
-
-         ; C source code - https://godbolt.org/z/oE5Knfc7W
+            
+         ; C source code - https://godbolt.org/z/sqc9sfv9s
          pixelsearch4 := this.Base64Code((A_PtrSize == 4)
             ? "VTHAZg925InlV1ZTg+Twg+xAi1UYKcIPhFMCAACD+gF0YIP6AnQzi10Qg/oDuQMAAAAPTflmD25sgwiLXRRmD3D9AA8pfCQwZg9u"
             . "fIMIZg9w3wAPKVwkEOsFvwIAAACLXRBmD25sgwSLXRRmD258gwRmD3DdAGYPcM8ADylMJCDrBb8BAAAAi10QjQyFAAAAAAHLiVwk"
@@ -2913,7 +2914,7 @@ class ImagePut {
             . "DxAWDyjyDyjCZg/e9WYP3sFmD3TyZg90wQ9Uxg8odCQgZg92x2YP3vJmD3TyZg/X2A8owmYP3sNmD3TDD1TGZg92x2YP19AJ2nVo"
             . "g8YQ66yDwALpQ/7//4tVDGYPdvaD6gw51nMtDxAWDxAGDxA+Zg/e1WYP3sFmD3TBZg901w9UwmYPdsZmD9fIhcl1JYPGEOvPQOkC"
             . "/v//OFoCczr/RCQwg8IEg8AEi0wkMDnPf+mDxgQ7dQxzRIpGATHJil4CiUwkMItUJAyIRCQgigaIRCQQi0QkCOvQOlgCcsGKTCQg"
-            . "OEoBcrg6SAFys4pMJBA4CnKrOghyp+sDi3UMjWX0ifBbXl9dww=="
+            . "OEoBcrg6SAFys4pMJBA4CnKrOghyp+sDi3UMjWX0ifBbXl9dww=="            
             : "QVRVV1ZTSIPsUA8pNCQPKXwkEEQPKUQkIEQPKUwkMEQPKVQkQL8DAAAAZg9220mJ00iJyzHSSY1z9IuMJKAAAAAp0Q+EMgIAAIP5"
             . "AUhjwnRGg/kCdCFmQQ9ufIAIZkEPbnSBCIP5A0QPTddmD3DvAGYPcP4A6wZBugIAAABmQQ9uZIAEZkEPbnSBBGYPcNQAZg9w9gDr"
             . "BkG6AQAAAGZBD24kgGYPcMwAZkEPbiSBSInYZg9w5ACD+QEPhCIBAACD+QIPhKsAAABIOfAPg5oAAAAPEABEDyjIRA8owGZED97M"
@@ -2926,10 +2927,16 @@ class ImagePut {
             . "ww==")
 
          ; --------------------------------------------------------------------------------------------------------
+ 
+         ; Start at the beginning of the image.
+         ptr := this.ptr
+
+         ; If the found pixel lies in the forbidden stride area, start from the next scanline!
+         redo:
 
          ; When doing pointer arithmetic, *Scan0 + 1 is actually adding 4 bytes.
          if (option == 1)
-            address := DllCall(pixelsearch1, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", color, "cdecl ptr")
+            address := DllCall(pixelsearch1, "ptr", ptr, "ptr", this.ptr + this.size, "uint", color, "cdecl ptr")
 
          if (option == 2) {
             r := ((color & 0xFF0000) >> 16)
@@ -2937,7 +2944,7 @@ class ImagePut {
             b := ((color & 0xFF))
             v := abs(variation)
 
-            address := DllCall(pixelsearch2, "ptr", this.ptr, "ptr", this.ptr + this.size
+            address := DllCall(pixelsearch2, "ptr", ptr, "ptr", this.ptr + this.size
                      , "uchar", min(r+v, 255)
                      , "uchar", max(r-v, 0)
                      , "uchar", min(g+v, 255)
@@ -2955,7 +2962,7 @@ class ImagePut {
             vg := abs(variation[2])
             vb := abs(variation[3])
 
-            address := DllCall(pixelsearch2, "ptr", this.ptr, "ptr", this.ptr + this.size
+            address := DllCall(pixelsearch2, "ptr", ptr, "ptr", this.ptr + this.size
                      , "uchar", min(r + vr, 255)
                      , "uchar", max(r - vr, 0)
                      , "uchar", min(g + vg, 255)
@@ -2966,7 +2973,7 @@ class ImagePut {
          }
 
          if (option == 4)
-            address := DllCall(pixelsearch2, "ptr", this.ptr, "ptr", this.ptr + this.size
+            address := DllCall(pixelsearch2, "ptr", ptr, "ptr", this.ptr + this.size
                      , "uchar", min(max(variation[1], variation[2]), 255)
                      , "uchar", max(min(variation[1], variation[2]), 0)
                      , "uchar", min(max(variation[3], variation[4]), 255)
@@ -2985,7 +2992,7 @@ class ImagePut {
                NumPut(c, colors, 4*(A_Index-1), "uint") ; Place the unsigned int at each offset.
             }
 
-            address := DllCall(pixelsearch3, "ptr", this.ptr, "ptr", this.ptr + this.size, "ptr", &colors, "uint", color.length(), "cdecl ptr")
+            address := DllCall(pixelsearch3, "ptr", ptr, "ptr", this.ptr + this.size, "ptr", &colors, "uint", color.length(), "cdecl ptr")
          }
 
          ; Options 6 & 7 - Creates a high and low struct where each pair is the min and max range.
@@ -3013,7 +3020,7 @@ class ImagePut {
                NumPut(max(b-v, 0), low, 4*A_Offset + 0, "uchar")
             }
 
-            address := DllCall(pixelsearch4, "ptr", this.ptr, "ptr", this.ptr + this.size, "ptr", &high, "ptr", &low, "uint", color.length(), "cdecl ptr")
+            address := DllCall(pixelsearch4, "ptr", ptr, "ptr", this.ptr + this.size, "ptr", &high, "ptr", &low, "uint", color.length(), "cdecl ptr")
          }
 
          if (option == 7) {
@@ -3041,16 +3048,26 @@ class ImagePut {
                NumPut(max(b - vb, 0), low, 4*A_Offset + 0, "uchar")
             }
 
-            address := DllCall(pixelsearch4, "ptr", this.ptr, "ptr", this.ptr + this.size, "ptr", &high, "ptr", &low, "uint", color.length(), "cdecl ptr")
+            address := DllCall(pixelsearch4, "ptr", ptr, "ptr", this.ptr + this.size, "ptr", &high, "ptr", &low, "uint", color.length(), "cdecl ptr")
          }
 
          ; Compare the address to the out-of-bounds limit.
          if (address == this.ptr + this.size)
             return False
 
-         ; Return an [x, y] array.
-         offset := (address - this.ptr) // 4
-         return [mod(offset, this.width), offset // this.width]
+         ; Calculate the x and y coordinates.
+         offset := (address - this.ptr)
+         x := mod(offset, this.stride) // 4
+         y := offset // this.stride
+
+         ; Advance to the next scanline if the x-coordinate is in the forbidden stride area.
+         if x >= this.width {
+            ptr := this.ptr + (y + 1) * this.stride
+            goto redo
+         }
+         
+         ; Returns an [x, y] array.
+         return [x, y]
       }
 
       PixelSearchAll(color, variation := 0) {
