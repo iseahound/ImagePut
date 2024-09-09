@@ -871,8 +871,8 @@ class ImagePut {
    }
 
    static BitmapScale(&pBitmap, scale, direction := 0, bound := "", preserveAspectRatio := False) {
-      ; min() specifies the greatest lower bound or the maximum size, fitting the image to the bounding box. 
-      ; max() specifies the least upper bound or the minimum size, filling the image to the bounding box. 
+      ; min() specifies the greatest lower bound or the maximum size, fitting the image to the bounding box.
+      ; max() specifies the least upper bound or the minimum size, filling the image to the bounding box.
       bound := !HasMethod(bound) && (bound ~= "^(?i:fit|meet|and|infimum)$") ? min
             :  !HasMethod(bound) && (bound ~= "^(?i:fill|join|or|supremum)$") ? max
             :  !HasMethod(bound) && (bound == "") ? ((direction < 0) ? max : min)
@@ -1034,7 +1034,7 @@ class ImagePut {
       : str ~= "(?i)^52 49 46 46 .. .. .. .. 57 45 42 50"                         ? "webp" ; RIFF....WEBP
       : str ~= "(?i)^d7 cd c6 9a"                                                 ? "wmf"
       : "" ; Extension must be blank for file pass-through as-is.
-      
+
       return extension
    }
 
@@ -2877,7 +2877,7 @@ class ImagePut {
          ; C source code - https://godbolt.org/z/KMcPeav79
          pixelsearch1 := this.Base64Code((A_PtrSize == 4)
             ? "VYnlV4tNEItVDFZTi0UIZg9u0Y1y5GYPcMoAOfBzJw8QAGYPdsFmD9fYDxBAQGYPdsFmD9f4Cft1DIPAIOvcOQh0B4PABDnQcvVb"
-            . "Xl9dww=="            
+            . "Xl9dww=="
             : "ZkEPbtBIichMjUrkZg9wygBMOchzLA8QAGYPdsFmD9fIDxBAQGYPdsFmRA/X0EQJ0XUPSIPAIOvYRDkAdAlIg8AESDnQcvLD")
 
          ; C source code - https://godbolt.org/z/Gc8nbnPq3
@@ -2885,11 +2885,11 @@ class ImagePut {
             ? "VWYPduSJ5VdWU4Pk8IPsEIpFFItdEItNGItVHIt1DIt9IIhEJA6KRSSIXCQPD7bbiEwkDcHjEA+2yYhEJAsPtkUgweEIiFQkDA+2"
             . "0gnYweIICcgPtk0kDQAAAP8J0Q+2VRRmD27oi0UIZg9wzQDB4hAJ0Y1W9GYPbvFmD3DWADnQczkPEAAPEBgPEDhmD97BZg/e2mYP"
             . "dMFmD3TfD1TDZg92xGYP18iFyXURg8AQ68+KUAI4VCQPcwmDwAQ58HLw6yM6VCQOcvGKUAE4VCQNcug6VCQMcuKKEIn5ONFy2jpU"
-            . "JAty1I1l9FteX13D"            
+            . "JAty1I1l9FteX13D"
             : "QVZBVUFUVVdWU0SLbCRgi0QkaESLdCRwRItUJHhEie6Jx0UPtu0PtsBBweUIRIn1RQ+29kWJ1EWJw0UPtsBEicvB4AhBweAQRQ+2"
             . "0kUPtslFCfBECdBBweEQRQnoRAnIQYHIAAAA/2YPbuhIichmQQ9uyEiNSvRmD3DBAGYPcM0AZg927Ug5yHM8DxAgDyjQDyjcZg/e"
             . "1GYP3tlmD3TQZg903A9U02YPdtVmRA/XwkWFwHUSSIPAEOvLikgCQTjLcwtIg8AESDnQcu/rHTjZcvGKSAFAOM5y6UA4+XLkighA"
-            . "OM1y3UQ44XLYW15fXUFcQV1BXsM=")            
+            . "OM1y3UQ44XLYW15fXUFcQV1BXsM=")
 
          ; C source code - https://godbolt.org/z/cd1xaK5Ec
          pixelsearch3 := this.Base64Code((A_PtrSize == 4)
@@ -2897,13 +2897,13 @@ class ImagePut {
             . "AOsIx0QkDAIAAACLXRBmD25skwRmD3DVAOsIx0QkDAEAAACLdRBmD240lo0clolcJAhmD3DOAIP4AXR0g/gCi0UIdD6LTCQEOchz"
             . "Lg8QAGYPdsFmD9fYDxAAidlmD3bCZg/X2A8QAAnLZg92w2YP1/AJ83V0g8AQ68qDwgPpS////4139Dnwcx8PEABmD3bBZg/XyA8Q"
             . "AGYPdsJmD9fYCct1RoPAEOvdg8IC6R3///+LRQiNX/Q52HMUDxAAZg92wWYP1/CF9nUgg8AQ6+hC6fn+//+LTCQIiwyROQh0FEI5"
-            . "VCQMf+6DwAQ5+HMGMdLr74n4jWX0W15fXcM="            
+            . "VCQMf+6DwAQ5+HMGMdLr74n4jWX0W15fXcM="
             : "QVVBVFVXVlO9AwAAAEmJykiJ0THSSI1x9ESJyCnQD4QEAQAAg/gBSGPadC6D+AJ0FWZBD25smAiD+ANED03dZg9w3QDrBkG7AgAA"
             . "AGZBD25smARmD3DVAOsGQbsBAAAAZkEPbgyYSY08mGYPcMkAg/gBdHOD+AJMidB0Xkg58HMxDxAADyjhZg924GZED9fsDyjiZg92"
             . "4GYPdsNmD9fcZkQP1+BECetECeN1c0iDwBDryoPCA+lf////DxAADyjhZg924GYPdsJmRA/X5GYP19hECeN1SUiDwBBIOfBy24PC"
             . "Auky////TInQSDnwcxUPEABmD3bBZg/X2IXbdSFIg8AQ6+b/wukO////SP/Ci3SX/DkwdBVBOdN/8EiDwARIOchzBzHS6+5Iichb"
             . "Xl9dQVxBXcM=")
-            
+
          ; C source code - https://godbolt.org/z/sqc9sfv9s
          pixelsearch4 := this.Base64Code((A_PtrSize == 4)
             ? "VTHAZg925InlV1ZTg+Twg+xAi1UYKcIPhFMCAACD+gF0YIP6AnQzi10Qg/oDuQMAAAAPTflmD25sgwiLXRRmD3D9AA8pfCQwZg9u"
@@ -2914,7 +2914,7 @@ class ImagePut {
             . "DxAWDyjyDyjCZg/e9WYP3sFmD3TyZg90wQ9Uxg8odCQgZg92x2YP3vJmD3TyZg/X2A8owmYP3sNmD3TDD1TGZg92x2YP19AJ2nVo"
             . "g8YQ66yDwALpQ/7//4tVDGYPdvaD6gw51nMtDxAWDxAGDxA+Zg/e1WYP3sFmD3TBZg901w9UwmYPdsZmD9fIhcl1JYPGEOvPQOkC"
             . "/v//OFoCczr/RCQwg8IEg8AEi0wkMDnPf+mDxgQ7dQxzRIpGATHJil4CiUwkMItUJAyIRCQgigaIRCQQi0QkCOvQOlgCcsGKTCQg"
-            . "OEoBcrg6SAFys4pMJBA4CnKrOghyp+sDi3UMjWX0ifBbXl9dww=="            
+            . "OEoBcrg6SAFys4pMJBA4CnKrOghyp+sDi3UMjWX0ifBbXl9dww=="
             : "QVRVV1ZTSIPsUA8pNCQPKXwkEEQPKUQkIEQPKUwkMEQPKVQkQL8DAAAAZg9220mJ00iJyzHSSY1z9IuMJKAAAAAp0Q+EMgIAAIP5"
             . "AUhjwnRGg/kCdCFmQQ9ufIAIZkEPbnSBCIP5A0QPTddmD3DvAGYPcP4A6wZBugIAAABmQQ9uZIAEZkEPbnSBBGYPcNQAZg9w9gDr"
             . "BkG6AQAAAGZBD24kgGYPcMwAZkEPbiSBSInYZg9w5ACD+QEPhCIBAACD+QIPhKsAAABIOfAPg5oAAAAPEABEDyjIRA8owGZED97M"
@@ -2925,7 +2925,6 @@ class ImagePut {
             . "ZkEPdsFmD9fIhckPhTn///9Ig8AQ68L/wukP/v//QTh0CAJzJv/DSIPBBEE52n/uSIPABEw52HM4QIpwAkCKeAFIidEx20CKKOvg"
             . "QTp0CQJy00E4fAgBcsxBOnwJAXLFQTgsCHK/QTosCXK56wNMidgPKDQkDyh8JBBEDyhEJCBEDyhMJDBEDyhUJEBIg8RQW15fXUFc"
             . "ww==")
-            
 
          ; --------------------------------------------------------------------------------------------------------
 
@@ -2933,7 +2932,7 @@ class ImagePut {
          ptr := this.ptr
 
          ; If the found pixel lies in the forbidden stride area, start from the next scanline!
-         redo:
+         redo: ; Unfortunately, unalignment can occur if the stride is not divisible by 4.
 
          ; When doing pointer arithmetic, *Scan0 + 1 is actually adding 4 bytes.
          if (option == 1)
@@ -3066,7 +3065,7 @@ class ImagePut {
             ptr := this.ptr + (y + 1) * this.stride
             goto redo
          }
-         
+
          ; Returns an [x, y] array.
          return [x, y]
       }
@@ -4400,13 +4399,13 @@ class ImagePut {
                default: ; case "HTMLDocument"
                   directory := tab.LocationURL
             }
-   
+
       if WinActive("ahk_class WorkerW") or WinActive("ahk_class Progman")
          directory := A_Desktop
-   
+
       ; Returns the empty string if the directory is not found.
       return directory ?? default_dir
-   
+
       ExplorerTab(hwnd) {
          ; Thanks Lexikos - https://www.autohotkey.com/boards/viewtopic.php?f=83&t=109907
          try activeTab := ControlGetHwnd("ShellTabWindowClass1", hwnd) ; File Explorer (Windows 11)
@@ -4426,7 +4425,7 @@ class ImagePut {
          }
          throw Error("Could not locate active tab in Explorer window.")
       }
-   }   
+   }
 
    static BitmapToFile(pBitmap, filepath := "", quality := "") {
       extension := "png"
