@@ -4213,6 +4213,12 @@ class ImagePut {
          }
       }
 
+      ; User defined callback.
+      if (uMsg = 0x8003) {
+         callback := ObjFromPtrAddRef(wParam)
+         callback(hwnd)
+      }
+
       default:
       return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
    }
