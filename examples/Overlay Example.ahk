@@ -55,10 +55,14 @@ NextFrame(hwnd) => Step(hwnd, 1)
 PrevFrame(hwnd) => Step(hwnd, -1)
 
 Show(image, x?, y?, w?, h?) {
-    WS_POPUP                  := 0x80000000 ; Required
-    WS_VISIBLE                := 0x10000000 ; show immediately
-    WS_DISABLED               :=  0x8000000 ; If you add this the user cannot double click or right click to close
-    WS_EX_CLICKTHROUGH        :=    0x80020
+    WS_POPUP                  := 0x80000000   ; Required
+    WS_VISIBLE                := 0x10000000   ; show immediately
+    WS_DISABLED               :=  0x8000000   ; Disables user interaction with the window.
+
+    WS_EX_TOPMOST             :=        0x8   ; Always on top.
+    WS_EX_TOOLWINDOW          :=       0x80   ; Hides from Alt+Tab menu. Removes small icon.
+    WS_EX_LAYERED             :=    0x80000   ; For UpdateLayeredWindow.
+    WS_EX_CLICKTHROUGH        :=    0x80020   ; Makes it click through
 
     ; Shows the image in a window (without a border) and returns a handle to a window.
     ;   title      -  Window Title            |  string   ->   MyTitle
@@ -68,7 +72,9 @@ Show(image, x?, y?, w?, h?) {
     ;   parent     -  Window Parent           |  ptr      ->   hwnd
     ;   playback   -  Animate Window?         |  bool     ->   True
     ;   cache      -  Cache Animation Frames? |  bool     ->   False
-    return ImageShow(image, "GifWindow", [x?, y?, w?, h?], WS_POPUP | WS_VISIBLE | WS_DISABLED, WS_EX_CLICKTHROUGH,, False, True)
+    style := WS_POPUP | WS_VISIBLE | WS_DISABLED
+    styleEx := WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_LAYERED | WS_EX_CLICKTHROUGH
+    return ImageShow(image, "GifWindow", [x?, y?, w?, h?], style, styleEx,, False, True)
 }
 
 ShowAll() {
