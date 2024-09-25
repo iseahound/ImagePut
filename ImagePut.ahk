@@ -2580,34 +2580,38 @@ class ImagePut {
          }
       }
 
-      pBitmap {
-         get {
-            ; Test if the cached bitmap (this.pBitmap2) already exists.
+      saved := {} ; Store copies of ptr, size, width, and height to test for changes.
+
+      pBitmap { ; Making .pBitmap dynamic ensures that wrapping the pointer is separate from GDI+ access.
+         get { ; Test if .ptr property has changed due to an external API which returns a dynamic buffer.
+            if this.saved.HasProp("ptr") && this.ptr != this.saved.ptr
+            or this.saved.HasProp("size") && this.size != this.saved.size
+            or this.saved.HasProp("width") && this.width != this.saved.width
+            or this.saved.HasProp("height") && this.height != this.saved.height {
+               DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap2)
+               this.DeleteProp("pBitmap2")
+            }
+
+            ; Test if the .pBitmap2 property exists, and if it is a valid GDI+ Bitmap.
             renew := False
-            renew |= this.HasProp("ptr2") && this.ptr != this.ptr2
-
-            ; Delete the old bitmap.
-            (renew) && DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap2)
-
-            ; Test if the cached bitmap needs to be created.
-            renew |= !this.HasProp("pBitmap2")
-            try renew |= DllCall("gdiplus\GdipGetImageType", "ptr", this.pBitmap2, "ptr*", &_type:=0) or (_type != 1)
-            catch
-               renew := True
+            if this.HasProp("pBitmap2") {
+               try renew := DllCall("gdiplus\GdipGetImageType", "ptr", this.pBitmap2, "ptr*", &_type:=0) or (_type != 1)
+               catch
+                  renew := True
+            } else renew := True ; .pBitmap2 property does not exist.
 
             ; Create a source GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
             if (renew) {
                DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.width, "int", this.height
-               , "int", this.size // this.height, "int", 0x26200A, "ptr", this.ptr, "ptr*", &pBitmap:=0)
+               , "int", this.stride, "int", 0x26200A, "ptr", this.ptr, "ptr*", &pBitmap:=0)
                this.pBitmap2 := pBitmap
-               this.ptr2 := this.ptr
+               this.saved.ptr := this.ptr
+               this.saved.size := this.size
+               this.saved.width := this.width
+               this.saved.height := this.height
             }
 
-            ; Return the cached bitmap.
             return this.pBitmap2
-         }
-         set {
-            this.pBitmap2 := value
          }
       }
 
@@ -3061,7 +3065,7 @@ class ImagePut {
          y := offset // this.stride
 
          ; Advance to the next scanline if the x-coordinate is in the forbidden stride area.
-         if x >= this.width {
+         if (x >= this.width) {
             ptr := this.ptr + (y + 1) * this.stride
             goto redo
          }
