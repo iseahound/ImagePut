@@ -2569,15 +2569,13 @@ class ImagePut {
       }
 
       stride {
-         get {
-            return this.size // this.height
-         }
+         get => this.saved.HasProp("stride") ? this.saved.stride : this.size // this.height
+         set => this.saved.stride := value
       }
 
       pitch {
-         get {
-            return this.size // this.height
-         }
+         get => this.saved.HasProp("stride") ? this.saved.stride : this.size // this.height
+         set => this.saved.stride := value
       }
 
       saved := {} ; Store copies of ptr, size, width, and height to test for changes.
@@ -2587,7 +2585,8 @@ class ImagePut {
             if this.saved.HasProp("ptr") && this.ptr != this.saved.ptr
             or this.saved.HasProp("size") && this.size != this.saved.size
             or this.saved.HasProp("width") && this.width != this.saved.width
-            or this.saved.HasProp("height") && this.height != this.saved.height {
+            or this.saved.HasProp("height") && this.height != this.saved.height
+            or this.saved.HasProp("stride") && this.height != this.saved.height {
                DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap2)
                this.DeleteProp("pBitmap2")
             }

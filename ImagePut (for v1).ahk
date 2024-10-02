@@ -2573,13 +2573,11 @@ class ImagePut {
             return this.size // this.height
          }
       }
-
       pitch {
          get {
             return this.size // this.height
          }
       }
-
       saved := {} ; Store copies of ptr, size, width, and height to test for changes.
 
       pBitmap { ; Making .pBitmap dynamic ensures that wrapping the pointer is separate from GDI+ access.
