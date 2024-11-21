@@ -326,7 +326,7 @@ class ImagePut {
       (downscale) && this.BitmapScale(&pBitmap, downscale, -1,,, outDimensions)
       (minsize) && this.BitmapScale(&pBitmap, minsize, 1, "join", True, outDimensions)
       (maxsize) && this.BitmapScale(&pBitmap, maxsize, -1, "meet", True, outDimensions)
-      (outDimensions) && this.BitmapScale(&pBitmap, outDimensions) ; Scale only once
+      (outDimensions.length == 2) && this.BitmapScale(&pBitmap, outDimensions) ; Scale only once
       (sprite) && this.BitmapSprite(&pBitmap)
 
       ; Save frame delays and loop count for webp.
