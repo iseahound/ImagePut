@@ -318,13 +318,15 @@ class ImagePut {
 
       ; GdipImageForceValidation must be called immediately or it fails silently.
       bitmap:
+      outDimensions := [] ; Initialize width x height array
       (validate) && DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmap)
       (crop) && this.BitmapCrop(pBitmap, crop)
-      (scale) && this.BitmapScale(pBitmap, scale)
-      (upscale) && this.BitmapScale(pBitmap, upscale, 1)
-      (downscale) && this.BitmapScale(pBitmap, downscale, -1)
-      (minsize) && this.BitmapScale(pBitmap, minsize, 1, "join", True)
-      (maxsize) && this.BitmapScale(pBitmap, maxsize, -1, "meet", True)
+      (scale) && this.BitmapScale(pBitmap, scale,,,, outDimensions)
+      (upscale) && this.BitmapScale(pBitmap, upscale, 1,,, outDimensions)
+      (downscale) && this.BitmapScale(pBitmap, downscale, -1,,, outDimensions)
+      (minsize) && this.BitmapScale(pBitmap, minsize, 1, "join", True, outDimensions)
+      (maxsize) && this.BitmapScale(pBitmap, maxsize, -1, "meet", True, outDimensions)
+      (outDimensions.length() == 2) && this.BitmapScale(pBitmap, outDimensions) ; Scale only once
       (sprite) && this.BitmapSprite(pBitmap)
 
       ; Save frame delays and loop count for webp.
@@ -870,7 +872,7 @@ class ImagePut {
       return pBitmap := pBitmapCrop
    }
 
-   BitmapScale(ByRef pBitmap, scale, direction := 0, bound := "", preserveAspectRatio := False) {
+   BitmapScale(ByRef pBitmap, scale, direction := 0, bound := "", preserveAspectRatio := False, outDimensions := "") {
       ; min() specifies the greatest lower bound or the maximum size, fitting the image to the bounding box.
       ; max() specifies the least upper bound or the minimum size, filling the image to the bounding box.
       bound := !IsFunc(bound) && (bound ~= "^(?i:fit|meet|and|infimum)$") ? Func("min")
@@ -882,6 +884,10 @@ class ImagePut {
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
       DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", pBitmap, "int*", format:=0)
+
+      ; Override the width and height with a previous transform. An empty array can be input to return safe_w and safe_h.
+      (outDimensions) && outDimensions.HasKey(1) && width := outDimensions[1]
+      (outDimensions) && outDimensions.HasKey(2) && height := outDimensions[2]
 
       ; Scale using a real number greater than 0.
       if !IsObject(scale) && scale ~= "^(?!0+$)\d+(\.\d+)?$" {
@@ -912,20 +918,25 @@ class ImagePut {
       if !IsSet(safe_w) || !IsSet(safe_h)
          throw Exception("Invalid scale.")
 
+      ; Force upscaling or downscaling.
+      if (direction > 0 and (safe_w < width && safe_h < height)) ; upscaling
+      or (direction < 0 and (safe_w > width && safe_h > height)) ; downscaling
+         safe_w := width, safe_h := height
+
       ; Minimum size is 1 x 1.
       safe_w := max(1, safe_w)
       safe_h := max(1, safe_h)
 
+      ; if outDimensions is set, then avoid modifying the bitmap at all. Instead, update the final dimensions in the out parameter.
+      if (outDimensions) {
+
+         outDimensions[1] := safe_w
+         outDimensions[2] := safe_h
+         return pBitmap
+      }
+
       ; Avoid drawing if no changes detected.
       if (safe_w = width && safe_h = height)
-         return pBitmap
-
-      ; Force upscaling.
-      if (direction > 0 and (safe_w < width && safe_h < height))
-         return pBitmap
-
-      ; Force downscaling.
-      if (direction < 0 and (safe_w > width && safe_h > height))
          return pBitmap
 
       ; Create a destination GDI+ Bitmap that owns its memory.
