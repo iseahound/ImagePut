@@ -2596,8 +2596,7 @@ class ImagePut {
             if this.saved.HasProp("ptr") && this.ptr != this.saved.ptr
             or this.saved.HasProp("size") && this.size != this.saved.size
             or this.saved.HasProp("width") && this.width != this.saved.width
-            or this.saved.HasProp("height") && this.height != this.saved.height
-            or this.saved.HasProp("stride") && this.height != this.saved.height {
+            or this.saved.HasProp("height") && this.height != this.saved.height {
                DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap2)
                this.DeleteProp("pBitmap2")
             }
