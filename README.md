@@ -6,7 +6,7 @@
 
 Imagine a scenario where you have a file but you're trying to get it uploaded into an API. Or you have a function that returns some strange image format, is there any way you can *just* get it to show its contents? If you pass anything, literally anything you believe is an image to `ImagePutWindow()` it will show up on screen. And then you can magically transform it to be compatible with that specific API.
 
-## Features
+#### Features
 
 * Simple and effective
 * Decipher over [20+ image types](https://github.com/iseahound/ImagePut/wiki/Quick-Start#accepts)
@@ -17,27 +17,23 @@ Imagine a scenario where you have a file but you're trying to get it uploaded in
 * [Upload](https://github.com/iseahound/ImagePut/wiki/Uploading-Images-API-POST-Request) images using website apis
 * [Load](https://github.com/iseahound/ImagePut/wiki/Read-an-Image-From-Memory) images from blocks of memory
 
-## Beginner
+#### Documentation
 
 * [Quick Start](https://github.com/iseahound/ImagePut/wiki/Quick-Start) + **Function List**
 * Chinese Documentation (中文) - [这里有一个中文版的使用教程](https://www.autoahk.com/archives/37246)
-
-## Intermediate
-
-#### Documentation
 * [Input Types & Output Functions](https://github.com/iseahound/ImagePut/wiki/Input-Types-&-Output-Functions)
 * [Crop, Scale, & Other Flags](https://github.com/iseahound/ImagePut/wiki/Crop,-Scale,-&-Other-Flags)
 * [PixelSearch & ImageSearch](https://github.com/iseahound/ImagePut/wiki/PixelSearch-and-ImageSearch)
 
 #### Tutorials
+
 * [Add Image to AutoHotkey GUI](https://github.com/iseahound/ImagePut/wiki/Add-Image-to-AutoHotkey-GUI)
 * [Uploading Images API POST Request](https://github.com/iseahound/ImagePut/wiki/Uploading-Images-API-POST-Request)
 * [Read an Image From Memory](https://github.com/iseahound/ImagePut/wiki/Read-an-Image-From-Memory)
-
-#### Misc
 * [Enumerate Pixels Using For Loops](https://github.com/iseahound/ImagePut/wiki/Enumerate-Pixels-Using-For-Loops) (AutoHotkey v2 only)
 
-## Advanced
+#### Engineering
+
 * [Engineering Challenges Q&A](https://github.com/iseahound/ImagePut/wiki/Engineering-Challenges-Q&A) - Click here to read some interesting stuff. 
 * [Internal Documentation](https://github.com/iseahound/ImagePut/wiki/Internal-Documentation) - Understanding how ImagePut works.  
 
@@ -86,7 +82,7 @@ Finally, there are several advanced features. The first is the ability to specif
     ; Validate an image as an actual image.
     ImageEqual("cats.jpg")
 
-## Design Philosophy
+#### Design Philosophy
 
 * 100% Compatibility with [Gdip_All.ahk](https://github.com/buliasz/AHKv2-Gdip)
 * ImagePut is designed to be the fastest
@@ -96,7 +92,7 @@ Finally, there are several advanced features. The first is the ability to specif
 * Therefore users should be copy and paste individual functions
 * If you need help extracting a function please ask!
 
-## Help and Support
+#### Help and Support
 
 Feel free to ask for any help, questions, or post suggestions, etc.
 
