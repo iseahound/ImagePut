@@ -10,8 +10,8 @@ Imagine a scenario where you have a file but you're trying to get it uploaded in
 
 * Simple and effective
 * Decipher over [20+ image types](https://github.com/iseahound/ImagePut/wiki/Quick-Start#accepts)
-* Supports newer formats **webp** and **heic**
-* View and debug your image functions with `ImagePutWindow(image)`
+* Supports newer formats `avif`, `heic`, and `webp`
+* View and debug any image variable with `ImagePutWindow(image)`
 * Screen capture with fast [PixelSearch](https://github.com/iseahound/ImagePut/wiki/PixelSearch-and-ImageSearch#pixelsearch) and [ImageSearch](https://github.com/iseahound/ImagePut/wiki/PixelSearch-and-ImageSearch#imagesearch)
 * [Add](https://github.com/iseahound/ImagePut/wiki/Add-Image-to-AutoHotkey-GUI) animated GIFs to AutoHotkey GUIs
 * [Upload](https://github.com/iseahound/ImagePut/wiki/Uploading-Images-API-POST-Request) images using website apis
