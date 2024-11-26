@@ -25,13 +25,6 @@ Imagine a scenario where you have a file but you're trying to get it uploaded in
 * [Crop, Scale, & Other Flags](https://github.com/iseahound/ImagePut/wiki/Crop,-Scale,-&-Other-Flags)
 * [PixelSearch & ImageSearch](https://github.com/iseahound/ImagePut/wiki/PixelSearch-and-ImageSearch)
 
-#### Tutorials
-
-* [Add Image to AutoHotkey GUI](https://github.com/iseahound/ImagePut/wiki/Add-Image-to-AutoHotkey-GUI)
-* [Uploading Images API POST Request](https://github.com/iseahound/ImagePut/wiki/Uploading-Images-API-POST-Request)
-* [Read an Image From Memory](https://github.com/iseahound/ImagePut/wiki/Read-an-Image-From-Memory)
-* [Enumerate Pixels Using For Loops](https://github.com/iseahound/ImagePut/wiki/Enumerate-Pixels-Using-For-Loops) (AutoHotkey v2 only)
-
 #### Engineering
 
 * [Engineering Challenges Q&A](https://github.com/iseahound/ImagePut/wiki/Engineering-Challenges-Q&A) - Click here to read some interesting stuff. 
