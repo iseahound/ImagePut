@@ -3501,9 +3501,10 @@ class ImagePut {
       WS_VISIBLE                := 0x10000000   ; Show on creation.
       WS_EX_LAYERED             :=    0x80000   ; For UpdateLayeredWindow.
 
-      ; Default styles can be overwritten by previous functions.
+      ; Default parameters can be overwritten by previous functions.
       (style == "") && style := WS_POPUP | WS_CLIPCHILDREN | WS_CAPTION | WS_SYSMENU
       (styleEx == "") && styleEx := WS_EX_TOPMOST | WS_EX_DLGMODALFRAME
+      (parent == "") && parent := 0
 
       ; Get Bitmap width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
@@ -3567,7 +3568,7 @@ class ImagePut {
                ,    "int", NumGet(rect,  4, "int")
                ,    "int", NumGet(rect,  8, "int") - NumGet(rect,  0, "int")
                ,    "int", NumGet(rect, 12, "int") - NumGet(rect,  4, "int")
-               ,    "ptr", (parent != "") ? parent : A_ScriptHwnd
+               ,    "ptr", parent
                ,    "ptr", 0                        ; hMenu
                ,    "ptr", 0                        ; hInstance
                ,    "ptr", 0                        ; lpParam
@@ -3604,9 +3605,12 @@ class ImagePut {
       WS_EX_TOOLWINDOW          :=       0x80   ; Hides from Alt+Tab menu. Removes small icon.
       WS_EX_LAYERED             :=    0x80000   ; For UpdateLayeredWindow.
 
-      ; Default styles can be overwritten by previous functions.
+      ; Default parameters can be overwritten by previous functions.
       (style == "") && style := WS_POPUP | WS_VISIBLE
       (styleEx == "") && styleEx := WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_LAYERED
+      (parent == "") && parent := 0
+      (playback == "") && playback := True
+      (cache == "") && cache := False
 
       ; Get Bitmap width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
@@ -3720,7 +3724,7 @@ class ImagePut {
                ,    "int", y
                ,    "int", w
                ,    "int", h
-               ,    "ptr", (parent != "") ? parent : A_ScriptHwnd
+               ,    "ptr", parent
                ,    "ptr", 0                        ; hMenu
                ,    "ptr", 0                        ; hInstance
                ,    "ptr", 0                        ; lpParam
@@ -3889,7 +3893,7 @@ class ImagePut {
          }
 
          ; Start GIF Animation loop. Defaults to immediate playback.
-         if (playback == "" || playback == True)
+         if (playback)
             DllCall("PostMessage", "ptr", hwnd, "uint", 0x8001, "uptr", 0, "ptr", 0)
       }
 
