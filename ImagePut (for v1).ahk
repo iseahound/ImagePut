@@ -5442,10 +5442,6 @@ class ImageEqual extends ImagePut {
          if DllCall("gdiplus\GdipCloneImage", "ptr", SourceBitmap%A_Index%, "ptr*", pBitmap%A_Index%)
             throw Exception("Cloning Bitmap" A_Index " failed.")
 
-      DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", pBitmap1, "int*", format3:=0)
-      if (format1 != format3)
-         throw Exception("Report this error to the developer.")
-
       width := width1, height := height1
 
       ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
