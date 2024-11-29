@@ -517,10 +517,13 @@ class ImagePut {
 
       ; For more helpful error messages: Catch file names without extensions!
       if not (image ~= "^-?\d+$") {
-         for extension in ["bmp","dib","rle","jpg","jpeg","jpe","jfif","gif","tif","tiff","png","ico","exe","dll"]
+         for extension in ["bmp","dib","rle","jpg","jpeg","jpe","jfif","gif","tif","tiff","png","ico","exe","dll"] {
             if FileExist(image "." extension)
-               throw Error("A ." extension " file extension is required!", -3)
-
+               throw Error("A ." extension " file extension is required!", -4)
+            speculate := RegExReplace(image, "(\.[^.]*)?$") "." extension
+            if FileExist(speculate)
+               throw Error("Is it possible you meant to type " speculate " as the file extension instead?", -4)
+         }
          goto end
       }
 
