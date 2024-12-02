@@ -58,9 +58,9 @@ ImagePutEncodedBuffer(image, extension := "", quality := "") {
 
 ; Puts the image into the currently active explorer window.
 ;   default_dir -  Default Directory       |  string   ->   C:\Users\Me\Pictures
-;   background  -  Find Inactive Windows?  |  bool     ->   False
-ImagePutExplorer(image, default_dir := "", background_window := False) {
-   return ImagePut("Explorer", image, default_dir, background_window)
+;   inactive    -  Inactive Explorer Wnds? |  bool     ->   False
+ImagePutExplorer(image, default_dir := "", inactive := False) {
+   return ImagePut("Explorer", image, default_dir, inactive)
 }
 
 ; Puts the image into a file and returns its filepath.
@@ -693,7 +693,7 @@ class ImagePut {
       if (cotype = "URL") ; (pBitmap)
          return this.BitmapToURL(pBitmap)
 
-      if (cotype = "Explorer") ; (pBitmap, default_dir, background_window)
+      if (cotype = "Explorer") ; (pBitmap, default_dir, inactive)
          return this.BitmapToExplorer(pBitmap, p1, p2)
 
       if (cotype = "File") ; (pBitmap, filepath, quality)
@@ -786,7 +786,7 @@ class ImagePut {
       if (cotype = "URL") ; (stream)
          return this.StreamToURL(stream)
 
-      if (cotype = "Explorer") ; (stream, default_dir, background_window)
+      if (cotype = "Explorer") ; (stream, default_dir, inactive)
          return this.StreamToExplorer(stream, p1, p2)
 
       if (cotype = "File") ; (stream, filepath)
@@ -4403,55 +4403,51 @@ class ImagePut {
       return url
    }
 
-   BitmapToExplorer(pBitmap, default_dir := "", background_window := False) {
-      if directory := this.Explorer(default_dir, background_window)
-         return this.BitmapToFile(pBitmap, directory)
+   BitmapToExplorer(pBitmap, default_dir := "", inactive := False) {
+      directory := this.Explorer(inactive)
+      return this.BitmapToFile(pBitmap, directory ? directory : default_dir)
    }
 
-   StreamToExplorer(stream, default_dir := "", background_window := False) {
-      if directory := this.Explorer(default_dir, background_window)
-         return this.StreamToFile(stream, directory)
+   StreamToExplorer(stream, default_dir := "", inactive := False) {
+      directory := this.Explorer(inactive)
+      return this.StreamToFile(stream, directory ? directory : default_dir)
    }
 
-   Explorer(default_dir := "", background_window := False) {
-      ; Thanks @TheCrether
-      GetExplorer := (background_window) ? Func("WinExist") : Func("WinActive")
-      if (hwnd := %GetExplorer%("ahk_class ExploreWClass"))
-      or (hwnd := %GetExplorer%("ahk_class CabinetWClass"))
-        if tab := this.ExplorerTab(hwnd)
-            switch ComObjType(tab.Document, "Class") {
-               case "ShellFolderView":
-                  directory := tab.Document.Folder.Self.Path
-               default: ; case "HTMLDocument"
-                  directory := tab.LocationURL
-            }
-
-      if WinActive("ahk_class WorkerW") or WinActive("ahk_class Progman")
-         directory := A_Desktop
-
-      ; Returns the empty string if the directory is not found.
-      return directory ? directory : default_dir
-   }
-      ExplorerTab(hwnd) {
-         ; Thanks Lexikos - https://www.autohotkey.com/boards/viewtopic.php?f=83&t=109907
-         try ControlGet activeTab, Hwnd,, ShellTabWindowClass1, ahk_id %hwnd% ; File Explorer (Windows 11)
-         catch
-         try ControlGet activeTab, Hwnd,, TabWindowClass1, ahk_id %hwnd% ; IE
-         for window in ComObjCreate("Shell.Application").Windows {
-            if (window.hwnd != hwnd)
-               continue
-            if IsSet(activeTab) { ; The window has tabs, so make sure this is the right one.
-               static IID_IShellBrowser := "{000214E2-0000-0000-C000-000000000046}"
-               IShellBrowser := ComObjQuery(window, IID_IShellBrowser, IID_IShellBrowser)
-               DllCall(NumGet(NumGet(IShellBrowser+0)+A_PtrSize* 3), "ptr", IShellBrowser, "uint*", thisTab:=0), ObjRelease(IShellBrowser)
-               if (thisTab != activeTab)
-                  continue
-            }
-            return window ; Returns a ComObject with a .hwnd property
-         }
-         throw Exception("Could not locate active tab in Explorer window.")
+   Explorer(inactive := False) {
+      if WinActive("ahk_class WorkerW") || WinActive("ahk_class Progman")
+         return A_Desktop
+   
+      WinExistOrActive := (inactive) ? Func("WinExist") : Func("WinActive")
+      if (hwnd := %WinExistOrActive%("ahk_class ExploreWClass"))
+      or (hwnd := %WinExistOrActive%("ahk_class CabinetWClass")) {
+         window := this.ExplorerTab(hwnd)
+         return ComObjType(window.Document, "Class") == "ShellFolderView"
+            ? window.Document.Folder.Self.Path
+            : window.LocationURL             ; "HTMLDocument"
       }
+   
+      return "" ; No matching explorer windows found.
+   }
 
+   ExplorerTab(hwnd) {
+      ; Thanks Lexikos, @TheCrether - https://www.autohotkey.com/boards/viewtopic.php?f=83&t=109907
+      try ControlGet activeTab, Hwnd,, ShellTabWindowClass1, ahk_id %hwnd% ; File Explorer (Windows 11)
+      catch
+      try ControlGet activeTab, Hwnd,, TabWindowClass1, ahk_id %hwnd% ; IE
+      for window in ComObjCreate("Shell.Application").Windows {
+         if (window.hwnd != hwnd)
+            continue
+         if IsSet(activeTab) { ; The window has tabs, so make sure this is the right one.
+            static IID_IShellBrowser := "{000214E2-0000-0000-C000-000000000046}"
+            IShellBrowser := ComObjQuery(window, IID_IShellBrowser, IID_IShellBrowser)
+            DllCall(NumGet(NumGet(IShellBrowser+0)+A_PtrSize* 3), "ptr", IShellBrowser, "uint*", thisTab:=0), ObjRelease(IShellBrowser)
+            if (thisTab != activeTab)
+               continue
+         }
+         return window ; Returns a ComObject with a .hwnd property
+      }
+      throw Exception("Could not locate active tab in Explorer window.")
+   }
 
    BitmapToFile(pBitmap, filepath := "", quality := "") {
       extension := "png"
