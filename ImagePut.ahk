@@ -4247,7 +4247,7 @@ class ImagePut {
       hModule := DllCall("GetModuleHandle", "str", "user32.dll", "ptr")
       SendMessageW := DllCall("GetProcAddress", "ptr", hModule, "astr", "SendMessageW", "ptr")
 
-      ncb := (A_PtrSize = 8) ? 71 : 28
+      ncb := (A_PtrSize = 8) ? 43 : 28
       pcb := DllCall("GlobalAlloc", "uint", 0, "uptr", ncb, "ptr")
       DllCall("VirtualProtect", "ptr", pcb, "uptr", ncb, "uint", 0x40, "uint*", 0)
 
@@ -4255,26 +4255,19 @@ class ImagePut {
       if (A_PtrSize = 8) {
          assembly := "
             ( Join`s Comments
-            48 89 4c 24 08                 ;   0: mov [rsp+8], rcx
-            48 89 54 24 10                 ;   5: mov [rsp+16], rdx
-            4c 89 44 24 18                 ;  10: mov [rsp+24], r8
-            4c 89 4c 24 20                 ;  15: mov [rsp+32], r9
-            48 83 ec 28                    ;  20: sub rsp, 40
-            49 b9 00 00 00 00 00 00 00 00  ;  24: mov r9, .. (lParam)
-            49 b8 00 00 00 00 00 00 00 00  ;  34: mov r8, .. (wParam)
-            ba 00 00 00 00                 ;  44: mov edx, .. (uMsg)
-            b9 00 00 00 00                 ;  49: mov ecx, .. (hwnd)
-            48 b8 00 00 00 00 00 00 00 00  ;  54: mov rax, .. (SendMessageW)
-            ff d0                          ;  64: call rax
-            48 83 c4 28                    ;  66: add rsp, 40
-            c3                             ;  70: ret
-            )"                             ;  71:
+            49 b9 00 00 00 00 00 00 00 00  ;   0: mov r9, .. (lParam)
+            49 b8 00 00 00 00 00 00 00 00  ;  10: mov r8, .. (wParam)
+            ba 00 00 00 00                 ;  20: mov edx, .. (uMsg)
+            b9 00 00 00 00                 ;  25: mov ecx, .. (hwnd)
+            48 b8 00 00 00 00 00 00 00 00  ;  30: mov rax, .. (SendMessageW)
+            48 ff e0                       ;  40: rex_jmp rax
+            )"                             ;  43:
          DllCall("crypt32\CryptStringToBinary", "str", assembly, "uint", 0, "uint", 0x4, "ptr", pcb, "uint*", ncb, "ptr", 0, "ptr", 0)
-         NumPut("ptr", SendMessageW, pcb + 56)
-         NumPut("int", hwnd, pcb + 50)
-         NumPut("int", uMsg, pcb + 45)
-         NumPut("ptr", wParam, pcb + 36)
-         NumPut("ptr", lParam, pcb + 26)
+         NumPut("ptr", SendMessageW, pcb + 32)
+         NumPut("int", hwnd, pcb + 26)
+         NumPut("int", uMsg, pcb + 21)
+         NumPut("ptr", wParam, pcb + 12)
+         NumPut("ptr", lParam, pcb + 2)
       }
       else {
          assembly := "
