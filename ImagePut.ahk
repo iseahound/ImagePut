@@ -1736,7 +1736,7 @@ class ImagePut {
          throw Error("The hidden desktop window has not been initalized. Call ImagePutDesktop() first.")
 
       ; Find a child window of class SHELLDLL_DefView.
-
+      hwnd := 0
       for window in WinGetList("ahk_class WorkerW")
          if DllCall("FindWindowEx", "ptr", window, "ptr", 0, "str", "SHELLDLL_DefView", "ptr", 0) {
             hwnd := window
@@ -4298,7 +4298,7 @@ class ImagePut {
       DllCall("SendMessage", "ptr", desktop, "uint", 0x052C, "ptr", 0xD, "ptr", 1)
 
       ; Find a child window of class SHELLDLL_DefView.
-
+      hwnd := 0
       for window in WinGetList("ahk_class WorkerW")
          if DllCall("FindWindowEx", "ptr", window, "ptr", 0, "str", "SHELLDLL_DefView", "ptr", 0) {
             hwnd := window
