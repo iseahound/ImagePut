@@ -2161,7 +2161,7 @@ class ImagePut {
       ; Check if the pixel format needs to be converted.
       ComCall(GetPixelFormat := 4, image, "ptr", format := Buffer(16))
       DllCall("ole32\CLSIDFromString", "wstr", "{6fddc324-4e03-4bfe-b185-3d77768dc90f}", "ptr", GUID_WICPixelFormat32bppBGRA := Buffer(16), "hresult")
-      convert :=  16 != DllCall("RtlCompareMemory", "ptr", format, "ptr", GUID_WICPixelFormat32bppBGRA, "uptr", 16)
+      convert :=  16 != DllCall("ntdll\RtlCompareMemory", "ptr", format, "ptr", GUID_WICPixelFormat32bppBGRA, "uptr", 16)
 
       ; Case 1: Convert the pixel format to 32-bit ARGB. Preforms 2 memory copies.
       if (convert) {
@@ -2396,7 +2396,7 @@ class ImagePut {
          ObjRelease(FileStream)
 
          ; struct DROPFILES - https://learn.microsoft.com/en-us/windows/win32/api/shlobj_core/ns-shlobj_core-dropfiles
-         nDropFiles := 20 + StrPut(filepath, "UTF-16") + 2 ; triple/quadruple null terminated
+         nDropFiles := 20 + StrPut(filepath, "UTF-16") + 1 ; double unicode (4-bytes) null terminated
          hDropFiles := DllCall("GlobalAlloc", "uint", 0x42, "uptr", nDropFiles, "ptr")
          pDropFiles := DllCall("GlobalLock", "ptr", hDropFiles, "ptr")
             NumPut("uint", 20, pDropFiles + 0) ; pFiles

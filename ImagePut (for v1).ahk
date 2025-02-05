@@ -171,7 +171,7 @@ ImageShow(image, title := "", pos := "", style := 0x90000000, styleEx := 0x80088
 }
 
 ImageDestroy(image) {
-   return ImagePut.Destroy.call(image)
+   ImagePut.Destroy.call(image)
 }
 
 ImageWidth(image) {
@@ -1072,7 +1072,7 @@ class ImagePut {
          return False
 
       size := min(size, 2048)
-      length := VarSetCapacity(str, (2*size + (size-1) + 1) * (A_IsUnicode ? 2 : 1))
+      length := VarSetCapacity(str, (2*size + (size-1) + 1) * (A_IsUnicode?2:1))
       DllCall("crypt32\CryptBinaryToString", "ptr", bin, "uint", size, "uint", 0x40000004, "str", str, "uint*", length)
       if str ~= "(?i)66 74 79 70 61 76 69 66"                                      ; "avif"
       || str ~= "(?i)^42 4d (.. ){36}00 00 .. 00 00 00"                            ; "bmp"
@@ -2161,7 +2161,7 @@ class ImagePut {
       ; Check if the pixel format needs to be converted.
       DllCall(NumGet(NumGet(IWICBitmap+0)+A_PtrSize* 4), "ptr", IWICBitmap, "ptr", &format := VarSetCapacity(format, 16))
       DllCall("ole32\CLSIDFromString", "wstr", "{6fddc324-4e03-4bfe-b185-3d77768dc90f}", "ptr", &GUID_WICPixelFormat32bppBGRA := VarSetCapacity(GUID_WICPixelFormat32bppBGRA, 16), "uint")
-      convert :=  16 != DllCall("RtlCompareMemory", "ptr", &format, "ptr", &GUID_WICPixelFormat32bppBGRA, "uptr", 16)
+      convert :=  16 != DllCall("ntdll\RtlCompareMemory", "ptr", &format, "ptr", &GUID_WICPixelFormat32bppBGRA, "uptr", 16)
 
       ; Case 1: Convert the pixel format to 32-bit ARGB. Preforms 2 memory copies.
       if (convert) {
@@ -2396,7 +2396,7 @@ class ImagePut {
          ObjRelease(FileStream)
 
          ; struct DROPFILES - https://learn.microsoft.com/en-us/windows/win32/api/shlobj_core/ns-shlobj_core-dropfiles
-         nDropFiles := 20 + StrPut(filepath, "UTF-16") * (A_IsUnicode?2:1) + 2 ; triple/quadruple null terminated
+         nDropFiles := 20 + StrPut(filepath, "UTF-16") * 2 + 1 ; double unicode (4-bytes) null terminated
          hDropFiles := DllCall("GlobalAlloc", "uint", 0x42, "uptr", nDropFiles, "ptr")
          pDropFiles := DllCall("GlobalLock", "ptr", hDropFiles, "ptr")
             NumPut(20, pDropFiles + 0, "uint") ; pFiles
@@ -4247,7 +4247,7 @@ class ImagePut {
       hModule := DllCall("GetModuleHandle", "str", "user32.dll", "ptr")
       SendMessageW := DllCall("GetProcAddress", "ptr", hModule, "astr", "SendMessageW", "ptr")
 
-      ncb := (A_PtrSize = 8) ? 71 : 28
+      ncb := (A_PtrSize = 8) ? 43 : 28
       pcb := DllCall("GlobalAlloc", "uint", 0, "uptr", ncb, "ptr")
       DllCall("VirtualProtect", "ptr", pcb, "uptr", ncb, "uint", 0x40, "uint*", 0)
 
@@ -5274,7 +5274,6 @@ class ImagePut {
             type := this.ImageType(image)
          this.Destroy(type, image)
          this.gdiplusShutdown()
-         return
       }
 
       Destroy(type, image) {
