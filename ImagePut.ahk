@@ -171,7 +171,7 @@ ImageShow(image, title := "", pos := "", style := 0x90000000, styleEx := 0x80088
 }
 
 ImageDestroy(image) {
-   return ImagePut.Destroy(image)
+   ImagePut.Destroy(image)
 }
 
 ImageWidth(image) {
@@ -3957,7 +3957,7 @@ class ImagePut {
 
          ; Continue if the child window is found. It contains all of the assets to be freed.
          if (hwnd != DllCall("GetWindowLong", "ptr", hwnd, "int", 1*A_PtrSize, "ptr"))
-            return
+            goto default
 
          ; Get stock bitmap.
          obm := DllCall("CreateBitmap", "int", 0, "int", 0, "uint", 1, "uint", 1, "ptr", 0, "ptr")
@@ -4071,7 +4071,6 @@ class ImagePut {
 
          ; Destroy tooltip after 7 seconds of the last showing.
          SetTimer Reset_Tooltip, -7000
-         return
 
          Reset_Tooltip() {
             Tooltip(,,, 16)
@@ -4085,7 +4084,7 @@ class ImagePut {
 
          ; Exit GIF animation loop. Set by WM_Destroy.
          if !ptr
-            return
+            goto default
 
          ; Get variables. ObjRelease is automatically called at the end of the scope.
          w := obj.w
@@ -4211,7 +4210,7 @@ class ImagePut {
       ; Start Animation loop.
       if (uMsg = 0x8001) {
          if timer := DllCall("GetWindowLong", "ptr", child, "int", 4*A_PtrSize, "ptr")
-            return
+            goto default
 
          if obj.HasProp("pTimeProc") {
             timer := DllCall("winmm\timeSetEvent"
