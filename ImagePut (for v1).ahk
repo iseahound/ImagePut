@@ -5411,69 +5411,68 @@ class ImagePut {
       return [width, height]
    }
 
-   class Destroy extends ImagePut {
+   Destroy(a, b := "sentinel") {
 
-      call(image) {
-         this.gdiplusStartup()
+      if (b == "sentinel")
+         image := a
+      else
+         domain := a, image := b
+         
+      if not IsSet(domain)
          try type := this.premiss(image)
          catch
             type := this.possible(image)
-         this.Destroy(type, image)
-         this.gdiplusShutdown()
-      }
 
-      Destroy(type, image) {
-         switch type {
+      switch type {
 
-         case "Clipboard", "ClipboardPNG":
-            if !DllCall("OpenClipboard", "ptr", A_ScriptHwnd)
-               throw Exception("Clipboard could not be opened.")
-            DllCall("EmptyClipboard")
-            DllCall("CloseClipboard")
+      case "Clipboard", "ClipboardPNG":
+         if !DllCall("OpenClipboard", "ptr", A_ScriptHwnd)
+            throw Exception("Clipboard could not be opened.")
+         DllCall("EmptyClipboard")
+         DllCall("CloseClipboard")
 
-         case "Screenshot":
-            DllCall("InvalidateRect", "ptr", 0, "ptr", 0, "int", 0)
+      case "Screenshot":
+         DllCall("InvalidateRect", "ptr", 0, "ptr", 0, "int", 0)
 
-         case "Window":
-            image := (hwnd := IsObject(image) ? image.hwnd : WinExist(image)) ? hwnd : image
-            DllCall("DestroyWindow", "ptr", image)
+      case "Window":
+         image := (hwnd := IsObject(image) ? image.hwnd : WinExist(image)) ? hwnd : image
+         DllCall("DestroyWindow", "ptr", image)
 
-         case "Wallpaper":
-            DllCall("SystemParametersInfo", "uint", SPI_SETDESKWALLPAPER := 0x14, "uint", 0, "ptr", 0, "uint", 2)
+      case "Wallpaper":
+         DllCall("SystemParametersInfo", "uint", SPI_SETDESKWALLPAPER := 0x14, "uint", 0, "ptr", 0, "uint", 2)
 
-         case "Cursor":
-            DllCall("SystemParametersInfo", "uint", SPI_SETCURSORS := 0x57, "uint", 0, "ptr", 0, "uint", 0)
+      case "Cursor":
+         DllCall("SystemParametersInfo", "uint", SPI_SETCURSORS := 0x57, "uint", 0, "ptr", 0, "uint", 0)
 
-         case "File":
-            FileDelete % image
+      case "File":
+         FileDelete % image
 
-         case "DC":
-            if (DllCall("GetObjectType", "ptr", image, "uint") == 3) { ; OBJ_DC
-               hwnd := DllCall("WindowFromDC", "ptr", image, "ptr")
-               DllCall("ReleaseDC", "ptr", hwnd, "ptr", image)
-            }
-
-            if (DllCall("GetObjectType", "ptr", image, "uint") == 10) { ; OBJ_MEMDC
-               obm := DllCall("CreateBitmap", "int", 0, "int", 0, "uint", 1, "uint", 1, "ptr", 0, "ptr")
-               hbm := DllCall("SelectObject", "ptr", image, "ptr", obm, "ptr")
-               DllCall("DeleteObject", "ptr", hbm)
-               DllCall("DeleteDC", "ptr", image)
-            }
-
-         case "HBitmap":
-            DllCall("DeleteObject", "ptr", image)
-
-         case "HIcon":
-            DllCall("DestroyIcon", "ptr", image)
-
-         case "Bitmap":
-            DllCall("gdiplus\GdipDisposeImage", "ptr", image)
-
-         case "RandomAccessStream", "Stream", "WICBitmap":
-            ObjRelease(image)
+      case "DC":
+         if (DllCall("GetObjectType", "ptr", image, "uint") == 3) { ; OBJ_DC
+            hwnd := DllCall("WindowFromDC", "ptr", image, "ptr")
+            DllCall("ReleaseDC", "ptr", hwnd, "ptr", image)
          }
+
+         if (DllCall("GetObjectType", "ptr", image, "uint") == 10) { ; OBJ_MEMDC
+            obm := DllCall("CreateBitmap", "int", 0, "int", 0, "uint", 1, "uint", 1, "ptr", 0, "ptr")
+            hbm := DllCall("SelectObject", "ptr", image, "ptr", obm, "ptr")
+            DllCall("DeleteObject", "ptr", hbm)
+            DllCall("DeleteDC", "ptr", image)
+         }
+
+      case "HBitmap":
+         DllCall("DeleteObject", "ptr", image)
+
+      case "HIcon":
+         DllCall("DestroyIcon", "ptr", image)
+
+      case "Bitmap":
+         DllCall("gdiplus\GdipDisposeImage", "ptr", image)
+
+      case "RandomAccessStream", "Stream", "WICBitmap":
+         ObjRelease(image)
       }
-   } ; End of Destroy class.
+   }
 } ; End of ImagePut class.
 
 
