@@ -7,6 +7,54 @@
 
 #Requires AutoHotkey v2.0-beta.13+
 
+; Scroll down for a list of all output functions and their descriptions.
+; ImagePut(codomain, image, p*) {
+;    return ImagePut.call(codomain, image, p*)
+; }
+
+; Specify one or more images to be compared by pixel values.
+; ImageEqual(images*) {
+;    return ImageEqual.call(images*)
+; }
+
+; Shows the animated image in a borderless window and returns a handle. See ImagePutWindow 
+ImageShow(image, title := "", pos := "", style := 0x90000000, styleEx := 0x80088, parent := "", playback := True, cache := False) {
+   return ImagePut("Show", image, title, pos, style, styleEx, parent, playback, cache)
+}
+
+; Determines the domain of the image. It is only possible that there is an image.
+ImageType(image) {
+   try ImagePut.premiss(&image)
+   return ImagePut.possible(image)
+}
+
+; Does additional checks to verify the file formats are supported. Insufficient, as conversion can still fail.
+ImageCheck(image) {
+   try ImagePut.premiss(&image)
+   return ImagePut.necessary(image)
+}
+
+; Cleans up and releases any resources from the output of any ImagePut function.
+; ImageDestroy(image)
+; ImageDestroy(domain, image)
+ImageDestroy(a, b := "sentinel") {
+   ImagePut.Destroy(a, b)
+}
+
+; Gets the width of an image.
+ImageWidth(image) {
+   return ImagePut.Dimensions(image)[1]
+}
+
+; Gets the height of an image.
+ImageHeight(image) {
+   return ImagePut.Dimensions(image)[2]
+}
+
+; Returns a [width, height] array.
+ImageDimensions(image) {
+   return ImagePut.Dimensions(image)
+}
 
 ; Puts the image into a file format and returns a base64 encoded string.
 ;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
@@ -153,12 +201,6 @@ ImagePutWICBitmap(image) {
 }
 
 ; Puts the image in a window (with a border) and returns a handle to a window.
-;   See ImageShow for parameter descriptions.
-ImagePutWindow(image, title := "", pos := "", style := 0x82C80000, styleEx := 0x9, parent := "", playback := True, cache := False) {
-   return ImagePut("Window", image, title, pos, style, styleEx, parent, playback, cache)
-}
-
-; Shows the image in a window (without a border) and returns a handle to a window.
 ;   title      -  Window Title            |  string   ->   MyTitle
 ;   pos        -  Window Coordinates      |  array    ->   [x,y,w,h] or [0,0]
 ;   style      -  Window Style            |  uint     ->   WS_VISIBLE
@@ -166,30 +208,10 @@ ImagePutWindow(image, title := "", pos := "", style := 0x82C80000, styleEx := 0x
 ;   parent     -  Window Parent           |  ptr      ->   hwnd
 ;   playback   -  Animate Window?         |  bool     ->   True
 ;   cache      -  Cache Animation Frames? |  bool     ->   False
-ImageShow(image, title := "", pos := "", style := 0x90000000, styleEx := 0x80088, parent := "", playback := True, cache := False) {
-   return ImagePut("Show", image, title, pos, style, styleEx, parent, playback, cache)
+ImagePutWindow(image, title := "", pos := "", style := 0x82C80000, styleEx := 0x9, parent := "", playback := True, cache := False) {
+   return ImagePut("Window", image, title, pos, style, styleEx, parent, playback, cache)
 }
 
-ImageDestroy(image) {
-   ImagePut.Destroy(image)
-}
-
-ImageWidth(image) {
-   return ImagePut.Dimensions(image)[1]
-}
-
-ImageHeight(image) {
-   return ImagePut.Dimensions(image)[2]
-}
-/*
-ImagePut(cotype, image, p*) {
-   return ImagePut.call(cotype, image, p*)
-}
-
-ImageEqual(images*) {
-   return ImageEqual.call(images*)
-}
-*/
 
 class ImagePut {
 
@@ -197,159 +219,24 @@ class ImagePut {
    static render := True     ; Determines whether vectorized formats such as SVG and PDF are rendered to pixels.
    static validate := False  ; Always copies pixels to new memory immediately instead of copy-on-read/write.
 
-   static call(cotype, image, p*) {
-      this.gdiplusStartup()                      ; Start!
-      coimage := this.convert(cotype, image, p*) ; Convert!
-      this.gdiplusShutdown(cotype)               ; Check if GDI+ is still needed.
-      return coimage
+   static call(codomain, coimage, p*) {
+      this.gdiplusStartup()                          ; Start!
+      image := this.sufficent(codomain, coimage, p*) ; Convert!
+      this.gdiplusShutdown(codomain)                 ; Check if GDI+ is still needed.
+      return image
    }
 
-   static convert(cotype, image, p*) {
-      ; Take a guess as to what the image might be. (>95% accuracy!)
-      try type := this.DontVerifyImageType(&image, &keywords)
-      catch
-         type := this.ImageType(image)
+   static bases :=   ; Plural of basis
 
-      ; Extract options to be directly applied the intermediate representation here.
-      crop      := keywords.HasProp("crop")      ? keywords.crop      : ""
-      scale     := keywords.HasProp("scale")     ? keywords.scale     : ""
-      upscale   := keywords.HasProp("upscale")   ? keywords.upscale   : ""
-      downscale := keywords.HasProp("downscale") ? keywords.downscale : ""
-      minsize   := keywords.HasProp("minsize")   ? keywords.minsize   : ""
-      maxsize   := keywords.HasProp("maxsize")   ? keywords.maxsize   : ""
-      sprite    := keywords.HasProp("sprite")    ? keywords.sprite    : ""
-      decode    := keywords.HasProp("decode")    ? keywords.decode    : this.decode
-      render    := keywords.HasProp("render")    ? keywords.render    : this.render
-      validate  := keywords.HasProp("validate")  ? keywords.validate  : this.validate
-      width     := keywords.HasProp("width") && keywords.width ~= "^(?!0+$)\d+$" ? keywords.width : ""
-      height    := keywords.HasProp("height") && keywords.height ~= "^(?!0+$)\d+$" ? keywords.height : ""
+   [
+      "spatial",     ; Arrangements in a plane (PDF pages)
+      "temporal",    ; Sequences unfolding over time (GIF frames)
+      "ordinal",     ; Process sequentially (EXE icons, array index)
+      "cardinal",    ; Coinductive, unordered (ZIP contents)
+      "stacking"     ; Higher-order embedding (ICO sizes, Photoshop layers)
+   ]
 
-      ; Keywords are for (image -> intermediate).
-      try index := keywords.index
-
-      weight := crop || scale || upscale || downscale || minsize || maxsize || sprite || decode
-      cleanup := ""
-      if (weight)
-         goto make_bitmap
-
-      ; #0 - Special cases.
-      if (type = "SharedBuffer" && cotype = "SharedBuffer")
-         return this.SharedBufferToSharedBuffer(image)
-
-      if (type = "Monitor" && cotype = "Buffer")
-         return this.MonitorToBuffer(image)
-
-      if (type = "Screenshot" && cotype = "Buffer")
-         return this.ScreenshotToBuffer(image)
-
-      ; #1 - Stream as the intermediate representation.
-      try stream := this.ImageToStream(type, image, keywords)
-      catch Error as e
-         if (e.Message ~= "^Conversion from")
-            goto make_bitmap
-         else throw
-      if not stream
-         throw Error("Stream cannot be zero.")
-
-      ; Check the file signature for magic numbers.
-      stream:
-      (ComCall(Seek := 5, stream, "uint64", 0, "uint", 1, "uint64*", &current:=0), current != 0 && MsgBox(current))
-      extension := this.GetExtensionFromStream(stream)
-
-      ; Convert vectorized formats to rasterized formats.
-      if (render && extension ~= "^(?i:pdf|svg)$") {
-         (extension = "pdf") && this.RenderPDF(&stream, index?)
-         (extension = "svg") && pBitmap := this.RenderSVG(&stream, width, height)
-         goto( IsSet(pBitmap) ? "bitmap" : "stream" )
-      }
-
-      ; To determine whether the stream should be decoded into pixels:
-      ; (1) Check for scaling or cropping, etc.
-      ; (2) Check if the source encoding is different from the destination.
-      weight |=
-
-         ; The 1st parameter holds the destination encoding.
-         !( cotype ~= "^(?i:safearray|encodedbuffer|hex|base64|uri|stream|randomaccessstream|)$"
-            && (!p.Has(1) || p[1] == "" || p[1] = extension                    && !(extension = "jpg" && p.Has(2) && p[2] != ""))
-
-         ; The 2nd parameter holds the destination encoding.
-         || cotype = "formdata"
-            && (!p.Has(2) || p[2] == "" || p[2] = extension                    && !(extension = "jpg" && p.Has(3) && p[3] != ""))
-
-         ; Filepaths have the destination encoding as part of the filepath.
-         || cotype = "file"
-            && (!p.Has(1) || p[1] == "" || p[1] ~= "(^|:|\\|\.)" extension "$" && !(extension = "jpg" && p.Has(2) && p[2] != "")
-
-               ; If the desired extension is not supported, it is ignored.
-               || !(RegExReplace(p[1], "^.*(?:^|:|\\|\.)(.*)$", "$1")
-               ~= "^(?i:avif|avifs|bmp|dib|rle|gif|heic|heif|hif|jpg|jpeg|jpe|jfif|png|tif|tiff)$"))
-
-         ; Pass through all functions that don't specify an extension.
-         || cotype ~= "^(?i:clipboard|url|explorer)")
-
-         ; MsgBox weight ? "convert to pixels" : "stay as stream"
-
-      if weight
-         goto clean_stream
-
-      ; Attempt conversion using StreamToCoimage.
-      try coimage := this.StreamToCoimage(cotype, stream, p*)
-      catch Error as e
-         if (e.Message ~= "^Conversion from")
-            goto clean_stream
-         else throw
-
-      ; Clean up the copy. Export raw pointers if requested.
-      if (cotype != "stream")
-         ObjRelease(stream)
-
-      return coimage
-
-      ; Otherwise export the image as a stream.
-      clean_stream:
-      type := "stream"
-      image := stream
-      cleanup := "stream"
-
-      ; #2 - Fallback to GDI+ bitmap as the intermediate.
-      make_bitmap:
-      if !(pBitmap := this.ImageToBitmap(type, image, keywords))
-         throw Error("pBitmap cannot be zero.")
-
-      ; GdipImageForceValidation must be called immediately or it fails silently.
-      bitmap:
-      outDimensions := [] ; Initialize width x height array
-      (validate) && DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmap)
-      (crop) && this.BitmapCrop(&pBitmap, crop)
-      (scale) && this.BitmapScale(&pBitmap, scale,,,, outDimensions)
-      (upscale) && this.BitmapScale(&pBitmap, upscale, 1,,, outDimensions)
-      (downscale) && this.BitmapScale(&pBitmap, downscale, -1,,, outDimensions)
-      (minsize) && this.BitmapScale(&pBitmap, minsize, 1, "join", True, outDimensions)
-      (maxsize) && this.BitmapScale(&pBitmap, maxsize, -1, "meet", True, outDimensions)
-      (outDimensions.length == 2) && this.BitmapScale(&pBitmap, outDimensions) ; Scale only once
-      (sprite) && this.BitmapSprite(&pBitmap)
-
-      ; Save frame delays and loop count for webp.
-      if (type = "stream" && extension = "webp" && cotype ~= "^(?i:show|window|desktop)$") {
-         this.ParseWEBP(stream, &pDelays, &pCount)
-         IsSet(pDelays) && DllCall("gdiplus\GdipSetPropertyItem", "ptr", pBitmap, "ptr", pDelays)
-         IsSet(pCount) && DllCall("gdiplus\GdipSetPropertyItem", "ptr", pBitmap, "ptr", pCount)
-      }
-
-      ; Attempt conversion using BitmapToCoimage.
-      coimage := this.BitmapToCoimage(cotype, pBitmap, p*)
-
-      ; Clean up the copy. Export raw pointers if requested.
-      if (cotype != "bitmap")
-         DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
-
-      if (cleanup = "stream")
-         ObjRelease(stream)
-
-      return coimage
-   }
-
-   static Inputs :=
+   static domains := ; In decreasing order of detection
 
    [
       "ClipboardPNG",
@@ -379,41 +266,106 @@ class ImagePut {
       "D2DBitmap"
    ]
 
-   static DontVerifyImageType(&image, &keywords := "") {
+   static codomains :=
+
+   [
+      "Base64",
+      "Bitmap",
+      "Buffer",
+      "Clipboard",
+      "Cursor",
+      "DC",
+      "Desktop",
+      "EncodedBuffer",
+      "Explorer",
+      "File",
+      "FormData",
+      "HBitmap",
+      "Hex",
+      "HIcon",
+      "RandomAccessStream",
+      "SafeArray",
+      "Screenshot",
+      "SharedBuffer",
+      "Stream",
+      "URI",
+      "URL",
+      "Wallpaper",
+      "WICBitmap",
+      "Window"
+   ]
+
+   static inputs :=
+
+   [
+      "avif", "avifs",
+      "bmp", "dib", "rle",
+      "emf",
+      "gif",
+      "heic", "heif", "hif",
+      "ico",
+      "jpg", "jpeg", "jpe", "jfif",
+      "pdf",
+      "png",
+      "svg",
+      "tif", "tiff",
+      "webp",
+      "wmf"
+   ]
+
+   static inputs_vector :=
+
+   [
+      "pdf",
+      "svg"
+   ]
+
+   static outputs :=
+
+   [
+      "bmp", "dib", "rle",
+      "gif",
+      "heic", "heif", "hif",
+      "jpg", "jpeg", "jpe", "jfif",
+      "png",
+      "tif", "tiff"
+   ]
+
+   static premiss(&coimage, &keywords := "") {
 
       ; Sentinel value.
       keywords := {}
 
       ; Try ImageType.
-      if !IsObject(image)
+      if !IsObject(coimage)
          throw Error("Must be an object.")
 
       ; Goto ImageType.
-      if image.HasProp("image") && !image.HasMethod("image") {
-         keywords := image
-         image := image.image
+      if coimage.HasProp("image") && !coimage.HasMethod("image") {
+         keywords := coimage
+         coimage := coimage.image
          throw Error("Must catch this error with ImageType.")
       }
 
       ; Skip ImageType.
-      for type in this.inputs
-         if image.HasProp(type) && !image.HasMethod(type) {
-            keywords := image
-            image := image.%type%
-            return type
+      for domain in this.domains
+         if coimage.HasProp(domain) && !coimage.HasMethod(domain) {
+            keywords := coimage
+            coimage := coimage.%domain%
+            return domain
          }
 
       ; Continue ImageType.
       throw Error("Invalid type.")
    }
 
-   static ImageType(image) {
+   static possible(coimage) {
 
-      if not IsObject(image)
+      if not IsObject(coimage)
          goto string
 
-      if image.HasProp("prototype") && image.prototype.HasProp("__class") && image.prototype.__class == "ClipboardAll"
-      or Type(image) == "ClipboardAll" && this.IsClipboard(image.ptr, image.size)
+      if coimage.HasProp("prototype") && coimage.prototype.HasProp("__class") && coimage.prototype.__class == "ClipboardAll"
+      or Type(coimage) == "ClipboardAll" && this.IsClipboard(coimage.ptr, coimage.size)
          ; A "clipboardpng" is a pointer to a PNG stream saved as the "png" clipboard format.
          if DllCall("IsClipboardFormatAvailable", "uint", DllCall("RegisterClipboardFormat", "str", "png", "uint"))
             return "ClipboardPNG"
@@ -422,395 +374,590 @@ class ImagePut {
          else if DllCall("IsClipboardFormatAvailable", "uint", 2)
             return "Clipboard"
 
-         else throw Error("Clipboard format not supported.")
+         else goto end
 
 
 
 
       array:
       ; A "safearray" is a pointer to a SafeArray COM Object.
-      if ComObjType(image) and ComObjType(image) & 0x2000
+      if ComObjType(coimage) and ComObjType(coimage) & 0x2000
          return "SafeArray"
 
       ; A "screenshot" is an array of 4 numbers with an optional window.
-      if image.HasProp("__Item") && image.HasProp("length") && image.length ~= "^(4|5)$"
-      && image[1] ~= "^-?\d+$" && image[2] ~= "^-?\d+$" && image[3] ~= "^(?!0+$)\d+$" && image[4] ~= "^(?!0+$)\d+$"
-      && image[1] > -65536 && image[1] < 65536 && image[2] > -65536 && image[2] < 65536 && image[3] < 65536 && image[4] < 65536
-      && (image.Has(5) ? WinExist(image[5]) : True)
+      if coimage.HasProp("__Item") && coimage.HasProp("length") && coimage.length ~= "^(4|5)$"
+      && coimage[1] ~= "^-?\d+$" && coimage[2] ~= "^-?\d+$" && coimage[3] ~= "^(?!0+$)\d+$" && coimage[4] ~= "^(?!0+$)\d+$"
+      && coimage[1] > -65536 && coimage[1] < 65536 && coimage[2] > -65536 && coimage[2] < 65536 && coimage[3] < 65536 && coimage[4] < 65536
+      && (coimage.Has(5) ? WinExist(coimage[5]) : True)
          return "Screenshot"
 
       object:
       ; A "window" is an object with an hwnd property.
-      if image.HasProp("hwnd")
+      if coimage.HasProp("hwnd")
          return "Window"
 
       ; A "object" has a pBitmap property that points to an internal GDI+ bitmap.
-      if image.HasProp("pBitmap")
-         try if !DllCall("gdiplus\GdipGetImageType", "ptr", image.pBitmap, "ptr*", &_type:=0) && (_type == 1)
+      if coimage.HasProp("pBitmap")
+         try if !DllCall("gdiplus\GdipGetImageType", "ptr", coimage.pBitmap, "ptr*", &_type:=0) && (_type == 1)
             return "Object"
 
-      if not image.HasProp("ptr")
+      if not coimage.HasProp("ptr")
          goto end
 
       ; Check if image is a pointer. If not, crash and do not recover.
-      ("POINTER IS BAD AND PROGRAM IS CRASH") && NumGet(image.ptr, "char")
+      ("POINTER IS BAD AND PROGRAM IS CRASH") && NumGet(coimage.ptr, "char")
 
       ; An "encodedbuffer" contains a pointer to the bytes of an encoded image format.
-      if image.HasProp("ptr") && image.HasProp("size") && this.IsImage(image.ptr, image.size)
+      if coimage.HasProp("ptr") && coimage.HasProp("size") && this.IsImage(coimage.ptr, coimage.size)
          return "EncodedBuffer"
 
       ; A "buffer" is an object with a pointer to bytes and properties to determine its 2-D shape.
-      if image.HasProp("ptr")
-         and ( image.HasProp("width") && image.HasProp("height")
-            or image.HasProp("stride") && image.HasProp("height")
-            or image.HasProp("size") && (image.HasProp("stride") || image.HasProp("width") || image.HasProp("height")))
+      if coimage.HasProp("ptr")
+         and ( coimage.HasProp("width") && coimage.HasProp("height")
+            or coimage.HasProp("stride") && coimage.HasProp("height")
+            or coimage.HasProp("size") && (coimage.HasProp("stride") || coimage.HasProp("width") || coimage.HasProp("height")))
          return "Buffer"
 
-      image := image.ptr
+      coimage := coimage.ptr
       goto pointer
 
       string:
-      if (image == "")
-         throw Error("Image data is an empty string.")
+      if (coimage == "")
+         return "" ; Image data is an empty string.
 
       ; A non-zero "monitor" number identifies each display uniquely; and 0 refers to the entire virtual screen.
-      if (image ~= "^\d+$" && image >= 0 && image <= MonitorGetCount())
+      if (coimage ~= "^\d+$" && coimage >= 0 && coimage <= MonitorGetCount())
          return "Monitor"
 
       ; A "desktop" is a hidden window behind the desktop icons created by ImagePutDesktop.
-      if (image = "desktop")
+      if (coimage = "desktop")
          return "Desktop"
 
       ; A "wallpaper" is the desktop wallpaper.
-      if (image = "wallpaper")
+      if (coimage = "wallpaper")
          return "Wallpaper"
 
       ; A "cursor" is the name of a known cursor name.
-      if (image ~= "(?i)^A_Cursor|Unknown|(IDC_)?(AppStarting|Arrow|Cross|Hand(writing)?|"
+      if (coimage ~= "(?i)^A_Cursor|Unknown|(IDC_)?(AppStarting|Arrow|Cross|Hand(writing)?|"
       . "Help|IBeam|No|Pin|Person|SizeAll|SizeNESW|SizeNS|SizeNWSE|SizeWE|UpArrow|Wait)$")
          return "Cursor"
 
       ; A "url" satisfies the url format.
-      if this.IsURL(image)
+      if this.IsURL(coimage)
          return "URL"
 
       ; A "file" is stored on the disk or network.
-      if FileExist(image)
+      if FileExist(coimage)
          return "File"
 
       ; A "window" is anything considered a Window Title including ahk_class and "A".
-      if WinExist(image)
+      if WinExist(coimage)
          return "Window"
 
       ; A "sharedbuffer" is a file mapping kernel object.
-      if DllCall("CloseHandle", "ptr", DllCall("OpenFileMapping", "uint", 2, "int", 0, "str", "ImagePut_" image, "ptr"))
+      if DllCall("CloseHandle", "ptr", DllCall("OpenFileMapping", "uint", 2, "int", 0, "str", "ImagePut_" coimage, "ptr"))
          return "SharedBuffer"
 
       ; A "hex" string is binary image data encoded into text using hexadecimal.
-      if (StrLen(image) >= 48) && (image ~= "^\s*(?:[A-Fa-f0-9]{2})*+\s*$")
+      if (StrLen(coimage) >= 48) && (coimage ~= "^\s*(?:[A-Fa-f0-9]{2})*+\s*$")
          return "Hex"
 
       ; A "base64" string is binary image data encoded into text using standard 64 characters.
-      if (StrLen(image) >= 32) && (image ~= "^\s*(?:data:image\/[a-z]+;base64,)?"
+      if (StrLen(coimage) >= 32) && (coimage ~= "^\s*(?:data:image\/[a-z]+;base64,)?"
       . "(?:[A-Za-z0-9+\/]{4})*+(?:[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{2}==)?\s*$")
          return "Base64"
 
       ; For more helpful error messages: Catch file names without extensions!
-      if not (image ~= "^-?\d+$") {
-         for extension in ["bmp","dib","rle","jpg","jpeg","jpe","jfif","gif","tif","tiff","png","ico","exe","dll"] {
-            if FileExist(image "." extension)
-               throw Error("A ." extension " file extension is required!", -4)
-            speculate := RegExReplace(image, "(\.[^.]*)?$") "." extension
+      if not (coimage ~= "^-?\d+$") {
+         for extension in this.inputs {
+            if FileExist(coimage "." extension)
+               MsgBox "A ." extension " file extension is required!"
+            speculate := RegExReplace(coimage, "(\.[^.]*)?$") "." extension
             if FileExist(speculate)
-               throw Error("Is it possible you meant to type " speculate " as the file extension instead?", -4)
+               MsgBox "Is it possible you meant to type " speculate " as the file extension instead?"
          }
          goto end
       }
 
       handle:
       ; A "dc" is a handle to a GDI device context.
-      if (DllCall("GetObjectType", "ptr", image, "uint") == 3 || DllCall("GetObjectType", "ptr", image, "uint") == 10)
+      if (DllCall("GetObjectType", "ptr", coimage, "uint") == 3 || DllCall("GetObjectType", "ptr", coimage, "uint") == 10)
          return "DC"
 
       ; An "hBitmap" is a handle to a GDI Bitmap.
-      if (DllCall("GetObjectType", "ptr", image, "uint") == 7)
+      if (DllCall("GetObjectType", "ptr", coimage, "uint") == 7)
          return "HBitmap"
 
       ; An "hIcon" is a handle to a GDI icon.
-      if DllCall("DestroyIcon", "ptr", DllCall("CopyIcon", "ptr", image, "ptr"))
+      if DllCall("DestroyIcon", "ptr", DllCall("CopyIcon", "ptr", coimage, "ptr"))
          return "HIcon"
 
       ; Check if image is a pointer. If not, crash and do not recover.
-      ("POINTER IS BAD AND PROGRAM IS CRASH") && NumGet(image, "char")
+      ("POINTER IS BAD AND PROGRAM IS CRASH") && NumGet(coimage, "char")
 
       ; A "bitmap" is a pointer to a GDI+ Bitmap. GdiplusStartup exception is caught above.
-      try if !DllCall("gdiplus\GdipGetImageType", "ptr", image, "ptr*", &_type:=0) && (_type == 1)
+      try if !DllCall("gdiplus\GdipGetImageType", "ptr", coimage, "ptr*", &_type:=0) && (_type == 1)
          return "Bitmap"
 
       ; Note 1: All GDI+ functions add 1 to the reference count of COM objects on 64-bit systems.
       ; Note 2: GDI+ pBitmaps that are queried cease to stay pBitmaps.
       ; Note 3: Critical error for ranges 0-4095 on v1 and 0-65535 on v2.
-      (A_PtrSize == 8) && ObjRelease(image) ; Therefore do not move this, it has been tested.
+      (A_PtrSize == 8) && ObjRelease(coimage) ; Therefore do not move this, it has been tested.
 
       pointer:
       ; A "stream" is a pointer to the IStream interface.
-      try if ComObjQuery(image, "{0000000C-0000-0000-C000-000000000046}")
+      try if ComObjQuery(coimage, "{0000000C-0000-0000-C000-000000000046}")
          return "Stream"
 
       ; A "randomaccessstream" is a pointer to the IRandomAccessStream interface.
-      try if ComObjQuery(image, "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}")
+      try if ComObjQuery(coimage, "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}")
          return "RandomAccessStream"
 
       ; A "wicbitmap" is a pointer to a IWICBitmapSource.
-      try if ComObjQuery(image, "{00000120-A8F2-4877-BA0A-FD2B6645FB94}")
+      try if ComObjQuery(coimage, "{00000120-A8F2-4877-BA0A-FD2B6645FB94}")
          return "WICBitmap"
 
       ; A "d2dbitmap" is a pointer to a ID2D1Bitmap.
-      try if ComObjQuery(image, "{A2296057-EA42-4099-983B-539FB6505426}")
+      try if ComObjQuery(coimage, "{A2296057-EA42-4099-983B-539FB6505426}")
          return "D2DBitmap"
 
       end:
-      throw Error("Image type could not be identified.")
+      return 0 ; Image type could not be identified.
    }
 
-   static ImageToBitmap(type, image, keywords := "") {
+   static necessary(coimage) {
+      switch domain := this.possible(coimage) {
+      case "ClipboardPNG":
+      case "Clipboard":
+      case "SafeArray":
+      case "Screenshot":
+      case "Window":
+      case "Object":
+      case "EncodedBuffer":
+      case "Buffer":
+      case "Monitor":
+      case "Desktop":
+      case "Wallpaper":
+      case "Cursor":
+      case "URL":
+      case "File":
+      case "SharedBuffer":
+      case "Hex":
+      case "Base64":
+      case "DC":
+      case "HBitmap":
+      case "HIcon":
+      case "Bitmap":
+      case "Stream":
+      case "RandomAccessStream":
+      case "WICBitmap":
+      case "D2DBitmap":
+      default: return domain ; Pass through "" and 0
+      }
+   }
+
+   static sufficent(codomain, coimage, p*) {
+
+      ; Take a guess as to what the image might be. (>95% accuracy!)
+      try domain := this.premiss(&coimage, &keywords)
+      catch
+         switch domain := this.possible(coimage) {
+         case "": throw Error("Image data is an empty string.")
+         case  0: throw Error("Image type could not be identified.")
+         }
+
+      ; Extract options to be applied in the following order:
+      index     := keywords.HasProp("index")     ? keywords.index     : ""
+      size      := keywords.HasProp("size")      ? keywords.size      : ""
+      sprite    := keywords.HasProp("sprite")    ? keywords.sprite    : ""
+      crop      := keywords.HasProp("crop")      ? keywords.crop      : ""
+      scale     := keywords.HasProp("scale")     ? keywords.scale     : ""
+      upscale   := keywords.HasProp("upscale")   ? keywords.upscale   : ""
+      downscale := keywords.HasProp("downscale") ? keywords.downscale : ""
+      minsize   := keywords.HasProp("minsize")   ? keywords.minsize   : ""
+      maxsize   := keywords.HasProp("maxsize")   ? keywords.maxsize   : ""
+      decode    := keywords.HasProp("decode")    ? keywords.decode    : this.decode
+      render    := keywords.HasProp("render")    ? keywords.render    : this.render
+      validate  := keywords.HasProp("validate")  ? keywords.validate  : this.validate
+
+      ; Local variables needed for the goto statements below.
+      width := IsObject(size) && size.Has(1) && size[1] ~= "^\d+$" ? size[1] : ""
+      height := IsObject(size) && size.Has(2) && size[2] ~= "^\d+$" ? size[2] : ""
+      cleanup := ""
+
+      ; Attempt to convert the image to a stream to extract additional information.
+      stream := this.ImageToStream(domain, coimage, keywords)
+      if not stream
+         goto make_bitmap
+
+      ; Check the file signature for magic numbers.
+      stream:
+      (ComCall(Seek := 5, stream, "uint64", 0, "uint", 1, "uint64*", &current:=0), current != 0 && MsgBox(current))
+      extension := this.GetExtensionFromStream(stream)
+
+      ; Convert vectorized formats to rasterized formats.
+      if (render && extension ~= "^(?i:pdf|svg)$") {
+         (extension = "pdf") && this.RenderPDF(&stream, index)
+         (extension = "svg") && pBitmap := this.RenderSVG(&stream, width, height)
+         goto( IsSet(pBitmap) ? "bitmap" : "stream" )
+      }
+
+      ; The following "weight" determines whether the image should be decoded into pixels.
+      weight := decode || sprite || crop || scale || upscale || downscale || minsize || maxsize ||
+
+         ; The 1st parameter holds the destination encoding.
+         !( codomain ~= "^(?i:safearray|encodedbuffer|hex|base64|uri|stream|randomaccessstream|)$"
+            && (!p.Has(1) || p[1] == "" || p[1] = extension                       && !(extension = "jpg" && p.Has(2) && p[2] != ""))
+
+         ; The 2nd parameter holds the destination encoding.
+         || codomain = "formdata"
+            && (!p.Has(2) || p[2] == "" || p[2] = extension                       && !(extension = "jpg" && p.Has(3) && p[3] != ""))
+
+         ; Filepaths have the destination encoding as part of the filepath.
+         || codomain = "file"
+            && (!p.Has(1) || p[1] == "" || p[1] ~= "(^|:|\\|\.)" extension "$"    && !(extension = "jpg" && p.Has(2) && p[2] != "")
+
+               ; If the desired extension is not supported, it is ignored.
+               || !(RegExReplace(p[1], "^.*(?:^|:|\\|\.)(.*)$", "$1")
+               ~= "^(?i:avif|avifs|bmp|dib|rle|gif|heic|heif|hif|jpg|jpeg|jpe|jfif|png|tif|tiff)$"))
+
+         ; Pass through all functions that don't specify an extension.
+         || codomain ~= "^(?i:clipboard|url|explorer)")
+
+         ; MsgBox weight ? "convert to pixels" : "stay as stream"
+
+      if weight
+         goto clean_stream
+
+      ; Attempt conversion using StreamToImage.
+      image := this.StreamToImage(codomain, stream, p*)
+      if not image
+         goto clean_stream
+
+      ; Clean up the copy. Export raw pointers if requested.
+      if (codomain != "stream")
+         ObjRelease(stream)
+
+      return image
+
+      ; Otherwise export the image as a stream.
+      clean_stream:
+      domain := "stream"
+      coimage := stream
+      cleanup := "stream"
+
+      make_bitmap:
+      ; #0 - Special cases.
+      if (domain = "SharedBuffer" && codomain = "SharedBuffer")
+         return this.SharedBufferToSharedBuffer(coimage)
+
+      if (domain = "Monitor" && codomain = "Buffer")
+         return this.MonitorToBuffer(coimage)
+
+      if (domain = "Screenshot" && codomain = "Buffer")
+         return this.ScreenshotToBuffer(coimage)
+
+      ; #2 - Fallback to GDI+ bitmap as the intermediate.
+      if !(pBitmap := this.ImageToBitmap(domain, coimage, keywords))
+         throw Error("The input image is unsupported.")
+
+      ; GdipImageForceValidation must be called immediately or it fails silently.
+      bitmap:
+      outDimensions := [] ; Initialize width x height array
+      (validate) && DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmap)
+      (crop) && this.BitmapCrop(&pBitmap, crop)
+      (scale) && this.BitmapScale(&pBitmap, scale,,,, outDimensions)
+      (upscale) && this.BitmapScale(&pBitmap, upscale, 1,,, outDimensions)
+      (downscale) && this.BitmapScale(&pBitmap, downscale, -1,,, outDimensions)
+      (minsize) && this.BitmapScale(&pBitmap, minsize, 1, "join", True, outDimensions)
+      (maxsize) && this.BitmapScale(&pBitmap, maxsize, -1, "meet", True, outDimensions)
+      (outDimensions.length == 2) && this.BitmapScale(&pBitmap, outDimensions) ; Scale only once
+      (sprite) && this.BitmapSprite(&pBitmap)
+
+      ; Save frame delays and loop count for webp.
+      if (domain = "stream" && extension = "webp" && codomain ~= "^(?i:show|window|desktop)$") {
+         this.ParseWEBP(stream, &pDelays, &pCount)
+         IsSet(pDelays) && DllCall("gdiplus\GdipSetPropertyItem", "ptr", pBitmap, "ptr", pDelays)
+         IsSet(pCount) && DllCall("gdiplus\GdipSetPropertyItem", "ptr", pBitmap, "ptr", pCount)
+      }
+
+      ; Attempt conversion using BitmapToImage.
+      image := this.BitmapToImage(codomain, pBitmap, p*)
+      if not image
+         throw Error("The output image type " codomain " is unsupported.")
+
+      ; Clean up the copy. Export raw pointers if requested.
+      if (codomain != "bitmap")
+         DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
+
+      if (cleanup = "stream")
+         ObjRelease(stream)
+
+      return image
+   }
+
+   static ImageToBitmap(domain, coimage, keywords := "") {
 
       try index := keywords.index
 
-      if (type = "Object")
-         return this.BitmapToBitmap(image.pBitmap)
+      if (domain = "Object")
+         bitmap := this.BitmapToBitmap(coimage.pBitmap)
 
-      if (type = "Clipboard")
-         return this.ClipboardToBitmap()
+      if (domain = "Clipboard")
+         bitmap := this.ClipboardToBitmap()
 
-      if (type = "ClipboardPNG")
-         return this.ClipboardPNGToBitmap()
+      if (domain = "ClipboardPNG")
+         bitmap := this.ClipboardPNGToBitmap()
 
-      if (type = "SafeArray")
-         return this.SafeArrayToBitmap(image)
+      if (domain = "SafeArray")
+         bitmap := this.SafeArrayToBitmap(coimage)
 
-      if (type = "EncodedBuffer")
-         return this.EncodedBufferToBitmap(image)
+      if (domain = "EncodedBuffer")
+         bitmap := this.EncodedBufferToBitmap(coimage)
 
-      if (type = "SharedBuffer")
-         return this.SharedBufferToBitmap(image)
+      if (domain = "SharedBuffer")
+         bitmap := this.SharedBufferToBitmap(coimage)
 
-      if (type = "Buffer")
-         return this.BufferToBitmap(image)
+      if (domain = "Buffer")
+         bitmap := this.BufferToBitmap(coimage)
 
-      if (type = "Monitor")
-         return this.MonitorToBitmap(image)
+      if (domain = "Monitor")
+         bitmap := this.MonitorToBitmap(coimage)
 
-      if (type = "Screenshot")
-         return this.ScreenshotToBitmap(image)
+      if (domain = "Screenshot")
+         bitmap := this.ScreenshotToBitmap(coimage)
 
-      if (type = "Window")
-         return this.WindowToBitmap(image)
+      if (domain = "Window")
+         bitmap := this.WindowToBitmap(coimage)
 
-      if (type = "Desktop")
-         return this.DesktopToBitmap()
+      if (domain = "Desktop")
+         bitmap := this.DesktopToBitmap()
 
-      if (type = "Wallpaper")
-         return this.WallpaperToBitmap()
+      if (domain = "Wallpaper")
+         bitmap := this.WallpaperToBitmap()
 
-      if (type = "Cursor")
-         return this.CursorToBitmap()
+      if (domain = "Cursor")
+         bitmap := this.CursorToBitmap()
 
-      if (type = "URL")
-         return this.URLToBitmap(image)
+      if (domain = "URL")
+         bitmap := this.URLToBitmap(coimage)
 
-      if (type = "File")
-         return this.FileToBitmap(image)
+      if (domain = "File")
+         bitmap := this.FileToBitmap(coimage)
 
-      if (type = "Hex")
-         return this.HexToBitmap(image)
+      if (domain = "Hex")
+         bitmap := this.HexToBitmap(coimage)
 
-      if (type = "Base64")
-         return this.Base64ToBitmap(image)
+      if (domain = "Base64")
+         bitmap := this.Base64ToBitmap(coimage)
 
-      if (type = "DC")
-         return this.DCToBitmap(image)
+      if (domain = "DC")
+         bitmap := this.DCToBitmap(coimage)
 
-      if (type = "HBitmap")
-         return this.HBitmapToBitmap(image)
+      if (domain = "HBitmap")
+         bitmap := this.HBitmapToBitmap(coimage)
 
-      if (type = "HIcon")
-         return this.HIconToBitmap(image)
+      if (domain = "HIcon")
+         bitmap := this.HIconToBitmap(coimage)
 
-      if (type = "Bitmap")
-         return this.BitmapToBitmap(image)
+      if (domain = "Bitmap")
+         bitmap := this.BitmapToBitmap(coimage)
 
-      if (type = "Stream")
-         return this.StreamToBitmap(image)
+      if (domain = "Stream")
+         bitmap := this.StreamToBitmap(coimage)
 
-      if (type = "RandomAccessStream")
-         return this.RandomAccessStreamToBitmap(image)
+      if (domain = "RandomAccessStream")
+         bitmap := this.RandomAccessStreamToBitmap(coimage)
 
-      if (type = "WICBitmap")
-         return this.WICBitmapToBitmap(image)
+      if (domain = "WICBitmap")
+         bitmap := this.WICBitmapToBitmap(coimage)
 
-      if (type = "D2DBitmap")
-         return this.D2DBitmapToBitmap(image)
+      if (domain = "D2DBitmap")
+         bitmap := this.D2DBitmapToBitmap(coimage)
 
-      throw Error("Conversion from " type " to bitmap is not supported.")
+      if not IsSet(bitmap)
+         return 0 ; kernel or null space
+
+      if not bitmap
+         throw Error("Conversion from " domain " to bitmap was unsuccessful.")
+
+      return bitmap
    }
 
-   static BitmapToCoimage(cotype, pBitmap, p1:="", p2:="", p3:="", p4:="", p5:="", p6:="", p7:="", p*) {
+   static BitmapToImage(codomain, pBitmap, p1:="", p2:="", p3:="", p4:="", p5:="", p6:="", p7:="", p*) {
 
-      if (cotype = "Clipboard") ; (pBitmap)
-         return this.BitmapToClipboard(pBitmap)
+      if (codomain = "Clipboard") ; (pBitmap)
+         image := this.BitmapToClipboard(pBitmap)
 
-      if (cotype = "SafeArray") ; (pBitmap, extension, quality)
-         return this.BitmapToSafeArray(pBitmap, p1, p2)
+      if (codomain = "SafeArray") ; (pBitmap, extension, quality)
+         image := this.BitmapToSafeArray(pBitmap, p1, p2)
 
-      if (cotype = "EncodedBuffer") ; (pBitmap, extension, quality)
-         return this.BitmapToEncodedBuffer(pBitmap, p1, p2)
+      if (codomain = "EncodedBuffer") ; (pBitmap, extension, quality)
+         image := this.BitmapToEncodedBuffer(pBitmap, p1, p2)
 
-      if (cotype = "SharedBuffer") ; (pBitmap, name)
-         return this.BitmapToSharedBuffer(pBitmap, p1)
+      if (codomain = "SharedBuffer") ; (pBitmap, name)
+         image := this.BitmapToSharedBuffer(pBitmap, p1)
 
-      if (cotype = "Buffer") ; (pBitmap)
-         return this.BitmapToBuffer(pBitmap)
+      if (codomain = "Buffer") ; (pBitmap)
+         image := this.BitmapToBuffer(pBitmap)
 
-      if (cotype = "Screenshot") ; (pBitmap, pos, alpha)
-         return this.BitmapToScreenshot(pBitmap, p1, p2)
+      if (codomain = "Screenshot") ; (pBitmap, pos, alpha)
+         image := this.BitmapToScreenshot(pBitmap, p1, p2)
 
-      if (cotype = "Window") ; (pBitmap, title, pos, style, styleEx, parent, playback, cache)
-         return this.BitmapToWindow(pBitmap, p1, p2, p3, p4, p5, p6, p7)
+      if (codomain = "Window") ; (pBitmap, title, pos, style, styleEx, parent, playback, cache)
+         image := this.BitmapToWindow(pBitmap, p1, p2, p3, p4, p5, p6, p7)
 
-      if (cotype = "Show") ; (pBitmap, title, pos, style, styleEx, parent, playback, cache)
-         return this.Show(pBitmap, p1, p2, p3, p4, p5, p6, p7)
+      if (codomain = "Show") ; (pBitmap, title, pos, style, styleEx, parent, playback, cache)
+         image := this.Show(pBitmap, p1, p2, p3, p4, p5, p6, p7)
 
-      if (cotype = "Desktop") ; (pBitmap, title, pos, style, styleEx, parent, playback, cache)
-         return this.BitmapToDesktop(pBitmap, p1, p2, p3, p4, p5, p6, p7)
+      if (codomain = "Desktop") ; (pBitmap, title, pos, style, styleEx, parent, playback, cache)
+         image := this.BitmapToDesktop(pBitmap, p1, p2, p3, p4, p5, p6, p7)
 
-      if (cotype = "Wallpaper") ; (pBitmap)
-         return this.BitmapToWallpaper(pBitmap)
+      if (codomain = "Wallpaper") ; (pBitmap)
+         image := this.BitmapToWallpaper(pBitmap)
 
-      if (cotype = "Cursor") ; (pBitmap, xHotspot, yHotspot)
-         return this.BitmapToCursor(pBitmap, p1, p2)
+      if (codomain = "Cursor") ; (pBitmap, xHotspot, yHotspot)
+         image := this.BitmapToCursor(pBitmap, p1, p2)
 
-      if (cotype = "URL") ; (pBitmap)
-         return this.BitmapToURL(pBitmap)
+      if (codomain = "URL") ; (pBitmap)
+         image := this.BitmapToURL(pBitmap)
 
-      if (cotype = "Explorer") ; (pBitmap, default_dir, inactive)
-         return this.BitmapToExplorer(pBitmap, p1, p2)
+      if (codomain = "Explorer") ; (pBitmap, default_dir, inactive)
+         image := this.BitmapToExplorer(pBitmap, p1, p2)
 
-      if (cotype = "File") ; (pBitmap, filepath, quality)
-         return this.BitmapToFile(pBitmap, p1, p2)
+      if (codomain = "File") ; (pBitmap, filepath, quality)
+         image := this.BitmapToFile(pBitmap, p1, p2)
 
-      if (cotype = "Hex") ; (pBitmap, extension, quality)
-         return this.BitmapToHex(pBitmap, p1, p2)
+      if (codomain = "Hex") ; (pBitmap, extension, quality)
+         image := this.BitmapToHex(pBitmap, p1, p2)
 
-      if (cotype = "Base64") ; (pBitmap, extension, quality)
-         return this.BitmapToBase64(pBitmap, p1, p2)
+      if (codomain = "Base64") ; (pBitmap, extension, quality)
+         image := this.BitmapToBase64(pBitmap, p1, p2)
 
-      if (cotype = "URI") ; (pBitmap, extension, quality)
-         return this.BitmapToURI(pBitmap, p1, p2)
+      if (codomain = "URI") ; (pBitmap, extension, quality)
+         image := this.BitmapToURI(pBitmap, p1, p2)
 
-      if (cotype = "DC") ; (pBitmap, alpha)
-         return this.BitmapToDC(pBitmap, p1)
+      if (codomain = "DC") ; (pBitmap, alpha)
+         image := this.BitmapToDC(pBitmap, p1)
 
-      if (cotype = "HBitmap") ; (pBitmap, alpha)
-         return this.BitmapToHBitmap(pBitmap, p1)
+      if (codomain = "HBitmap") ; (pBitmap, alpha)
+         image := this.BitmapToHBitmap(pBitmap, p1)
 
-      if (cotype = "HIcon") ; (pBitmap)
-         return this.BitmapToHIcon(pBitmap)
+      if (codomain = "HIcon") ; (pBitmap)
+         image := this.BitmapToHIcon(pBitmap)
 
-      if (cotype = "Bitmap")
-         return pBitmap
+      if (codomain = "Bitmap")
+         image := pBitmap
 
-      if (cotype = "Stream") ; (pBitmap, extension, quality)
-         return this.BitmapToStream(pBitmap, p1, p2)
+      if (codomain = "Stream") ; (pBitmap, extension, quality)
+         image := this.BitmapToStream(pBitmap, p1, p2)
 
-      if (cotype = "RandomAccessStream") ; (pBitmap, extension, quality)
-         return this.BitmapToRandomAccessStream(pBitmap, p1, p2)
+      if (codomain = "RandomAccessStream") ; (pBitmap, extension, quality)
+         image := this.BitmapToRandomAccessStream(pBitmap, p1, p2)
 
-      if (cotype = "WICBitmap") ; (pBitmap)
-         return this.BitmapToWICBitmap(pBitmap)
+      if (codomain = "WICBitmap") ; (pBitmap)
+         image := this.BitmapToWICBitmap(pBitmap)
 
-      if (cotype = "D2DBitmap") ; (pBitmap)
-         return this.BitmapToD2DBitmap(pBitmap)
+      if (codomain = "D2DBitmap") ; (pBitmap)
+         image := this.BitmapToD2DBitmap(pBitmap)
 
-      if (cotype = "FormData") ; (pBitmap, boundary, extension, quality)
-         return this.BitmapToFormData(pBitmap, p1, p2, p3)
+      if (codomain = "FormData") ; (pBitmap, boundary, extension, quality)
+         image := this.BitmapToFormData(pBitmap, p1, p2, p3)
 
-      throw Error("Conversion from bitmap to " cotype " is not supported.")
+      if not IsSet(image)
+         return 0 ; kernel or null space
+
+      if not image
+         throw Error("Conversion from bitmap to " codomain " was unsuccessful.")
+
+      return image
    }
 
-   static ImageToStream(type, image, keywords := "") {
+   static ImageToStream(domain, coimage, keywords := "") {
 
       try index := keywords.index
 
-      if (type = "ClipboardPNG")
-         return this.ClipboardPNGToStream()
+      if (domain = "ClipboardPNG")
+         stream := this.ClipboardPNGToStream()
 
-      if (type = "SafeArray")
-         return this.SafeArrayToStream(image)
+      if (domain = "SafeArray")
+         stream := this.SafeArrayToStream(coimage)
 
-      if (type = "EncodedBuffer")
-         return this.EncodedBufferToStream(image)
+      if (domain = "EncodedBuffer")
+         stream := this.EncodedBufferToStream(coimage)
 
-      if (type = "URL")
-         return this.URLToStream(image)
+      if (domain = "URL")
+         stream := this.URLToStream(coimage)
 
-      if (type = "File")
-         return this.FileToStream(image)
+      if (domain = "File")
+         stream := this.FileToStream(coimage)
 
-      if (type = "Hex")
-         return this.HexToStream(image)
+      if (domain = "Hex")
+         stream := this.HexToStream(coimage)
 
-      if (type = "Base64")
-         return this.Base64ToStream(image)
+      if (domain = "Base64")
+         stream := this.Base64ToStream(coimage)
 
-      if (type = "Stream")
-         return this.StreamToStream(image)
+      if (domain = "Stream")
+         stream := this.StreamToStream(coimage)
 
-      if (type = "RandomAccessStream")
-         return this.RandomAccessStreamToStream(image)
+      if (domain = "RandomAccessStream")
+         stream := this.RandomAccessStreamToStream(coimage)
 
-      throw Error("Conversion from " type " to stream is not supported.")
+      if not IsSet(stream)
+         return 0 ; kernel or null space
+
+      if not stream
+         throw Error("Conversion from " domain " to stream was unsuccessful.")
+
+      return stream
    }
 
-   static StreamToCoimage(cotype, stream, p1 := "", p2 := "", p*) {
+   static StreamToImage(codomain, stream, p1 := "", p2 := "", p*) {
 
-      if (cotype = "Clipboard") ; (stream)
-         return this.StreamToClipboard(stream)
+      if (codomain = "Clipboard") ; (stream)
+         image := this.StreamToClipboard(stream)
 
-      if (cotype = "SafeArray") ; (stream)
-         return this.StreamToSafeArray(stream)
+      if (codomain = "SafeArray") ; (stream)
+         image := this.StreamToSafeArray(stream)
 
-      if (cotype = "EncodedBuffer") ; (stream)
-         return this.StreamToEncodedBuffer(stream)
+      if (codomain = "EncodedBuffer") ; (stream)
+         image := this.StreamToEncodedBuffer(stream)
 
-      if (cotype = "URL") ; (stream)
-         return this.StreamToURL(stream)
+      if (codomain = "URL") ; (stream)
+         image := this.StreamToURL(stream)
 
-      if (cotype = "Explorer") ; (stream, default_dir, inactive)
-         return this.StreamToExplorer(stream, p1, p2)
+      if (codomain = "Explorer") ; (stream, default_dir, inactive)
+         image := this.StreamToExplorer(stream, p1, p2)
 
-      if (cotype = "File") ; (stream, filepath)
-         return this.StreamToFile(stream, p1)
+      if (codomain = "File") ; (stream, filepath)
+         image := this.StreamToFile(stream, p1)
 
-      if (cotype = "Hex") ; (stream)
-         return this.StreamToHex(stream)
+      if (codomain = "Hex") ; (stream)
+         image := this.StreamToHex(stream)
 
-      if (cotype = "Base64") ; (stream)
-         return this.StreamToBase64(stream)
+      if (codomain = "Base64") ; (stream)
+         image := this.StreamToBase64(stream)
 
-      if (cotype = "URI") ; (stream)
-         return this.StreamToURI(stream)
+      if (codomain = "URI") ; (stream)
+         image := this.StreamToURI(stream)
 
-      if (cotype = "Stream")
-         return stream
+      if (codomain = "Stream")
+         image := stream
 
-      if (cotype = "RandomAccessStream") ; (stream)
-         return this.StreamToRandomAccessStream(stream)
+      if (codomain = "RandomAccessStream") ; (stream)
+         image := this.StreamToRandomAccessStream(stream)
 
-      if (cotype = "FormData") ; (stream, boundary)
-         return this.StreamToFormData(stream, p1)
+      if (codomain = "FormData") ; (stream, boundary)
+         image := this.StreamToFormData(stream, p1)
 
-      throw Error("Conversion from stream to " cotype " is not supported.")
+      if not IsSet(image)
+         return 0 ; kernel or null space
+
+      if not image
+         throw Error("Conversion from stream to " codomain " was unsuccessful.")
+
+      return image
    }
 
    static BitmapCrop(&pBitmap, crop) {
@@ -2741,10 +2888,10 @@ class ImagePut {
          finally DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
       }
 
-      Show(window_border := False, title:="", pos:="", style:="", styleEx:="", parent:="", playback:="", cache:="") {
-         return (window_border)
+      Show(title?, pos:="", style:="", styleEx:="", parent:="", playback:="", cache:="") {
+         return IsSet(title)
             ? ImagePut.BitmapToWindow(this.pBitmap, title, pos, style, styleEx, parent, playback, cache)
-            : ImagePut.Show(this.pBitmap, title, pos, style, styleEx, parent, playback, cache)
+            : ImagePut.Show(this.pBitmap, "", pos, style, styleEx, parent, playback, cache)
       }
 
       Save(filepath := "", quality := "")  {
@@ -4408,7 +4555,7 @@ class ImagePut {
    static Explorer(inactive := False) {
       if WinActive("ahk_class WorkerW") || WinActive("ahk_class Progman")
          return A_Desktop
-   
+
       WinExistOrActive := (inactive) ? WinExist : WinActive
       if (hwnd := WinExistOrActive("ahk_class ExploreWClass"))
       or (hwnd := WinExistOrActive("ahk_class CabinetWClass")) {
@@ -4417,10 +4564,10 @@ class ImagePut {
             ? window.Document.Folder.Self.Path
             : window.LocationURL             ; "HTMLDocument"
       }
-   
+
       return "" ; No matching explorer windows found.
    }
-   
+
    static ExplorerTab(hwnd) {
       ; Thanks Lexikos, @TheCrether - https://www.autohotkey.com/boards/viewtopic.php?f=83&t=109907
       try activeTab := ControlGetHwnd("ShellTabWindowClass1", hwnd) ; File Explorer (Windows 11)
@@ -5194,11 +5341,11 @@ class ImagePut {
       return this.gdiplus(1)
    }
 
-   static gdiplusShutdown(cotype := "") {
-      return this.gdiplus(-1, cotype)
+   static gdiplusShutdown(codomain := "") {
+      return this.gdiplus(-1, codomain)
    }
 
-   static gdiplus(vary := 0, cotype := "") {
+   static gdiplus(vary := 0, codomain := "") {
       static pToken := 0 ; Takes advantage of the fact that objects contain identical methods.
       static instances := 0 ; And therefore static variables can share data across instances.
 
@@ -5224,7 +5371,7 @@ class ImagePut {
          DllCall("FreeLibrary", "ptr", DllCall("GetModuleHandle", "str", "gdiplus", "ptr"))
 
          ; Otherwise GDI+ has been truly unloaded from the script and objects are out of scope.
-         if (cotype = "bitmap") {
+         if (codomain = "bitmap") {
 
             ; Check if GDI+ is still loaded. GdiplusNotInitialized = 18
             assert := (18 != DllCall("gdiplus\GdipCreateImageAttributes", "ptr*", &ImageAttr:=0))
@@ -5253,10 +5400,10 @@ class ImagePut {
    ; Get the image width and height.
    static Dimensions(image) {
       this.gdiplusStartup()
-      try type := this.DontVerifyImageType(&image)
+      try domain := this.premiss(&image)
       catch
-         type := this.ImageType(image)
-      pBitmap := this.ImageToBitmap(type, image)
+         domain := this.possible(image)
+      pBitmap := this.ImageToBitmap(domain, image)
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
       DllCall("gdiplus\GdipDisposeImage", "ptr", pBitmap)
@@ -5264,70 +5411,68 @@ class ImagePut {
       return [width, height]
    }
 
-   class Destroy extends ImagePut {
+   static Destroy(a, b := "sentinel") {
+      
+      if (b == "sentinel")
+         image := a
+      else
+         domain := a, image := b
 
-      static call(image) {
-         this.gdiplusStartup()
-         try type := this.DontVerifyImageType(&image)
+      if not IsSet(domain)
+         try domain := this.premiss(&image)
          catch
-            type := this.ImageType(image)
-         this.Destroy(type, image)
-         this.gdiplusShutdown()
-         return
-      }
+            domain := this.possible(image)
 
-      static Destroy(type, image) {
-         switch type, "Off" {
+      switch domain, "Off" {
 
-         case "Clipboard", "ClipboardPNG":
-            if !DllCall("OpenClipboard", "ptr", A_ScriptHwnd)
-               throw Error("Clipboard could not be opened.")
-            DllCall("EmptyClipboard")
-            DllCall("CloseClipboard")
+      case "Clipboard", "ClipboardPNG":
+         if !DllCall("OpenClipboard", "ptr", A_ScriptHwnd)
+            throw Error("Clipboard could not be opened.")
+         DllCall("EmptyClipboard")
+         DllCall("CloseClipboard")
 
-         case "Screenshot":
-            DllCall("InvalidateRect", "ptr", 0, "ptr", 0, "int", 0)
+      case "Screenshot":
+         DllCall("InvalidateRect", "ptr", 0, "ptr", 0, "int", 0)
 
-         case "Window":
-            image := WinExist(image)
-            DllCall("DestroyWindow", "ptr", image)
+      case "Window":
+         image := WinExist(image)
+         DllCall("DestroyWindow", "ptr", image)
 
-         case "Wallpaper":
-            DllCall("SystemParametersInfo", "uint", SPI_SETDESKWALLPAPER := 0x14, "uint", 0, "ptr", 0, "uint", 2)
+      case "Wallpaper":
+         DllCall("SystemParametersInfo", "uint", SPI_SETDESKWALLPAPER := 0x14, "uint", 0, "ptr", 0, "uint", 2)
 
-         case "Cursor":
-            DllCall("SystemParametersInfo", "uint", SPI_SETCURSORS := 0x57, "uint", 0, "ptr", 0, "uint", 0)
+      case "Cursor":
+         DllCall("SystemParametersInfo", "uint", SPI_SETCURSORS := 0x57, "uint", 0, "ptr", 0, "uint", 0)
 
-         case "File":
-            FileDelete image
+      case "File":
+         FileDelete image
 
-         case "DC":
-            if (DllCall("GetObjectType", "ptr", image, "uint") == 3) { ; OBJ_DC
-               hwnd := DllCall("WindowFromDC", "ptr", image, "ptr")
-               DllCall("ReleaseDC", "ptr", hwnd, "ptr", image)
-            }
-
-            if (DllCall("GetObjectType", "ptr", image, "uint") == 10) { ; OBJ_MEMDC
-               obm := DllCall("CreateBitmap", "int", 0, "int", 0, "uint", 1, "uint", 1, "ptr", 0, "ptr")
-               hbm := DllCall("SelectObject", "ptr", image, "ptr", obm, "ptr")
-               DllCall("DeleteObject", "ptr", hbm)
-               DllCall("DeleteDC", "ptr", image)
-            }
-
-         case "HBitmap":
-            DllCall("DeleteObject", "ptr", image)
-
-         case "HIcon":
-            DllCall("DestroyIcon", "ptr", image)
-
-         case "Bitmap":
-            DllCall("gdiplus\GdipDisposeImage", "ptr", image)
-
-         case "RandomAccessStream", "Stream", "WICBitmap":
-            ObjRelease(image)
+      case "DC":
+         if (DllCall("GetObjectType", "ptr", image, "uint") == 3) { ; OBJ_DC
+            hwnd := DllCall("WindowFromDC", "ptr", image, "ptr")
+            DllCall("ReleaseDC", "ptr", hwnd, "ptr", image)
          }
+
+         if (DllCall("GetObjectType", "ptr", image, "uint") == 10) { ; OBJ_MEMDC
+            obm := DllCall("CreateBitmap", "int", 0, "int", 0, "uint", 1, "uint", 1, "ptr", 0, "ptr")
+            hbm := DllCall("SelectObject", "ptr", image, "ptr", obm, "ptr")
+            DllCall("DeleteObject", "ptr", hbm)
+            DllCall("DeleteDC", "ptr", image)
+         }
+
+      case "HBitmap":
+         DllCall("DeleteObject", "ptr", image)
+
+      case "HIcon":
+         DllCall("DestroyIcon", "ptr", image)
+
+      case "Bitmap":
+         DllCall("gdiplus\GdipDisposeImage", "ptr", image)
+
+      case "RandomAccessStream", "Stream", "WICBitmap":
+         ObjRelease(image)
       }
-   } ; End of Destroy class.
+   }
 } ; End of ImagePut class.
 
 
@@ -5344,12 +5489,12 @@ class ImageEqual extends ImagePut {
       image := images[1]
 
       ; Allow the ImageType exception to bubble up.
-      try type := this.DontVerifyImageType(&image)
+      try domain := this.premiss(&image)
       catch
-         type := this.ImageType(image)
+         domain := this.possible(image)
 
       ; Convert only the first image to a bitmap.
-      if !(pBitmap1 := this.ImageToBitmap(type, image))
+      if !(pBitmap1 := this.ImageToBitmap(domain, image))
          throw Error("Conversion to bitmap failed. The pointer value is zero.")
 
       ; If there is only one image, verify that image and return.
@@ -5365,13 +5510,13 @@ class ImageEqual extends ImagePut {
       for image in images {
          if (A_Index != 1) {
 
-            ; Guess the type of the image.
-            try type := this.DontVerifyImageType(&image)
+            ; Guess the domain of the image.
+            try domain := this.premiss(&image)
             catch
-               type := this.ImageType(image)
+               domain := this.possible(image)
 
             ; Convert the other image to a bitmap.
-            pBitmap2 := this.ImageToBitmap(type, image)
+            pBitmap2 := this.ImageToBitmap(domain, image)
 
             ; Compare the two images.
             if !this.BitmapEqual(pBitmap1, pBitmap2)
