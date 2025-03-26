@@ -1187,7 +1187,7 @@ class ImagePut {
       ; Determine the extension using herustics. See: http://fileformats.archiveteam.org
       extension := 0                                                              ? ""
       : str ~= "(?i)66 74 79 70 61 76 69 66"                                      ? "avif" ; ftypavif
-      : str ~= "(?i)^42 4d (.. ){36}00 00 .. 00 00 00"                            ? "bmp"  ; BM
+      : str ~= "(?i)^42 4d (.. ){10}00 00 .. 00 00 00"                            ? "bmp"  ; BM
       : str ~= "(?i)^01 00 00 00 (.. ){36}20 45 4D 46"                            ? "emf"  ; emf
       : str ~= "(?i)^47 49 46 38 (37|39) 61"                                      ? "gif"  ; GIF87a or GIF89a
       : str ~= "(?i)66 74 79 70 68 65 69 63"                                      ? "heic" ; ftypheic
@@ -1227,7 +1227,7 @@ class ImagePut {
       length := VarSetCapacity(str, (2*size + (size-1) + 1) * (A_IsUnicode?2:1))
       DllCall("crypt32\CryptBinaryToString", "ptr", bin, "uint", size, "uint", 0x40000004, "str", str, "uint*", length)
       if str ~= "(?i)66 74 79 70 61 76 69 66"                                      ; "avif"
-      || str ~= "(?i)^42 4d (.. ){36}00 00 .. 00 00 00"                            ; "bmp"
+      || str ~= "(?i)^42 4d (.. ){10}00 00 .. 00 00 00"                            ; "bmp"
       || str ~= "(?i)^01 00 00 00 (.. ){36}20 45 4D 46"                            ; "emf"
       || str ~= "(?i)^47 49 46 38 (37|39) 61"                                      ; "gif"
       || str ~= "(?i)66 74 79 70 68 65 69 63"                                      ; "heic"
@@ -2454,7 +2454,7 @@ class ImagePut {
       ; Determine the extension using herustics. See: http://fileformats.archiveteam.org
       extension := 0                                                              ? ""
       : str ~= "(?i)66 74 79 70 61 76 69 66"                                      ? "avif" ; ftypavif
-      : str ~= "(?i)^42 4d (.. ){36}00 00 .. 00 00 00"                            ? "bmp"  ; BM
+      : str ~= "(?i)^42 4d (.. ){10}00 00 .. 00 00 00"                            ? "bmp"  ; BM
       : str ~= "(?i)^01 00 00 00 (.. ){36}20 45 4D 46"                            ? "emf"  ; emf
       : str ~= "(?i)^47 49 46 38 (37|39) 61"                                      ? "gif"  ; GIF87a or GIF89a
       : str ~= "(?i)66 74 79 70 68 65 69 63"                                      ? "heic" ; ftypheic
@@ -4623,7 +4623,7 @@ class ImagePut {
       ; Determine the extension using herustics. See: http://fileformats.archiveteam.org
       extension := 0                                                              ? ""
       : str ~= "(?i)66 74 79 70 61 76 69 66"                                      ? "avif" ; ftypavif
-      : str ~= "(?i)^42 4d (.. ){36}00 00 .. 00 00 00"                            ? "bmp"  ; BM
+      : str ~= "(?i)^42 4d (.. ){10}00 00 .. 00 00 00"                            ? "bmp"  ; BM
       : str ~= "(?i)^01 00 00 00 (.. ){36}20 45 4D 46"                            ? "emf"  ; emf
       : str ~= "(?i)^47 49 46 38 (37|39) 61"                                      ? "gif"  ; GIF87a or GIF89a
       : str ~= "(?i)66 74 79 70 68 65 69 63"                                      ? "heic" ; ftypheic
@@ -4806,7 +4806,7 @@ class ImagePut {
       ; Determine the mime type using herustics. See: http://fileformats.archiveteam.org
       mime := 0                                                                   ? ""
       : str ~= "(?i)66 74 79 70 61 76 69 66"                                      ? "image/avif"
-      : str ~= "(?i)^42 4d (.. ){36}00 00 .. 00 00 00"                            ? "image/bmp"
+      : str ~= "(?i)^42 4d (.. ){10}00 00 .. 00 00 00"                            ? "image/bmp"
       : str ~= "(?i)^01 00 00 00 (.. ){36}20 45 4D 46"                            ? "image/emf"
       : str ~= "(?i)^47 49 46 38 (37|39) 61"                                      ? "image/gif"
       : str ~= "(?i)66 74 79 70 68 65 69 63"                                      ? "image/heic"
@@ -5240,7 +5240,7 @@ class ImagePut {
       ; Trim leading "*." or "." from the extension
       switch RegExReplace(extension, "^(\*?\.)?") {
       case "avif", "avifs":              MsgBox "AVIF is not supported by GDI+."
-      case "bmp", "dib", "rle":          clsid := "{557CF403-1A04-11D3-9A73-0000F81EF32E}"
+      case "bmp", "dib", "rle":          clsid := "{557CF400-1A04-11D3-9A73-0000F81EF32E}"
       case "gif":                        clsid := "{557CF402-1A04-11D3-9A73-0000F81EF32E}"
       case "heic", "heif", "hif":        clsid := "{557CF408-1A04-11D3-9A73-0000F81EF32E}"
       case "jpg", "jpeg", "jpe", "jfif": clsid := "{557CF401-1A04-11D3-9A73-0000F81EF32E}"
