@@ -91,12 +91,6 @@ ImagePutDC(image, alpha := "") {
    return ImagePut("DC", image, alpha)
 }
 
-; Puts the image behind the desktop icons and returns the string "desktop".
-;   See ImageShow for parameter descriptions.
-ImagePutDesktop(image, title := "", pos := "", style := 0x50000000, styleEx := 0x80000, parent := "", playback := True, cache := False) {
-   return ImagePut("Desktop", image, title, pos, style, styleEx, parent, playback, cache)
-}
-
 ; Puts the image as an encoded format into a binary data object.
 ;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
@@ -248,7 +242,6 @@ class ImagePut {
       "EncodedBuffer",
       "Buffer",
       "Monitor",
-      "Desktop",
       "Wallpaper",
       "Cursor",
       "URL",
@@ -275,7 +268,6 @@ class ImagePut {
       "Clipboard",
       "Cursor",
       "DC",
-      "Desktop",
       "EncodedBuffer",
       "Explorer",
       "File",
@@ -429,10 +421,6 @@ class ImagePut {
       if (coimage ~= "^\d+$" && coimage >= 0 && coimage <= MonitorGetCount)
          return "Monitor"
 
-      ; A "desktop" is a hidden window behind the desktop icons created by ImagePutDesktop.
-      if (coimage = "desktop")
-         return "Desktop"
-
       ; A "wallpaper" is the desktop wallpaper.
       if (coimage = "wallpaper")
          return "Wallpaper"
@@ -541,7 +529,6 @@ class ImagePut {
       case "EncodedBuffer":
       case "Buffer":
       case "Monitor":
-      case "Desktop":
       case "Wallpaper":
       case "Cursor":
       case "URL":
@@ -680,7 +667,7 @@ class ImagePut {
       (sprite) && this.BitmapSprite(pBitmap)
 
       ; Save frame delays and loop count for webp.
-      if (domain = "stream" && extension = "webp" && codomain ~= "^(?i:show|window|desktop)$") {
+      if (domain = "stream" && extension = "webp" && codomain ~= "^(?i:show|window)$") {
          this.ParseWEBP(stream, pDelays, pCount)
          IsSet(pDelays) && DllCall("gdiplus\GdipSetPropertyItem", "ptr", pBitmap, "ptr", pDelays)
          IsSet(pCount) && DllCall("gdiplus\GdipSetPropertyItem", "ptr", pBitmap, "ptr", pCount)
@@ -734,9 +721,6 @@ class ImagePut {
 
       if (domain = "Window")
          bitmap := this.WindowToBitmap(coimage)
-
-      if (domain = "Desktop")
-         bitmap := this.DesktopToBitmap()
 
       if (domain = "Wallpaper")
          bitmap := this.WallpaperToBitmap()
@@ -814,9 +798,6 @@ class ImagePut {
 
       if (codomain = "Show") ; (pBitmap, title, pos, style, styleEx, parent, playback, cache)
          image := this.Show(pBitmap, p1, p2, p3, p4, p5, p6, p7)
-
-      if (codomain = "Desktop") ; (pBitmap, title, pos, style, styleEx, parent, playback, cache)
-         image := this.BitmapToDesktop(pBitmap, p1, p2, p3, p4, p5, p6, p7)
 
       if (codomain = "Wallpaper") ; (pBitmap)
          image := this.BitmapToWallpaper(pBitmap)
@@ -1880,31 +1861,6 @@ class ImagePut {
       DllCall("DeleteDC",     "ptr", hdc)
 
       return pBitmap
-   }
-
-   DesktopToBitmap() {
-      WinGet windows, List, ahk_class WorkerW
-      if (windows == 0)
-         throw Exception("The hidden desktop window has not been initalized. Call ImagePutDesktop() first.")
-
-      ; Find a child window of class SHELLDLL_DefView.
-      WinGet windows, List, ahk_class WorkerW
-      loop % windows
-         if DllCall("FindWindowEx", "ptr", windows%A_Index%, "ptr", 0, "str", "SHELLDLL_DefView", "ptr", 0) {
-            hwnd := windows%A_Index%
-            break
-         }
-
-      ; Find a child window of the desktop after the previous window of class WorkerW.
-      if !(WorkerW := DllCall("FindWindowEx", "ptr", 0, "ptr", hwnd, "str", "WorkerW", "ptr", 0, "ptr"))
-         throw Exception("Could not locate hidden window behind desktop icons.")
-
-      ; Returns the first child window of the WorkerW window.
-      if !(child := DllCall("FindWindowEx", "ptr", WorkerW, "ptr", 0, "ptr", 0, "ptr", 0))
-         throw Exception("No child windows are attached to the hidden desktop window.")
-
-      ; Use PrintWindow as the window is overlapped by other windows. Could use BitBlt on dc?
-      return this.WindowToBitmap(child)
    }
 
    WallpaperToBitmap() {
@@ -4441,32 +4397,6 @@ class ImagePut {
       return pcb
    }
 
-   BitmapToDesktop(pBitmap, title:="", pos:="", style:="", styleEx:="", parent:="", playback:="", cache:="") {
-      ; Thanks Gerald Degeneve - https://www.codeproject.com/Articles/856020/Draw-Behind-Desktop-Icons-in-Windows-plus
-      ; Post-Creator's Update Windows 10. WM_SPAWN_WORKER = 0x052C
-      desktop := WinExist("ahk_class Progman")
-      DllCall("SendMessage", "ptr", desktop, "uint", 0x052C, "ptr", 0xD, "ptr", 0)
-      DllCall("SendMessage", "ptr", desktop, "uint", 0x052C, "ptr", 0xD, "ptr", 1)
-
-      ; Find a child window of class SHELLDLL_DefView.
-      WinGet windows, List, ahk_class WorkerW
-      loop % windows
-         if DllCall("FindWindowEx", "ptr", windows%A_Index%, "ptr", 0, "str", "SHELLDLL_DefView", "ptr", 0) {
-            hwnd := windows%A_Index%
-            break
-         }
-
-      ; Find a child window of the desktop after the previous window of class WorkerW.
-      if !(WorkerW := DllCall("FindWindowEx", "ptr", 0, "ptr", hwnd, "str", "WorkerW", "ptr", 0, "ptr"))
-         throw Exception("Could not locate hidden window behind desktop icons.")
-
-      ; Once the WorkerW window is found, use it as the parent window.
-      WS_CHILD                  := 0x40000000   ; Creates a child window.
-      WS_VISIBLE                := 0x10000000   ; Show on creation.
-      (style == "") && style := WS_CHILD | WS_VISIBLE
-      return this.Show(pBitmap, title, pos, style | WS_CHILD, styleEx, WorkerW, playback, cache)
-   }
-
    BitmapToWallpaper(pBitmap) {
       ; Create a temporary image file.
       filepath := this.BitmapToFile(pBitmap)
@@ -5323,7 +5253,7 @@ class ImagePut {
          extension := default
       }
 
-      ; Create a filepath based on the timestamp.
+      ; Create a filepath based on the current timestamp.
       if (filename == "") {
          colon := A_IsUnicode ? Chr(0xA789) : "_"
          FormatTime, filename,, % "yyyy-MM-dd HH" colon "mm" colon "ss"
