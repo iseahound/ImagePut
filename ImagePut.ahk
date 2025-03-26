@@ -5279,34 +5279,43 @@ class ImagePut {
       filepath := RegExReplace(filepath, "[*?\x22<>|\x00-\x1F]")
       SplitPath filepath,, &directory, &extension, &filename
 
-      ; Check if the entire filepath is a directory.
-      if DirExist(filepath)                ; If the filepath refers to a directory,
-         directory := (directory != "")    ; then SplitPath wrongly assumes a directory to be a filename.
-            ? ((filename != "")
-               ? directory "\" filename    ; Combine directory + filename.
-               : directory)                ; Do nothing.
-            : (filepath ~= "^\\")
-               ? "\" filename              ; Root level directory.
-               : ".\" filename             ; Script level directory.
-         , filename := ""
+      ; If the filepath refers to a directory, then SplitPath wrongly assigns a filename.
+      if DirExist(filepath) {
+         if (directory != "") {           ; Recombine directory + filename
+            if (filename != "")           ; Avoid appending an extra "\" to directory
+               directory .= "\" filename 
+         }
+         else                             ; If the directory is blank,
+         {                                ; filename is a directory!
+            if (filepath ~= "^\\")
+               directory := "\" filename  ; Root level directory.
+            else
+               directory := ".\" filename ; Script level directory.
+         }
 
-      ; Create a new directory if needed.
-      if (directory != "" && !DirExist(directory))
-         DirCreate(directory)
+         ; The filename has been properly made part of the directory.
+         filename := ""
+      }
 
-      ; Default directory is a dot.
-      (directory == "") && directory := "."
+      ; Default directory is the current working directory.
+      if (directory == "")
+         directory := "."
 
-      ; Declare allowed extension outputs.
+      ; Recursively creates new directories if needed.
+      DirCreate(directory)
+
+      ; Declare allowed output extensions.
       outputs := "^(?i:avif|avifs|bmp|dib|rle|gif|heic|heif|hif|jpg|jpeg|jpe|jfif|png|tif|tiff)$"
 
       ; Check if the filename is actually the extension.
-      if (extension == "" && filename ~= outputs)
-         extension := filename, filename := ""
+      if (extension == "" && filename ~= outputs) {
+         extension := filename
+         filename := ""
+      }
 
       ; An invalid extension is actually part of the filename.
       if !(extension ~= outputs) {
-         ; Avoid appending an extra period without an extension.
+         ; Avoid appending an extra period to filename if extension is blank.
          if (extension != "")
             filename .= "." extension
 
@@ -5314,7 +5323,7 @@ class ImagePut {
          extension := default
       }
 
-      ; Create a filepath based on the timestamp.
+      ; Create a filepath based on the current timestamp.
       if (filename == "") {
          colon := Chr(0xA789)
          filename := FormatTime(, "yyyy-MM-dd HH" colon "mm" colon "ss")
