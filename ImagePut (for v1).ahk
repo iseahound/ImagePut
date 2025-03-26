@@ -526,6 +526,11 @@ class ImagePut {
    }
 
    necessary(coimage) {
+      ; Proof: That image → coimage is true for every world. (definition of necessity)
+      ; Since all worlds (domains) are accessible, necessity becomes a restriction,
+      ; as to what additional checks for structure are needed to ensure accessibility.
+      ; (completeness) Because the set of worlds is small a finite set of if-statements is good enough!
+      ; (uniqueness) For every accessibility relation, there is only one linear mapping.
       switch domain := this.possible(coimage) {
       case "ClipboardPNG":
       case "Clipboard":
@@ -5232,44 +5237,36 @@ class ImagePut {
    }
 
    select_codec(pBitmap, extension, quality, ByRef pCodec, ByRef ep) {
-      extension := RegExReplace(extension, "^(\*?\.)?") ; Trim leading "*." or "." from the extension
-      extension :=  extension ~= "^(?i:avif|avifs)$"           ? "avif"
-                  : extension ~= "^(?i:bmp|dib|rle)$"          ? "bmp"
-                  : extension ~= "^(?i:gif)$"                  ? "gif"
-                  : extension ~= "^(?i:heic|heif|hif)$"        ? "heic"
-                  : extension ~= "^(?i:jpg|jpeg|jpe|jfif)$"    ? "jpeg"
-                  : extension ~= "^(?i:png)$"                  ? "png"
-                  : extension ~= "^(?i:tif|tiff)$"             ? "tiff"
-                  : "png" ; Defaults to PNG
-
-      VarSetCapacity(pCodec, 16)
-
-      switch extension {
-      case "avif": MsgBox % "AVIF is not supported by GDI+."
-      case "bmp":  DllCall("ole32\CLSIDFromString", "wstr", "{557CF400-1A04-11D3-9A73-0000F81EF32E}", "ptr", &pCodec, "uint")
-      case "gif":  DllCall("ole32\CLSIDFromString", "wstr", "{557CF402-1A04-11D3-9A73-0000F81EF32E}", "ptr", &pCodec, "uint")
-      case "heic": DllCall("ole32\CLSIDFromString", "wstr", "{557CF408-1A04-11D3-9A73-0000F81EF32E}", "ptr", &pCodec, "uint")
-      case "jpeg": DllCall("ole32\CLSIDFromString", "wstr", "{557CF401-1A04-11D3-9A73-0000F81EF32E}", "ptr", &pCodec, "uint")
-      case "png":  DllCall("ole32\CLSIDFromString", "wstr", "{557CF406-1A04-11D3-9A73-0000F81EF32E}", "ptr", &pCodec, "uint")
-      case "tiff": DllCall("ole32\CLSIDFromString", "wstr", "{557CF405-1A04-11D3-9A73-0000F81EF32E}", "ptr", &pCodec, "uint")
+      ; Trim leading "*." or "." from the extension
+      switch RegExReplace(extension, "^(\*?\.)?") {
+      case "avif", "avifs":              MsgBox "AVIF is not supported by GDI+."
+      case "bmp", "dib", "rle":          clsid := "{557CF403-1A04-11D3-9A73-0000F81EF32E}"
+      case "gif":                        clsid := "{557CF402-1A04-11D3-9A73-0000F81EF32E}"
+      case "heic", "heif", "hif":        clsid := "{557CF408-1A04-11D3-9A73-0000F81EF32E}"
+      case "jpg", "jpeg", "jpe", "jfif": clsid := "{557CF401-1A04-11D3-9A73-0000F81EF32E}"
+      case "png":                        clsid := "{557CF406-1A04-11D3-9A73-0000F81EF32E}"
+      case "tif", "tiff":                clsid := "{557CF405-1A04-11D3-9A73-0000F81EF32E}"
+      default:                           clsid := "{557CF406-1A04-11D3-9A73-0000F81EF32E}"
       }
 
-      ; Default encoding parameter.
+      ; Convert the CLSID into its binary representation. 
+      DllCall("ole32\CLSIDFromString", "wstr", clsid, "ptr", &pCodec := VarSetCapacity(pCodec, 16), "uint")
+
+      ; struct EncoderParameter - http://www.jose.it-berater.org/gdiplus/reference/structures/encoderparameter.htm
+      ; enum ValueType - https://docs.microsoft.com/en-us/dotnet/api/system.drawing.imaging.encoderparametervaluetype
+      ; clsid Image Encoder Constants - http://www.jose.it-berater.org/gdiplus/reference/constants/gdipimageencoderconstants.htm
       ep := 0
 
       ; JPEG default quality is 75. Otherwise set a quality value from [0-100].
       if (extension = "jpeg") && (quality ~= "^\d+$") {
-         ; struct EncoderParameter - http://www.jose.it-berater.org/gdiplus/reference/structures/encoderparameter.htm
-         ; enum ValueType - https://docs.microsoft.com/en-us/dotnet/api/system.drawing.imaging.encoderparametervaluetype
-         ; clsid Image Encoder Constants - http://www.jose.it-berater.org/gdiplus/reference/constants/gdipimageencoderconstants.htm
-         VarSetCapacity(ep, 24+2*A_PtrSize + 4)            ; sizeof(EncoderParameter) = ptr + n*(28, 32)
+         VarSetCapacity(ep, 24+2*A_PtrSize + 4)            ; sizeof(EncoderParameter) = n × (28, 32)
          offset := &ep + 24+2*A_PtrSize                    ; Address of extra values appended to end
             NumPut(      1, ep,              0,   "uptr")  ; Count
             DllCall("ole32\CLSIDFromString", "wstr", "{1D5BE4B5-FA4A-452D-9CDD-5DB35105E7EB}", "ptr", &ep+A_PtrSize, "uint")
             NumPut(      1, ep,   16+A_PtrSize,   "uint")  ; Number of Values
             NumPut(      4, ep,   20+A_PtrSize,   "uint")  ; Type
             NumPut( offset, ep,   24+A_PtrSize,    "ptr")  ; Value
-            NumPut(quality, ep, 24+2*A_PtrSize,   "uint")  ; Quality (extra value appended to end)
+            NumPut(quality, ep, 24+2*A_PtrSize,   "uint")  ; Quality (extra value not part of EncoderParameter)
       }
    }
 
