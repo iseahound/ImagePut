@@ -5096,7 +5096,7 @@ class ImagePut {
          DllCall("urlmon\FindMimeFromData"
                   ,    "ptr", 0             ; pBC
                   ,    "ptr", 0             ; pwzUrl
-                  ,    "ptr", &bin          ; pBuffer
+                  ,    "ptr", ObjGetCapacity([bin], 1) ? &bin : bin
                   ,   "uint", size          ; cbSize
                   ,    "ptr", 0             ; pwzMimeProposed
                   ,   "uint", 0x20          ; dwMimeFlags
