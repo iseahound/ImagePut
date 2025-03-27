@@ -17,7 +17,7 @@ ImageEqual(images*) {
    return ImageEqual.call(images*)
 }
 
-; Shows the animated image in a borderless window and returns a handle. See ImagePutWindow 
+; Shows the animated image in a borderless window and returns a handle. See ImagePutWindow
 ImageShow(image, title := "", pos := "", style := 0x90000000, styleEx := 0x80088, parent := "", playback := True, cache := False) {
    return ImagePut("Show", image, title, pos, style, styleEx, parent, playback, cache)
 }
@@ -350,7 +350,7 @@ class ImagePut {
       ; Continue ImageType.
       throw Exception("Invalid type.")
    }
-   
+
    possible(coimage) {
 
 
@@ -400,7 +400,7 @@ class ImagePut {
       ("POINTER IS BAD AND PROGRAM IS CRASH") && NumGet(coimage.ptr, "char")
 
       ; An "encodedbuffer" contains a pointer to the bytes of an encoded image format.
-      if coimage.HasKey("ptr") && coimage.HasKey("size") && this.IsImage(coimage.ptr, coimage.size)
+      if coimage.HasKey("ptr") && coimage.HasKey("size") && coimage.size >= 24 && this.GetExtensionFromBuffer(coimage)
          return "EncodedBuffer"
 
       ; A "buffer" is an object with a pointer to bytes and properties to determine its 2-D shape.
@@ -549,7 +549,7 @@ class ImagePut {
    }
 
    sufficent(codomain, coimage, p*) {
-      
+
       ; Take a guess as to what the image might be. (>95% accuracy!)
       try domain := this.premiss(coimage, keywords)
       catch
@@ -1146,84 +1146,53 @@ class ImagePut {
       return pBitmap
    }
 
-   GetExtensionFromStream(stream) {
-      ; 2048 characters should be good enough to identify the file correctly.
-      DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", size:=0, "uint")
+   GetExtensionFromBuffer(a, b := "") {
+      if (b == "")
+         bin := a.ptr, size := a.size
+      else
+         bin := a, size := b
+
       size := min(size, 2048)
-      VarSetCapacity(bin, size)
-
-      ; Get the first few bytes of the image.
-      DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
-      DllCall("shlwapi\IStream_Read", "ptr", stream, "ptr", &bin, "uint", size, "uint")
-      DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
-
-      ; Allocate enough space for a hexadecimal string with spaces interleaved and a null terminator.
-      length := 2*size + (size-1) + 1
-      VarSetCapacity(str, length * (A_IsUnicode?2:1))
-
-      ; Lift the binary representation to hex.
-      flags := 0x40000004 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_HEX
-      DllCall("crypt32\CryptBinaryToString", "ptr", &bin, "uint", size, "uint", flags, "str", str, "uint*", length)
-
-      ; Determine the extension using herustics. See: http://fileformats.archiveteam.org
-      extension := 0                                                              ? ""
-      : str ~= "(?i)66 74 79 70 61 76 69 66"                                      ? "avif" ; ftypavif
-      : str ~= "(?i)^42 4d (.. ){10}00 00 .. 00 00 00"                            ? "bmp"  ; BM
-      : str ~= "(?i)^01 00 00 00 (.. ){36}20 45 4D 46"                            ? "emf"  ; emf
-      : str ~= "(?i)^47 49 46 38 (37|39) 61"                                      ? "gif"  ; GIF87a or GIF89a
-      : str ~= "(?i)66 74 79 70 68 65 69 63"                                      ? "heic" ; ftypheic
-      : str ~= "(?i)^00 00 01 00"                                                 ? "ico"
-      : str ~= "(?i)^ff d8 ff"                                                    ? "jpg"
-      : str ~= "(?i)^25 50 44 46 2d"                                              ? "pdf"  ; %PDF-
-      : str ~= "(?i)^89 50 4e 47 0d 0a 1a 0a"                                     ? "png"  ; PNG
-      : str ~= "(?i)^(((?!3c|3e).. )|3c (3f|21) ((?!3c|3e).. )*3e )*+3c 73 76 67" ? "svg"  ; <svg
-      : str ~= "(?i)^(49 49 2a 00|4d 4d 00 2a)"                                   ? "tif"  ; II* or MM*
-      : str ~= "(?i)^52 49 46 46 .. .. .. .. 57 45 42 50"                         ? "webp" ; RIFF....WEBP
-      : str ~= "(?i)^d7 cd c6 9a"                                                 ? "wmf"
-      : "" ; Extension must be blank for file pass-through as-is.
-
+      this.select_extension(bin, size, extension)
       return extension
    }
 
+   GetExtensionFromStream(stream) {
+      this.select_header_codata(stream, bin, size)
+      this.select_extension(bin, size, extension)
+      return extension
+   }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-   IsImage(bin, size) {
-      ; Shortest possible image is 24 bytes.
-      if (size < 24)
-         return False
+   GetMimeFromBuffer(a, b := "") {
+      if (b == "")
+         bin := a.ptr, size := a.size
+      else
+         bin := a, size := b
 
       size := min(size, 2048)
-      length := VarSetCapacity(str, (2*size + (size-1) + 1) * (A_IsUnicode?2:1))
-      DllCall("crypt32\CryptBinaryToString", "ptr", bin, "uint", size, "uint", 0x40000004, "str", str, "uint*", length)
-      if str ~= "(?i)66 74 79 70 61 76 69 66"                                      ; "avif"
-      || str ~= "(?i)^42 4d (.. ){10}00 00 .. 00 00 00"                            ; "bmp"
-      || str ~= "(?i)^01 00 00 00 (.. ){36}20 45 4D 46"                            ; "emf"
-      || str ~= "(?i)^47 49 46 38 (37|39) 61"                                      ; "gif"
-      || str ~= "(?i)66 74 79 70 68 65 69 63"                                      ; "heic"
-      || str ~= "(?i)^00 00 01 00"                                                 ; "ico"
-      || str ~= "(?i)^ff d8 ff"                                                    ; "jpg"
-      || str ~= "(?i)^25 50 44 46 2d"                                              ; "pdf"
-      || str ~= "(?i)^89 50 4e 47 0d 0a 1a 0a"                                     ; "png"
-      || str ~= "(?i)^(((?!3c|3e).. )|3c (3f|21) ((?!3c|3e).. )*3e )*+3c 73 76 67" ; "svg"
-      || str ~= "(?i)^(49 49 2a 00|4d 4d 00 2a)"                                   ; "tif"
-      || str ~= "(?i)^52 49 46 46 .. .. .. .. 57 45 42 50"                         ; "webp"
-      || str ~= "(?i)^d7 cd c6 9a"                                                 ; "wmf"
-         return True
-
-      return False
+      this.select_mime(bin, size, mime)
+      return mime
    }
+
+   GetMimeFromStream(stream) {
+      this.select_header_codata(stream, bin, size)
+      this.select_mime(bin, size, mime)
+      return mime
+   }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
    IsURL(url) {
       ; Thanks dperini - https://gist.github.com/dperini/729294
@@ -2389,40 +2358,8 @@ class ImagePut {
    }
 
    StreamToClipboard(stream) {
-      ; 2048 characters should be good enough to identify the file correctly.
-      DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", size:=0, "uint")
-      size := min(size, 2048)
-      VarSetCapacity(bin, size)
-
-      ; Get the first few bytes of the image.
-      DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
-      DllCall("shlwapi\IStream_Read", "ptr", stream, "ptr", &bin, "uint", size, "uint")
-      DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
-
-      ; Allocate enough space for a hexadecimal string with spaces interleaved and a null terminator.
-      length := 2*size + (size-1) + 1
-      VarSetCapacity(str, length * (A_IsUnicode?2:1))
-
-      ; Lift the binary representation to hex.
-      flags := 0x40000004 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_HEX
-      DllCall("crypt32\CryptBinaryToString", "ptr", &bin, "uint", size, "uint", flags, "str", str, "uint*", length)
-
-      ; Determine the extension using herustics. See: http://fileformats.archiveteam.org
-      extension := 0                                                              ? ""
-      : str ~= "(?i)66 74 79 70 61 76 69 66"                                      ? "avif" ; ftypavif
-      : str ~= "(?i)^42 4d (.. ){10}00 00 .. 00 00 00"                            ? "bmp"  ; BM
-      : str ~= "(?i)^01 00 00 00 (.. ){36}20 45 4D 46"                            ? "emf"  ; emf
-      : str ~= "(?i)^47 49 46 38 (37|39) 61"                                      ? "gif"  ; GIF87a or GIF89a
-      : str ~= "(?i)66 74 79 70 68 65 69 63"                                      ? "heic" ; ftypheic
-      : str ~= "(?i)^00 00 01 00"                                                 ? "ico"
-      : str ~= "(?i)^ff d8 ff"                                                    ? "jpg"
-      : str ~= "(?i)^25 50 44 46 2d"                                              ? "pdf"  ; %PDF-
-      : str ~= "(?i)^89 50 4e 47 0d 0a 1a 0a"                                     ? "png"  ; PNG
-      : str ~= "(?i)^(((?!3c|3e).. )|3c (3f|21) ((?!3c|3e).. )*3e )*+3c 73 76 67" ? "svg"  ; <svg
-      : str ~= "(?i)^(49 49 2a 00|4d 4d 00 2a)"                                   ? "tif"  ; II* or MM*
-      : str ~= "(?i)^52 49 46 46 .. .. .. .. 57 45 42 50"                         ? "webp" ; RIFF....WEBP
-      : str ~= "(?i)^d7 cd c6 9a"                                                 ? "wmf"
-      : "" ; Extension must be blank for file pass-through as-is.
+      this.select_header_codata(stream, bin, size)
+      this.select_extension(bin, size, extension)
 
       ; Open the clipboard with exponential backoff.
       loop
@@ -4490,7 +4427,7 @@ class ImagePut {
    Explorer(inactive := False) {
       if WinActive("ahk_class WorkerW") || WinActive("ahk_class Progman")
          return A_Desktop
-   
+
       WinExistOrActive := (inactive) ? Func("WinExist") : Func("WinActive")
       if (hwnd := %WinExistOrActive%("ahk_class ExploreWClass"))
       or (hwnd := %WinExistOrActive%("ahk_class CabinetWClass")) {
@@ -4499,7 +4436,7 @@ class ImagePut {
             ? window.Document.Folder.Self.Path
             : window.LocationURL             ; "HTMLDocument"
       }
-   
+
       return "" ; No matching explorer windows found.
    }
 
@@ -4526,47 +4463,14 @@ class ImagePut {
    BitmapToFile(pBitmap, filepath := "", quality := "") {
       extension := "png"
       this.select_filepath(filepath, extension)
-      this.select_codec(pBitmap, extension, quality, pCodec, ep)
+      this.select_encoder(pBitmap, extension, quality, pCodec, ep)
       DllCall("gdiplus\GdipSaveImageToFile", "ptr", pBitmap, "wstr", filepath, "ptr", &pCodec, "ptr", &ep)
       return filepath
    }
 
    StreamToFile(stream, filepath := "") {
-      ; 2048 characters should be good enough to identify the file correctly.
-      DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", size:=0, "uint")
-      size := min(size, 2048)
-      VarSetCapacity(bin, size)
-
-      ; Get the first few bytes of the image.
-      DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
-      DllCall("shlwapi\IStream_Read", "ptr", stream, "ptr", &bin, "uint", size, "uint")
-      DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
-
-      ; Allocate enough space for a hexadecimal string with spaces interleaved and a null terminator.
-      length := 2*size + (size-1) + 1
-      VarSetCapacity(str, length * (A_IsUnicode?2:1))
-
-      ; Lift the binary representation to hex.
-      flags := 0x40000004 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_HEX
-      DllCall("crypt32\CryptBinaryToString", "ptr", &bin, "uint", size, "uint", flags, "str", str, "uint*", length)
-
-      ; Determine the extension using herustics. See: http://fileformats.archiveteam.org
-      extension := 0                                                              ? ""
-      : str ~= "(?i)66 74 79 70 61 76 69 66"                                      ? "avif" ; ftypavif
-      : str ~= "(?i)^42 4d (.. ){10}00 00 .. 00 00 00"                            ? "bmp"  ; BM
-      : str ~= "(?i)^01 00 00 00 (.. ){36}20 45 4D 46"                            ? "emf"  ; emf
-      : str ~= "(?i)^47 49 46 38 (37|39) 61"                                      ? "gif"  ; GIF87a or GIF89a
-      : str ~= "(?i)66 74 79 70 68 65 69 63"                                      ? "heic" ; ftypheic
-      : str ~= "(?i)^00 00 01 00"                                                 ? "ico"
-      : str ~= "(?i)^ff d8 ff"                                                    ? "jpg"
-      : str ~= "(?i)^25 50 44 46 2d"                                              ? "pdf"  ; %PDF-
-      : str ~= "(?i)^89 50 4e 47 0d 0a 1a 0a"                                     ? "png"  ; PNG
-      : str ~= "(?i)^(((?!3c|3e).. )|3c (3f|21) ((?!3c|3e).. )*3e )*+3c 73 76 67" ? "svg"  ; <svg
-      : str ~= "(?i)^(49 49 2a 00|4d 4d 00 2a)"                                   ? "tif"  ; II* or MM*
-      : str ~= "(?i)^52 49 46 46 .. .. .. .. 57 45 42 50"                         ? "webp" ; RIFF....WEBP
-      : str ~= "(?i)^d7 cd c6 9a"                                                 ? "wmf"
-      : "" ; Extension must be blank for file pass-through as-is.
-
+      this.select_header_codata(stream, bin, size)
+      this.select_extension(bin, size, extension)
       this.select_filepath(filepath, extension)
 
       ; For compatibility with SHCreateMemStream do not use GetHGlobalFromStream.
@@ -4715,57 +4619,8 @@ class ImagePut {
    }
 
    StreamToURI(stream) {
-      ; 2048 characters should be good enough to identify the file correctly.
-      DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", size:=0, "uint")
-      size := min(size, 2048)
-      VarSetCapacity(bin, size)
-
-      ; Get the first few bytes of the image.
-      DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
-      DllCall("shlwapi\IStream_Read", "ptr", stream, "ptr", &bin, "uint", size, "uint")
-      DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
-
-      ; Allocate enough space for a hexadecimal string with spaces interleaved and a null terminator.
-      length := 2*size + (size-1) + 1
-      VarSetCapacity(str, length * (A_IsUnicode?2:1))
-
-      ; Lift the binary representation to hex.
-      flags := 0x40000004 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_HEX
-      DllCall("crypt32\CryptBinaryToString", "ptr", &bin, "uint", size, "uint", flags, "str", str, "uint*", length)
-
-      ; Determine the mime type using herustics. See: http://fileformats.archiveteam.org
-      mime := 0                                                                   ? ""
-      : str ~= "(?i)66 74 79 70 61 76 69 66"                                      ? "image/avif"
-      : str ~= "(?i)^42 4d (.. ){10}00 00 .. 00 00 00"                            ? "image/bmp"
-      : str ~= "(?i)^01 00 00 00 (.. ){36}20 45 4D 46"                            ? "image/emf"
-      : str ~= "(?i)^47 49 46 38 (37|39) 61"                                      ? "image/gif"
-      : str ~= "(?i)66 74 79 70 68 65 69 63"                                      ? "image/heic"
-      : str ~= "(?i)^00 00 01 00"                                                 ? "image/x-icon"
-      : str ~= "(?i)^ff d8 ff"                                                    ? "image/jpeg"
-      : str ~= "(?i)^25 50 44 46 2d"                                              ? "application/pdf"
-      : str ~= "(?i)^89 50 4e 47 0d 0a 1a 0a"                                     ? "image/png"
-      : str ~= "(?i)^(((?!3c|3e).. )|3c (3f|21) ((?!3c|3e).. )*3e )*+3c 73 76 67" ? "image/svg+xml"
-      : str ~= "(?i)^(49 49 2a 00|4d 4d 00 2a)"                                   ? "image/tiff"
-      : str ~= "(?i)^52 49 46 46 .. .. .. .. 57 45 42 50"                         ? "image/webp"
-      : str ~= "(?i)^d7 cd c6 9a"                                                 ? "image/wmf"
-      : ""
-
-      ; Enables guessing of mime type for general purpose usage.
-      if (mime == "") {
-         DllCall("urlmon\FindMimeFromData"
-                  ,    "ptr", 0             ; pBC
-                  ,    "ptr", 0             ; pwzUrl
-                  ,    "ptr", &bin          ; pBuffer
-                  ,   "uint", size          ; cbSize
-                  ,    "ptr", 0             ; pwzMimeProposed
-                  ,   "uint", 0x20          ; dwMimeFlags
-                  ,   "ptr*", MimeOut:=0    ; ppwzMimeOut
-                  ,   "uint", 0             ; dwReserved
-                  ,   "uint")
-         mime := StrGet(MimeOut, "UTF-16")
-         DllCall("ole32\CoTaskMemFree", "ptr", MimeOut)
-      }
-
+      this.select_header_codata(stream, bin, size)
+      this.select_mime(bin, size, mime)
       return "data:" mime ";base64," this.StreamToBase64(stream)
    }
 
@@ -4868,7 +4723,7 @@ class ImagePut {
    }
 
    BitmapToStream(pBitmap, extension := "", quality := "") {
-      this.select_codec(pBitmap, extension, quality, pCodec, ep) ; Defaults to PNG for small sizes!
+      this.select_encoder(pBitmap, extension, quality, pCodec, ep) ; Defaults to PNG for small sizes!
       DllCall("ole32\CreateStreamOnHGlobal", "ptr", 0, "int", True, "ptr*", stream:=0, "uint")
       DllCall("gdiplus\GdipSaveImageToStream", "ptr", pBitmap, "ptr", stream, "ptr", &pCodec, "ptr", &ep)
       DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
@@ -5166,7 +5021,96 @@ class ImagePut {
       return pBitmap
    }
 
-   select_codec(pBitmap, extension, quality, ByRef pCodec, ByRef ep) {
+   select_header_codata(stream, ByRef bin, ByRef size) {
+
+      ; 2048 characters should be good enough to identify the file correctly.
+      DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", size:=0, "uint")
+      size := min(size, 2048)
+      VarSetCapacity(bin, size)
+
+      ; Get the first few bytes of the image.
+      DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
+      DllCall("shlwapi\IStream_Read", "ptr", stream, "ptr", &bin, "uint", size, "uint")
+      DllCall("shlwapi\IStream_Reset", "ptr", stream, "uint")
+
+   }
+
+   select_extension(ByRef bin, size, ByRef extension) { ; (v1) Must pass bin by reference to preserve binary data.
+
+      ; Allocate enough space for a hexadecimal string with spaces interleaved and a null terminator.
+      length := 2*size + (size-1) + 1
+      VarSetCapacity(str, length * (A_IsUnicode?2:1))
+
+      ; Lift the binary representation to hex. (v1) Use ObjGetCapacity to check if a binary string or numeric pointer is passed.
+      flags := 0x40000004 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_HEX
+      DllCall("crypt32\CryptBinaryToString", "ptr", ObjGetCapacity([bin], 1) ? &bin : bin, "uint", size, "uint", flags, "str", str, "uint*", length)
+
+      ; Determine the extension using herustics. See: http://fileformats.archiveteam.org
+      extension := 0                                                              ? ""
+      : str ~= "(?i)66 74 79 70 61 76 69 66"                                      ? "avif" ; ftypavif
+      : str ~= "(?i)^42 4d (.. ){10}00 00 .. 00 00 00"                            ? "bmp"  ; BM
+      : str ~= "(?i)^01 00 00 00 (.. ){36}20 45 4D 46"                            ? "emf"  ; emf
+      : str ~= "(?i)^47 49 46 38 (37|39) 61"                                      ? "gif"  ; GIF87a or GIF89a
+      : str ~= "(?i)66 74 79 70 68 65 69 63"                                      ? "heic" ; ftypheic
+      : str ~= "(?i)^00 00 01 00"                                                 ? "ico"
+      : str ~= "(?i)^ff d8 ff"                                                    ? "jpg"
+      : str ~= "(?i)^25 50 44 46 2d"                                              ? "pdf"  ; %PDF-
+      : str ~= "(?i)^89 50 4e 47 0d 0a 1a 0a"                                     ? "png"  ; PNG
+      : str ~= "(?i)^(((?!3c|3e).. )|3c (3f|21) ((?!3c|3e).. )*3e )*+3c 73 76 67" ? "svg"  ; <svg
+      : str ~= "(?i)^(49 49 2a 00|4d 4d 00 2a)"                                   ? "tif"  ; II* or MM*
+      : str ~= "(?i)^52 49 46 46 .. .. .. .. 57 45 42 50"                         ? "webp" ; RIFF....WEBP
+      : str ~= "(?i)^d7 cd c6 9a"                                                 ? "wmf"
+      : "" ; Extension must be blank for file pass-through as-is.
+
+   }
+
+   select_mime(ByRef bin, size, ByRef mime) { ; (v1) Must pass bin by reference to preserve binary data.
+
+      ; Allocate enough space for a hexadecimal string with spaces interleaved and a null terminator.
+      length := 2*size + (size-1) + 1
+      VarSetCapacity(str, length * (A_IsUnicode?2:1))
+
+      ; Lift the binary representation to hex. (v1) Use ObjGetCapacity to check if a binary string or numeric pointer is passed.
+      flags := 0x40000004 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_HEX
+      DllCall("crypt32\CryptBinaryToString", "ptr", ObjGetCapacity([bin], 1) ? &bin : bin, "uint", size, "uint", flags, "str", str, "uint*", length)
+
+      ; Determine the mime type using herustics. See: http://fileformats.archiveteam.org
+      mime := 0                                                                   ? ""
+      : str ~= "(?i)66 74 79 70 61 76 69 66"                                      ? "image/avif"
+      : str ~= "(?i)^42 4d (.. ){10}00 00 .. 00 00 00"                            ? "image/bmp"
+      : str ~= "(?i)^01 00 00 00 (.. ){36}20 45 4D 46"                            ? "image/emf"
+      : str ~= "(?i)^47 49 46 38 (37|39) 61"                                      ? "image/gif"
+      : str ~= "(?i)66 74 79 70 68 65 69 63"                                      ? "image/heic"
+      : str ~= "(?i)^00 00 01 00"                                                 ? "image/x-icon"
+      : str ~= "(?i)^ff d8 ff"                                                    ? "image/jpeg"
+      : str ~= "(?i)^25 50 44 46 2d"                                              ? "application/pdf"
+      : str ~= "(?i)^89 50 4e 47 0d 0a 1a 0a"                                     ? "image/png"
+      : str ~= "(?i)^(((?!3c|3e).. )|3c (3f|21) ((?!3c|3e).. )*3e )*+3c 73 76 67" ? "image/svg+xml"
+      : str ~= "(?i)^(49 49 2a 00|4d 4d 00 2a)"                                   ? "image/tiff"
+      : str ~= "(?i)^52 49 46 46 .. .. .. .. 57 45 42 50"                         ? "image/webp"
+      : str ~= "(?i)^d7 cd c6 9a"                                                 ? "image/wmf"
+      : ""
+
+      ; Enables guessing of mime type for general purpose usage.
+      if (mime == "") {
+         DllCall("urlmon\FindMimeFromData"
+                  ,    "ptr", 0             ; pBC
+                  ,    "ptr", 0             ; pwzUrl
+                  ,    "ptr", &bin          ; pBuffer
+                  ,   "uint", size          ; cbSize
+                  ,    "ptr", 0             ; pwzMimeProposed
+                  ,   "uint", 0x20          ; dwMimeFlags
+                  ,   "ptr*", MimeOut:=0    ; ppwzMimeOut
+                  ,   "uint", 0             ; dwReserved
+                  ,   "uint")
+         mime := StrGet(MimeOut, "UTF-16")
+         DllCall("ole32\CoTaskMemFree", "ptr", MimeOut)
+      }
+
+   }
+
+   select_encoder(pBitmap, extension, quality, ByRef pCodec, ByRef ep) {
+
       ; Trim leading "*." or "." from the extension
       switch RegExReplace(extension, "^(\*?\.)?") {
       case "avif", "avifs":              MsgBox "AVIF is not supported by GDI+."
@@ -5179,7 +5123,7 @@ class ImagePut {
       default:                           clsid := "{557CF406-1A04-11D3-9A73-0000F81EF32E}"
       }
 
-      ; Convert the CLSID into its binary representation. 
+      ; Convert the CLSID into its binary representation.
       DllCall("ole32\CLSIDFromString", "wstr", clsid, "ptr", &pCodec := VarSetCapacity(pCodec, 16), "uint")
 
       ; struct EncoderParameter - http://www.jose.it-berater.org/gdiplus/reference/structures/encoderparameter.htm
@@ -5198,9 +5142,11 @@ class ImagePut {
             NumPut( offset, ep,   24+A_PtrSize,    "ptr")  ; Value
             NumPut(quality, ep, 24+2*A_PtrSize,   "uint")  ; Quality (extra value not part of EncoderParameter)
       }
+
    }
 
    select_filepath(ByRef filepath, ByRef extension) {
+
       ; Save default extension.
       default := extension
 
@@ -5213,7 +5159,7 @@ class ImagePut {
       if InStr(FileExist(filepath), "D") {
          if (directory != "") {           ; Recombine directory + filename
             if (filename != "")           ; Avoid appending an extra "\" to directory
-               directory .= "\" filename 
+               directory .= "\" filename
          }
          else                             ; If the directory is blank,
          {                                ; filename is a directory!
@@ -5271,6 +5217,7 @@ class ImagePut {
 
       ; Always overwrite specific filenames.
       else filepath := directory "\" filename "." extension
+
    }
 
    gdiplusStartup() {
@@ -5353,7 +5300,7 @@ class ImagePut {
          image := a
       else
          domain := a, image := b
-         
+
       if not IsSet(domain)
          try type := this.premiss(image)
          catch
