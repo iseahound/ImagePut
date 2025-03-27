@@ -520,31 +520,20 @@ class ImagePut {
       ; (completeness) Because the set of worlds is small a finite set of if-statements is good enough!
       ; (uniqueness) For every accessibility relation, there is only one linear mapping.
       switch domain := this.possible(coimage) {
-      case "ClipboardPNG":
-      case "Clipboard":
-      case "SafeArray":
-      case "Screenshot":
-      case "Window":
-      case "Object":
-      case "EncodedBuffer":
-      case "Buffer":
-      case "Monitor":
-      case "Wallpaper":
-      case "Cursor":
-      case "URL":
-      case "File":
-      case "SharedBuffer":
-      case "Hex":
-      case "Base64":
-      case "DC":
-      case "HBitmap":
-      case "HIcon":
-      case "Bitmap":
-      case "Stream":
-      case "RandomAccessStream":
-      case "WICBitmap":
-      case "D2DBitmap":
       default: return domain ; Pass through "" and 0
+      case "ClipboardPNG"
+         , "SafeArray"
+         , "EncodedBuffer"
+         , "URL"
+         , "File"
+         , "Hex"
+         , "Base64"
+         , "Stream"
+         , "RandomAccessStream":
+         stream := this.ImageToStream(domain, coimage)
+         extension := this.GetExtensionFromStream(stream)
+         ObjRelease(stream)
+         return (extension) ? domain : False
       }
    }
 
