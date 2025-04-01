@@ -230,6 +230,16 @@ class ImagePut {
       "stacking"     ; Higher-order embedding (ICO sizes, Photoshop layers)
    ]
    )
+   static bases2 := 
+   ( Join
+   [
+      "page",
+      "frame",
+      "index",
+      "select",
+      "layer"
+   ]
+   )
    static domains := ; In decreasing order of detection
    ( Join
    [
