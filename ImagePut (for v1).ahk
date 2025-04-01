@@ -531,9 +531,19 @@ class ImagePut {
          , "Stream"
          , "RandomAccessStream":
          stream := this.ImageToStream(domain, coimage)
-         extension := this.GetExtensionFromStream(stream)
+         DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", size:=0, "uint")
+         if size < 24
+            goto out_false
+         if not extension := this.GetExtensionFromStream(stream)
+            goto out_false
+
+         out_true:
          ObjRelease(stream)
-         return (extension) ? domain : False
+         return domain
+
+         out_false:
+         ObjRelease(stream)
+         return False
       }
    }
 

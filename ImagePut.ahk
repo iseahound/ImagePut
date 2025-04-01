@@ -531,9 +531,19 @@ class ImagePut {
          , "Stream"
          , "RandomAccessStream":
          stream := this.ImageToStream(domain, coimage)
-         extension := this.GetExtensionFromStream(stream)
+         DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", &size:=0, "hresult")
+         if size < 24
+            goto out_false
+         if not extension := this.GetExtensionFromStream(stream)
+            goto out_false
+
+         out_true:
          ObjRelease(stream)
-         return (extension) ? domain : False
+         return domain
+
+         out_false:
+         ObjRelease(stream)
+         return False
       }
    }
 
@@ -626,6 +636,13 @@ class ImagePut {
       domain := "stream"
       coimage := stream
       cleanup := "stream"
+
+      ; Surreptitiously convert the cursor to an icon.
+      if (extension = "cur") {
+         ComCall(Seek := 5, stream, "int64", 2, "uint", 1, "uint64*", 0)
+         DllCall("shlwapi\IStream_Write", "ptr", stream, "uchar*", 1, "uint", 1, "hresult")
+         DllCall("shlwapi\IStream_Reset", "ptr", stream, "hresult")
+      }
 
       make_bitmap:
       ; #0 - Special cases.
@@ -5038,6 +5055,7 @@ class ImagePut {
       extension := 0                                                              ? ""
       : str ~= "(?i)66 74 79 70 61 76 69 66"                                      ? "avif" ; ftypavif
       : str ~= "(?i)^42 4d (.. ){10}00 00 .. 00 00 00"                            ? "bmp"  ; BM
+      : str ~= "(?i)^00 00 02 00"                                                 ? "cur"
       : str ~= "(?i)^01 00 00 00 (.. ){36}20 45 4D 46"                            ? "emf"  ; emf
       : str ~= "(?i)^47 49 46 38 (37|39) 61"                                      ? "gif"  ; GIF87a or GIF89a
       : str ~= "(?i)66 74 79 70 68 65 69 63"                                      ? "heic" ; ftypheic
@@ -5067,6 +5085,7 @@ class ImagePut {
       mime := 0                                                                   ? ""
       : str ~= "(?i)66 74 79 70 61 76 69 66"                                      ? "image/avif"
       : str ~= "(?i)^42 4d (.. ){10}00 00 .. 00 00 00"                            ? "image/bmp"
+      : str ~= "(?i)^00 00 02 00"                                                 ? "image/x-icon"
       : str ~= "(?i)^01 00 00 00 (.. ){36}20 45 4D 46"                            ? "image/emf"
       : str ~= "(?i)^47 49 46 38 (37|39) 61"                                      ? "image/gif"
       : str ~= "(?i)66 74 79 70 68 65 69 63"                                      ? "image/heic"
