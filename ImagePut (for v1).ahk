@@ -5049,7 +5049,7 @@ class ImagePut {
 
       ; Lift the binary representation to hex. (v1) Use ObjGetCapacity to check if a binary string or numeric pointer is passed.
       flags := 0x40000004 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_HEX
-      DllCall("crypt32\CryptBinaryToString", "ptr", ObjGetCapacity([bin], 1) ? &bin : bin, "uint", size, "uint", flags, "str", str, "uint*", length)
+      DllCall("crypt32\CryptBinaryToString", "ptr", (bin ~= "^\d+$") ? bin : &bin, "uint", size, "uint", flags, "str", str, "uint*", length)
 
       ; Determine the extension using herustics. See: http://fileformats.archiveteam.org
       extension := 0                                                              ? ""
@@ -5079,7 +5079,7 @@ class ImagePut {
 
       ; Lift the binary representation to hex. (v1) Use ObjGetCapacity to check if a binary string or numeric pointer is passed.
       flags := 0x40000004 ; CRYPT_STRING_NOCRLF | CRYPT_STRING_HEX
-      DllCall("crypt32\CryptBinaryToString", "ptr", ObjGetCapacity([bin], 1) ? &bin : bin, "uint", size, "uint", flags, "str", str, "uint*", length)
+      DllCall("crypt32\CryptBinaryToString", "ptr", (bin ~= "^\d+$") ? bin : &bin, "uint", size, "uint", flags, "str", str, "uint*", length)
 
       ; Determine the mime type using herustics. See: http://fileformats.archiveteam.org
       mime := 0                                                                   ? ""
