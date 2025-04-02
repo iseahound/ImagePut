@@ -209,13 +209,23 @@ ImagePutWindow(image, title := "", pos := "", style := 0x82C80000, styleEx := 0x
 
 class ImagePut {
 
+   ; Error Values:             Column 1 - Conversion functions such as BitmapToHex
+   ;                           Column 2 - Intermediate functions like StreamToImage
+   ; unset    unset    unset   Column 3 - Final returned value from ImagePut(codomain, image)
+   ;       ↘        ↘
+   ;   0        0        0     Starting from the bottom left: An error in the conversion is thrown at the user
+   ;       ↘        ↘          0 → error: If the returned bitmap or stream is zero, throw in the intermediate function
+   ; error    error    error   unset → 0 → error: A conversion function is unavailable: unsupported input
+   ;                           → unset → 0: The input was not processed: codomain (output type) not available
+   ;   ""  →    ""  →    ""    An empty string means execution conditions were not met. Ex: ImagePutExplorer
+
    static decode := False    ; Decompresses image to a pixel buffer. Any encoding such as JPG will be lost.
    static render := True     ; Determines whether vectorized formats such as SVG and PDF are rendered to pixels.
    static validate := False  ; Always copies pixels to new memory immediately instead of copy-on-read/write.
 
    call(codomain, coimage, p*) {
       this.gdiplusStartup()                          ; Start!
-      image := this.sufficent(codomain, coimage, p*) ; Convert!
+      image := this.sufficient(codomain, coimage, p*) ; Convert!
       this.gdiplusShutdown(codomain)                 ; Check if GDI+ is still needed.
       return image
    }
@@ -557,7 +567,7 @@ class ImagePut {
       }
    }
 
-   sufficent(codomain, coimage, p*) {
+   sufficient(codomain, coimage, p*) {
 
       ; Take a guess as to what the image might be. (>95% accuracy!)
       try domain := this.premiss(coimage, keywords)
@@ -587,9 +597,10 @@ class ImagePut {
       cleanup := ""
 
       ; Attempt to convert the image to a stream to extract additional information.
-      stream := this.ImageToStream(domain, coimage, keywords)
-      if not stream
-         goto make_bitmap
+      switch stream := this.ImageToStream(domain, coimage, keywords) {
+      case "": return ""
+      case  0: goto make_bitmap
+      }
 
       ; Check the file signature for magic numbers.
       stream:
@@ -631,9 +642,10 @@ class ImagePut {
          goto clean_stream
 
       ; Attempt conversion using StreamToImage.
-      image := this.StreamToImage(codomain, stream, p*)
-      if not image
-         goto clean_stream
+      switch image := this.StreamToImage(codomain, stream, p*) {
+      case "": return ""
+      case  0: goto clean_stream
+      }
 
       ; Clean up the copy. Export raw pointers if requested.
       if (codomain != "stream")
@@ -666,8 +678,10 @@ class ImagePut {
          return this.ScreenshotToBuffer(coimage)
 
       ; #2 - Fallback to GDI+ bitmap as the intermediate.
-      if !(pBitmap := this.ImageToBitmap(domain, coimage, keywords))
-         throw Exception("The input image is unsupported.")
+      switch pBitmap := this.ImageToBitmap(domain, coimage, keywords) {
+      case "": return ""
+      case  0: throw Exception("The input image is unsupported.")
+      }
 
       ; GdipImageForceValidation must be called immediately or it fails silently.
       bitmap:
@@ -691,8 +705,6 @@ class ImagePut {
 
       ; Attempt conversion using BitmapToImage.
       image := this.BitmapToImage(codomain, pBitmap, p*)
-      if not image
-         throw Exception("The output image type " codomain " is unsupported.")
 
       ; Clean up the copy. Export raw pointers if requested.
       if (codomain != "bitmap")
@@ -783,7 +795,7 @@ class ImagePut {
       if not IsSet(bitmap)
          return 0 ; kernel or null space
 
-      if not bitmap
+      if (bitmap == 0)
          throw Exception("Conversion from " domain " to bitmap was unsuccessful.")
 
       return bitmap
@@ -869,7 +881,7 @@ class ImagePut {
       if not IsSet(image)
          return 0 ; kernel or null space
 
-      if not image
+      if (image == 0)
          throw Exception("Conversion from bitmap to " codomain " was unsuccessful.")
 
       return image
@@ -909,7 +921,7 @@ class ImagePut {
       if not IsSet(stream)
          return 0 ; kernel or null space
 
-      if not stream
+      if (stream == 0)
          throw Exception("Conversion from " domain " to stream was unsuccessful.")
 
       return stream
@@ -956,7 +968,7 @@ class ImagePut {
       if not IsSet(image)
          return 0 ; kernel or null space
 
-      if not image
+      if (image == 0)
          throw Exception("Conversion from stream to " codomain " was unsuccessful.")
 
       return image
@@ -4431,13 +4443,15 @@ class ImagePut {
    }
 
    BitmapToExplorer(pBitmap, default_dir := "", inactive := False) {
-      directory := this.Explorer(inactive)
-      return this.BitmapToFile(pBitmap, directory ? directory : default_dir)
+      if not directory := (___ := this.Explorer(inactive)) ? ___ : default_dir
+         return ""
+      return this.BitmapToFile(pBitmap, directory)
    }
 
    StreamToExplorer(stream, default_dir := "", inactive := False) {
-      directory := this.Explorer(inactive)
-      return this.StreamToFile(stream, directory ? directory : default_dir)
+      if not directory := (___ := this.Explorer(inactive)) ? ___ : default_dir
+         return ""
+      return this.StreamToFile(stream, directory)
    }
 
    Explorer(inactive := False) {
