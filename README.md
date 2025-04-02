@@ -6,6 +6,8 @@
 
 Imagine a scenario where you have a file but you're trying to get it uploaded into an API. Or you have a function that returns some strange image format, is there any way you can *just* get it to show its contents? If you pass anything, literally anything you believe is an image to `ImagePutWindow()` it will show up on screen. And then you can magically transform it to be compatible with that specific API.
 
+#### Note: If you don't want a large library you can copy paste the relevant functions
+
 ## So you want to convert an image?
 
 But you don't know how. That's okay because you can just do this:
