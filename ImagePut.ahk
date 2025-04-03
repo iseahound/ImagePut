@@ -8,8 +8,9 @@
 #Requires AutoHotkey v2.0-beta.13+
 
 ; Scroll down for a list of all output functions and their descriptions.
-; ImagePut(codomain, image, p*) {
-;    return ImagePut.call(codomain, image, p*)
+; The coimage is the same thing as the image.
+; ImagePut(codomain, coimage, p*) {
+;    return ImagePut.call(codomain, coimage, p*)
 ; }
 
 ; Specify one or more images to be compared by pixel values.
@@ -224,9 +225,9 @@ class ImagePut {
    static validate := False  ; Always copies pixels to new memory immediately instead of copy-on-read/write.
 
    static call(codomain, coimage, p*) {
-      this.gdiplusStartup()                          ; Start!
+      this.gdiplusStartup()                           ; Start!
       image := this.sufficient(codomain, coimage, p*) ; Convert!
-      this.gdiplusShutdown(codomain)                 ; Check if GDI+ is still needed.
+      this.gdiplusShutdown(codomain)                  ; Check if GDI+ is still needed.
       return image
    }
 
