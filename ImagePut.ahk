@@ -689,11 +689,11 @@ class ImagePut {
       outDimensions := [] ; Initialize width x height array
       (validate) && DllCall("gdiplus\GdipImageForceValidation", "ptr", pBitmap)
       (crop) && this.BitmapCrop(&pBitmap, crop)
-      (scale) && this.BitmapScale(&pBitmap, scale,,,, outDimensions)
-      (upscale) && this.BitmapScale(&pBitmap, upscale, 1,,, outDimensions)
-      (downscale) && this.BitmapScale(&pBitmap, downscale, -1,,, outDimensions)
-      (minsize) && this.BitmapScale(&pBitmap, minsize, 1, "join", True, outDimensions)
-      (maxsize) && this.BitmapScale(&pBitmap, maxsize, -1, "meet", True, outDimensions)
+      (scale) && this.BitmapScale(&pBitmap, scale,,, outDimensions)
+      (upscale) && this.BitmapScale(&pBitmap, upscale, 1,, outDimensions)
+      (downscale) && this.BitmapScale(&pBitmap, downscale, -1,, outDimensions)
+      (minsize) && this.BitmapScale(&pBitmap, minsize, 1, "join", outDimensions)
+      (maxsize) && this.BitmapScale(&pBitmap, maxsize, -1, "meet", outDimensions)
       (outDimensions.length == 2) && this.BitmapScale(&pBitmap, outDimensions) ; Scale only once
       (sprite) && this.BitmapSprite(&pBitmap)
 
@@ -1037,13 +1037,13 @@ class ImagePut {
       return pBitmap := pBitmapCrop
    }
 
-   static BitmapScale(&pBitmap, scale, direction := 0, bound := "", preserveAspectRatio := False, outDimensions := "") {
+   static BitmapScale(&pBitmap, scale, direction := 0, bound := "", outDimensions := "") {
       ; min() specifies the greatest lower bound or the maximum size, fitting the image to the bounding box.
       ; max() specifies the least upper bound or the minimum size, filling the image to the bounding box.
-      bound := !HasMethod(bound) && (bound ~= "^(?i:fit|meet|and|infimum)$") ? min
-            :  !HasMethod(bound) && (bound ~= "^(?i:fill|join|or|supremum)$") ? max
-            :  !HasMethod(bound) && (bound == "") ? ((direction < 0) ? max : min)
-            :  bound ; Please specify your own bound function
+      bound := HasMethod(bound) ? bound ; Custom function
+            : (bound ~= "^(?i:fit|meet|and|infimum)$") ? min
+            : (bound ~= "^(?i:fill|join|or|supremum)$") ? max
+            : ""
 
       ; Get Bitmap width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
@@ -1061,6 +1061,7 @@ class ImagePut {
 
       ; Specify min or max as the bounding function to fit or fill to the specified edge length.
       if Type(scale) == "Array" && scale.length = 1 && scale.Has(1) && scale[1] ~= "^(?!0+$)\d+$" {
+         (bound) || bound := (direction < 0) ? max : min
          safe_w := Round(width * bound(scale[1] / width, scale[1] / height))
          safe_h := Round(height * bound(scale[1] / width, scale[1] / height))
       }
@@ -1069,12 +1070,14 @@ class ImagePut {
       ; (2) Preserve the aspect ratio using either the width or the height as the reference.
       ; (3) Scale to the given width x height.
       if Type(scale) == "Array" && scale.length = 2 && (scale.Has(1) && scale[1] ~= "^(?!0+$)\d+$" || scale.Has(2) && scale[2] ~= "^(?!0+$)\d+$") {
-         safe_w := !(scale[1] ~= "^(?!0+$)\d+$") ? Round(width / height * scale[2])
-               : (preserveAspectRatio) ? Round(width * bound(scale[1] / width, scale[2] / height))
-               : scale[1]
-         safe_h := !(scale[2] ~= "^(?!0+$)\d+$") ? Round(height / width * scale[1])
-               : (preserveAspectRatio) ? Round(height * bound(scale[1] / width, scale[2] / height))
-               : scale[2]
+         safe_w  := !(scale[1] ~= "^(?!0+$)\d+$") ? Round(width / height * scale[2])
+                  : !(scale[2] ~= "^(?!0+$)\d+$") ? scale[1]
+                  : (bound) ? Round(width * bound(scale[1] / width, scale[2] / height))
+                  : scale[1]
+         safe_h  := !(scale[2] ~= "^(?!0+$)\d+$") ? Round(height / width * scale[1])
+                  : !(scale[1] ~= "^(?!0+$)\d+$") ? scale[2]
+                  : (bound) ? Round(height * bound(scale[1] / width, scale[2] / height))
+                  : scale[2]
       }
 
       if Type(scale) == "Array" && scale.length = 1 && scale.Has(1) && scale[1] ~= "^(?!0+$)\d+$" && direction = 0
