@@ -439,7 +439,7 @@ class ImagePut {
          return "" ; Image data is an empty string.
 
       ; A non-zero "monitor" number identifies each display uniquely; and 0 refers to the entire virtual screen.
-      if (coimage ~= "^\d+$" && coimage >= 0 && coimage <= MonitorGetCount())
+      if (coimage ~= "^\d+$" && coimage <= MonitorGetCount())
          return "Monitor"
 
       ; A "wallpaper" is the desktop wallpaper.
@@ -981,10 +981,9 @@ class ImagePut {
       && crop[3] ~= "^-?\d+(\.\d*)?%?$" && crop[4] ~= "^-?\d+(\.\d*)?%?$")
          throw Error("Invalid crop.")
 
-      ; Get Bitmap width, height, and format.
+      ; Get Bitmap width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
-      DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", pBitmap, "int*", &format:=0)
 
       ; Abstraction Shift.
       ; Previously, real values depended on abstract values.
@@ -1023,6 +1022,7 @@ class ImagePut {
          return pBitmap
 
       ; Clone and retain a reference to the backing stream.
+      DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", pBitmap, "int*", &format:=0)
       DllCall("gdiplus\GdipCloneBitmapAreaI"
                ,    "int", crop[1]
                ,    "int", crop[2]
@@ -1045,10 +1045,9 @@ class ImagePut {
             :  !HasMethod(bound) && (bound == "") ? ((direction < 0) ? max : min)
             :  bound ; Please specify your own bound function
 
-      ; Get Bitmap width, height, and format.
+      ; Get Bitmap width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", &width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
-      DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", pBitmap, "int*", &format:=0)
 
       ; Override the width and height with a previous transform. An empty array can be input to return safe_w and safe_h.
       (outDimensions) && outDimensions.Has(1) && width := outDimensions[1]
@@ -1105,6 +1104,7 @@ class ImagePut {
          return pBitmap
 
       ; Create a destination GDI+ Bitmap that owns its memory.
+      DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", pBitmap, "int*", &format:=0)
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", safe_w, "int", safe_h, "int", 0, "int", format, "ptr", 0, "ptr*", &pBitmapScale:=0)
 
       ; Create a graphics context as the rendering destination.
@@ -1272,7 +1272,7 @@ class ImagePut {
             else throw Error("Clipboard could not be opened.")
 
       ; CF_DIB (8) can be synthesized from CF_DIBV5 (17) or CF_BITMAP (2).
-      if !(handle := DllCall("GetClipboardData", "uint", 8, "ptr")) {
+      if not handle := DllCall("GetClipboardData", "uint", 8, "ptr") {
          DllCall("CloseClipboard")
          throw Error("Shared clipboard data has been deleted.")
       }
@@ -1334,7 +1334,7 @@ class ImagePut {
       if !DllCall("IsClipboardFormatAvailable", "uint", png)
          throw Error("Clipboard does not have PNG stream data.")
 
-      if !(handle := DllCall("GetClipboardData", "uint", png, "ptr"))
+      if not handle := DllCall("GetClipboardData", "uint", png, "ptr")
          throw Error("Shared clipboard PNG has been deleted.")
 
       ; Create a new stream from the clipboard data.
@@ -2005,7 +2005,7 @@ class ImagePut {
 
    static DCToBitmap(image) {
       ; An application cannot select a single bitmap into more than one DC at a time.
-      if !(sbm := DllCall("GetCurrentObject", "ptr", image, "uint", 7))
+      if not sbm := DllCall("GetCurrentObject", "ptr", image, "uint", 7)
          throw Error("The device context has no bitmap selected.")
 
       ; struct DIBSECTION - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-dibsection
@@ -5410,7 +5410,7 @@ class ImageEqual extends ImagePut {
          domain := this.possible(image)
 
       ; Convert only the first image to a bitmap.
-      if !(pBitmap1 := this.ImageToBitmap(domain, image))
+      if not pBitmap1 := this.ImageToBitmap(domain, image)
          throw Error("Conversion to bitmap failed. The pointer value is zero.")
 
       ; If there is only one image, verify that image and return.
@@ -5473,8 +5473,6 @@ class ImageEqual extends ImagePut {
       DllCall("gdiplus\GdipGetImageWidth", "ptr", SourceBitmap2, "uint*", &width2:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", SourceBitmap1, "uint*", &height1:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", SourceBitmap2, "uint*", &height2:=0)
-      DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", SourceBitmap1, "int*", &format1:=0)
-      DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", SourceBitmap2, "int*", &format2:=0)
 
       ; If the dimensions are zero, then get width and height failed.
       if !(width1 && width2 && height1 && height2)
