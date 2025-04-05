@@ -36,7 +36,7 @@ ImageCheck(image) {
 }
 
 ; Avoids touching pointers and throwing errors.
-ImageCheckString(image) {
+ImageCheckSafe(image) {
    try ImagePut.premiss(image)
    return (image ~= "^\d$") ? False : ImagePut.necessary(image)
 }
