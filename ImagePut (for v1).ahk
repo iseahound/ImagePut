@@ -38,7 +38,7 @@ ImageCheck(image) {
 ; Avoids touching pointers and throwing errors.
 ImageCheckSafe(image) {
    try ImagePut.premiss(image)
-   return (image ~= "^\d$") ? False : ImagePut.necessary(image)
+   return (image ~= "^\d+$") ? False : ImagePut.necessary(image)
 }
 
 ; Cleans up and releases any resources from the output of any ImagePut function.
