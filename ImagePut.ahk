@@ -35,6 +35,12 @@ ImageCheck(image) {
    return ImagePut.necessary(image)
 }
 
+; Avoids touching pointers and throwing errors.
+ImageCheckString(image) {
+   try ImagePut.premiss(&image)
+   return (image ~= "^\d$") ? False : ImagePut.necessary(image)
+}
+
 ; Cleans up and releases any resources from the output of any ImagePut function.
 ; ImageDestroy(image)
 ; ImageDestroy(domain, image)
