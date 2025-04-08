@@ -32,7 +32,7 @@ ImageType(image) {
 ; Avoids touching pointers and throwing errors.
 ImageTypeSafe(image) {
    try ImagePut.premiss(image)
-   return (image ~= "^\d+$") ? False : ImagePut.possible(image)
+   return (image ~= "^(\d+|\s+)$") ? False : ImagePut.possible(image)
 }
 
 ; Does additional checks to verify the file formats are supported. Insufficient, as conversion can still fail.
@@ -44,7 +44,7 @@ ImageCheck(image) {
 ; Avoids touching pointers and throwing errors.
 ImageCheckSafe(image) {
    try ImagePut.premiss(&image)
-   return (image ~= "^\d+$") ? False : ImagePut.necessary(image)
+   return (image ~= "^(\d+|\s+)$") ? False : ImagePut.necessary(image)
 }
 
 ; Cleans up and releases any resources from the output of any ImagePut function.
