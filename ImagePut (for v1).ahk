@@ -29,6 +29,12 @@ ImageType(image) {
    return ImagePut.possible(image)
 }
 
+; Avoids touching pointers and throwing errors.
+ImageTypeSafe(image) {
+   try ImagePut.premiss(image)
+   return (image ~= "^\d+$") ? False : ImagePut.possible(image)
+}
+
 ; Does additional checks to verify the file formats are supported. Insufficient, as conversion can still fail.
 ImageCheck(image) {
    try ImagePut.premiss(image)
