@@ -4031,7 +4031,7 @@ class ImagePut {
    }
 
    static WindowProc(hwnd, uMsg, wParam, lParam) {
-      ll := A_ListLines
+      static ll := A_ListLines
       ListLines 0
       ; (v2 only) Pass as a closure, otherwise hwnd := this would be needed.
 
