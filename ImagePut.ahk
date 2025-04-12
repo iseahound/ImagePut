@@ -4031,6 +4031,8 @@ class ImagePut {
    }
 
    static WindowProc(hwnd, uMsg, wParam, lParam) {
+      ll := A_ListLines
+      ListLines 0
       ; (v2 only) Pass as a closure, otherwise hwnd := this would be needed.
 
       ; Prevent the script from exiting early.
@@ -4107,8 +4109,10 @@ class ImagePut {
       ;                               ^ Only happens when 0x8 is set in RegisterClass.
 
       ; WM_LBUTTONDOWN - Drag to move the window.
-      if (uMsg = 0x201)
-         return DllCall("DefWindowProc", "ptr", obj.scales[obj.scale] > 1 ? child : parent, "uint", 0xA1, "uptr", 2, "ptr", 0, "ptr")
+      if (uMsg = 0x201) {
+         DllCall("DefWindowProc", "ptr", obj.scales[obj.scale] > 1 ? child : parent, "uint", 0xA1, "uptr", 2, "ptr", 0, "ptr")
+         goto default
+      }
 
       ; WM_LBUTTONUP - Double Click to toggle between play and pause.
       if (uMsg = 0x202)
@@ -4117,8 +4121,10 @@ class ImagePut {
          : uMsg := 0x8001 ; Play
 
       ; WM_RBUTTONUP - Destroy the window.
-      if (uMsg = 0x205)
-         return DllCall("DestroyWindow", "ptr", parent)
+      if (uMsg = 0x205) {
+         DllCall("DestroyWindow", "ptr", parent)
+         goto default
+      }
 
       ; WM_MBUTTONDOWN - Show x, y, and color.
       if (uMsg = 0x207) {
@@ -4328,7 +4334,8 @@ class ImagePut {
       }
 
       default:
-      return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
+      try return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
+      finally ListLines ll
    }
 
    static SyncWindowProc(hwnd, uMsg, wParam := 0, lParam := 0) {
