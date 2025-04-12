@@ -4029,7 +4029,6 @@ class ImagePut {
       ; Return the class name as a string.
       return cls
    }
-
    WindowProc(uMsg, wParam, lParam) {
       static ll := A_ListLines
       ListLines 0
@@ -4337,6 +4336,7 @@ class ImagePut {
       try return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
       finally ListLines %ll%
    }
+
 
    SyncWindowProc(hwnd, uMsg, wParam := 0, lParam := 0) {
       hModule := DllCall("GetModuleHandle", "str", "user32.dll", "ptr")

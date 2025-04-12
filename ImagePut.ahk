@@ -4003,7 +4003,7 @@ class ImagePut {
          return cls
 
       ; Create window data.
-      pWndProc := CallbackCreate((hwnd, uMsg, wParam, lParam) => this.WindowProc(hwnd, uMsg, wParam, lParam))
+      pWndProc := CallbackCreate(WindowProc)
       hCursor := DllCall("LoadCursor", "ptr", 0, "ptr", 32512, "ptr") ; IDC_ARROW
       hBrush := DllCall("GetStockObject", "int", 5, "ptr") ; Hollow_brush
 
@@ -4028,9 +4028,8 @@ class ImagePut {
 
       ; Return the class name as a string.
       return cls
-   }
 
-   static WindowProc(hwnd, uMsg, wParam, lParam) {
+   WindowProc(hwnd, uMsg, wParam, lParam) {
       static ll := A_ListLines
       ListLines 0
       ; (v2 only) Pass as a closure, otherwise hwnd := this would be needed.
@@ -4336,6 +4335,7 @@ class ImagePut {
       default:
       try return DllCall("DefWindowProc", "ptr", hwnd, "uint", uMsg, "uptr", wParam, "ptr", lParam, "ptr")
       finally ListLines ll
+   }
    }
 
    static SyncWindowProc(hwnd, uMsg, wParam := 0, lParam := 0) {
