@@ -439,13 +439,15 @@ class ImagePut {
             or coimage.HasProp("size") && (coimage.HasProp("stride") || coimage.HasProp("width") || coimage.HasProp("height")))
          return "Buffer"
 
-      coimage := coimage.ptr
-      goto pointer
-
       object:
       ; A "window" is an object with an hwnd property.
       if coimage.HasProp("hwnd")
          return "Window"
+
+      if coimage.HasProp("ptr") {
+         coimage := coimage.ptr
+         goto pointer
+      }
 
       goto end
 

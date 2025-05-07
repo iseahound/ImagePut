@@ -439,13 +439,15 @@ class ImagePut {
             or coimage.HasKey("size") && (coimage.HasKey("stride") || coimage.HasKey("width") || coimage.HasKey("height")))
          return "Buffer"
 
-      coimage := coimage.ptr
-      goto pointer
-
       object:
       ; A "window" is an object with an hwnd property.
       if coimage.HasKey("hwnd")
          return "Window"
+
+      if coimage.HasKey("ptr") {
+         coimage := coimage.ptr
+         goto pointer
+      }
 
       goto end
 
