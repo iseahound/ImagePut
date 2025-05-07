@@ -416,18 +416,14 @@ class ImagePut {
       && (coimage.Has(5) ? WinExist(coimage[5]) : True)
          return "Screenshot"
 
-      object:
-      ; A "window" is an object with an hwnd property.
-      if coimage.HasProp("hwnd")
-         return "Window"
-
+      buffer:
       ; A "object" has a pBitmap property that points to an internal GDI+ bitmap.
       if coimage.HasProp("pBitmap")
          try if !DllCall("gdiplus\GdipGetImageType", "ptr", coimage.pBitmap, "ptr*", &_type:=0) && (_type == 1)
             return "Object"
 
       if not coimage.HasProp("ptr")
-         goto end
+         goto object
 
       ; Check if image is a pointer. If not, crash and do not recover.
       ("POINTER IS BAD AND PROGRAM IS CRASH") && NumGet(coimage.ptr, "char")
@@ -445,6 +441,13 @@ class ImagePut {
 
       coimage := coimage.ptr
       goto pointer
+
+      object:
+      ; A "window" is an object with an hwnd property.
+      if coimage.HasProp("hwnd")
+         return "Window"
+
+      goto end
 
       string:
       if (coimage == "")
