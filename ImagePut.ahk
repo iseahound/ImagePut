@@ -233,7 +233,7 @@ class ImagePut {
    ;   ""  →    ""  →    ""    An empty string means execution conditions were not met. Ex: ImagePutExplorer
 
    static decode := False    ; Decompresses image to a pixel buffer. Any encoding such as JPG will be lost.
-   static render := True     ; Determines whether vectorized formats such as SVG and PDF are rendered to pixels.
+   static render := 1        ; (0 = Disable 1 = Enable 2 = Force) Convert vectors like SVG and PDF to pixels.
    static validate := False  ; Always copies pixels to new memory immediately instead of copy-on-read/write.
 
    static call(codomain, coimage, p*) {
@@ -253,7 +253,7 @@ class ImagePut {
       "stacking"     ; Higher-order embedding (ICO sizes, Photoshop layers)
    ]
 
-   static bases2 := 
+   static bases2 :=
 
    [
       "page",
@@ -473,7 +473,7 @@ class ImagePut {
          return "URL"
 
       ; A "file" is stored on the disk or network.
-      if FileExist(coimage)
+      if StrReplace(FileExist(coimage), "D")
          return "File"
 
       ; A "window" is anything considered a Window Title including ahk_class and "A".
@@ -625,13 +625,6 @@ class ImagePut {
       (ComCall(Seek := 5, stream, "uint64", 0, "uint", 1, "uint64*", &current:=0), current != 0 && MsgBox(current))
       extension := this.GetExtensionFromStream(stream)
 
-      ; Convert vectorized formats to rasterized formats.
-      if (render && extension ~= "^(?i:pdf|svg)$") {
-         (extension = "pdf") && this.RenderPDF(&stream, index)
-         (extension = "svg") && pBitmap := this.RenderSVG(&stream, width, height)
-         goto( IsSet(pBitmap) ? "bitmap" : "stream" )
-      }
-
       ; The following "weight" determines whether the image should be decoded into pixels.
       weight := decode || sprite || crop || scale || upscale || downscale || minsize || maxsize ||
 
@@ -655,6 +648,14 @@ class ImagePut {
          || codomain ~= "^(?i:clipboard|url|explorer)")
 
          ; MsgBox weight ? "convert to pixels" : "stay as stream"
+
+      ; Convert vectorized formats to rasterized formats before (1) decoding to pixels or (2) forced when render == 2. 
+      if (weight || render == 2) 
+      && extension ~= "^(?i:pdf|svg)$" {
+         (extension = "pdf") && this.RenderPDF(&stream, index)
+         (extension = "svg") && pBitmap := this.RenderSVG(&stream, width, height)
+         goto( IsSet(pBitmap) ? "bitmap" : "stream" )
+      }
 
       if weight
          goto clean_stream
