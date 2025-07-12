@@ -441,7 +441,7 @@ class ImagePut {
 
       object:
       ; A "window" is an object with an hwnd property.
-      if coimage.HasKey("hwnd")
+      if coimage.HasKey("hwnd") && WinExist(coimage.hwnd)
          return "Window"
 
       if coimage.HasKey("ptr") {
