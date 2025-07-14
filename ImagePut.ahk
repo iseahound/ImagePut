@@ -416,32 +416,34 @@ class ImagePut {
       && (coimage.Has(5) ? WinExist(coimage[5]) : True)
          return "Screenshot"
 
-      buffer:
+      object:
       ; A "object" has a pBitmap property that points to an internal GDI+ bitmap.
       if coimage.HasProp("pBitmap")
          try if !DllCall("gdiplus\GdipGetImageType", "ptr", coimage.pBitmap, "ptr*", &_type:=0) && (_type == 1)
             return "Object"
 
       if not coimage.HasProp("ptr")
-         goto object
+         goto properties
 
-      ; Check if image is a pointer. If not, crash and do not recover.
+      if (coimage.ptr < 65536)
+         goto properties
+
       ("POINTER IS BAD AND PROGRAM IS CRASH") && NumGet(coimage.ptr, "char")
 
+      buffer:
       ; An "encodedbuffer" contains a pointer to the bytes of an encoded image format.
-      if coimage.HasProp("ptr") && coimage.HasProp("size") && coimage.size >= 24 && this.GetExtensionFromBuffer(coimage)
+      if coimage.HasProp("size") && coimage.size >= 24 && this.GetExtensionFromBuffer(coimage)
          return "EncodedBuffer"
 
       ; A "buffer" is an object with a pointer to bytes and properties to determine its 2-D shape.
-      if coimage.HasProp("ptr")
-         and ( coimage.HasProp("width") && coimage.HasProp("height")
-            or coimage.HasProp("stride") && coimage.HasProp("height")
-            or coimage.HasProp("size") && (coimage.HasProp("stride") || coimage.HasProp("width") || coimage.HasProp("height")))
+      if coimage.HasProp("width") && coimage.HasProp("height")
+      or coimage.HasProp("stride") && coimage.HasProp("height")
+      or coimage.HasProp("size") && (coimage.HasProp("stride") || coimage.HasProp("width") || coimage.HasProp("height"))
          return "Buffer"
 
-      object:
+      properties:
       ; A "window" is an object with an hwnd property.
-      if coimage.HasProp("hwnd") && WinExist(coimage.hwnd)
+      if coimage.HasProp("hwnd") && DllCall("IsWindow", "ptr", coimage.hwnd)
          return "Window"
 
       if coimage.HasProp("ptr") {
@@ -518,19 +520,27 @@ class ImagePut {
       if DllCall("DestroyIcon", "ptr", DllCall("CopyIcon", "ptr", coimage, "ptr"))
          return "HIcon"
 
-      ; Check if image is a pointer. If not, crash and do not recover.
+      if (coimage < 65536)
+         goto end
+
       ("POINTER IS BAD AND PROGRAM IS CRASH") && NumGet(coimage, "char")
 
+      pointer:
       ; A "bitmap" is a pointer to a GDI+ Bitmap. GdiplusStartup exception is caught above.
       try if !DllCall("gdiplus\GdipGetImageType", "ptr", coimage, "ptr*", &_type:=0) && (_type == 1)
          return "Bitmap"
+
+      if (NumGet(coimage, "ptr") < 65536)
+         goto end
+
+      ("INTERFACE IS BAD AND PROGRAM IS CRASH") && NumGet(NumGet(coimage, "ptr"), "char")
 
       ; Note 1: All GDI+ functions add 1 to the reference count of COM objects on 64-bit systems.
       ; Note 2: GDI+ pBitmaps that are queried cease to stay pBitmaps.
       ; Note 3: Critical error for ranges 0-4095 on v1 and 0-65535 on v2.
       (A_PtrSize == 8) && ObjRelease(coimage) ; Therefore do not move this, it has been tested.
 
-      pointer:
+      interface:
       ; A "stream" is a pointer to the IStream interface.
       try if ComObjQuery(coimage, "{0000000C-0000-0000-C000-000000000046}")
          return "Stream"

@@ -416,32 +416,34 @@ class ImagePut {
       && (coimage.HasKey(5) ? WinExist(coimage[5]) : True)
          return "Screenshot"
 
-      buffer:
+      object:
       ; A "object" has a pBitmap property that points to an internal GDI+ bitmap.
       if coimage.HasKey("pBitmap")
          try if !DllCall("gdiplus\GdipGetImageType", "ptr", coimage.pBitmap, "ptr*", _type:=0) && (_type == 1)
             return "Object"
 
       if not coimage.HasKey("ptr")
-         goto object
+         goto properties
 
-      ; Check if image is a pointer. If not, crash and do not recover.
+      if (coimage.ptr < 65536)
+         goto properties
+
       ("POINTER IS BAD AND PROGRAM IS CRASH") && NumGet(coimage.ptr, "char")
 
+      buffer:
       ; An "encodedbuffer" contains a pointer to the bytes of an encoded image format.
-      if coimage.HasKey("ptr") && coimage.HasKey("size") && coimage.size >= 24 && this.GetExtensionFromBuffer(coimage)
+      if coimage.HasKey("size") && coimage.size >= 24 && this.GetExtensionFromBuffer(coimage)
          return "EncodedBuffer"
 
       ; A "buffer" is an object with a pointer to bytes and properties to determine its 2-D shape.
-      if coimage.HasKey("ptr")
-         and ( coimage.HasKey("width") && coimage.HasKey("height")
-            or coimage.HasKey("stride") && coimage.HasKey("height")
-            or coimage.HasKey("size") && (coimage.HasKey("stride") || coimage.HasKey("width") || coimage.HasKey("height")))
+      if coimage.HasKey("width") && coimage.HasKey("height")
+      or coimage.HasKey("stride") && coimage.HasKey("height")
+      or coimage.HasKey("size") && (coimage.HasKey("stride") || coimage.HasKey("width") || coimage.HasKey("height"))
          return "Buffer"
 
-      object:
+      properties:
       ; A "window" is an object with an hwnd property.
-      if coimage.HasKey("hwnd") && WinExist(coimage.hwnd)
+      if coimage.HasKey("hwnd") && DllCall("IsWindow", "ptr", coimage.hwnd)
          return "Window"
 
       if coimage.HasKey("ptr") {
@@ -518,19 +520,27 @@ class ImagePut {
       if DllCall("DestroyIcon", "ptr", DllCall("CopyIcon", "ptr", coimage, "ptr"))
          return "HIcon"
 
-      ; Check if image is a pointer. If not, crash and do not recover.
+      if (coimage < 65536)
+         goto end
+
       ("POINTER IS BAD AND PROGRAM IS CRASH") && NumGet(coimage+0, "char")
 
+      pointer:
       ; A "bitmap" is a pointer to a GDI+ Bitmap. GdiplusStartup exception is caught above.
       try if !DllCall("gdiplus\GdipGetImageType", "ptr", coimage, "ptr*", _type:=0) && (_type == 1)
          return "Bitmap"
+
+      if (NumGet(coimage+0, "ptr") < 65536)
+         goto end
+
+      ("INTERFACE IS BAD AND PROGRAM IS CRASH") && NumGet(NumGet(coimage+0, "ptr")+0, "char")
 
       ; Note 1: All GDI+ functions add 1 to the reference count of COM objects on 64-bit systems.
       ; Note 2: GDI+ pBitmaps that are queried cease to stay pBitmaps.
       ; Note 3: Critical error for ranges 0-4095 on v1 and 0-65535 on v2.
       (A_PtrSize == 8) && ObjRelease(coimage) ; Therefore do not move this, it has been tested.
 
-      pointer:
+      interface:
       ; A "stream" is a pointer to the IStream interface.
       try if ComObjQuery(coimage, "{0000000C-0000-0000-C000-000000000046}")
          return "Stream", ObjRelease(coimage)
@@ -652,9 +662,9 @@ class ImagePut {
       ; Convert vectorized formats to rasterized formats before (1) decoding to pixels or (2) forced when render == 2. 
       if (weight || render == 2) 
       && extension ~= "^(?i:pdf|svg)$" {
-         (extension = "pdf") && this.RenderPDF(&stream, index)
-         (extension = "svg") && pBitmap := this.RenderSVG(&stream, width, height)
-         goto( IsSet(pBitmap) ? "bitmap" : "stream" )
+         (extension = "pdf") && this.RenderPDF(stream, index)
+         (extension = "svg") && pBitmap := this.RenderSVG(stream, width, height)
+         goto % IsSet(pBitmap) ? "bitmap" : "stream"
       }
 
       if weight
