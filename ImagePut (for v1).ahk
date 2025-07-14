@@ -1957,6 +1957,13 @@ class ImagePut {
       req.Open("GET", image, True)
       req.Send()
       req.WaitForResponse()
+
+      if (req.status != 200)
+         req.Open("GET", image, True), req.Send(), req.WaitForResponse()
+
+      if (req.status != 200)
+         throw Exception("HTTP Status " req.status)
+
       stream := ComObjQuery(req.ResponseStream, "{0000000C-0000-0000-C000-000000000046}")
       return stream
    }
