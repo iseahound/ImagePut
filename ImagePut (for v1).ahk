@@ -533,7 +533,12 @@ class ImagePut {
       if (NumGet(coimage+0, "ptr") < 65536)
          goto end
 
-      ("INTERFACE IS BAD AND PROGRAM IS CRASH") && NumGet(NumGet(coimage+0, "ptr")+0, "char")
+      ("VTABLE IS BAD AND PROGRAM IS CRASH") && NumGet(NumGet(coimage+0, "ptr"), "ptr")
+
+      if (NumGet(NumGet(coimage+0, "ptr"), "ptr") < 65536)
+         goto end
+
+      ("INTERFACE IS BAD AND PROGRAM IS CRASH") && NumGet(NumGet(NumGet(coimage+0, "ptr"), "ptr"), "char")
 
       ; Note 1: All GDI+ functions add 1 to the reference count of COM objects on 64-bit systems.
       ; Note 2: GDI+ pBitmaps that are queried cease to stay pBitmaps.
