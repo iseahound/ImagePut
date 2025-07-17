@@ -294,7 +294,7 @@ class ImagePut {
       "Stream",
       "RandomAccessStream",
       "WICBitmap",
-      "D2DBitmap"
+      "D2DBitmap",
       "SoftwareBitmap"
    ]
 
@@ -1414,7 +1414,7 @@ class ImagePut {
 
    static SafeArrayToStream(image) {
       ; Expects a 1-D safe array of bytes. (VT_UI1)
-      msgbox size := image.MaxIndex() + 1
+      size := image.MaxIndex() + 1
       pvData := NumGet(ComObjValue(image), 8 + A_PtrSize, "ptr")
 
       ; Copy data to a new stream.

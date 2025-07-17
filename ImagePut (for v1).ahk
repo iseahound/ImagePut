@@ -294,7 +294,8 @@ class ImagePut {
       "Stream",
       "RandomAccessStream",
       "WICBitmap",
-      "D2DBitmap"
+      "D2DBitmap",
+      "SoftwareBitmap"
    ]
    )
    static codomains :=
@@ -309,7 +310,7 @@ class ImagePut {
       "EncodedBuffer",
       "Explorer",
       "File",
-      ; "FormData",
+      "FormData",
       "HBitmap",
       "Hex",
       "HIcon",
@@ -317,6 +318,7 @@ class ImagePut {
       "SafeArray",
       "Screenshot",
       "SharedBuffer",
+      "SoftwareBitmap",
       "Stream",
       "URI",
       "URL",
@@ -1404,7 +1406,7 @@ class ImagePut {
    }
 
    SafeArrayToBitmap(image) {
-      stream := this.SafeArrayToBitmap(image)
+      stream := this.SafeArrayToStream(image)
       DllCall("gdiplus\GdipCreateBitmapFromStreamICM", "ptr", stream, "ptr*", pBitmap:=0)
       ObjRelease(stream)
       return pBitmap
@@ -5496,11 +5498,11 @@ class ImagePut {
          domain := a, image := b
 
       if not IsSet(domain)
-         try type := this.premiss(image)
+         try domain := this.premiss(image)
          catch
-            type := this.possible(image)
+            domain := this.possible(image)
 
-      switch type {
+      switch domain {
 
       case "Clipboard", "ClipboardPNG":
          if !DllCall("OpenClipboard", "ptr", A_ScriptHwnd)
