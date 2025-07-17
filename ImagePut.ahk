@@ -395,8 +395,8 @@ class ImagePut {
          if DllCall("IsClipboardFormatAvailable", "uint", DllCall("RegisterClipboardFormat", "str", "png", "uint"))
             return "ClipboardPNG"
 
-         ; A "clipboard" is a handle to a GDI bitmap saved as CF_BITMAP.
-         else if DllCall("IsClipboardFormatAvailable", "uint", 2)
+         ; A "clipboard" is a handle to a DIB saved as CF_DIB (8) or synthesized from CF_BITMAP (2) or CF_DIBV5 (17).
+         else if DllCall("IsClipboardFormatAvailable", "uint", 8)
             return "Clipboard"
 
          else goto end
@@ -1300,7 +1300,7 @@ class ImagePut {
    static ClipboardToBitmap() {
       ; Check for CF_DIB to retrieve transparent pixels when possible.
       if !DllCall("IsClipboardFormatAvailable", "uint", 8)
-         throw Error("Clipboard does not have CF_DIB image data.")
+         return ""
 
       ; Open the clipboard with exponential backoff.
       loop
