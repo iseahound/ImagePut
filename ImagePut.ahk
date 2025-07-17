@@ -295,6 +295,7 @@ class ImagePut {
       "RandomAccessStream",
       "WICBitmap",
       "D2DBitmap"
+      "SoftwareBitmap"
    ]
 
    static codomains :=
@@ -317,6 +318,7 @@ class ImagePut {
       "SafeArray",
       "Screenshot",
       "SharedBuffer",
+      "SoftwareBitmap",
       "Stream",
       "URI",
       "URL",
@@ -379,7 +381,7 @@ class ImagePut {
 
       ; Skip ImageType.
       for domain in this.domains
-         if coimage.HasProp(domain) && !coimage.HasMethod(domain) {
+         if coimage.HasProp(domain) {
             keywords := coimage
             coimage := coimage.%domain%
             return domain
@@ -1412,7 +1414,7 @@ class ImagePut {
 
    static SafeArrayToStream(image) {
       ; Expects a 1-D safe array of bytes. (VT_UI1)
-      size := image.MaxIndex()
+      msgbox size := image.MaxIndex() + 1
       pvData := NumGet(ComObjValue(image), 8 + A_PtrSize, "ptr")
 
       ; Copy data to a new stream.

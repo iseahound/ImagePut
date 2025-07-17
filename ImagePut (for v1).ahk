@@ -309,7 +309,7 @@ class ImagePut {
       "EncodedBuffer",
       "Explorer",
       "File",
-      "FormData",
+      ; "FormData",
       "HBitmap",
       "Hex",
       "HIcon",
@@ -379,7 +379,7 @@ class ImagePut {
 
       ; Skip ImageType.
       for i, domain in this.domains
-         if coimage.HasKey(domain) && !IsFunc(coimage[domain]) {
+         if coimage.HasKey(domain) {
             keywords := coimage
             coimage := coimage[domain]
             return domain
@@ -1412,7 +1412,7 @@ class ImagePut {
 
    SafeArrayToStream(image) {
       ; Expects a 1-D safe array of bytes. (VT_UI1)
-      size := image.MaxIndex()
+      size := image.MaxIndex() + 1
       pvData := NumGet(ComObjValue(image), 8 + A_PtrSize, "ptr")
 
       ; Copy data to a new stream.
