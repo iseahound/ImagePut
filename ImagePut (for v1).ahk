@@ -176,6 +176,11 @@ ImagePutSharedBuffer(image, name := "") {
    return ImagePut("SharedBuffer", image, name)
 }
 
+; Puts the image into a SoftwareBitmap and returns the pointer to the interface.
+ImagePutSoftwareBitmap(image) {
+   return ImagePut("SoftwareBitmap", image)
+}
+
 ; Puts the image into a file format and returns a pointer to a stream.
 ;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
@@ -391,11 +396,11 @@ class ImagePut {
 
 
       if (coimage == "" or coimage == "clipboard")
-         ; A "clipboardpng" is a pointer to a PNG stream saved directly on the clipboard.
+         ; A ClipboardPNG is a pointer to a PNG stream saved directly on the clipboard.
          if DllCall("IsClipboardFormatAvailable", "uint", DllCall("RegisterClipboardFormat", "str", "png", "uint"))
             return "ClipboardPNG"
 
-         ; A "clipboard" is a handle to a DIB saved as CF_DIB (8) or synthesized from CF_BITMAP (2) or CF_DIBV5 (17).
+         ; A Clipboard is a handle to a DIB saved as CF_DIB (8) or synthesized from CF_BITMAP (2) or CF_DIBV5 (17).
          else if DllCall("IsClipboardFormatAvailable", "uint", 8)
             return "Clipboard"
 
@@ -405,11 +410,11 @@ class ImagePut {
          goto string
 
       array:
-      ; A "safearray" is a pointer to a SafeArray COM Object.
+      ; A SafeArray is a pointer to a COM Object that is a SafeArray of unsigned chars (VT_UI1).
       if ComObjType(coimage) and ComObjType(coimage) & 0x2000
          return "SafeArray"
 
-      ; A "screenshot" is an array of 4 numbers with an optional window.
+      ; A Screenshot is an array of 4 or 5 coordinates [x, y, w, h, r?] with an optional window.
       if coimage.length() ~= "^(4|5)$"
       && coimage[1] ~= "^-?\d+$" && coimage[2] ~= "^-?\d+$" && coimage[3] ~= "^(?!0+$)\d+$" && coimage[4] ~= "^(?!0+$)\d+$"
       && coimage[1] > -65536 && coimage[1] < 65536 && coimage[2] > -65536 && coimage[2] < 65536 && coimage[3] < 65536 && coimage[4] < 65536
@@ -417,7 +422,7 @@ class ImagePut {
          return "Screenshot"
 
       object:
-      ; A "object" has a pBitmap property that points to an internal GDI+ bitmap.
+      ; An Object is an object with a pBitmap property that points to an GDI+ bitmap.
       if coimage.HasKey("pBitmap")
          try if !DllCall("gdiplus\GdipGetImageType", "ptr", coimage.pBitmap, "ptr*", _type:=0) && (_type == 1)
             return "Object"
@@ -431,18 +436,18 @@ class ImagePut {
       ("POINTER IS BAD AND PROGRAM IS CRASH") && NumGet(coimage.ptr, "char")
 
       buffer:
-      ; An "encodedbuffer" contains a pointer to the bytes of an encoded image format.
+      ; An EncodedBuffer contains a pointer to the bytes of an encoded image format.
       if coimage.HasKey("size") && coimage.size >= 24 && this.GetExtensionFromBuffer(coimage)
          return "EncodedBuffer"
 
-      ; A "buffer" is an object with a pointer to bytes and properties to determine its 2-D shape.
+      ; A Buffer is an object with a pointer to bytes and properties to determine its 2-D shape.
       if coimage.HasKey("width") && coimage.HasKey("height")
       or coimage.HasKey("stride") && coimage.HasKey("height")
       or coimage.HasKey("size") && (coimage.HasKey("stride") || coimage.HasKey("width") || coimage.HasKey("height"))
          return "Buffer"
 
       properties:
-      ; A "window" is an object with an hwnd property.
+      ; A Window is an object with an hwnd property.
       if coimage.HasKey("hwnd") && DllCall("IsWindow", "ptr", coimage.hwnd)
          return "Window"
 
@@ -457,40 +462,44 @@ class ImagePut {
       if (coimage == "")
          return "" ; Image data is an empty string.
       SysGet MonitorGetCount, MonitorCount
-      ; A non-zero "monitor" number identifies each display uniquely; and 0 refers to the entire virtual screen.
+      ; A Monitor of 0 captures all screens. Successive numbers are Monitor numbers.
       if (coimage ~= "^\d+$" && coimage <= MonitorGetCount)
          return "Monitor"
 
-      ; A "wallpaper" is the desktop wallpaper.
+      ; A Wallpaper is the desktop wallpaper.
       if (coimage = "wallpaper")
          return "Wallpaper"
 
-      ; A "cursor" is the name of a known cursor name.
+      ; A Cursor is the name of a known cursor name.
       if (coimage ~= "(?i)^A_Cursor|Unknown|(IDC_)?(AppStarting|Arrow|Cross|Hand(writing)?|"
       . "Help|IBeam|No|Pin|Person|SizeAll|SizeNESW|SizeNS|SizeNWSE|SizeWE|UpArrow|Wait)$")
          return "Cursor"
 
-      ; A "url" satisfies the url format.
+      ; A URL satisfies the url format.
       if this.IsURL(coimage)
          return "URL"
 
-      ; A "file" is stored on the disk or network.
+      ; A File is stored on the disk or network.
       if StrReplace(FileExist(coimage), "D")
          return "File"
 
-      ; A "window" is anything considered a Window Title including ahk_class and "A".
+      ; A Folder is a directory on the disk or network.
+      if InStr(FileExist(coimage), "D")
+         return "Folder"
+
+      ; A Window is anything considered a Window Title including ahk_class and "A".
       if WinExist(coimage) || DllCall("IsWindow", "ptr", coimage)
          return "Window"
 
-      ; A "sharedbuffer" is a file mapping kernel object.
+      ; A SharedBuffer is a file mapping kernel object.
       if DllCall("CloseHandle", "ptr", DllCall("OpenFileMapping", "uint", 2, "int", 0, "str", "ImagePut_" coimage, "ptr"))
          return "SharedBuffer"
 
-      ; A "hex" string is binary image data encoded into text using hexadecimal.
+      ; A Hex string is binary image data encoded into text using hexadecimal.
       if (StrLen(coimage) >= 48) && (coimage ~= "^\s*(?:[A-Fa-f0-9]{2})*+\s*$")
          return "Hex"
 
-      ; A "base64" string is binary image data encoded into text using standard 64 characters.
+      ; A Base64 string is binary image data encoded into text using standard 64 characters.
       if (StrLen(coimage) >= 32) && (coimage ~= "^\s*(?:data:image\/[a-z]+;base64,)?"
       . "(?:[A-Za-z0-9+\/]{4})*+(?:[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{2}==)?\s*$")
          return "Base64"
@@ -508,15 +517,15 @@ class ImagePut {
       }
 
       handle:
-      ; A "dc" is a handle to a GDI device context.
+      ; A DC is a handle to a GDI device context.
       if (DllCall("GetObjectType", "ptr", coimage, "uint") == 3 || DllCall("GetObjectType", "ptr", coimage, "uint") == 10)
          return "DC"
 
-      ; An "hBitmap" is a handle to a GDI Bitmap.
+      ; An HBitmap is a handle to a GDI Bitmap.
       if (DllCall("GetObjectType", "ptr", coimage, "uint") == 7)
          return "HBitmap"
 
-      ; An "hIcon" is a handle to a GDI icon.
+      ; An HIcon is a handle to a GDI icon.
       if DllCall("DestroyIcon", "ptr", DllCall("CopyIcon", "ptr", coimage, "ptr"))
          return "HIcon"
 
@@ -526,7 +535,7 @@ class ImagePut {
       ("POINTER IS BAD AND PROGRAM IS CRASH") && NumGet(coimage+0, "char")
 
       pointer:
-      ; A "bitmap" is a pointer to a GDI+ Bitmap. GdiplusStartup exception is caught above.
+      ; A Bitmap is a pointer to a GDI+ Bitmap. GdiplusStartup exception is caught above.
       try if !DllCall("gdiplus\GdipGetImageType", "ptr", coimage, "ptr*", _type:=0) && (_type == 1)
          return "Bitmap"
 
@@ -546,23 +555,23 @@ class ImagePut {
       (A_PtrSize == 8) && ObjRelease(coimage) ; Therefore do not move this, it has been tested.
 
       interface:
-      ; A "stream" is a pointer to the IStream interface.
+      ; A Stream is a pointer to the IStream interface.
       try if ComObjQuery(coimage, "{0000000C-0000-0000-C000-000000000046}")
          return "Stream", ObjRelease(coimage)
 
-      ; A "randomaccessstream" is a pointer to the IRandomAccessStream interface.
+      ; A RandomAccessStream is a pointer to the IRandomAccessStream interface.
       try if ComObjQuery(coimage, "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}")
          return "RandomAccessStream", ObjRelease(coimage)
 
-      ; A "wicbitmap" is a pointer to a IWICBitmapSource.
+      ; A WICBitmap is a pointer to a IWICBitmapSource.
       try if ComObjQuery(coimage, "{00000120-A8F2-4877-BA0A-FD2B6645FB94}")
          return "WICBitmap", ObjRelease(coimage)
 
-      ; A "d2dbitmap" is a pointer to a ID2D1Bitmap.
+      ; A D2DBitmap is a pointer to a ID2D1Bitmap.
       try if ComObjQuery(coimage, "{A2296057-EA42-4099-983B-539FB6505426}")
          return "D2DBitmap", ObjRelease(coimage)
 
-      ; A "softwarebitmap" is a pointer to a ISoftwareBitmap.
+      ; A SoftwareBitmap is a pointer to a ISoftwareBitmap.
       try if ComObjQuery(coimage, "{689E0708-7EEF-483F-963F-DA938818E073}")
          return "SoftwareBitmap", ObjRelease(coimage)
 
