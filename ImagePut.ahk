@@ -4949,18 +4949,6 @@ class ImagePut {
       IBufferByteAccess := ComObjQuery(IMemoryBufferReference, "{5b0d3235-4dba-4d44-865e-8f1d0e4fd04d}")
       ComCall(GetBuffer := 3, IBufferByteAccess, "ptr*", &ptr:=0, "uint*", &size:=0)
 
-      ; Convert the source pBitmap into a hBitmap manually.
-      ; struct BITMAPINFOHEADER - https://docs.microsoft.com/en-us/windows/win32/api/wingdi/ns-wingdi-bitmapinfoheader
-      hdc := DllCall("CreateCompatibleDC", "ptr", 0, "ptr")
-      bi := Buffer(40, 0)                    ; sizeof(bi) = 40
-         NumPut(  "uint",        40, bi,  0) ; Size
-         NumPut(   "int",     width, bi,  4) ; Width
-         NumPut(   "int",   -height, bi,  8) ; Height - Negative so (0, 0) is top-left.
-         NumPut("ushort",         1, bi, 12) ; Planes
-         NumPut("ushort",        32, bi, 14) ; BitCount / BitsPerPixel
-      hbm := DllCall("CreateDIBSection", "ptr", hdc, "ptr", bi, "uint", 0, "ptr*", &pBits:=0, "ptr", 0, "uint", 0, "ptr")
-      obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
-
       ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
       rect := Buffer(16, 0)                  ; sizeof(rect) = 16
          NumPut(  "uint",   width, rect,  8) ; Width

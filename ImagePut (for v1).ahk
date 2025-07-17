@@ -2421,6 +2421,12 @@ class ImagePut {
       ; Convert pBits (pARGB) pixel data from the hBitmap into the pBitmap (ARGB).
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
 
+      ; Cleanup!
+      ObjRelease(IBufferByteAccess)
+      ObjRelease(IMemoryBufferReference)
+      ObjRelease(IMemoryBuffer)
+      ObjRelease(IBitmapBuffer)
+
       return pBitmap
    }
 
@@ -4925,7 +4931,6 @@ class ImagePut {
    }
 
    BitmapToSoftwareBitmap(pBitmap) {
-
       ; Get Bitmap width and height.
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
