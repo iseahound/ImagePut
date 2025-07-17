@@ -391,7 +391,7 @@ class ImagePut {
 
       if coimage.HasProp("prototype") && coimage.prototype.HasProp("__class") && coimage.prototype.__class == "ClipboardAll"
       or Type(coimage) == "ClipboardAll" && this.IsClipboard(coimage.ptr, coimage.size)
-         ; A "clipboardpng" is a pointer to a PNG stream saved as the "png" clipboard format.
+         ; A "clipboardpng" is a pointer to a PNG stream saved directly on the clipboard.
          if DllCall("IsClipboardFormatAvailable", "uint", DllCall("RegisterClipboardFormat", "str", "png", "uint"))
             return "ClipboardPNG"
 
@@ -561,6 +561,10 @@ class ImagePut {
       ; A "d2dbitmap" is a pointer to a ID2D1Bitmap.
       try if ComObjQuery(coimage, "{A2296057-EA42-4099-983B-539FB6505426}")
          return "D2DBitmap"
+
+      ; A "softwarebitmap" is a pointer to a ISoftwareBitmap.
+      try if ComObjQuery(coimage, "{689E0708-7EEF-483F-963F-DA938818E073}")
+         return "SoftwareBitmap"
 
       end:
       return 0 ; Image type could not be identified.

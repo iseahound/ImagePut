@@ -389,9 +389,9 @@ class ImagePut {
 
 
 
-      ; Throw if the image is an empty string.
+
       if (coimage == "" or coimage == "clipboard")
-         ; A "clipboardpng" is a pointer to a PNG stream saved as the "png" clipboard format.
+         ; A "clipboardpng" is a pointer to a PNG stream saved directly on the clipboard.
          if DllCall("IsClipboardFormatAvailable", "uint", DllCall("RegisterClipboardFormat", "str", "png", "uint"))
             return "ClipboardPNG"
 
@@ -561,6 +561,10 @@ class ImagePut {
       ; A "d2dbitmap" is a pointer to a ID2D1Bitmap.
       try if ComObjQuery(coimage, "{A2296057-EA42-4099-983B-539FB6505426}")
          return "D2DBitmap", ObjRelease(coimage)
+
+      ; A "softwarebitmap" is a pointer to a ISoftwareBitmap.
+      try if ComObjQuery(coimage, "{689E0708-7EEF-483F-963F-DA938818E073}")
+         return "SoftwareBitmap", ObjRelease(coimage)
 
       end:
       return 0 ; Image type could not be identified.
