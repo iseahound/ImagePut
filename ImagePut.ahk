@@ -1203,9 +1203,9 @@ class ImagePut {
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
 
       ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
-      rect := Buffer(16, 0)                  ; sizeof(rect) = 16
-         NumPut(  "uint",   width, rect,  8) ; Width
-         NumPut(  "uint",  height, rect, 12) ; Height
+      rect := Buffer(16, 0)                ; sizeof(rect) = 16
+         NumPut("uint",   width, rect,  8) ; Width
+         NumPut("uint",  height, rect, 12) ; Height
 
       ; (Type 3) Expose the pixel buffer for modification.
       BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
@@ -1356,14 +1356,14 @@ class ImagePut {
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", &pBitmap:=0)
 
       ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
-      rect := Buffer(16, 0)                  ; sizeof(rect) = 16
-         NumPut(  "uint",   width, rect,  8) ; Width
-         NumPut(  "uint",  height, rect, 12) ; Height
+      rect := Buffer(16, 0)                ; sizeof(rect) = 16
+         NumPut("uint",   width, rect,  8) ; Width
+         NumPut("uint",  height, rect, 12) ; Height
 
       ; (Type 6) Copy external pixels into the GDI+ Bitmap.
-      BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
-         NumPut(   "int",     stride, BitmapData,  8) ; Stride
-         NumPut(   "ptr",      Scan0, BitmapData, 16) ; Scan0
+      BitmapData := Buffer(16+2*A_PtrSize, 0)           ; sizeof(BitmapData) = 24, 32
+         NumPut( "int",         stride, BitmapData,  8) ; Stride
+         NumPut( "ptr",          Scan0, BitmapData, 16) ; Scan0
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
                ,    "ptr", rect
@@ -1462,14 +1462,14 @@ class ImagePut {
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", &pBitmap:=0)
 
       ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
-      rect := Buffer(16, 0)                  ; sizeof(rect) = 16
-         NumPut(  "uint",   width, rect,  8) ; Width
-         NumPut(  "uint",  height, rect, 12) ; Height
+      rect := Buffer(16, 0)                ; sizeof(rect) = 16
+         NumPut("uint",   width, rect,  8) ; Width
+         NumPut("uint",  height, rect, 12) ; Height
 
       ; (Type 6) Copy external pixels into the GDI+ Bitmap.
-      BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
-         NumPut(   "int",     stride, BitmapData,  8) ; Stride
-         NumPut(   "ptr",        ptr, BitmapData, 16) ; Scan0
+      BitmapData := Buffer(16+2*A_PtrSize, 0)           ; sizeof(BitmapData) = 24, 32
+         NumPut( "int",         stride, BitmapData,  8) ; Stride
+         NumPut( "ptr",            ptr, BitmapData, 16) ; Scan0
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
                ,    "ptr", rect
@@ -2115,14 +2115,14 @@ class ImagePut {
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", &pBitmap:=0)
 
       ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
-      rect := Buffer(16, 0)                  ; sizeof(rect) = 16
-         NumPut(  "uint",   width, rect,  8) ; Width
-         NumPut(  "uint",  height, rect, 12) ; Height
+      rect := Buffer(16, 0)                ; sizeof(rect) = 16
+         NumPut("uint",   width, rect,  8) ; Width
+         NumPut("uint",  height, rect, 12) ; Height
 
       ; (Type 6c) Prepare to copy pixels from pBits (pARGB) into the GDI+ Bitmap (ARGB).
-      BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
-         NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
-         NumPut(   "ptr",      pBits, BitmapData, 16) ; Scan0
+      BitmapData := Buffer(16+2*A_PtrSize, 0)           ; sizeof(BitmapData) = 24, 32
+         NumPut( "int",      4 * width, BitmapData,  8) ; Stride
+         NumPut( "ptr",          pBits, BitmapData, 16) ; Scan0
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
                ,    "ptr", rect
@@ -2195,14 +2195,14 @@ class ImagePut {
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", &pBitmap:=0)
 
       ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
-      rect := Buffer(16, 0)                  ; sizeof(rect) = 16
-         NumPut(  "uint",   width, rect,  8) ; Width
-         NumPut(  "uint",  height, rect, 12) ; Height
+      rect := Buffer(16, 0)                ; sizeof(rect) = 16
+         NumPut("uint",   width, rect,  8) ; Width
+         NumPut("uint",  height, rect, 12) ; Height
 
       ; (Type 6c) Prepare to copy pixels from pBits (pARGB) into the GDI+ Bitmap (ARGB).
-      BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
-         NumPut(   "int",     stride, BitmapData,  8) ; Stride
-         NumPut(   "ptr",      Scan0, BitmapData, 16) ; Scan0
+      BitmapData := Buffer(16+2*A_PtrSize, 0)           ; sizeof(BitmapData) = 24, 32
+         NumPut( "int",         stride, BitmapData,  8) ; Stride
+         NumPut( "ptr",          Scan0, BitmapData, 16) ; Scan0
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
                ,    "ptr", rect
@@ -2253,14 +2253,14 @@ class ImagePut {
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", &pBitmap:=0)
 
       ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
-      rect := Buffer(16, 0)                  ; sizeof(rect) = 16
-         NumPut(  "uint",   width, rect,  8) ; Width
-         NumPut(  "uint",  height, rect, 12) ; Height
+      rect := Buffer(16, 0)                ; sizeof(rect) = 16
+         NumPut("uint",   width, rect,  8) ; Width
+         NumPut("uint",  height, rect, 12) ; Height
 
       ; (Type 6c) Prepare to copy pixels from pBits (pARGB) into the GDI+ Bitmap (ARGB).
-      BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
-         NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
-         NumPut(   "ptr",      pBits, BitmapData, 16) ; Scan0
+      BitmapData := Buffer(16+2*A_PtrSize, 0)           ; sizeof(BitmapData) = 24, 32
+         NumPut( "int",      4 * width, BitmapData,  8) ; Stride
+         NumPut( "ptr",          pBits, BitmapData, 16) ; Scan0
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
                ,    "ptr", rect
@@ -2334,9 +2334,9 @@ class ImagePut {
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", &pBitmap:=0)
 
       ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
-      rect := Buffer(16, 0)                  ; sizeof(rect) = 16
-         NumPut(  "uint",   width, rect,  8) ; Width
-         NumPut(  "uint",  height, rect, 12) ; Height
+      rect := Buffer(16, 0)                ; sizeof(rect) = 16
+         NumPut("uint",   width, rect,  8) ; Width
+         NumPut("uint",  height, rect, 12) ; Height
 
       ; Check if the pixel format needs to be converted.
       ComCall(GetPixelFormat := 4, image, "ptr", format := Buffer(16))
@@ -2377,9 +2377,9 @@ class ImagePut {
          ComCall(GetStride := 4, IWICBitmapLock, "uint*", &stride:=0)
 
          ; (Type 6) Copy external pixels into the GDI+ Bitmap.
-         BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
-            NumPut(   "int",     stride, BitmapData,  8) ; Stride
-            NumPut(   "ptr",        ptr, BitmapData, 16) ; Scan0
+         BitmapData := Buffer(16+2*A_PtrSize, 0)           ; sizeof(BitmapData) = 24, 32
+            NumPut( "int",         stride, BitmapData,  8) ; Stride
+            NumPut( "ptr",            ptr, BitmapData, 16) ; Scan0
          DllCall("gdiplus\GdipBitmapLockBits"
                   ,    "ptr", pBitmap
                   ,    "ptr", rect
@@ -2720,14 +2720,14 @@ class ImagePut {
       ptr := pMap + 12
 
       ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
-      rect := Buffer(16, 0)                  ; sizeof(rect) = 16
-         NumPut(  "uint",   width, rect,  8) ; Width
-         NumPut(  "uint",  height, rect, 12) ; Height
+      rect := Buffer(16, 0)                ; sizeof(rect) = 16
+         NumPut("uint",   width, rect,  8) ; Width
+         NumPut("uint",  height, rect, 12) ; Height
 
       ; (Type 5) Copy pixels to an external pointer.
-      BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
-         NumPut(   "int",     stride, BitmapData,  8) ; Stride
-         NumPut(   "ptr",        ptr, BitmapData, 16) ; Scan0
+      BitmapData := Buffer(16+2*A_PtrSize, 0)           ; sizeof(BitmapData) = 24, 32
+         NumPut( "int",         stride, BitmapData,  8) ; Stride
+         NumPut( "ptr",            ptr, BitmapData, 16) ; Scan0
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
                ,    "ptr", rect
@@ -2753,14 +2753,14 @@ class ImagePut {
       ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr")
 
       ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
-      rect := Buffer(16, 0)                  ; sizeof(rect) = 16
-         NumPut(  "uint",   width, rect,  8) ; Width
-         NumPut(  "uint",  height, rect, 12) ; Height
+      rect := Buffer(16, 0)                ; sizeof(rect) = 16
+         NumPut("uint",   width, rect,  8) ; Width
+         NumPut("uint",  height, rect, 12) ; Height
 
       ; (Type 5) Copy pixels to an external pointer.
-      BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
-         NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
-         NumPut(   "ptr",        ptr, BitmapData, 16) ; Scan0
+      BitmapData := Buffer(16+2*A_PtrSize, 0)           ; sizeof(BitmapData) = 24, 32
+         NumPut( "int",      4 * width, BitmapData,  8) ; Stride
+         NumPut( "ptr",            ptr, BitmapData, 16) ; Scan0
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
                ,    "ptr", rect
@@ -3885,14 +3885,14 @@ class ImagePut {
       ; Case 1: Image is not scaled.
       if (w == width && h == height) {
          ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
-         rect := Buffer(16, 0)                  ; sizeof(rect) = 16
-            NumPut(  "uint",   width, rect,  8) ; Width
-            NumPut(  "uint",  height, rect, 12) ; Height
+         rect := Buffer(16, 0)                ; sizeof(rect) = 16
+            NumPut("uint",   width, rect,  8) ; Width
+            NumPut("uint",  height, rect, 12) ; Height
 
          ; (Type 5c) Transfer pixels from the GDI+ Bitmap (ARGB) to the pBits (pARGB).
-         BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
-            NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
-            NumPut(   "ptr",      pBits, BitmapData, 16) ; Scan0
+         BitmapData := Buffer(16+2*A_PtrSize, 0)           ; sizeof(BitmapData) = 24, 32
+            NumPut( "int",      4 * width, BitmapData,  8) ; Stride
+            NumPut( "ptr",          pBits, BitmapData, 16) ; Scan0
          DllCall("gdiplus\GdipBitmapLockBits"
                   ,    "ptr", pBitmap
                   ,    "ptr", rect
@@ -4373,14 +4373,14 @@ class ImagePut {
             DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", &height:=0)
 
             ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
-            rect := Buffer(16, 0)                  ; sizeof(rect) = 16
-               NumPut(  "uint",   width, rect,  8) ; Width
-               NumPut(  "uint",  height, rect, 12) ; Height
+            rect := Buffer(16, 0)                ; sizeof(rect) = 16
+               NumPut("uint",   width, rect,  8) ; Width
+               NumPut("uint",  height, rect, 12) ; Height
 
             ; (Type 5c) Transfer pixels from the GDI+ Bitmap (ARGB) to the pBits (pARGB).
-            BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
-               NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
-               NumPut(   "ptr",      pBits, BitmapData, 16) ; Scan0
+            BitmapData := Buffer(16+2*A_PtrSize, 0)           ; sizeof(BitmapData) = 24, 32
+               NumPut( "int",      4 * width, BitmapData,  8) ; Stride
+               NumPut( "ptr",          pBits, BitmapData, 16) ; Scan0
             DllCall("gdiplus\GdipBitmapLockBits"
                      ,    "ptr", pBitmap
                      ,    "ptr", rect
@@ -4823,14 +4823,14 @@ class ImagePut {
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
       ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
-      rect := Buffer(16, 0)                  ; sizeof(rect) = 16
-         NumPut(  "uint",   width, rect,  8) ; Width
-         NumPut(  "uint",  height, rect, 12) ; Height
+      rect := Buffer(16, 0)                ; sizeof(rect) = 16
+         NumPut("uint",   width, rect,  8) ; Width
+         NumPut("uint",  height, rect, 12) ; Height
 
       ; (Type 5c) Transfer pixels from the GDI+ Bitmap (ARGB) to the pBits (pARGB).
-      BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
-         NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
-         NumPut(   "ptr",      pBits, BitmapData, 16) ; Scan0
+      BitmapData := Buffer(16+2*A_PtrSize, 0)           ; sizeof(BitmapData) = 24, 32
+         NumPut( "int",      4 * width, BitmapData,  8) ; Stride
+         NumPut( "ptr",          pBits, BitmapData, 16) ; Scan0
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
                ,    "ptr", rect
@@ -4868,14 +4868,14 @@ class ImagePut {
       obm := DllCall("SelectObject", "ptr", hdc, "ptr", hbm, "ptr")
 
       ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
-      rect := Buffer(16, 0)                  ; sizeof(rect) = 16
-         NumPut(  "uint",   width, rect,  8) ; Width
-         NumPut(  "uint",  height, rect, 12) ; Height
+      rect := Buffer(16, 0)                ; sizeof(rect) = 16
+         NumPut("uint",   width, rect,  8) ; Width
+         NumPut("uint",  height, rect, 12) ; Height
 
       ; (Type 5c) Transfer pixels from the GDI+ Bitmap (ARGB) to the pBits (pARGB).
-      BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
-         NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
-         NumPut(   "ptr",      pBits, BitmapData, 16) ; Scan0
+      BitmapData := Buffer(16+2*A_PtrSize, 0)           ; sizeof(BitmapData) = 24, 32
+         NumPut( "int",      4 * width, BitmapData,  8) ; Stride
+         NumPut( "ptr",          pBits, BitmapData, 16) ; Scan0
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
                ,    "ptr", rect
@@ -4931,18 +4931,18 @@ class ImagePut {
       ComCall(CreateBitmap := 17, IWICImagingFactory, "uint", width, "uint", height, "ptr", GUID_WICPixelFormat32bppBGRA, "int", 1, "ptr*", &IWICBitmap:=0)
 
       ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
-      rect := Buffer(16, 0)                  ; sizeof(rect) = 16
-         NumPut(  "uint",   width, rect,  8) ; Width
-         NumPut(  "uint",  height, rect, 12) ; Height
+      rect := Buffer(16, 0)                ; sizeof(rect) = 16
+         NumPut("uint",   width, rect,  8) ; Width
+         NumPut("uint",  height, rect, 12) ; Height
 
       ; Expose the pointer to its underlying pixel buffer.
       ComCall(Lock := 8, IWICBitmap, "ptr", rect, "uint", 0x2, "ptr*", &IWICBitmapLock:=0)
       ComCall(GetDataPointer := 5, IWICBitmapLock, "uint*", &size:=0, "ptr*", &ptr:=0)
 
       ; (Type 5) Copy pixels to an external pointer.
-      BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
-         NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
-         NumPut(   "ptr",        ptr, BitmapData, 16) ; Scan0
+      BitmapData := Buffer(16+2*A_PtrSize, 0)           ; sizeof(BitmapData) = 24, 32
+         NumPut( "int",      4 * width, BitmapData,  8) ; Stride
+         NumPut( "ptr",            ptr, BitmapData, 16) ; Scan0
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
                ,    "ptr", rect
@@ -4978,14 +4978,14 @@ class ImagePut {
       ComCall(GetBuffer := 3, IBufferByteAccess, "ptr*", &ptr:=0, "uint*", &size:=0)
 
       ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
-      rect := Buffer(16, 0)                  ; sizeof(rect) = 16
-         NumPut(  "uint",   width, rect,  8) ; Width
-         NumPut(  "uint",  height, rect, 12) ; Height
+      rect := Buffer(16, 0)                ; sizeof(rect) = 16
+         NumPut("uint",   width, rect,  8) ; Width
+         NumPut("uint",  height, rect, 12) ; Height
 
       ; (Type 5c) Transfer pixels from the GDI+ Bitmap (ARGB) to the pBits (pARGB).
-      BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
-         NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
-         NumPut(   "ptr",        ptr, BitmapData, 16) ; Scan0
+      BitmapData := Buffer(16+2*A_PtrSize, 0)           ; sizeof(BitmapData) = 24, 32
+         NumPut( "int",      4 * width, BitmapData,  8) ; Stride
+         NumPut( "ptr",            ptr, BitmapData, 16) ; Scan0
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
                ,    "ptr", rect
@@ -5684,9 +5684,9 @@ class ImageEqual extends ImagePut {
       width := width1, height := height1
 
       ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
-      rect := Buffer(16, 0)                  ; sizeof(rect) = 16
-         NumPut(  "uint",   width, rect,  8) ; Width
-         NumPut(  "uint",  height, rect, 12) ; Height
+      rect := Buffer(16, 0)                ; sizeof(rect) = 16
+         NumPut("uint",   width, rect,  8) ; Width
+         NumPut("uint",  height, rect, 12) ; Height
 
       ; Create a BitmapData structure.
       BitmapData1 := Buffer(16+2*A_PtrSize)       ; sizeof(BitmapData) = 24, 32
