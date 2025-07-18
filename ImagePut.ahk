@@ -1369,7 +1369,7 @@ class ImagePut {
                ,    "ptr", rect
                ,   "uint", 6            ; ImageLockMode.UserInputBuffer | ImageLockMode.WriteOnly
                ,    "int", 0x26200A     ; Buffer: Format32bppArgb
-               ,    "ptr", BitmapData)  ; Contains the pointer (Scan0) to the CF_DIB.
+               ,    "ptr", BitmapData)  ; Contains the pointer (Scan0) to the CF_DIB
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
 
       DllCall("CloseClipboard")
@@ -1475,7 +1475,7 @@ class ImagePut {
                ,    "ptr", rect
                ,   "uint", 6            ; ImageLockMode.UserInputBuffer | ImageLockMode.WriteOnly
                ,    "int", 0x26200A     ; Buffer: Format32bppArgb
-               ,    "ptr", BitmapData)  ; Contains the pointer (ptr) to the FileMapping.
+               ,    "ptr", BitmapData)  ; Contains the pointer (ptr) to the FileMapping
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
 
       DllCall("UnmapViewOfFile", "ptr", pMap)
@@ -2385,7 +2385,7 @@ class ImagePut {
                   ,    "ptr", rect
                   ,   "uint", 6            ; ImageLockMode.UserInputBuffer | ImageLockMode.WriteOnly
                   ,    "int", 0x26200A     ; Buffer: Format32bppArgb
-                  ,    "ptr", BitmapData)  ; Contains the pointer (ptr) to the IWICBitmap.
+                  ,    "ptr", BitmapData)  ; Contains the pointer (ptr) to the IWICBitmap
          DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
 
          ; Cleanup!
@@ -2396,37 +2396,56 @@ class ImagePut {
    }
 
    static SoftwareBitmapToBitmap(image) {
-      ISoftwareBitmap := image
+      ; Get the pixel format and alpha mode.
+      ComCall(get_BitmapPixelFormat := 6, image, "int*", &BitmapPixelFormat:=0)
+      ComCall(get_BitmapAlphaMode := 7, image, "int*", &BitmapAlphaMode:=0)
 
-      ; Retrieve the ptr, size, width, and height of the SoftwareBitmap.
-      ComCall(LockBuffer := 15, ISoftwareBitmap, "int", 2, "ptr*", IBitmapBuffer := ComValue(13,0))
-      IMemoryBuffer := ComObjQuery(IBitmapBuffer, "{fbc4dd2a-245b-11e4-af98-689423260cf8}")
-      ComCall(CreateReference := 6, IMemoryBuffer, "ptr*", IMemoryBufferReference := ComValue(13,0))
-      IBufferByteAccess := ComObjQuery(IMemoryBufferReference, "{5b0d3235-4dba-4d44-865e-8f1d0e4fd04d}")
-      ComCall(GetBuffer := 3, IBufferByteAccess, "ptr*", &ptr:=0, "uint*", &size:=0)
+      ; Check if the pixel format needs to be converted.
+      convert := (BitmapPixelFormat != 87 || BitmapAlphaMode != 1) ; Bgra8 & Straight Alpha
+
+      if not convert
+         ISoftwareBitmap := image
+      else {
+         DllCall("ole32\IIDFromString", "wstr", "{DF0385DB-672F-4A9D-806E-C2442F343E86}", "ptr", IID_ISoftwareBitmapStatics := Buffer(16), "hresult")
+         DllCall("combase\WindowsCreateString", "wstr", "Windows.Graphics.Imaging.SoftwareBitmap", "uint", 39, "ptr*", &hString:=0, "hresult")
+         DllCall("combase\RoGetActivationFactory", "ptr", hString, "ptr", IID_ISoftwareBitmapStatics, "ptr*", &ISoftwareBitmapStatics:=0, "hresult")
+         DllCall("combase\WindowsDeleteString", "ptr", hString, "hresult")
+
+         ; Overwrite the existing ISoftwareBitmap with its converted version.
+         ComCall(ConvertWithAlpha := 8, ISoftwareBitmapStatics, "ptr", image, "int", 87, "int", 1, "ptr*", &ISoftwareBitmap:=0)
+
+         ObjRelease(ISoftwareBitmapStatics)
+      }
+
+      ; Get Bitmap width and height.
       ComCall(get_PixelWidth := 8, ISoftwareBitmap, "uint*", &width:=0)
       ComCall(get_PixelHeight := 9, ISoftwareBitmap, "uint*", &height:=0)
 
       ; Create a destination GDI+ Bitmap that owns its memory to receive the final converted pixels. The pixel format is 32-bit ARGB.
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", &pBitmap:=0)
 
-      ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
-      rect := Buffer(16, 0)                  ; sizeof(rect) = 16
-         NumPut(  "uint",   width, rect,  8) ; Width
-         NumPut(  "uint",  height, rect, 12) ; Height
+      ; Retrieve the ptr and size of the SoftwareBitmap.
+      ComCall(LockBuffer := 15, ISoftwareBitmap, "int", 2, "ptr*", IBitmapBuffer := ComValue(13,0))
+      IMemoryBuffer := ComObjQuery(IBitmapBuffer, "{FBC4DD2A-245B-11E4-AF98-689423260CF8}")
+      ComCall(CreateReference := 6, IMemoryBuffer, "ptr*", IMemoryBufferReference := ComValue(13,0))
+      IBufferByteAccess := ComObjQuery(IMemoryBufferReference, "{5B0D3235-4DBA-4D44-865E-8F1D0E4FD04D}")
+      ComCall(GetBuffer := 3, IBufferByteAccess, "ptr*", &ptr:=0, "uint*", &size:=0)
 
-      ; (Type 6c) Prepare to copy pixels from pBits (pARGB) into the GDI+ Bitmap (ARGB).
-      BitmapData := Buffer(16+2*A_PtrSize, 0)         ; sizeof(BitmapData) = 24, 32
-         NumPut(   "int",  4 * width, BitmapData,  8) ; Stride
-         NumPut(   "ptr",        ptr, BitmapData, 16) ; Scan0
+      ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
+      rect := Buffer(16, 0)                ; sizeof(rect) = 16
+         NumPut("uint",   width, rect,  8) ; Width
+         NumPut("uint",  height, rect, 12) ; Height
+
+      ; (Type 6) Copy external pixels into the GDI+ Bitmap.
+      BitmapData := Buffer(16+2*A_PtrSize, 0)           ; sizeof(BitmapData) = 24, 32
+         NumPut( "int", size // height, BitmapData,  8) ; Stride
+         NumPut( "ptr",            ptr, BitmapData, 16) ; Scan0
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
                ,    "ptr", rect
                ,   "uint", 6            ; ImageLockMode.UserInputBuffer | ImageLockMode.WriteOnly
-               ,    "int", 0xE200B      ; Buffer: Format32bppPArgb
-               ,    "ptr", BitmapData)  ; Contains the pointer (pBits) to the hbm.
-
-      ; Convert the pARGB pixels copied into the device independent bitmap (hbm) to ARGB.
+               ,    "int", 0x26200A     ; Buffer: Format32bppArgb
+               ,    "ptr", BitmapData)  ; Contains the pointer (ptr) to the ISoftwareBitmap
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
 
       ; Cleanup!
@@ -2434,6 +2453,7 @@ class ImagePut {
       IMemoryBufferReference := ""
       IMemoryBuffer := ""
       IBitmapBuffer := ""
+      (convert) && ObjRelease(ISoftwareBitmap)
 
       return pBitmap
    }
@@ -2713,7 +2733,7 @@ class ImagePut {
                ,    "ptr", rect
                ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
                ,    "int", 0x26200A     ; Buffer: Format32bppArgb
-               ,    "ptr", BitmapData)  ; Contains the pointer (ptr) to the FileMapping.
+               ,    "ptr", BitmapData)  ; Contains the pointer (ptr) to the FileMapping
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
 
       ; Free the pixels later.
@@ -2746,7 +2766,7 @@ class ImagePut {
                ,    "ptr", rect
                ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
                ,    "int", 0x26200A     ; Buffer: Format32bppArgb
-               ,    "ptr", BitmapData)  ; Contains the pointer (ptr) to the Buffer Object.
+               ,    "ptr", BitmapData)  ; Contains the pointer (ptr) to the Buffer Object
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
 
       ; Free the pixels later.
@@ -3878,7 +3898,7 @@ class ImagePut {
                   ,    "ptr", rect
                   ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
                   ,    "int", 0xE200B      ; Buffer: Format32bppPArgb
-                  ,    "ptr", BitmapData)  ; Contains the pointer (pBits) to the hbm.
+                  ,    "ptr", BitmapData)  ; Contains the pointer (pBits) to the hbm
          DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
       }
 
@@ -4366,7 +4386,7 @@ class ImagePut {
                      ,    "ptr", rect
                      ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
                      ,    "int", 0xE200B      ; Buffer: Format32bppPArgb
-                     ,    "ptr", BitmapData)  ; Contains the pointer (pBits) to the hbm.
+                     ,    "ptr", BitmapData)  ; Contains the pointer (pBits) to the hbm
             DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
 
             ; Use the saved device context for rendering.
@@ -4816,7 +4836,7 @@ class ImagePut {
                ,    "ptr", rect
                ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
                ,    "int", 0xE200B      ; Buffer: Format32bppPArgb
-               ,    "ptr", BitmapData)  ; Contains the pointer (pBits) to the hbm.
+               ,    "ptr", BitmapData)  ; Contains the pointer (pBits) to the hbm
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
 
       ; This may seem strange, but the hBitmap is selected onto the device context,
@@ -4861,7 +4881,7 @@ class ImagePut {
                ,    "ptr", rect
                ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
                ,    "int", 0xE200B      ; Buffer: Format32bppPArgb
-               ,    "ptr", BitmapData)  ; Contains the pointer (pBits) to the hbm.
+               ,    "ptr", BitmapData)  ; Contains the pointer (pBits) to the hbm
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
 
       ; Cleanup the hBitmap and device contexts.
@@ -4928,7 +4948,7 @@ class ImagePut {
                ,    "ptr", rect
                ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
                ,    "int", 0x26200A     ; Buffer: Format32bppArgb
-               ,    "ptr", BitmapData)  ; Contains the pointer (ptr) to the IWICBitmap.
+               ,    "ptr", BitmapData)  ; Contains the pointer (ptr) to the IWICBitmap
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
 
       ; Cleanup!
@@ -4950,8 +4970,8 @@ class ImagePut {
       DllCall("combase\WindowsDeleteString", "ptr", hString, "hresult")
 
       ; Create a SoftwareBitmap with the specified width and height.
-      ComCall(CreateWithAlpha := 7, ISoftwareBitmapFactory, "int", 30, "int", width, "int", height, "int", 1, "ptr*", &ISoftwareBitmap:=0) ; Rgb8 & Straight Alpha
-      ComCall(LockBuffer := 15, ISoftwareBitmap, "int", 2, "ptr*", IBitmapBuffer := ComValue(13,0))
+      ComCall(CreateWithAlpha := 7, ISoftwareBitmapFactory, "int", 87, "int", width, "int", height, "int", 0, "ptr*", &ISoftwareBitmap:=0) ; Bgra8 & Premultiplied Alpha
+      ComCall(LockBuffer := 15, ISoftwareBitmap, "int", 2, "ptr*", IBitmapBuffer := ComValue(13,0)) ; Write only
       IMemoryBuffer := ComObjQuery(IBitmapBuffer, "{fbc4dd2a-245b-11e4-af98-689423260cf8}")
       ComCall(CreateReference := 6, IMemoryBuffer, "ptr*", IMemoryBufferReference := ComValue(13,0))
       IBufferByteAccess := ComObjQuery(IMemoryBufferReference, "{5b0d3235-4dba-4d44-865e-8f1d0e4fd04d}")
@@ -4971,7 +4991,7 @@ class ImagePut {
                ,    "ptr", rect
                ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
                ,    "int", 0xE200B      ; Buffer: Format32bppPArgb
-               ,    "ptr", BitmapData)  ; Contains the pointer (pBits) to the hbm.
+               ,    "ptr", BitmapData)  ; Contains the pointer (pBits) to the hbm
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
 
       ; Cleanup!
