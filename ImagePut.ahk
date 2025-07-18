@@ -598,7 +598,13 @@ class ImagePut {
          , "Base64"
          , "Stream"
          , "RandomAccessStream":
-         stream := this.ImageToStream(domain, coimage)
+
+         ; Attempt to convert the image to a stream to extract additional information.
+         switch stream := this.ImageToStream(domain, coimage) {
+         case "": return ""
+         case  0: throw Error("The input domain " domain " is unsupported.")
+         }
+
          DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", &size:=0, "hresult")
          if size < 24
             goto out_false
@@ -1989,7 +1995,7 @@ class ImagePut {
          req.Open("GET", image, True), req.Send(), req.WaitForResponse()
 
       if (req.status != 200)
-         if "yes" = MsgBox("Could not download image from website. Retry?", "HTTP Status " req.status, "YesNo")
+         if "yes" = MsgBox("Could not download image from website. Retry?", "HTTP Status " req.status, "YesNo T5")
             goto redownload
          else
             return ""
