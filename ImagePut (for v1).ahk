@@ -1703,7 +1703,7 @@ class ImagePut {
       DllCall("GetModuleHandle", "str", "D3D11") || DllCall("LoadLibrary", "str", "D3D11")
 
       ; Create a DXGI factory.
-      DllCall("ole32\IIDFromString", "wstr", "{770aae78-f26f-4dba-a829-253c83d1b387}", "ptr", &IID_IDXGIFactory1 := VarSetCapacity(IID_IDXGIFactory1, 16), "uint")
+      DllCall("ole32\IIDFromString", "wstr", "{770AAE78-F26F-4DBA-A829-253C83D1B387}", "ptr", &IID_IDXGIFactory1 := VarSetCapacity(IID_IDXGIFactory1, 16), "uint")
       DllCall("dxgi\CreateDXGIFactory1", "ptr", &IID_IDXGIFactory1, "ptr*", IDXGIFactory1:=0, "uint")
 
       ; Find the correct adapter attached to the specified monitor. DXGI_ERROR_NOT_FOUND = 0x887A0002
@@ -1743,7 +1743,7 @@ class ImagePut {
                ,   "uint")
 
       ; Cast to IDXGIOutput1 to access the Desktop Duplication API.
-      IDXGIOutput1 := ComObjQuery(IDXGIOutput, "{00cddea8-939b-4b83-a340-a685226666cc}")
+      IDXGIOutput1 := ComObjQuery(IDXGIOutput, "{00CDDEA8-939B-4B83-A340-A685226666CC}")
       DllCall(NumGet(NumGet(IDXGIOutput1+0)+A_PtrSize* 22), "ptr", IDXGIOutput1, "ptr", ID3D11Device, "ptr*", IDXGIOutputDuplication:=0)
 
       ; Get the description of the output. Currently doesn't account for rotation of the monitor...
@@ -1832,7 +1832,7 @@ class ImagePut {
             pBits := NumGet(DXGI_MAPPED_RECT, A_PtrSize, "ptr")
          }
          else {
-            tex := ComObjQuery(this.desktop_resource, "{6f15aaf2-d208-4e89-9ab4-489535d34f9c}") ; ID3D11Texture2D
+            tex := ComObjQuery(this.desktop_resource, "{6F15AAF2-D208-4E89-9AB4-489535D34F9C}") ; ID3D11Texture2D
             DllCall(NumGet(NumGet(this.ID3D11DeviceContext+0)+A_PtrSize* 47), "ptr", this.ID3D11DeviceContext, "ptr", this.staging_texture, "ptr", tex)
             DllCall(NumGet(NumGet(this.ID3D11DeviceContext+0)+A_PtrSize* 14), "ptr", this.ID3D11DeviceContext, "ptr", this.staging_texture, "uint", 0, "uint", D3D11_MAP_READ := 1, "uint", 0, "ptr", &D3D11_MAPPED_SUBRESOURCE := VarSetCapacity(D3D11_MAPPED_SUBRESOURCE, 8+A_PtrSize, 0))
             pBits := NumGet(D3D11_MAPPED_SUBRESOURCE, 0, "ptr")
@@ -2340,7 +2340,7 @@ class ImagePut {
 
       ; Check if the pixel format needs to be converted.
       DllCall(NumGet(NumGet(IWICBitmap+0)+A_PtrSize* 4), "ptr", IWICBitmap, "ptr", &format := VarSetCapacity(format, 16))
-      DllCall("ole32\CLSIDFromString", "wstr", "{6fddc324-4e03-4bfe-b185-3d77768dc90f}", "ptr", &GUID_WICPixelFormat32bppBGRA := VarSetCapacity(GUID_WICPixelFormat32bppBGRA, 16), "uint")
+      DllCall("ole32\CLSIDFromString", "wstr", "{6FDDC324-4E03-4BFE-B185-3D77768DC90F}", "ptr", &GUID_WICPixelFormat32bppBGRA := VarSetCapacity(GUID_WICPixelFormat32bppBGRA, 16), "uint")
       convert :=  16 != DllCall("ntdll\RtlCompareMemory", "ptr", &format, "ptr", &GUID_WICPixelFormat32bppBGRA, "uptr", 16)
 
       ; Case 1: Convert the pixel format to 32-bit ARGB. Preforms 2 memory copies.
@@ -4928,7 +4928,7 @@ class ImagePut {
       IWICImagingFactory := ComObjCreate("{CACAF262-9370-4615-A13B-9F5539DA4C0A}", "{EC5EC8A9-C395-4314-9C77-54D7A935FF70}")
 
       ; Initialize bitmap with backing memory. WICBitmapCacheOnDemand = 1
-      DllCall("ole32\CLSIDFromString", "wstr", "{6fddc324-4e03-4bfe-b185-3d77768dc90f}", "ptr", &GUID_WICPixelFormat32bppBGRA := VarSetCapacity(GUID_WICPixelFormat32bppBGRA, 16), "uint")
+      DllCall("ole32\CLSIDFromString", "wstr", "{6FDDC324-4E03-4BFE-B185-3D77768DC90F}", "ptr", &GUID_WICPixelFormat32bppBGRA := VarSetCapacity(GUID_WICPixelFormat32bppBGRA, 16), "uint")
       DllCall(NumGet(NumGet(IWICImagingFactory+0)+A_PtrSize* 17), "ptr", IWICImagingFactory, "uint", width, "uint", height, "ptr", &GUID_WICPixelFormat32bppBGRA, "int", 1, "ptr*", IWICBitmap:=0)
 
       ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
@@ -4965,7 +4965,7 @@ class ImagePut {
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
 
       ; Create the Windows.Graphics.Imaging.SoftwareBitmap class.
-      DllCall("ole32\IIDFromString", "wstr", "{c99feb69-2d62-4d47-a6b3-4fdb6a07fdf8}", "ptr", &IID_ISoftwareBitmapFactory := VarSetCapacity(IID_ISoftwareBitmapFactory, 16), "uint")
+      DllCall("ole32\IIDFromString", "wstr", "{C99FEB69-2D62-4D47-A6B3-4FDB6A07FDF8}", "ptr", &IID_ISoftwareBitmapFactory := VarSetCapacity(IID_ISoftwareBitmapFactory, 16), "uint")
       DllCall("combase\WindowsCreateString", "wstr", "Windows.Graphics.Imaging.SoftwareBitmap", "uint", 39, "ptr*", hString:=0, "uint")
       DllCall("combase\RoGetActivationFactory", "ptr", hString, "ptr", &IID_ISoftwareBitmapFactory, "ptr*", ISoftwareBitmapFactory:=0, "uint")
       DllCall("combase\WindowsDeleteString", "ptr", hString, "uint")
@@ -4973,9 +4973,9 @@ class ImagePut {
       ; Create a SoftwareBitmap with the specified width and height.
       DllCall(NumGet(NumGet(ISoftwareBitmapFactory+0)+A_PtrSize* 7), "ptr", ISoftwareBitmapFactory, "int", 87, "int", width, "int", height, "int", 0, "ptr*", ISoftwareBitmap:=0) ; Bgra8 & Premultiplied Alpha
       DllCall(NumGet(NumGet(ISoftwareBitmap+0)+A_PtrSize* 15), "ptr", ISoftwareBitmap, "int", 2, "ptr*", IBitmapBuffer:=0) ; Write only
-      IMemoryBuffer := ComObjQuery(IBitmapBuffer, "{fbc4dd2a-245b-11e4-af98-689423260cf8}")
+      IMemoryBuffer := ComObjQuery(IBitmapBuffer, "{FBC4DD2A-245B-11E4-AF98-689423260CF8}")
       DllCall(NumGet(NumGet(IMemoryBuffer+0)+A_PtrSize* 6), "ptr", IMemoryBuffer, "ptr*", IMemoryBufferReference:=0)
-      IBufferByteAccess := ComObjQuery(IMemoryBufferReference, "{5b0d3235-4dba-4d44-865e-8f1d0e4fd04d}")
+      IBufferByteAccess := ComObjQuery(IMemoryBufferReference, "{5B0D3235-4DBA-4D44-865E-8F1D0E4FD04D}")
       DllCall(NumGet(NumGet(IBufferByteAccess+0)+A_PtrSize* 3), "ptr", IBufferByteAccess, "ptr*", ptr:=0, "uint*", size:=0)
 
       ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
@@ -5205,12 +5205,12 @@ class ImagePut {
       IWICImagingFactory := ComObjCreate("{CACAF262-9370-4615-A13B-9F5539DA4C0A}", "{EC5EC8A9-C395-4314-9C77-54D7A935FF70}")
 
       ; Initialize bitmap with backing memory. WICBitmapCacheOnDemand = 1
-      DllCall("ole32\CLSIDFromString", "wstr", "{6fddc324-4e03-4bfe-b185-3d77768dc910}", "ptr", &GUID_WICPixelFormat32bppPBGRA := VarSetCapacity(GUID_WICPixelFormat32bppPBGRA, 16), "uint")
+      DllCall("ole32\CLSIDFromString", "wstr", "{6FDDC324-4E03-4BFE-B185-3D77768DC910}", "ptr", &GUID_WICPixelFormat32bppPBGRA := VarSetCapacity(GUID_WICPixelFormat32bppPBGRA, 16), "uint")
       DllCall(NumGet(NumGet(IWICImagingFactory+0)+A_PtrSize* 17), "ptr", IWICImagingFactory, "uint", width, "uint", height, "ptr", &GUID_WICPixelFormat32bppPBGRA, "int", 1, "ptr*", IWICBitmap:=0)
 
       ; Initialize Direct2D
       DllCall("GetModuleHandleA",  "AStr",  "d2d1") || DllCall("LoadLibraryA",  "AStr",  "d2d1") ;this is needed to avoid "Critical Error: Invalid memory read/write"
-      DllCall("ole32\IIDFromString", "wstr", "{06152247-6f50-465a-9245-118bfd3b6007}", "ptr", &IID_ID2D1Factory := VarSetCapacity(IID_ID2D1Factory, 16), "uint")
+      DllCall("ole32\IIDFromString", "wstr", "{06152247-6F50-465A-9245-118BFD3B6007}", "ptr", &IID_ID2D1Factory := VarSetCapacity(IID_ID2D1Factory, 16), "uint")
       DllCall("d2d1\D2D1CreateFactory", "int", 0, "ptr", &IID_ID2D1Factory, "ptr", 0, "ptr*", ID2D1Factory:=0) ;0=D2D1_FACTORY_TYPE_SINGLE_THREADED,  3=D2D1_DEBUG_LEVEL_INFORMATION
 
       ; Create a render target using the default pixel format specified by the IWICBitmap,
