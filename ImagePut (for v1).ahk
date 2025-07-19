@@ -2776,67 +2776,80 @@ class ImagePut {
          ImagePut.gdiplusShutdown()
       }
 
+      _ := {} ; Store copies of ptr, size, width, and height to test for changes.
       stride {
          get {
-            return this.size // this.height
+            return this._.HasKey("stride") ? this._.stride : this._.stride := this.size // this.height
+         }
+         set {
+            return this._.stride := value
          }
       }
       pitch {
          get {
-            return this.size // this.height
+            return this._.HasKey("stride") ? this._.stride : this._.stride := this.size // this.height
+         }
+         set {
+            return this._.stride := value
          }
       }
-      saved := {} ; Store copies of ptr, size, width, and height to test for changes.
 
-      pBitmap { ; Making .pBitmap dynamic ensures that wrapping the pointer is separate from GDI+ access.
-         get { ; Test if .ptr property has changed due to an external API which returns a dynamic buffer.
-            if this.saved.HasKey("ptr") && this.ptr != this.saved.ptr
-            or this.saved.HasKey("size") && this.size != this.saved.size
-            or this.saved.HasKey("width") && this.width != this.saved.width
-            or this.saved.HasKey("height") && this.height != this.saved.height {
-               DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap2)
-               this.Delete("pBitmap2")
-            }
-
-            ; Test if the .pBitmap2 property exists, and if it is a valid GDI+ Bitmap.
-            renew := False
-            if this.HasKey("pBitmap2") {
-               try renew |= DllCall("gdiplus\GdipGetImageType", "ptr", this.pBitmap2, "ptr*", _type:=0) or (_type != 1)
-               catch
-                  renew := True
-            } else renew := True ; .pBitmap2 property does not exist.
-
-            ; Create a source GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
-            if (renew) {
-               DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.width, "int", this.height
-               , "int", this.stride, "int", 0x26200A, "ptr", this.ptr, "ptr*", pBitmap:=0)
-               this.pBitmap2 := pBitmap
-               this.saved.ptr := this.ptr
-               this.saved.size := this.size
-               this.saved.width := this.width
-               this.saved.height := this.height
-            }
-
-            return this.pBitmap2
+      pBitmap {
+         get {
+            return this.renew()._.pBitmap
          }
+      }
+
+      renew() {  ; Making pointers dynamic ensure that changes due to extrenal APIs and buffers are propagated.
+         ; Check for first run
+         if !(this._.HasKey("ptr") || this._.HasKey("size") || this._.HasKey("width") || this._.HasKey("height"))
+            goto alloc_pointers
+
+         ; Test for corruption
+         try if DllCall("gdiplus\GdipGetImageType", "ptr", this._.pBitmap, "ptr*", _type:=0) or (_type != 1)
+            goto free_pointers
+         catch
+            goto free_pointers
+
+         ; Track changes made by user
+         if this.ptr != this._.ptr || this.size != this._.size || this.width != this._.width || this.height != this._.height
+            goto free_pointers
+
+         ; Everything is good, do nothing.
+         return this
+
+         free_pointers:
+         DllCall("gdiplus\GdipDisposeImage", "ptr", this._.pBitmap)
+
+         alloc_pointers:
+         ; Create a source GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
+         DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.width, "int", this.height, "int", this.stride, "int", 0x26200A, "ptr", this.ptr, "ptr*", pBitmap:=0)
+
+         this._.pBitmap := pBitmap
+         this._.ptr := this.ptr
+         this._.size := this.size
+         this._.width := this.width
+         this._.height := this.height
+
+         return this
       }
 
       __Call(name, p*) { ; Note: Only Functors have a .call property and methods do not.
 
          if (name = "Cleanup") && this.HasKey("free") {
-            if IsFunc(this.free)
+            if !(this.free.length() > 0) ; errors out into ""
                this.free.call()
-            if IsObject(this.free) && this.free.length() > 0
-               for callback in this.free
+            else
+               for _, callback in this.free
                   callback.call()
             return this
          }
 
          if (name = "Update") && this.HasKey("draw") {
-            if IsFunc(this.draw)
+            if !(this.draw.length() > 0) ; errors out into ""
                this.draw.call()
-            if IsObject(this.draw) && this.draw.length() > 0
-               for callback in this.draw
+            else
+               for _, callback in this.draw
                   callback.call()
             return this
          }
@@ -3867,7 +3880,6 @@ class ImagePut {
 
       ; Case 1: Image is not scaled.
       if (w == width && h == height) {
-
          ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
          VarSetCapacity(rect, 16, 0)          ; sizeof(rect) = 16
             NumPut(  width, rect,  8, "uint") ; Width

@@ -1839,7 +1839,7 @@ class ImagePut {
             pBits := NumGet(DXGI_MAPPED_RECT, A_PtrSize, "ptr")
          }
          else {
-            tex := ComObjQuery(this.desktop_resource, "{6F15AAFA-D208-4E89-9AB4-489535D34F9C}") ; ID3D11Texture2D
+            tex := ComObjQuery(this.desktop_resource, "{6F15AAF2-D208-4E89-9AB4-489535D34F9C}") ; ID3D11Texture2D
             ComCall(CopyResource := 47, this.ID3D11DeviceContext, "ptr", this.staging_texture, "ptr", tex)
             ComCall(_Map := 14, this.ID3D11DeviceContext, "ptr", this.staging_texture, "uint", 0, "uint", D3D11_MAP_READ := 1, "uint", 0, "ptr", D3D11_MAPPED_SUBRESOURCE := Buffer(8+A_PtrSize, 0))
             pBits := NumGet(D3D11_MAPPED_SUBRESOURCE, 0, "ptr")
@@ -2776,49 +2776,62 @@ class ImagePut {
          ImagePut.gdiplusShutdown()
       }
 
+      _ := {} ; Store copies of ptr, size, width, and height to test for changes.
+
       stride {
-         get => this.saved.HasProp("stride") ? this.saved.stride : this.size // this.height
-         set => this.saved.stride := value
+         get => this._.HasProp("stride") ? this._.stride : this._.stride := this.size // this.height
+         set => this._.stride := value
       }
+
+
+
 
       pitch {
-         get => this.saved.HasProp("stride") ? this.saved.stride : this.size // this.height
-         set => this.saved.stride := value
+         get => this._.HasProp("stride") ? this._.stride : this._.stride := this.size // this.height
+         set => this._.stride := value
       }
 
-      saved := {} ; Store copies of ptr, size, width, and height to test for changes.
 
-      pBitmap { ; Making .pBitmap dynamic ensures that wrapping the pointer is separate from GDI+ access.
-         get { ; Test if .ptr property has changed due to an external API which returns a dynamic buffer.
-            if this.saved.HasProp("ptr") && this.ptr != this.saved.ptr
-            or this.saved.HasProp("size") && this.size != this.saved.size
-            or this.saved.HasProp("width") && this.width != this.saved.width
-            or this.saved.HasProp("height") && this.height != this.saved.height {
-               DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap2)
-               this.DeleteProp("pBitmap2")
-            }
 
-            ; Test if the .pBitmap2 property exists, and if it is a valid GDI+ Bitmap.
-            renew := False
-            if this.HasProp("pBitmap2") {
-               try renew := DllCall("gdiplus\GdipGetImageType", "ptr", this.pBitmap2, "ptr*", &_type:=0) or (_type != 1)
-               catch
-                  renew := True
-            } else renew := True ; .pBitmap2 property does not exist.
 
-            ; Create a source GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
-            if (renew) {
-               DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.width, "int", this.height
-               , "int", this.stride, "int", 0x26200A, "ptr", this.ptr, "ptr*", &pBitmap:=0)
-               this.pBitmap2 := pBitmap
-               this.saved.ptr := this.ptr
-               this.saved.size := this.size
-               this.saved.width := this.width
-               this.saved.height := this.height
-            }
+      pBitmap {
+         get => this.renew()._.pBitmap
+      }
+         
 
-            return this.pBitmap2
-         }
+
+      renew() {  ; Making pointers dynamic ensure that changes due to extrenal APIs and buffers are propagated.
+         ; Check for first run
+         if !(this._.HasProp("ptr") || this._.HasProp("size") || this._.HasProp("width") || this._.HasProp("height"))
+            goto alloc_pointers
+
+         ; Test for corruption
+         try if DllCall("gdiplus\GdipGetImageType", "ptr", this._.pBitmap, "ptr*", &_type:=0) or (_type != 1)
+            goto free_pointers
+         catch
+            goto free_pointers
+
+         ; Track changes made by user
+         if this.ptr != this._.ptr || this.size != this._.size || this.width != this._.width || this.height != this._.height
+            goto free_pointers
+
+         ; Everything is good, do nothing.
+         return this
+
+         free_pointers:
+         DllCall("gdiplus\GdipDisposeImage", "ptr", this._.pBitmap)
+
+         alloc_pointers:
+         ; Create a source GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
+         DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.width, "int", this.height, "int", this.stride, "int", 0x26200A, "ptr", this.ptr, "ptr*", &pBitmap:=0)
+
+         this._.pBitmap := pBitmap
+         this._.ptr := this.ptr
+         this._.size := this.size
+         this._.width := this.width
+         this._.height := this.height
+
+         return this
       }
 
       __Call(name, p) { ; Note: Only Functors have a .call property and methods do not.
