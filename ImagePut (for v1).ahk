@@ -2793,13 +2793,21 @@ class ImagePut {
             return this._.stride := value
          }
       }
-
       pBitmap {
          get {
             return this.renew()._.pBitmap
          }
       }
-
+      wicBitmap {
+         get {
+            return this.renew()._.wicBitmap
+         }
+      }
+      SoftwareBitmap {
+         get {
+            return this.renew()._.SoftwareBitmap
+         }
+      }
       renew() {  ; Making pointers dynamic ensure that changes due to extrenal APIs and buffers are propagated.
          ; Check for first run
          if !(this._.HasKey("ptr") || this._.HasKey("size") || this._.HasKey("width") || this._.HasKey("height"))
@@ -2818,18 +2826,36 @@ class ImagePut {
          ; Everything is good, do nothing.
          return this
 
-         free_pointers:
+         free_pointers: ; (In reverse order of allocation)
+         ObjRelease(this._.SoftwareBitmap)
+         ObjRelease(this._.wicBitmap)
          DllCall("gdiplus\GdipDisposeImage", "ptr", this._.pBitmap)
 
          alloc_pointers:
          ; Create a source GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
          DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.width, "int", this.height, "int", this.stride, "int", 0x26200A, "ptr", this.ptr, "ptr*", pBitmap:=0)
 
-         this._.pBitmap := pBitmap
+         ; Creates a WIC Bitmap that owns its memory.
+         IWICImagingFactory := ComObjCreate("{CACAF262-9370-4615-A13B-9F5539DA4C0A}", "{EC5EC8A9-C395-4314-9C77-54D7A935FF70}")
+         DllCall("ole32\CLSIDFromString", "wstr", "{6FDDC324-4E03-4BFE-B185-3D77768DC90F}", "ptr", &GUID_WICPixelFormat32bppBGRA := VarSetCapacity(GUID_WICPixelFormat32bppBGRA, 16), "uint")
+         DllCall(NumGet(NumGet(IWICImagingFactory+0)+A_PtrSize* 20), "ptr", IWICImagingFactory, "uint", this.width, "uint", this.height
+         , "ptr", &GUID_WICPixelFormat32bppBGRA, "uint", this.stride, "uint", this.size, "ptr", this.ptr, "ptr*", IWICBitmap:=0)
+
+         ; Create the Windows.Graphics.Imaging.SoftwareBitmap class.
+         DllCall("ole32\IIDFromString", "wstr", "{C3C181EC-2914-4791-AF02-02D224A10B43}", "ptr", &IID_ISoftwareBitmapNativeFactory := VarSetCapacity(IID_ISoftwareBitmapNativeFactory, 16), "uint")
+         DllCall("combase\WindowsCreateString", "wstr", "Windows.Graphics.Imaging.SoftwareBitmap", "uint", 39, "ptr*", hString:=0, "uint")
+         DllCall("combase\RoGetActivationFactory", "ptr", hString, "ptr", &IID_ISoftwareBitmapNativeFactory, "ptr*", ISoftwareBitmapNativeFactory:=0, "uint")
+         DllCall("combase\WindowsDeleteString", "ptr", hString, "uint")
+         DllCall("ole32\IIDFromString", "wstr", "{689E0708-7EEF-483F-963F-DA938818E073}", "ptr", &IID_ISoftwareBitmap := VarSetCapacity(IID_ISoftwareBitmap, 16), "uint")
+         DllCall(NumGet(NumGet(ISoftwareBitmapNativeFactory+0)+A_PtrSize* 6), "ptr", ISoftwareBitmapNativeFactory, "ptr", IWICBitmap, "int", False, "ptr", &IID_ISoftwareBitmap, "ptr*", ISoftwareBitmap:=0)
+
          this._.ptr := this.ptr
          this._.size := this.size
          this._.width := this.width
          this._.height := this.height
+         this._.pBitmap := pBitmap
+         this._.wicBitmap := IWICBitmap
+         this._.SoftwareBitmap := ISoftwareBitmap
 
          return this
       }
@@ -4920,9 +4946,8 @@ class ImagePut {
       DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
       DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
 
-      IWICImagingFactory := ComObjCreate("{CACAF262-9370-4615-A13B-9F5539DA4C0A}", "{EC5EC8A9-C395-4314-9C77-54D7A935FF70}")
-
       ; Initialize bitmap with backing memory. WICBitmapCacheOnDemand = 1
+      IWICImagingFactory := ComObjCreate("{CACAF262-9370-4615-A13B-9F5539DA4C0A}", "{EC5EC8A9-C395-4314-9C77-54D7A935FF70}")
       DllCall("ole32\CLSIDFromString", "wstr", "{6FDDC324-4E03-4BFE-B185-3D77768DC90F}", "ptr", &GUID_WICPixelFormat32bppBGRA := VarSetCapacity(GUID_WICPixelFormat32bppBGRA, 16), "uint")
       DllCall(NumGet(NumGet(IWICImagingFactory+0)+A_PtrSize* 17), "ptr", IWICImagingFactory, "uint", width, "uint", height, "ptr", &GUID_WICPixelFormat32bppBGRA, "int", 1, "ptr*", IWICBitmap:=0)
 
@@ -4949,7 +4974,6 @@ class ImagePut {
 
       ; Cleanup!
       ObjRelease(IWICBitmapLock)
-      ObjRelease(IWICImagingFactory)
 
       return IWICBitmap
    }
@@ -5180,9 +5204,8 @@ class ImagePut {
       (width == "") && width := 1000
       (height == "") && height := 1000
 
-      IWICImagingFactory := ComObjCreate("{CACAF262-9370-4615-A13B-9F5539DA4C0A}", "{EC5EC8A9-C395-4314-9C77-54D7A935FF70}")
-
       ; Initialize bitmap with backing memory. WICBitmapCacheOnDemand = 1
+      IWICImagingFactory := ComObjCreate("{CACAF262-9370-4615-A13B-9F5539DA4C0A}", "{EC5EC8A9-C395-4314-9C77-54D7A935FF70}")
       DllCall("ole32\CLSIDFromString", "wstr", "{6FDDC324-4E03-4BFE-B185-3D77768DC910}", "ptr", &GUID_WICPixelFormat32bppPBGRA := VarSetCapacity(GUID_WICPixelFormat32bppPBGRA, 16), "uint")
       DllCall(NumGet(NumGet(IWICImagingFactory+0)+A_PtrSize* 17), "ptr", IWICImagingFactory, "uint", width, "uint", height, "ptr", &GUID_WICPixelFormat32bppPBGRA, "int", 1, "ptr*", IWICBitmap:=0)
 
