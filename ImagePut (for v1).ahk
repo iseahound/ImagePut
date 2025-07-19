@@ -170,12 +170,6 @@ ImagePutScreenshot(image, screenshot := "", alpha := "") {
    return ImagePut("Screenshot", image, screenshot, alpha)
 }
 
-; Puts the image into a file mapping and returns a buffer object sharable across processes.
-;   name       -  Global Name             |  string   ->   "SharedBuffer"
-ImagePutSharedBuffer(image, name := "") {
-   return ImagePut("SharedBuffer", image, name)
-}
-
 ; Puts the image into a SoftwareBitmap and returns the pointer to the interface.
 ImagePutSoftwareBitmap(image) {
    return ImagePut("SoftwareBitmap", image)
@@ -284,7 +278,7 @@ class ImagePut {
       "Cursor",
       "URL",
       "File",
-      "SharedBuffer",
+      "Name",
       "Hex",
       "Base64",
       "DC",
@@ -317,7 +311,6 @@ class ImagePut {
       "RandomAccessStream",
       "SafeArray",
       "Screenshot",
-      "SharedBuffer",
       "SoftwareBitmap",
       "Stream",
       "URI",
@@ -493,9 +486,9 @@ class ImagePut {
       if WinExist(coimage) || DllCall("IsWindow", "ptr", coimage)
          return "Window"
 
-      ; A SharedBuffer is a file mapping kernel object.
-      if DllCall("CloseHandle", "ptr", DllCall("OpenFileMapping", "uint", 2, "int", 0, "str", "ImagePut_" coimage, "ptr"))
-         return "SharedBuffer"
+      ; A Name is a global name for a file mapping kernel object.
+      if DllCall("CloseHandle", "ptr", DllCall("OpenFileMapping", "uint", 2, "int", 0, "str", coimage, "ptr"))
+         return "Name"
 
       ; A Hex string is binary image data encoded into text using hexadecimal.
       if (StrLen(coimage) >= 48) && (coimage ~= "^\s*(?:[A-Fa-f0-9]{2})*+\s*$")
@@ -632,18 +625,18 @@ class ImagePut {
          }
 
       ; Extract options to be applied in the following order:
-      index     := keywords.HasKey("index")      ? keywords.index     : ""
-      size      := keywords.HasKey("size")       ? keywords.size      : ""
-      sprite    := keywords.HasKey("sprite")     ? keywords.sprite    : ""
-      crop      := keywords.HasKey("crop")       ? keywords.crop      : ""
-      scale     := keywords.HasKey("scale")      ? keywords.scale     : ""
-      upscale   := keywords.HasKey("upscale")    ? keywords.upscale   : ""
-      downscale := keywords.HasKey("downscale")  ? keywords.downscale : ""
-      minsize   := keywords.HasKey("minsize")    ? keywords.minsize   : ""
-      maxsize   := keywords.HasKey("maxsize")    ? keywords.maxsize   : ""
-      decode    := keywords.HasKey("decode")     ? keywords.decode    : this.decode
-      render    := keywords.HasKey("render")     ? keywords.render    : this.render
-      validate  := keywords.HasKey("validate")   ? keywords.validate  : this.validate
+      index     := keywords.HasKey("index")     && !IsFunc(keywords.index)     ? keywords.index     : ""
+      size      := keywords.HasKey("size")      && !IsFunc(keywords.size)      ? keywords.size      : ""
+      sprite    := keywords.HasKey("sprite")    && !IsFunc(keywords.sprite)    ? keywords.sprite    : ""
+      crop      := keywords.HasKey("crop")      && !IsFunc(keywords.crop)      ? keywords.crop      : ""
+      scale     := keywords.HasKey("scale")     && !IsFunc(keywords.scale)     ? keywords.scale     : ""
+      upscale   := keywords.HasKey("upscale")   && !IsFunc(keywords.upscale)   ? keywords.upscale   : ""
+      downscale := keywords.HasKey("downscale") && !IsFunc(keywords.downscale) ? keywords.downscale : ""
+      minsize   := keywords.HasKey("minsize")   && !IsFunc(keywords.minsize)   ? keywords.minsize   : ""
+      maxsize   := keywords.HasKey("maxsize")   && !IsFunc(keywords.maxsize)   ? keywords.maxsize   : ""
+      decode    := keywords.HasKey("decode")    && !IsFunc(keywords.decode)    ? keywords.decode    : this.decode
+      render    := keywords.HasKey("render")    && !IsFunc(keywords.render)    ? keywords.render    : this.render
+      validate  := keywords.HasKey("validate")  && !IsFunc(keywords.validate)  ? keywords.validate  : this.validate
 
       ; Local variables needed for the goto statements below.
       width := IsObject(size) && size.HasKey(1) && size[1] ~= "^\d+$" ? size[1] : ""
@@ -723,8 +716,8 @@ class ImagePut {
 
       make_bitmap:
       ; #0 - Special cases.
-      if (domain = "SharedBuffer" && codomain = "SharedBuffer")
-         return this.SharedBufferToSharedBuffer(coimage)
+      if (domain = "Name" && codomain = "Buffer")
+         return this.NameToBuffer(coimage)
 
       if (domain = "Monitor" && codomain = "Buffer")
          return this.MonitorToBuffer(coimage)
@@ -790,8 +783,8 @@ class ImagePut {
       if (domain = "EncodedBuffer")
          bitmap := this.EncodedBufferToBitmap(coimage)
 
-      if (domain = "SharedBuffer")
-         bitmap := this.SharedBufferToBitmap(coimage)
+      if (domain = "Name")
+         bitmap := this.NameToBitmap(coimage)
 
       if (domain = "Buffer")
          bitmap := this.BufferToBitmap(coimage)
@@ -869,9 +862,6 @@ class ImagePut {
 
       if (codomain = "EncodedBuffer") ; (pBitmap, extension, quality)
          image := this.BitmapToEncodedBuffer(pBitmap, p1, p2)
-
-      if (codomain = "SharedBuffer") ; (pBitmap, name)
-         image := this.BitmapToSharedBuffer(pBitmap, p1)
 
       if (codomain = "Buffer") ; (pBitmap)
          image := this.BitmapToBuffer(pBitmap)
@@ -1448,15 +1438,32 @@ class ImagePut {
       return stream
    }
 
-   SharedBufferToBitmap(image) {
-      hMap := DllCall("OpenFileMapping", "uint", 0x2, "int", 0, "str", "ImagePut_" image, "ptr")
+   NameToBuffer(image) {
+      name_ := StrSplit(image, "-"), h := name_.length()
+      height := name_[h]
+      width := name_[h-1]
+      stride := (name_[h-2] ~= "^\d+$") ? name_[h-2] : 4 * width
+      size := stride * height
+
+      hMap := DllCall("OpenFileMapping", "uint", 0x2, "int", 0, "str", image, "ptr")
       pMap := DllCall("MapViewOfFile", "ptr", hMap, "uint", 0x2, "uint", 0, "uint", 0, "uptr", 0, "ptr")
 
-      width := NumGet(pMap + 0, "uint")
-      height := NumGet(pMap + 4, "uint")
-      stride := NumGet(pMap + 8, "uint") ? NumGet(pMap + 8, "uint") : 4 * width
+      ; Free the pixels later.
+      buf := new ImagePut.BitmapBuffer(pMap, size, width, height)
+      buf.free := [Func("DllCall").Bind("UnmapViewOfFile", "ptr", pMap), Func("DllCall").Bind("CloseHandle", "ptr", hMap)]
+      buf.name := image
+      return buf
+   }
+
+   NameToBitmap(image) {
+      name_ := StrSplit(image, "-"), h := name_.length()
+      height := name_[h]
+      width := name_[h-1]
+      stride := (name_[h-2] ~= "^\d+$") ? name_[h-2] : 4 * width
       size := stride * height
-      ptr := pMap + 12
+
+      hMap := DllCall("OpenFileMapping", "uint", 0x2, "int", 0, "str", image, "ptr")
+      pMap := DllCall("MapViewOfFile", "ptr", hMap, "uint", 0x2, "uint", 0, "uint", 0, "uptr", 0, "ptr")
 
       ; Create a destination GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
       DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", width, "int", height, "int", 0, "int", 0x26200A, "ptr", 0, "ptr*", pBitmap:=0)
@@ -1469,13 +1476,13 @@ class ImagePut {
       ; (Type 6) Copy external pixels into the GDI+ Bitmap.
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)     ; sizeof(BitmapData) = 24, 32
          NumPut(        stride, BitmapData,  8,  "int") ; Stride
-         NumPut(           ptr, BitmapData, 16,  "ptr") ; Scan0
+         NumPut(          pMap, BitmapData, 16,  "ptr") ; Scan0
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
                ,    "ptr", &rect
                ,   "uint", 6            ; ImageLockMode.UserInputBuffer | ImageLockMode.WriteOnly
                ,    "int", 0x26200A     ; Buffer: Format32bppArgb
-               ,    "ptr", &BitmapData) ; Contains the pointer (ptr) to the FileMapping
+               ,    "ptr", &BitmapData) ; Contains the pointer (pMap) to the FileMapping
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
 
       DllCall("UnmapViewOfFile", "ptr", pMap)
@@ -2689,68 +2696,43 @@ class ImagePut {
       return buf
    }
 
-   BitmapToSharedBuffer(pBitmap, name := "") {
+   BitmapToBuffer(pBitmap, name := "") {
+      ; Get Bitmap width and height.
+      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
+      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
 
-      if (name == "") {
-         MsgBox %     "You have not specified a resource name. Defaulting to 'SharedBuffer'."
-         . "`n"     . "Note that names are case-sensitive and must be unique."
-         . "`n"     . "To access the shared buffer in a different script, use:"
-         . "`n`n`t" . "#include ImagePut.ahk"
-         . "`n`t"   . "shared := ImagePutSharedBuffer(" Chr(34) "SharedBuffer" Chr(34) ")"
-         . "`n`t"   . "shared.show()"
-         . "`n`n"   . "You can copy this message with Ctrl + c."
-         . "`n"     . "Press OK to continue."
+      ; Check if the shared name already exists.
+      if DllCall("CloseHandle", "ptr", DllCall("OpenFileMapping", "uint", 0x2, "int", 0, "str", name, "ptr")) {
+         MsgBox "The name '" name "' already exists as a shared resource across Windows."
+         . "`n" " A different name has been chosen and can be retrieved using the .name property."
+         name := "" ; Regenerate
       }
 
-      ; Get Bitmap width and height.
-      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
-      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
+      static words := ["alice", "belle", "coco", "daisy", "eve", "faye", "gus", "hana", "izzy", "jade"
+                     , "kai", "leo", "minnie", "nina", "oscar", "peach", "quinn", "rex", "star", "tea"
+                     , "uma", "vera", "wes", "xia", "yuri", "zoe"]
+
+      if (name == "") {
+         ; Get the first and last pixel.
+         DllCall("gdiplus\GdipBitmapGetPixel", "ptr", pBitmap, "int", 0, "int", 0, "uint*", a:=0)
+         DllCall("gdiplus\GdipBitmapGetPixel", "ptr", pBitmap, "int", width-1, "int", height-1, "uint*", b:=0)
+
+         ; Generate a pseudo-random number from two inputs (a, b), mapping to range 1–26.
+         mixed := a ^ b                       ; Combine the inputs using XOR for bit variation
+         mixed := (mixed << 3) | (mixed >> 2) ; Stir the bits using bit shifts
+         mixed := mixed & 0xFF                ; Constrain to 8 bits
+         mixed := (mixed * 37) ^ (a | b)      ; Fold entropy with a prime multiplier
+         mixed := mod(mixed, 26) + 1          ; Final bound: map to range 1–26
+
+         name := words[mixed] "-" width "-" height
+         while DllCall("CloseHandle", "ptr", DllCall("OpenFileMapping", "uint", 0x2, "int", 0, "str", name, "ptr"))
+            name := words[mixed] . A_Index "-" width "-" height
+      }
 
       ; Allocate shared memory.
-      stride := 4 * width
-      size := stride * height
-      capacity := size + 12
-      hMap := DllCall("CreateFileMapping", "ptr", -1, "ptr", 0, "uint", 0x4, "uint", 0, "uint", capacity, "str", "ImagePut_" name, "ptr")
-      pMap := DllCall("MapViewOfFile", "ptr", hMap, "uint", 0x2, "uint", 0, "uint", 0, "uptr", 0, "ptr")
-
-      ; Store width x height and stride in the first 12 bytes.
-      NumPut( width, pMap + 0, "uint")
-      NumPut(height, pMap + 4, "uint")
-      NumPut(stride, pMap + 8, "uint") ; Optional
-      ptr := pMap + 12
-
-      ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
-      VarSetCapacity(rect, 16, 0)          ; sizeof(rect) = 16
-         NumPut(  width, rect,  8, "uint") ; Width
-         NumPut( height, rect, 12, "uint") ; Height
-
-      ; (Type 5) Copy pixels to an external pointer.
-      VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)     ; sizeof(BitmapData) = 24, 32
-         NumPut(        stride, BitmapData,  8,  "int") ; Stride
-         NumPut(           ptr, BitmapData, 16,  "ptr") ; Scan0
-      DllCall("gdiplus\GdipBitmapLockBits"
-               ,    "ptr", pBitmap
-               ,    "ptr", &rect
-               ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
-               ,    "int", 0x26200A     ; Buffer: Format32bppArgb
-               ,    "ptr", &BitmapData) ; Contains the pointer (ptr) to the FileMapping
-      DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
-
-      ; Free the pixels later.
-      buf := new ImagePut.BitmapBuffer(ptr, size, width, height) ; Stride can be calculated via size // height
-      buf.free := [Func("DllCall").Bind("UnmapViewOfFile", "ptr", pMap), Func("DllCall").Bind("CloseHandle", "ptr", hMap)]
-      buf.name := name
-      return buf
-   }
-
-   BitmapToBuffer(pBitmap) {
-      ; Get Bitmap width and height.
-      DllCall("gdiplus\GdipGetImageWidth", "ptr", pBitmap, "uint*", width:=0)
-      DllCall("gdiplus\GdipGetImageHeight", "ptr", pBitmap, "uint*", height:=0)
-
-      ; Allocate global memory.
       size := 4 * width * height
-      ptr := DllCall("GlobalAlloc", "uint", 0, "uptr", size, "ptr")
+      hMap := DllCall("CreateFileMapping", "ptr", -1, "ptr", 0, "uint", 0x4, "uint", 0, "uint", size, "str", name, "ptr")
+      pMap := DllCall("MapViewOfFile", "ptr", hMap, "uint", 0x2, "uint", 0, "uint", 0, "uptr", 0, "ptr")
 
       ; Describes the portion of the bitmap to be cropped. Matches the dimensions of the buffer.
       VarSetCapacity(rect, 16, 0)          ; sizeof(rect) = 16
@@ -2760,18 +2742,19 @@ class ImagePut {
       ; (Type 5) Copy pixels to an external pointer.
       VarSetCapacity(BitmapData, 16+2*A_PtrSize, 0)     ; sizeof(BitmapData) = 24, 32
          NumPut(     4 * width, BitmapData,  8,  "int") ; Stride
-         NumPut(           ptr, BitmapData, 16,  "ptr") ; Scan0
+         NumPut(          pMap, BitmapData, 16,  "ptr") ; Scan0
       DllCall("gdiplus\GdipBitmapLockBits"
                ,    "ptr", pBitmap
                ,    "ptr", &rect
                ,   "uint", 5            ; ImageLockMode.UserInputBuffer | ImageLockMode.ReadOnly
                ,    "int", 0x26200A     ; Buffer: Format32bppArgb
-               ,    "ptr", &BitmapData) ; Contains the pointer (ptr) to the Buffer Object
+               ,    "ptr", &BitmapData) ; Contains the pointer (pMap) to the FileMapping
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", &BitmapData)
 
       ; Free the pixels later.
-      buf := new ImagePut.BitmapBuffer(ptr, size, width, height)
-      buf.free := Func("DllCall").Bind("GlobalFree", "ptr", ptr)
+      buf := new ImagePut.BitmapBuffer(pMap, size, width, height) ; Stride can be calculated via size // height
+      buf.free := [Func("DllCall").Bind("UnmapViewOfFile", "ptr", pMap), Func("DllCall").Bind("CloseHandle", "ptr", hMap)]
+      buf.name := name
       return buf
    }
 
@@ -5002,23 +4985,6 @@ class ImagePut {
       ObjRelease(IBitmapBuffer)
 
       return ISoftwareBitmap
-   }
-
-   SharedBufferToSharedBuffer(image) {
-      hMap := DllCall("OpenFileMapping", "uint", 0x2, "int", 0, "str", "ImagePut_" image, "ptr")
-      pMap := DllCall("MapViewOfFile", "ptr", hMap, "uint", 0x2, "uint", 0, "uint", 0, "uptr", 0, "ptr")
-
-      width := NumGet(pMap + 0, "uint")
-      height := NumGet(pMap + 4, "uint")
-      stride := NumGet(pMap + 8, "uint") ? NumGet(pMap + 8, "uint") : 4 * width
-      size := stride * height
-      ptr := pMap + 12
-
-      ; Free the pixels later.
-      buf := new ImagePut.BitmapBuffer(ptr, size, width, height)
-      buf.free := [Func("DllCall").Bind("UnmapViewOfFile", "ptr", pMap), Func("DllCall").Bind("CloseHandle", "ptr", hMap)]
-      buf.name := image
-      return buf
    }
 
    ParseWEBP(stream, ByRef pDelays, ByRef pCount) {
