@@ -482,13 +482,13 @@ class ImagePut {
       if InStr(FileExist(coimage), "D")
          return "Folder"
 
-      ; A Window is anything considered a Window Title including ahk_class and "A".
-      if WinExist(coimage)
-         return "Window"
-
       ; A Name is a global name for a file mapping kernel object.
       if DllCall("CloseHandle", "ptr", DllCall("OpenFileMapping", "uint", 2, "int", 0, "str", coimage, "ptr"))
          return "Name"
+
+      ; A Window is anything considered a Window Title including ahk_class and "A".
+      if WinExist(coimage)
+         return "Window"
 
       ; A Hex string is binary image data encoded into text using hexadecimal.
       if (StrLen(coimage) >= 48) && (coimage ~= "^\s*(?:[A-Fa-f0-9]{2})*+\s*$")
