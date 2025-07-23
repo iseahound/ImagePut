@@ -2798,15 +2798,6 @@ class ImagePut {
       }
         
 
-      wicBitmap {
-         get => this.renew()._.wicBitmap
-      }
-        
-
-      SoftwareBitmap {
-         get => this.renew()._.SoftwareBitmap
-      }
-        
 
       renew() {  ; Making pointers dynamic ensure that changes due to extrenal APIs and buffers are propagated.
          ; Check for first run
@@ -2827,27 +2818,11 @@ class ImagePut {
          return this
 
          free_pointers: ; (In reverse order of allocation)
-         ObjRelease(this._.SoftwareBitmap)
-         ObjRelease(this._.wicBitmap)
          DllCall("gdiplus\GdipDisposeImage", "ptr", this._.pBitmap)
 
          alloc_pointers:
          ; Create a source GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
          DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.width, "int", this.height, "int", this.stride, "int", 0x26200A, "ptr", this.ptr, "ptr*", &pBitmap:=0)
-
-         ; Creates a WIC Bitmap that owns its memory.
-         IWICImagingFactory := ComObject("{CACAF262-9370-4615-A13B-9F5539DA4C0A}", "{EC5EC8A9-C395-4314-9C77-54D7A935FF70}")
-         DllCall("ole32\CLSIDFromString", "wstr", "{6FDDC324-4E03-4BFE-B185-3D77768DC90F}", "ptr", GUID_WICPixelFormat32bppBGRA := Buffer(16), "hresult")
-         ComCall(CreateBitmapFromMemory := 20, IWICImagingFactory, "uint", this.width, "uint", this.height
-         , "ptr", GUID_WICPixelFormat32bppBGRA, "uint", this.stride, "uint", this.size, "ptr", this.ptr, "ptr*", &IWICBitmap:=0)
-
-         ; Create the Windows.Graphics.Imaging.SoftwareBitmap class.
-         DllCall("ole32\IIDFromString", "wstr", "{C3C181EC-2914-4791-AF02-02D224A10B43}", "ptr", IID_ISoftwareBitmapNativeFactory := Buffer(16), "hresult")
-         DllCall("combase\WindowsCreateString", "wstr", "Windows.Graphics.Imaging.SoftwareBitmap", "uint", 39, "ptr*", &hString:=0, "hresult")
-         DllCall("combase\RoGetActivationFactory", "ptr", hString, "ptr", IID_ISoftwareBitmapNativeFactory, "ptr*", &ISoftwareBitmapNativeFactory:=0, "hresult")
-         DllCall("combase\WindowsDeleteString", "ptr", hString, "hresult")
-         DllCall("ole32\IIDFromString", "wstr", "{689E0708-7EEF-483F-963F-DA938818E073}", "ptr", IID_ISoftwareBitmap := Buffer(16), "hresult")
-         ComCall(CreateFromWICBitmap := 6, ISoftwareBitmapNativeFactory, "ptr", IWICBitmap, "int", False, "ptr", IID_ISoftwareBitmap, "ptr*", &ISoftwareBitmap:=0)
 
          this._.ptr := this.ptr
          this._.size := this.size
