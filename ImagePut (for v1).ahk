@@ -2829,8 +2829,6 @@ class ImagePut {
          this._.width := this.width
          this._.height := this.height
          this._.pBitmap := pBitmap
-         this._.wicBitmap := IWICBitmap
-         this._.SoftwareBitmap := ISoftwareBitmap
 
          return this
       }
