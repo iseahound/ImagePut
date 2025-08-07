@@ -2001,10 +2001,10 @@ class ImagePut {
       if (req.status != 200)
          req.Open("GET", image, True), req.Send(), req.WaitForResponse()
       if (req.status != 200) {
-         MsgBox 4, % "HTTP Status " req.status, % "Could not download image from website. Retry?", 5
-         IfMsgBox yes
-            goto redownload
-         else
+         ; MsgBox 4, % "HTTP Status " req.status, % "Could not download image from website. Retry?", 5
+         ; IfMsgBox yes
+         ;    goto redownload
+         ; else
             return ""
       }
       stream := ComObjQuery(req.ResponseStream, "{0000000C-0000-0000-C000-000000000046}")
