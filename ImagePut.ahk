@@ -479,8 +479,8 @@ class ImagePut {
          return "File"
 
       ; A Folder is a directory on the disk or network.
-      if InStr(FileExist(coimage), "D")
-         return "Folder"
+      ; if InStr(FileExist(coimage), "D")
+      ;    return "Folder"
 
       ; A Name is a global name for a file mapping kernel object.
       if DllCall("CloseHandle", "ptr", DllCall("OpenFileMapping", "uint", 2, "int", 0, "str", coimage, "ptr"))
