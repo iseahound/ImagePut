@@ -4595,19 +4595,25 @@ class ImagePut {
    }
 
    Explorer(inactive := False) {
-      if WinActive("ahk_class WorkerW") || WinActive("ahk_class Progman")
-         return A_Desktop
+      return this.ExplorerWindow(inactive)[1]
+   }
+
+   ExplorerWindow(inactive := False) {
+      if (hwnd := WinActive("ahk_class WorkerW"))
+      or (hwnd := WinActive("ahk_class Progman"))
+         return [A_Desktop, hwnd]
 
       WinExistOrActive := (inactive) ? Func("WinExist") : Func("WinActive")
       if (hwnd := %WinExistOrActive%("ahk_class ExploreWClass"))
       or (hwnd := %WinExistOrActive%("ahk_class CabinetWClass")) {
          window := this.ExplorerTab(hwnd)
-         return ComObjType(window.Document, "Class") == "ShellFolderView"
+         filepath := ComObjType(window.Document, "Class") == "ShellFolderView"
             ? window.Document.Folder.Self.Path
-            : window.LocationURL             ; "HTMLDocument"
+            : window.LocationURL            ; "HTMLDocument"
+         return [filepath, window.hwnd]
       }
 
-      return "" ; No matching explorer windows found.
+      return ["", 0] ; No matching explorer windows found.
    }
 
    ExplorerTab(hwnd) {
