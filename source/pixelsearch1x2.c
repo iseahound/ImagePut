@@ -11,7 +11,7 @@ unsigned int * pixelsearch1x2(unsigned int * start, unsigned int * end, unsigned
 
         // Load four unsigned integers from start into a vector.
         __m128i vstart1 = _mm_loadu_si128((__m128i *) start);
-        __m128i vstart2 = _mm_loadu_si128((__m128i *) start + 4);
+        __m128i vstart2 = _mm_loadu_si128((__m128i *) start + 1);
 
         // Compare vstart and vcolor for equality.
         __m128i vcmp1 = _mm_cmpeq_epi32(vstart1, vcolor);
