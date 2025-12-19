@@ -4583,13 +4583,19 @@ class ImagePut {
    }
 
    BitmapToExplorer(pBitmap, default_dir := "", inactive := False) {
-      if not directory := (___ := this.Explorer(inactive)) ? ___ : default_dir
+      directory := this.Explorer(inactive)
+      directory := InStr(FileExist(directory), "D") ? directory : ""
+      directory := (directory) ? directory : default_dir
+      if not directory
          return ""
       return this.BitmapToFile(pBitmap, directory)
    }
 
    StreamToExplorer(stream, default_dir := "", inactive := False) {
-      if not directory := (___ := this.Explorer(inactive)) ? ___ : default_dir
+      directory := this.Explorer(inactive)
+      directory := InStr(FileExist(directory), "D") ? directory : ""
+      directory := (directory) ? directory : default_dir
+      if not directory
          return ""
       return this.StreamToFile(stream, directory)
    }
