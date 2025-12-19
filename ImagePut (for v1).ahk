@@ -3098,9 +3098,8 @@ class ImagePut {
 
          ; C source code - https://godbolt.org/z/KMcPeav79
          pixelsearch1 := this.Base64Code((A_PtrSize == 4)
-            ? "VYnlV4tNEItVDFZTi0UIZg9u0Y1y5GYPcMoAOfBzJw8QAGYPdsFmD9fYDxBAQGYPdsFmD9f4Cft1DIPAIOvcOQh0B4PABDnQcvVb"
-            . "Xl9dww=="
-            : "ZkEPbtBIichMjUrkZg9wygBMOchzLA8QAGYPdsFmD9fIDxBAQGYPdsFmRA/X0EQJ0XUPSIPAIOvYRDkAdAlIg8AESDnQcvLD")
+            ? "VYnlV4tNEItVDFZTi0UIZg9u0Y1y5GYPcMoAOfBzJw8QAGYPdsFmD9fYDxBAEGYPdsFmD9f4Cft1DIPAIOvcOQh0B4PABDnQcvVbXl9dww=="
+            : "ZkEPbtBIichMjUrkZg9wygBMOchzLA8QAGYPdsFmD9fIDxBAEGYPdsFmRA/X0EQJ0XUPSIPAIOvYRDkAdAlIg8AESDnQcvLD")
 
          ; C source code - https://godbolt.org/z/Gc8nbnPq3
          pixelsearch2 := this.Base64Code((A_PtrSize == 4)
