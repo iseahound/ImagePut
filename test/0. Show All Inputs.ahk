@@ -2,14 +2,11 @@
 #include *i ..\ImagePut (for v%true%).ahk
 #singleinstance force
 
-; SUCCESS: All 27 images show up
-; FAIL: An error appears
-
+; Save current active window.
 A := WinExist("A")
-ImagePut.gdiplusStartup()
 
 ImagePutClipboard("https://raw.githubusercontent.com/iseahound/test_images/main/insta.png")
-ImagePutWindow(ClipboardAll, "1. ClipboardPng")
+ImagePutWindow(ClipboardAll, "1. ClipboardPNG")
 
 ImagePutClipboard("https://picsum.photos/1200")
 ImagePutWindow(ClipboardAll, "2. Clipboard")
@@ -27,8 +24,10 @@ hwnd := ImageShow("https://picsum.photos/800")
 ImagePutWindow({hwnd: hwnd}, "6. Window with hwnd property")
 ImageDestroy(hwnd)
 
+ImagePut.gdiplusStartup()
 pBitmap := ImagePutBitmap("https://picsum.photos/700")
-ImagePutWindow({pBitmap: pBitmap}, "7. Object (has pBitmap property)")
+ImagePutWindow({pBitmap: pBitmap}, "7. Object with pBitmap property")
+ImagePut.gdiplusShutdown()
 
 encodedbuf := ImagePutEncodedBuffer("https://picsum.photos/600")
 ImagePutWindow(encodedbuf, "8. EncodedBuffer")
@@ -57,8 +56,7 @@ ImageDestroy(filepath)
 
 ImagePutWindow(A, "17. Window (Current Active Window)")
 
-sharedbuf := ImagePutSharedBuffer("https://picsum.photos/1100", "alice")
-ImagePutWindow("alice", "18. SharedBuffer")
+ImagePutWindow({image: buf.name, scale: [1100, 1100]}, "18. Buffer Name: " buf.name)
 
 hex := ImagePutHex("https://picsum.photos/1000")
 ImagePutWindow(hex, "19. Hex")
@@ -75,8 +73,10 @@ ImagePutWindow(hBitmap, "22. HBITMAP")
 hIcon := ImagePutHIcon("https://picsum.photos/600")
 ImagePutWindow(hIcon, "23. HICON")
 
+ImagePut.gdiplusStartup()
 pBitmap := ImagePutBitmap("https://picsum.photos/500")
-ImagePutWindow(pBitmap, "24. BITMAP")
+ImagePutWindow(pBitmap, "24. GDI+ Bitmap")
+ImagePut.gdiplusShutdown()
 
 IStream := ImagePutStream("https://picsum.photos/400")
 ImagePutWindow(IStream, "25. IStream")
@@ -84,5 +84,11 @@ ImagePutWindow(IStream, "25. IStream")
 IRandomAccessStream := ImagePutRandomAccessStream("https://picsum.photos/300")
 ImagePutWindow(IRandomAccessStream, "26. IRandomAccessStream")
 
-IWICBitmap := ImagePutWICBitmap("https://picsum.photos/200")
+IWICBitmap := ImagePutWICBitmap("https://picsum.photos/1200")
 ImagePutWindow(IWICBitmap, "27. IWICBitmap")
+
+ISoftwareBitmap := ImagePutSoftwareBitmap("https://picsum.photos/1100")
+ImagePutWindow(ISoftwareBitmap, "28. SoftwareBitmap")
+
+
+Esc:: ExitApp
