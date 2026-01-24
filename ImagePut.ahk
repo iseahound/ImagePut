@@ -4581,7 +4581,7 @@ class ImagePut {
    }
 
    static BitmapToExplorer(pBitmap, default_dir := "", inactive := False) {
-      directory := this.Explorer(inactive)
+      directory := this.ExplorerActive(inactive)[1]
       directory := DirExist(directory) ? directory : ""
       directory := (directory) ? directory : default_dir
       if not directory
@@ -4590,7 +4590,7 @@ class ImagePut {
    }
 
    static StreamToExplorer(stream, default_dir := "", inactive := False) {
-      directory := this.Explorer(inactive)
+      directory := this.ExplorerActive(inactive)[1]
       directory := DirExist(directory) ? directory : ""
       directory := (directory) ? directory : default_dir
       if not directory
@@ -4598,11 +4598,7 @@ class ImagePut {
       return this.StreamToFile(stream, directory)
    }
 
-   static Explorer(inactive := False) {
-      return this.ExplorerWindow(inactive)[1]
-   }
-
-   static ExplorerWindow(inactive := False) {
+   static ExplorerActive(inactive := False) {
       if (hwnd := WinActive("ahk_class WorkerW"))
       or (hwnd := WinActive("ahk_class Progman"))
          return [A_Desktop, hwnd]
@@ -4610,7 +4606,7 @@ class ImagePut {
       WinExistOrActive := (inactive) ? WinExist : WinActive
       if (hwnd := WinExistOrActive("ahk_class ExploreWClass"))
       or (hwnd := WinExistOrActive("ahk_class CabinetWClass")) {
-         window := this.ExplorerTab(hwnd)
+         window := this.ExplorerActiveTab(hwnd)
          filepath := Type(window.Document) == "ShellFolderView"
             ? window.Document.Folder.Self.Path
             : window.LocationURL            ; "HTMLDocument"
@@ -4620,7 +4616,7 @@ class ImagePut {
       return ["", 0] ; No matching explorer windows found.
    }
 
-   static ExplorerTab(hwnd) {
+   static ExplorerActiveTab(hwnd) {
       ; Thanks Lexikos, @TheCrether - https://www.autohotkey.com/boards/viewtopic.php?f=83&t=109907
       try activeTab := ControlGetHwnd("ShellTabWindowClass1", hwnd) ; File Explorer (Windows 11)
       catch
