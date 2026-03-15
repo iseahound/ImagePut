@@ -5353,28 +5353,15 @@ class ImagePut {
       ; Save default extension.
       default := extension
 
-      ; Split the filepath, convert forward slashes, strip invalid chars.
+      ; Convert forward slashes, strip invalid chars.
       filepath := RegExReplace(filepath, "/", "\")
       filepath := RegExReplace(filepath, "[*?\x22<>|\x00-\x1F]")
+
+      ; Fix (1) "HARRY.POTTER" folder (2) "/folder" referring to "C:/folder" (3) Missing "\" at end of filepath
       SplitPath % filepath,, directory, extension, filename
-
-      ; If the filepath refers to a directory, then SplitPath wrongly assigns a filename.
-      if InStr(FileExist(filepath), "D") {
-         if (directory != "") {           ; Recombine directory + filename
-            if (filename != "")           ; Avoid appending an extra "\" to directory
-               directory .= "\" filename
-         }
-         else                             ; If the directory is blank,
-         {                                ; filename is a directory!
-            if (filepath ~= "^\\")
-               directory := "\" filename  ; Root level directory.
-            else
-               directory := ".\" filename ; Script level directory.
-         }
-
-         ; The filename has been properly made part of the directory.
-         filename := ""
-      }
+      InStr(FileExist(filepath), "D") && (filename := basename, extension := "")
+      InStr(FileExist(filepath), "D") && (directory == "" && filepath ~= "^\\") && (directory := "\" filename, filename := "")
+      InStr(FileExist(filepath), "D") && (directory != "" && filename != "") && (directory .= "\" filename, filename := "")
 
       ; Default directory is the current working directory.
       if (directory == "")
