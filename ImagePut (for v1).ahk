@@ -655,28 +655,57 @@ class ImagePut {
       extension := this.GetExtensionFromStream(stream)
 
       ; The following "weight" determines whether the image should be decoded into pixels.
-      weight := decode || sprite || crop || scale || upscale || downscale || minsize || maxsize ||
+      weight := 0 ; (ignore this zero)
 
-         ; The 1st parameter holds the destination encoding.
-         !( codomain ~= "^(?i:safearray|encodedbuffer|hex|base64|uri|stream|randomaccessstream|)$"
-            && (!p.HasKey(1) || p[1] == "" || p[1] = extension                    && !(extension = "jpg" && p.Has(2) && p[2] != ""))
+         ; Any user flags will decode pixels
+         || decode 
+         || sprite 
+         || crop 
+         || scale 
+         || upscale 
+         || downscale 
+         || minsize 
+         || maxsize 
 
-         ; The 2nd parameter holds the destination encoding.
-         || codomain = "formdata"
-            && (!p.HasKey(2) || p[2] == "" || p[2] = extension                    && !(extension = "jpg" && p.Has(2) && p[2] != ""))
+         ; The following are exceptions that keep the image as-is
+         || !(0 ; (ignore zeroes below)
 
-         ; Filepaths have the destination encoding as part of the filepath.
-         || codomain = "file"
-            && (!p.HasKey(1) || p[1] == "" || p[1] ~= "(^|:|\\|\.)" extension "$" && !(extension = "jpg" && p.Has(2) && p[2] != "")
+            ; Save the image as a stream when...
+            || codomain ~= "^(?i:safearray|encodedbuffer|hex|base64|uri|stream|randomaccessstream|)$"
+            && (0
+               || !p.HasKey(1)                           ; ... the 1st parameter is missing
+               || p[1] == ""                             ; ... the 1st parameter is empty
+               || p[1] = extension                       ; ... the destination encoding is identical to the current encoding
+               && !( extension = "jpg"                   ; ... ... except when the extension is a jpeg
+                  && p.Has(2)                            ; ... ... and the quality parameter is set
+                  && p[2] != ""))                        ; ... ... to allow "deep fried" jpegs :D
 
-               ; If the desired extension is not supported, it is ignored.
-               || !(RegExReplace(p[1], "^.*(?:^|:|\\|\.)(.*)$", "$1")
-               ~= "^(?i:avif|avifs|bmp|dib|rle|gif|heic|heif|hif|jpg|jpeg|jpe|jfif|png|tif|tiff)$"))
+            ; Save the image as a stream when...
+            || codomain = "formdata"
+            && (0
+               || !p.HasKey(2)                           ; ... the 2nd parameter is missing
+               || p[2] == ""                             ; ... the 2nd parameter is empty
+               || p[2] = extension                       ; ... the destination encoding is identical to the current encoding
+               && !( extension = "jpg"                   ; ... ... except when the extension is a jpeg
+                  && p.Has(3)                            ; ... ... and the quality parameter is set
+                  && p[3] != ""))                        ; ... ... to allow "deep fried" jpegs :D
 
-         ; Pass through all functions that don't specify an extension.
-         || codomain ~= "^(?i:clipboard|url|explorer)")
+            ; Save the image as a stream when...
+            || codomain = "file"
+            && (0
+               || !p.HasKey(1)                           ; ... the 1st parameter is missing
+               || p[1] == ""                             ; ... the 1st parameter is empty
+               || p[1] ~= "(^|:|\\|\.)" extension "$"    ; ... the destination encoding is identical to the current encoding
+               && !( extension = "jpg"                   ; ... ... except when the extension is a jpeg
+                  && p.Has(2)                            ; ... ... and the quality parameter is set
+                  && p[2] != "")                         ; ... ... to allow "deep fried" jpegs :D
+                                                         ; ... or ignore if the desired file extension is not supported
+               || !(RegExReplace(p[1], "^.*(?:^|:|\\|\.)(.*)$", "$1") ~= "^(?i:avif|avifs|bmp|dib|rle|gif|heic|heif|hif|jpg|jpeg|jpe|jfif|png|tif|tiff)$"))
 
-         ; MsgBox % weight ? "convert to pixels" : "stay as stream"
+            ; Pass through all functions that don't specify an extension.
+            || codomain ~= "^(?i:clipboard|url|explorer)")
+
+            ; MsgBox % weight ? "convert to pixels" : "stay as stream"
 
       ; Convert vectorized formats to rasterized formats before (1) decoding to pixels or (2) forced when render == 2. 
       if (weight || render == 2) 
