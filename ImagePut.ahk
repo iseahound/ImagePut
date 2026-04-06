@@ -658,14 +658,16 @@ class ImagePut {
       weight := 0 ; (ignore this zero)
 
          ; Any user flags will decode pixels
-         || decode 
-         || sprite 
-         || crop 
-         || scale 
-         || upscale 
-         || downscale 
-         || minsize 
-         || maxsize 
+         || decode
+         || index
+         || sprite
+         || crop
+         || scale
+         || upscale
+         || downscale
+         || size
+         || minsize
+         || maxsize
 
          ; The following are exceptions that keep the image as-is
          || !(0 ; (ignore zeroes below)
@@ -707,8 +709,8 @@ class ImagePut {
 
             ; MsgBox weight ? "convert to pixels" : "stay as stream"
 
-      ; Convert vectorized formats to rasterized formats before (1) decoding to pixels or (2) forced when render == 2. 
-      if (weight || render == 2) 
+      ; Convert vectorized formats to rasterized formats before (1) decoding to pixels or (2) forced when render == 2.
+      if (weight || render == 2)
       && extension ~= "^(?i:pdf|svg)$" {
          (extension = "pdf") && this.RenderPDF(&stream, index)
          (extension = "svg") && pBitmap := this.RenderSVG(&stream, width, height)
@@ -2825,7 +2827,7 @@ class ImagePut {
       pBitmap {
          get => this.renew()._.pBitmap
       }
-        
+
 
 
       renew() {  ; Making pointers dynamic ensure that changes due to extrenal APIs and buffers are propagated.
