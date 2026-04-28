@@ -8,202 +8,201 @@
 #Requires AutoHotkey v2.0-beta.13+
 
 ; Scroll down for a list of all output functions and their descriptions.
-; The coimage is the same thing as the image.
-; ImagePut(codomain, coimage, p*) {
-;    return ImagePut.call(codomain, coimage, p*)
+; ImagePut(codomain, designator, p*) {
+;    return ImagePut.call(codomain, designator, p*)
 ; }
 
 ; Specify one or more images to be compared by pixel values.
-; ImageEqual(images*) {
-;    return ImageEqual.call(images*)
+; ImageEqual(designators*) {
+;    return ImageEqual.call(designators*)
 ; }
 
 ; Shows the animated image in a borderless window and returns a handle. See ImagePutWindow
-ImageShow(image, title := "", pos := "", style := 0x90000000, styleEx := 0x80088, parent := "", playback := True, cache := False) {
-   return ImagePut("Show", image, title, pos, style, styleEx, parent, playback, cache)
+ImageShow(designator, title := "", pos := "", style := 0x90000000, styleEx := 0x80088, parent := "", playback := True, cache := False) {
+   return ImagePut("Show", designator, title, pos, style, styleEx, parent, playback, cache)
 }
 
 ; Determines the domain of the image. It is only possible that there is an image.
-ImageType(image) {
-   try ImagePut.premiss(&image)
-   return ImagePut.possible(image)
+ImageType(designator) {
+   try ImagePut.premiss(&designator)
+   return ImagePut.possible(designator)
 }
 
 ; Avoids touching pointers and throwing errors.
-ImageTypeSafe(image) {
-   try ImagePut.premiss(image)
-   return (image ~= "^(\d+|\s+)$") ? False : ImagePut.possible(image)
+ImageTypeSafe(designator) {
+   try ImagePut.premiss(designator)
+   return (designator ~= "^(\d+|\s+)$") ? False : ImagePut.possible(designator)
 }
 
 ; Does additional checks to verify the file formats are supported. Insufficient, as conversion can still fail.
-ImageCheck(image) {
-   try ImagePut.premiss(&image)
-   return ImagePut.necessary(image)
+ImageCheck(designator) {
+   try ImagePut.premiss(&designator)
+   return ImagePut.necessary(designator)
 }
 
 ; Avoids touching pointers and throwing errors.
-ImageCheckSafe(image) {
-   try ImagePut.premiss(&image)
-   return (image ~= "^(\d+|\s+)$") ? False : ImagePut.necessary(image)
+ImageCheckSafe(designator) {
+   try ImagePut.premiss(&designator)
+   return (designator ~= "^(\d+|\s+)$") ? False : ImagePut.necessary(designator)
 }
 
 ; Cleans up and releases any resources from the output of any ImagePut function.
-; ImageDestroy(image)
-; ImageDestroy(domain, image)
+; ImageDestroy(designator)
+; ImageDestroy(domain, designator)
 ImageDestroy(a, b := "sentinel") {
    ImagePut.Destroy(a, b)
 }
 
 ; Gets the width of an image.
-ImageWidth(image) {
-   return ImagePut.Dimensions(image)[1]
+ImageWidth(designator) {
+   return ImagePut.Dimensions(designator)[1]
 }
 
 ; Gets the height of an image.
-ImageHeight(image) {
-   return ImagePut.Dimensions(image)[2]
+ImageHeight(designator) {
+   return ImagePut.Dimensions(designator)[2]
 }
 
 ; Returns a [width, height] array.
-ImageDimensions(image) {
-   return ImagePut.Dimensions(image)
+ImageDimensions(designator) {
+   return ImagePut.Dimensions(designator)
 }
 
 ; Puts the image into a file format and returns a base64 encoded string.
 ;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
-ImagePutBase64(image, extension := "", quality := "") {
-   return ImagePut("Base64", image, extension, quality)
+ImagePutBase64(designator, extension := "", quality := "") {
+   return ImagePut("Base64", designator, extension, quality)
 }
 
 ; Puts the image into a GDI+ Bitmap and returns a pointer.
-ImagePutBitmap(image) {
-   return ImagePut("Bitmap", image)
+ImagePutBitmap(designator) {
+   return ImagePut("Bitmap", designator)
 }
 
 ; Puts the image into a GDI+ Bitmap and returns a buffer object with GDI+ scope.
-ImagePutBuffer(image) {
-   return ImagePut("Buffer", image)
+ImagePutBuffer(designator) {
+   return ImagePut("Buffer", designator)
 }
 
 ; Puts the image onto the clipboard and returns ClipboardAll().
-ImagePutClipboard(image) {
-   return ImagePut("Clipboard", image)
+ImagePutClipboard(designator) {
+   return ImagePut("Clipboard", designator)
 }
 
 ; Puts the image as the cursor and returns the variable A_Cursor.
 ;   xHotspot   -  X Click Point           |  pixel    ->   0 - width
 ;   yHotspot   -  Y Click Point           |  pixel    ->   0 - height
-ImagePutCursor(image, xHotspot := "", yHotspot := "") {
-   return ImagePut("Cursor", image, xHotspot, yHotspot)
+ImagePutCursor(designator, xHotspot := "", yHotspot := "") {
+   return ImagePut("Cursor", designator, xHotspot, yHotspot)
 }
 
 ; Puts the image onto a device context and returns the handle.
 ;   alpha      -  Alpha Replacement Color |  RGB      ->   0xFFFFFF
-ImagePutDC(image, alpha := "") {
-   return ImagePut("DC", image, alpha)
+ImagePutDC(designator, alpha := "") {
+   return ImagePut("DC", designator, alpha)
 }
 
 ; Puts the image as an encoded format into a binary data object.
 ;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
-ImagePutEncodedBuffer(image, extension := "", quality := "") {
-   return ImagePut("EncodedBuffer", image, extension, quality)
+ImagePutEncodedBuffer(designator, extension := "", quality := "") {
+   return ImagePut("EncodedBuffer", designator, extension, quality)
 }
 
 ; Puts the image into the currently active explorer window.
 ;   default_dir -  Default Directory       |  string   ->   C:\Users\Me\Pictures
 ;   inactive    -  Inactive Explorer Wnds? |  bool     ->   False
-ImagePutExplorer(image, default_dir := "", inactive := False) {
-   return ImagePut("Explorer", image, default_dir, inactive)
+ImagePutExplorer(designator, default_dir := "", inactive := False) {
+   return ImagePut("Explorer", designator, default_dir, inactive)
 }
 
 ; Puts the image into a file and returns its filepath.
 ;   filepath   -  Filepath + Extension    |  string   ->   *.bmp, *.gif, *.jpg, *.png, *.tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
-ImagePutFile(image, filepath := "", quality := "") {
-   return ImagePut("File", image, filepath, quality)
+ImagePutFile(designator, filepath := "", quality := "") {
+   return ImagePut("File", designator, filepath, quality)
 }
 
 ; Puts the image into a multipart/form-data in binary and returns a SafeArray COM Object.
 ;   boundary   -  Content-Type            |  string   ->   multipart/form-data; boundary=something
-ImagePutFormData(image, boundary := "--ImagePut abc 321 xyz--") {
-   return ImagePut("FormData", image, boundary)
+ImagePutFormData(designator, boundary := "--ImagePut abc 321 xyz--") {
+   return ImagePut("FormData", designator, boundary)
 }
 
 ; Puts the image into a device independent bitmap and returns the handle.
 ;   alpha      -  Alpha Replacement Color |  RGB      ->   0xFFFFFF
-ImagePutHBitmap(image, alpha := "") {
-   return ImagePut("HBitmap", image, alpha)
+ImagePutHBitmap(designator, alpha := "") {
+   return ImagePut("HBitmap", designator, alpha)
 }
 
 ; Puts the image into a file format and returns a hexadecimal encoded string.
 ;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
-ImagePutHex(image, extension := "", quality := "") {
-   return ImagePut("Hex", image, extension, quality)
+ImagePutHex(designator, extension := "", quality := "") {
+   return ImagePut("Hex", designator, extension, quality)
 }
 
 ; Puts the image into an icon and returns the handle.
-ImagePutHIcon(image) {
-   return ImagePut("HIcon", image)
+ImagePutHIcon(designator) {
+   return ImagePut("HIcon", designator)
 }
 
 ; Puts the image into a file format and returns a pointer to a RandomAccessStream.
 ;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
-ImagePutRandomAccessStream(image, extension := "", quality := "") {
-   return ImagePut("RandomAccessStream", image, extension, quality)
+ImagePutRandomAccessStream(designator, extension := "", quality := "") {
+   return ImagePut("RandomAccessStream", designator, extension, quality)
 }
 
 ; Puts the image into a file format and returns a SafeArray COM Object.
 ;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
-ImagePutSafeArray(image, extension := "", quality := "") {
-   return ImagePut("SafeArray", image, extension, quality)
+ImagePutSafeArray(designator, extension := "", quality := "") {
+   return ImagePut("SafeArray", designator, extension, quality)
 }
 
 ; Puts the image on the shared screen device context and returns an array of coordinates.
 ;   screenshot -  Screen Coordinates      |  array    ->   [x,y,w,h] or [0,0]
 ;   alpha      -  Alpha Replacement Color |  RGB      ->   0xFFFFFF
-ImagePutScreenshot(image, screenshot := "", alpha := "") {
-   return ImagePut("Screenshot", image, screenshot, alpha)
+ImagePutScreenshot(designator, screenshot := "", alpha := "") {
+   return ImagePut("Screenshot", designator, screenshot, alpha)
 }
 
 ; Puts the image into a SoftwareBitmap and returns the pointer to the interface.
-ImagePutSoftwareBitmap(image) {
-   return ImagePut("SoftwareBitmap", image)
+ImagePutSoftwareBitmap(designator) {
+   return ImagePut("SoftwareBitmap", designator)
 }
 
 ; Puts the image into a file format and returns a pointer to a stream.
 ;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
-ImagePutStream(image, extension := "", quality := "") {
-   return ImagePut("Stream", image, extension, quality)
+ImagePutStream(designator, extension := "", quality := "") {
+   return ImagePut("Stream", designator, extension, quality)
 }
 
 ; Puts the image into a base64 string and returns a Uniform Resource Identifier.
 ;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
-ImagePutURI(image, extension := "", quality := "") {
-   return ImagePut("URI", image, extension, quality)
+ImagePutURI(designator, extension := "", quality := "") {
+   return ImagePut("URI", designator, extension, quality)
 }
 
 ; Uploads the image onto Imgur and returns the URL hyperlink.
 ;   extension  -  File Encoding           |  string   ->   bmp, gif, jpg, png, tiff
 ;   quality    -  JPEG Quality Level      |  integer  ->   0 - 100
-ImagePutURL(image, extension := "", quality := "") {
-   return ImagePut("URL", image, extension, quality)
+ImagePutURL(designator, extension := "", quality := "") {
+   return ImagePut("URL", designator, extension, quality)
 }
 
 ; Puts the image as the desktop wallpaper and returns the string "wallpaper".
-ImagePutWallpaper(image) {
-   return ImagePut("Wallpaper", image)
+ImagePutWallpaper(designator) {
+   return ImagePut("Wallpaper", designator)
 }
 
 ; Puts the image into a WICBitmap and returns the pointer to the interface.
-ImagePutWICBitmap(image) {
-   return ImagePut("WICBitmap", image)
+ImagePutWICBitmap(designator) {
+   return ImagePut("WICBitmap", designator)
 }
 
 ; Puts the image in a window (with a border) and returns a handle to a window.
@@ -214,8 +213,8 @@ ImagePutWICBitmap(image) {
 ;   parent     -  Window Parent           |  ptr      ->   hwnd
 ;   playback   -  Animate Window?         |  bool     ->   True
 ;   cache      -  Cache Animation Frames? |  bool     ->   False
-ImagePutWindow(image, title := "", pos := "", style := 0x82C80000, styleEx := 0x9, parent := "", playback := True, cache := False) {
-   return ImagePut("Window", image, title, pos, style, styleEx, parent, playback, cache)
+ImagePutWindow(designator, title := "", pos := "", style := 0x82C80000, styleEx := 0x9, parent := "", playback := True, cache := False) {
+   return ImagePut("Window", designator, title, pos, style, styleEx, parent, playback, cache)
 }
 
 
@@ -235,9 +234,9 @@ class ImagePut {
    static render := 1        ; (0 = Disable 1 = Enable 2 = Force) Convert vectors like SVG and PDF to pixels.
    static validate := False  ; Always copies pixels to new memory immediately instead of copy-on-read/write.
 
-   static call(codomain, coimage, p*) {
+   static call(codomain, designator, p*) {
       this.gdiplusStartup()                           ; Start!
-      image := this.sufficient(codomain, coimage, p*) ; Convert!
+      image := this.sufficient(codomain, designator, p*) ; Convert!
       this.gdiplusShutdown(codomain)                  ; Check if GDI+ is still needed.
       return image
    }
@@ -356,27 +355,27 @@ class ImagePut {
       "tif", "tiff"
    ]
 
-   static premiss(&coimage, &keywords := "") {
+   static premiss(&designator, &keywords := "") {
 
       ; Sentinel value.
       keywords := {}
 
       ; Try ImageType.
-      if !IsObject(coimage)
+      if !IsObject(designator)
          throw Error("Must be an object.")
 
       ; Goto ImageType.
-      if coimage.HasProp("image") && !coimage.HasMethod("image") {
-         keywords := coimage
-         coimage := coimage.image
+      if designator.HasProp("image") && !designator.HasMethod("image") {
+         keywords := designator
+         designator := designator.image
          throw Error("Must catch this error with ImageType.")
       }
 
       ; Skip ImageType.
       for domain in this.domains
-         if coimage.HasProp(domain) {
-            keywords := coimage
-            coimage := coimage.%domain%
+         if designator.HasProp(domain) {
+            keywords := designator
+            designator := designator.%domain%
             return domain
          }
 
@@ -384,13 +383,13 @@ class ImagePut {
       throw Error("Invalid type.")
    }
 
-   static possible(coimage) {
+   static possible(designator) {
 
-      if not IsObject(coimage)
+      if not IsObject(designator)
          goto string
 
-      if coimage.HasProp("prototype") && coimage.prototype.HasProp("__class") && coimage.prototype.__class == "ClipboardAll"
-      or Type(coimage) == "ClipboardAll" && this.IsClipboard(coimage.ptr, coimage.size)
+      if designator.HasProp("prototype") && designator.prototype.HasProp("__class") && designator.prototype.__class == "ClipboardAll"
+      or Type(designator) == "ClipboardAll" && this.IsClipboard(designator.ptr, designator.size)
          ; A ClipboardPNG is a pointer to a PNG stream saved directly on the clipboard.
          if DllCall("IsClipboardFormatAvailable", "uint", DllCall("RegisterClipboardFormat", "str", "png", "uint"))
             return "ClipboardPNG"
@@ -406,105 +405,105 @@ class ImagePut {
 
       array:
       ; A SafeArray is a pointer to a COM Object that is a SafeArray of unsigned chars (VT_UI1).
-      if ComObjType(coimage) and ComObjType(coimage) & 0x2000
+      if ComObjType(designator) and ComObjType(designator) & 0x2000
          return "SafeArray"
 
       ; A Screenshot is an array of 4 or 5 coordinates [x, y, w, h, r?] with an optional window.
-      if coimage.HasProp("__Item") && coimage.HasProp("length") && coimage.length ~= "^(4|5)$"
-      && coimage[1] ~= "^-?\d+$" && coimage[2] ~= "^-?\d+$" && coimage[3] ~= "^(?!0+$)\d+$" && coimage[4] ~= "^(?!0+$)\d+$"
-      && coimage[1] > -65536 && coimage[1] < 65536 && coimage[2] > -65536 && coimage[2] < 65536 && coimage[3] < 65536 && coimage[4] < 65536
-      && (coimage.Has(5) ? WinExist(coimage[5]) : True)
+      if designator.HasProp("__Item") && designator.HasProp("length") && designator.length ~= "^(4|5)$"
+      && designator[1] ~= "^-?\d+$" && designator[2] ~= "^-?\d+$" && designator[3] ~= "^(?!0+$)\d+$" && designator[4] ~= "^(?!0+$)\d+$"
+      && designator[1] > -65536 && designator[1] < 65536 && designator[2] > -65536 && designator[2] < 65536 && designator[3] < 65536 && designator[4] < 65536
+      && (designator.Has(5) ? WinExist(designator[5]) : True)
          return "Screenshot"
 
       object:
       ; An Object is an object with a pBitmap property that points to an GDI+ bitmap.
-      if coimage.HasProp("pBitmap")
-         try if !DllCall("gdiplus\GdipGetImageType", "ptr", coimage.pBitmap, "ptr*", &_type:=0) && (_type == 1)
+      if designator.HasProp("pBitmap")
+         try if !DllCall("gdiplus\GdipGetImageType", "ptr", designator.pBitmap, "ptr*", &_type:=0) && (_type == 1)
             return "Object"
 
-      if not coimage.HasProp("ptr")
+      if not designator.HasProp("ptr")
          goto properties
 
-      if (coimage.ptr < 65536)
+      if (designator.ptr < 65536)
          goto properties
 
-      ("POINTER IS BAD AND PROGRAM IS CRASH") && NumGet(coimage.ptr, "char")
+      ("POINTER IS BAD AND PROGRAM IS CRASH") && NumGet(designator.ptr, "char")
 
       buffer:
       ; An EncodedBuffer contains a pointer to the bytes of an encoded image format.
-      if coimage.HasProp("size") && coimage.size >= 24 && this.GetExtensionFromBuffer(coimage)
+      if designator.HasProp("size") && designator.size >= 24 && this.GetExtensionFromBuffer(designator)
          return "EncodedBuffer"
 
       ; A Buffer is an object with a pointer to bytes and properties to determine its 2-D shape.
-      if coimage.HasProp("width") && coimage.HasProp("height")
-      or coimage.HasProp("stride") && coimage.HasProp("height")
-      or coimage.HasProp("size") && (coimage.HasProp("stride") || coimage.HasProp("width") || coimage.HasProp("height"))
+      if designator.HasProp("width") && designator.HasProp("height")
+      or designator.HasProp("stride") && designator.HasProp("height")
+      or designator.HasProp("size") && (designator.HasProp("stride") || designator.HasProp("width") || designator.HasProp("height"))
          return "Buffer"
 
       properties:
       ; A Window is an object with an hwnd property.
-      if coimage.HasProp("hwnd") && DllCall("IsWindow", "ptr", coimage.hwnd)
+      if designator.HasProp("hwnd") && DllCall("IsWindow", "ptr", designator.hwnd)
          return "Window"
 
-      if coimage.HasProp("ptr") {
-         coimage := coimage.ptr
+      if designator.HasProp("ptr") {
+         designator := designator.ptr
          goto pointer
       }
 
       goto end
 
       string:
-      if (coimage == "")
+      if (designator == "")
          return "" ; Image data is an empty string.
 
       ; A Monitor of 0 captures all screens. Successive numbers are Monitor numbers.
-      if (coimage ~= "^\d+$" && coimage <= MonitorGetCount())
+      if (designator ~= "^\d+$" && designator <= MonitorGetCount())
          return "Monitor"
 
       ; A Wallpaper is the desktop wallpaper.
-      if (coimage = "wallpaper")
+      if (designator = "wallpaper")
          return "Wallpaper"
 
       ; A Cursor is the name of a known cursor name.
-      if (coimage ~= "(?i)^A_Cursor|Unknown|(IDC_)?(AppStarting|Arrow|Cross|Hand(writing)?|"
+      if (designator ~= "(?i)^A_Cursor|Unknown|(IDC_)?(AppStarting|Arrow|Cross|Hand(writing)?|"
       . "Help|IBeam|No|Pin|Person|SizeAll|SizeNESW|SizeNS|SizeNWSE|SizeWE|UpArrow|Wait)$")
          return "Cursor"
 
       ; A URL satisfies the url format.
-      if this.IsURL(coimage)
+      if this.IsURL(designator)
          return "URL"
 
       ; A File is stored on the disk or network.
-      if StrReplace(FileExist(coimage), "D")
+      if StrReplace(FileExist(designator), "D")
          return "File"
 
       ; A Folder is a directory on the disk or network.
-      ; if InStr(FileExist(coimage), "D")
+      ; if InStr(FileExist(designator), "D")
       ;    return "Folder"
 
       ; A Name is a global name for a file mapping kernel object.
-      if not coimage ~= "^\d+$" and DllCall("CloseHandle", "ptr", DllCall("OpenFileMapping", "uint", 2, "int", 0, "str", coimage, "ptr"))
+      if not designator ~= "^\d+$" and DllCall("CloseHandle", "ptr", DllCall("OpenFileMapping", "uint", 2, "int", 0, "str", designator, "ptr"))
          return "Name"
 
       ; A Window is anything considered a Window Title including ahk_class and "A".
-      if WinExist(coimage)
+      if WinExist(designator)
          return "Window"
 
       ; A Hex string is binary image data encoded into text using hexadecimal.
-      if (StrLen(coimage) >= 48) && (coimage ~= "^\s*(?:[A-Fa-f0-9]{2})*+\s*$")
+      if (StrLen(designator) >= 48) && (designator ~= "^\s*(?:[A-Fa-f0-9]{2})*+\s*$")
          return "Hex"
 
       ; A Base64 string is binary image data encoded into text using standard 64 characters.
-      if (StrLen(coimage) >= 32) && (coimage ~= "^\s*(?:data:image\/[a-z]+;base64,)?"
+      if (StrLen(designator) >= 32) && (designator ~= "^\s*(?:data:image\/[a-z]+;base64,)?"
       . "(?:[A-Za-z0-9+\/]{4})*+(?:[A-Za-z0-9+\/]{3}=|[A-Za-z0-9+\/]{2}==)?\s*$")
          return "Base64"
 
       ; For more helpful error messages: Catch file names without extensions!
-      if not (coimage ~= "^-?\d+$") {
+      if not (designator ~= "^-?\d+$") {
          for extension in this.inputs {
-            if FileExist(coimage "." extension)
+            if FileExist(designator "." extension)
                MsgBox "A ." extension " file extension is required!"
-            speculate := RegExReplace(coimage, "(\.[^.]*)?$") "." extension
+            speculate := RegExReplace(designator, "(\.[^.]*)?$") "." extension
             if FileExist(speculate)
                MsgBox "Is it possible you meant to type " speculate " as the file extension instead?"
          }
@@ -513,61 +512,61 @@ class ImagePut {
 
       handle:
       ; A DC is a handle to a GDI device context.
-      if (DllCall("GetObjectType", "ptr", coimage, "uint") == 3 || DllCall("GetObjectType", "ptr", coimage, "uint") == 10)
+      if (DllCall("GetObjectType", "ptr", designator, "uint") == 3 || DllCall("GetObjectType", "ptr", designator, "uint") == 10)
          return "DC"
 
       ; An HBitmap is a handle to a GDI Bitmap.
-      if (DllCall("GetObjectType", "ptr", coimage, "uint") == 7)
+      if (DllCall("GetObjectType", "ptr", designator, "uint") == 7)
          return "HBitmap"
 
       ; An HIcon is a handle to a GDI icon.
-      if DllCall("DestroyIcon", "ptr", DllCall("CopyIcon", "ptr", coimage, "ptr"))
+      if DllCall("DestroyIcon", "ptr", DllCall("CopyIcon", "ptr", designator, "ptr"))
          return "HIcon"
 
-      if (coimage < 65536)
+      if (designator < 65536)
          goto end
 
-      ("POINTER IS BAD AND PROGRAM IS CRASH") && NumGet(coimage, "char")
+      ("POINTER IS BAD AND PROGRAM IS CRASH") && NumGet(designator, "char")
 
       pointer:
       ; A Bitmap is a pointer to a GDI+ Bitmap. GdiplusStartup exception is caught above.
-      try if !DllCall("gdiplus\GdipGetImageType", "ptr", coimage, "ptr*", &_type:=0) && (_type == 1)
+      try if !DllCall("gdiplus\GdipGetImageType", "ptr", designator, "ptr*", &_type:=0) && (_type == 1)
          return "Bitmap"
 
-      if (NumGet(coimage, "ptr") < 65536)
+      if (NumGet(designator, "ptr") < 65536)
          goto end
 
-      ("VTABLE IS BAD AND PROGRAM IS CRASH") && NumGet(NumGet(coimage, "ptr"), "ptr")
+      ("VTABLE IS BAD AND PROGRAM IS CRASH") && NumGet(NumGet(designator, "ptr"), "ptr")
 
-      if (NumGet(NumGet(coimage, "ptr"), "ptr") < 65536)
+      if (NumGet(NumGet(designator, "ptr"), "ptr") < 65536)
          goto end
 
-      ("INTERFACE IS BAD AND PROGRAM IS CRASH") && NumGet(NumGet(NumGet(coimage, "ptr"), "ptr"), "char")
+      ("INTERFACE IS BAD AND PROGRAM IS CRASH") && NumGet(NumGet(NumGet(designator, "ptr"), "ptr"), "char")
 
       ; Note 1: All GDI+ functions add 1 to the reference count of COM objects on 64-bit systems.
       ; Note 2: GDI+ pBitmaps that are queried cease to stay pBitmaps.
       ; Note 3: Critical error for ranges 0-4095 on v1 and 0-65535 on v2.
-      (A_PtrSize == 8) && ObjRelease(coimage) ; Therefore do not move this, it has been tested.
+      (A_PtrSize == 8) && ObjRelease(designator) ; Therefore do not move this, it has been tested.
 
       interface:
       ; A Stream is a pointer to the IStream interface.
-      try if ComObjQuery(coimage, "{0000000C-0000-0000-C000-000000000046}")
+      try if ComObjQuery(designator, "{0000000C-0000-0000-C000-000000000046}")
          return "Stream"
 
       ; A RandomAccessStream is a pointer to the IRandomAccessStream interface.
-      try if ComObjQuery(coimage, "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}")
+      try if ComObjQuery(designator, "{905A0FE1-BC53-11DF-8C49-001E4FC686DA}")
          return "RandomAccessStream"
 
       ; A WICBitmap is a pointer to a IWICBitmapSource.
-      try if ComObjQuery(coimage, "{00000120-A8F2-4877-BA0A-FD2B6645FB94}")
+      try if ComObjQuery(designator, "{00000120-A8F2-4877-BA0A-FD2B6645FB94}")
          return "WICBitmap"
 
       ; A D2DBitmap is a pointer to a ID2D1Bitmap.
-      try if ComObjQuery(coimage, "{A2296057-EA42-4099-983B-539FB6505426}")
+      try if ComObjQuery(designator, "{A2296057-EA42-4099-983B-539FB6505426}")
          return "D2DBitmap"
 
       ; A SoftwareBitmap is a pointer to a ISoftwareBitmap.
-      try if ComObjQuery(coimage, "{689E0708-7EEF-483F-963F-DA938818E073}")
+      try if ComObjQuery(designator, "{689E0708-7EEF-483F-963F-DA938818E073}")
          return "SoftwareBitmap"
 
       end:
