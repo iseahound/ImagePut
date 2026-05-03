@@ -1369,7 +1369,7 @@ class ImagePut {
 
       ; Note: Bottom-up is assumed by EVERY APPLICATION. A top-down bitmap will be upaide down.
       stride := -(width * bpp + 31) // 32 * 4
-      pBits := ptr + 40 ; Todo: This is likely not true.
+      pBits := ptr + 52 ; Todo: This is likely not true.
       Scan0 := pBits - (height-1)*stride
 
       ; Create a destination GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
