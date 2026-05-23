@@ -1369,7 +1369,13 @@ class ImagePut {
 
       ; Note: Bottom-up is assumed by EVERY APPLICATION. A top-down bitmap will be upaide down.
       stride := -Ceil(width * bpp / 32) * 4
-      pBits := ptr + 40 ; Todo: This is likely not true.
+      biSize := NumGet(ptr, "uint")
+      biCompression := NumGet(ptr + 16, "uint")
+      if (biSize == 40 && biCompression == 3)
+         offset := 52
+      else
+         offset := biSize
+      pBits := ptr + offset
       Scan0 := pBits - (height-1)*stride
 
       ; Create a destination GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
