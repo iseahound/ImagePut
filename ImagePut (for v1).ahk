@@ -1367,7 +1367,8 @@ class ImagePut {
          , height := NumGet(ptr + 8, "int")
          , bpp := NumGet(ptr + 14, "ushort")
 
-      ; Note: Bottom-up is assumed by EVERY APPLICATION. A top-down bitmap will be upaide down.
+      ; Note: Bottom-up is assumed by EVERY APPLICATION. A top-down bitmap will be upside down.
+      ; Note: The biCompression fields are separate from the size of the bitmap info header.
       stride := -Ceil(width * bpp / 32) * 4
       biSize := NumGet(ptr, "uint")
       biCompression := NumGet(ptr + 16, "uint")
