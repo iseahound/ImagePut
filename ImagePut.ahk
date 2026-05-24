@@ -719,6 +719,9 @@ class ImagePut {
       if weight
          goto clean_stream
 
+      if (domain = "File" && codomain = "Clipboard")
+         return this.FileToClipboard(coimage) 
+
       ; Attempt conversion using StreamToImage.
       switch image := this.StreamToImage(codomain, stream, p*) {
       case "": return ""
@@ -2503,9 +2506,6 @@ class ImagePut {
    }
 
    static BitmapToClipboard(pBitmap) {
-      ; Standard Clipboard Formats - https://www.codeproject.com/Reference/1091137/Windows-Clipboard-Formats
-      ; Synthesized Clipboard Formats - https://docs.microsoft.com/en-us/windows/win32/dataxchg/clipboard-formats
-
       ; Open the clipboard with exponential backoff.
       loop
          if DllCall("OpenClipboard", "ptr", A_ScriptHwnd)
@@ -2517,6 +2517,9 @@ class ImagePut {
 
       ; Requires a valid window handle via OpenClipboard or the next call to OpenClipboard will crash.
       DllCall("EmptyClipboard")
+
+      ; Standard Clipboard Formats - https://www.codeproject.com/Reference/1091137/Windows-Clipboard-Formats
+      ; Synthesized Clipboard Formats - https://docs.microsoft.com/en-us/windows/win32/dataxchg/clipboard-formats
 
       ; #1 - PNG holds the transparency and is the most widely supported image format.
       ; Thanks Jochen Arndt - https://www.codeproject.com/Answers/1207927/Saving-an-image-to-the-clipboard#answer3
@@ -2567,10 +2570,7 @@ class ImagePut {
       return ClipboardAll
    }
 
-   static StreamToClipboard(stream) {
-      this.select_header_codata(stream, &bin, &size)
-      this.select_extension(bin, size, &extension)
-
+   static FileToClipboard(filepath) {
       ; Open the clipboard with exponential backoff.
       loop
          if DllCall("OpenClipboard", "ptr", A_ScriptHwnd)
@@ -2582,6 +2582,46 @@ class ImagePut {
 
       ; Requires a valid window handle via OpenClipboard or the next call to OpenClipboard will crash.
       DllCall("EmptyClipboard")
+
+      ; Get the absolute path of the file.
+      length := DllCall("GetFullPathName", "str", filepath, "uint", 0, "ptr", 0, "ptr", 0, "uint")
+      VarSetStrCapacity(&absolute, length)
+      DllCall("GetFullPathName", "str", filepath, "uint", length, "str", absolute, "ptr", 0, "uint")
+      
+      ; struct DROPFILES - https://learn.microsoft.com/en-us/windows/win32/api/shlobj_core/ns-shlobj_core-dropfiles
+      nDropFiles := 20 + StrPut(absolute, "UTF-16") + 1 ; double unicode (4-bytes) null terminated
+      hDropFiles := DllCall("GlobalAlloc", "uint", 0x42, "uptr", nDropFiles, "ptr")
+      pDropFiles := DllCall("GlobalLock", "ptr", hDropFiles, "ptr")
+         NumPut("uint", 20, pDropFiles + 0) ; pFiles
+         NumPut("uint", 1, pDropFiles + 16) ; fWide
+         StrPut(absolute, pDropFiles + 20, "UTF-16")
+      DllCall("GlobalUnlock", "ptr", hDropFiles)
+
+      ; Set the file to the clipboard as a shared object.
+      DllCall("SetClipboardData", "uint", 15, "ptr", hDropFiles)
+
+      ; Close the clipboard.
+      DllCall("CloseClipboard")
+
+      ; Honestly why would the user use this return value? Use a sentinel instead.
+      return ClipboardAll
+   }
+
+   static StreamToClipboard(stream) {
+      ; Open the clipboard with exponential backoff.
+      loop
+         if DllCall("OpenClipboard", "ptr", A_ScriptHwnd)
+            break
+         else
+            if A_Index < 6
+               Sleep (2**(A_Index-1) * 30)
+            else throw Error("Clipboard could not be opened.")
+
+      ; Requires a valid window handle via OpenClipboard or the next call to OpenClipboard will crash.
+      DllCall("EmptyClipboard")
+
+      this.select_header_codata(stream, &bin, &size)
+      this.select_extension(bin, size, &extension)
 
       ; #1 - Save PNG directly to the clipboard.
       if (extension = "png") {
@@ -2643,12 +2683,12 @@ class ImagePut {
                   ,   "uint", 0x80            ; FILE_ATTRIBUTE_NORMAL
                   ,    "int", True            ; fCreate is ignored when STGM_CREATE is set.
                   ,    "ptr", 0               ; pstmTemplate (reserved)
-                  ,   "ptr*", &FileStream:=0
+                  ,   "ptr*", &filestream:=0
                   ,"hresult")
          DllCall("shlwapi\IStream_Size", "ptr", stream, "uint64*", &size:=0, "hresult")
-         DllCall("shlwapi\IStream_Copy", "ptr", stream, "ptr", FileStream, "uint", size, "hresult")
+         DllCall("shlwapi\IStream_Copy", "ptr", stream, "ptr", filestream, "uint", size, "hresult")
          DllCall("shlwapi\IStream_Reset", "ptr", stream, "hresult")
-         ObjRelease(FileStream)
+         ObjRelease(filestream)
 
          ; struct DROPFILES - https://learn.microsoft.com/en-us/windows/win32/api/shlobj_core/ns-shlobj_core-dropfiles
          nDropFiles := 20 + StrPut(filepath, "UTF-16") + 1 ; double unicode (4-bytes) null terminated
@@ -4543,11 +4583,11 @@ class ImagePut {
 
       ; Get the absolute path of the file.
       length := DllCall("GetFullPathName", "str", filepath, "uint", 0, "ptr", 0, "ptr", 0, "uint")
-      VarSetStrCapacity(&buf, length)
-      DllCall("GetFullPathName", "str", filepath, "uint", length, "str", buf, "ptr", 0, "uint")
+      VarSetStrCapacity(&absolute, length)
+      DllCall("GetFullPathName", "str", filepath, "uint", length, "str", absolute, "ptr", 0, "uint")
 
       ; Set the temporary image file as the new desktop wallpaper.
-      DllCall("SystemParametersInfo", "uint", SPI_SETDESKWALLPAPER := 0x14, "uint", 0, "str", buf, "uint", 2)
+      DllCall("SystemParametersInfo", "uint", SPI_SETDESKWALLPAPER := 0x14, "uint", 0, "str", absolute, "uint", 2)
 
       ; This is a delayed delete call. #Persistent may be required on v1.
       DeleteFile := () => DllCall("DeleteFile", "str", filepath)
