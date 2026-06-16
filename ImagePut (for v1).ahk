@@ -1059,6 +1059,8 @@ class ImagePut {
    }
 
    BitmapCrop(ByRef pBitmap, crop) {
+      local format
+
       if not (IsObject(crop)
       && crop[1] ~= "^-?\d+(\.\d*)?%?$" && crop[2] ~= "^-?\d+(\.\d*)?%?$"
       && crop[3] ~= "^-?\d+(\.\d*)?%?$" && crop[4] ~= "^-?\d+(\.\d*)?%?$")
@@ -1121,6 +1123,8 @@ class ImagePut {
    }
 
    BitmapScale(ByRef pBitmap, scale, direction := 0, bound := "", outDimensions := "") {
+      local format
+
       ; min() specifies the greatest lower bound or the maximum size, fitting the image to the bounding box.
       ; max() specifies the least upper bound or the minimum size, filling the image to the bounding box.
       bound := IsFunc(bound) ? bound ; Custom function
@@ -2059,7 +2063,7 @@ class ImagePut {
    }
 
    FileToStream(image) {
-      file := FileOpen(image, "r")
+      local file := FileOpen(image, "r")
       file.pos := 0
       handle := DllCall("GlobalAlloc", "uint", 0x2, "uptr", file.length, "ptr")
       ptr := DllCall("GlobalLock", "ptr", handle, "ptr")
@@ -2372,6 +2376,8 @@ class ImagePut {
    }
 
    WICBitmapToBitmap(image) {
+      local format
+
       IWICBitmap := image
 
       ; Get Bitmap width and height.
@@ -3018,6 +3024,7 @@ class ImagePut {
       }
 
       Crop(x, y, w, h) {
+         local format
          DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", this.pBitmap, "int*", format:=0)
          DllCall("gdiplus\GdipCloneBitmapAreaI", "int", x, "int", y, "int", w, "int", h, "int", format, "ptr", this.pBitmap, "ptr*", pBitmap:=0)
          try return ImagePut.BitmapToBuffer(pBitmap)
@@ -3881,6 +3888,8 @@ class ImagePut {
    }
 
    Show(pBitmap, title:="", pos:="", style:="", styleEx:="", parent:="", playback:="", cache:="") {
+      local number, type
+
       ; Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
       WS_POPUP                  := 0x80000000   ; Allow small windows.
       WS_VISIBLE                := 0x10000000   ; Show on creation.
@@ -4222,6 +4231,8 @@ class ImagePut {
       return cls
    }
    WindowProc(uMsg, wParam, lParam) {
+      local number
+
       static ll := A_ListLines
       ListLines 0
       hwnd := this ; (v1 only) The first parameter has been replaced by the hwnd.
