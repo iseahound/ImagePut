@@ -3635,10 +3635,18 @@ class ImagePut {
             . "yEiDxBhbXl9dQVxBXUFeQV/DZpBEOQEPhEv///9Ig8EETDnZcxZCOTSRdOhIg8EETDnZD4Ig////Dx8Ai2wkcA+v3UiNDJ/rtQ8f"
             . "AEQPtmQkD+n1/v//")
 
-         ; C source code - https://godbolt.org/z/qGexdGqMn
+         ; C source code - https://godbolt.org/z/1nMT9YM7x
          imagesearch2 := this.Base64Code((A_PtrSize == 4)
             ? ""
-            : "QVdBVkFVQVRVV1ZTSIPsOESLnCSgAAAAi7wkqAAAAEGJ1EmJyouUJLgAAACLjCSwAAAAQSn4TImMJJgAAABIi7QkmAAAAEQPt4wkwAAAAInQRQ+vxEEPr8NPjTSCSAHIiwSGRInmRCneiXQkLE058g+DcAEAAEEPr9QPtthEieVmiVwkKA+23MHoEA+2wIlcJBxIAcpmiUQkKkiNDJUAAAAARInaSI1xAUgp1UyNLJUAAAAASIl0JBBBjVP/SI1xAkWJy0iJdCQgSMHlAjH2QffbTI08lQAAAABmDx9EAABBD7YUCg+3RCQoKdBmQTnBcwpmRDnYD4LTAAAASItEJBBBD7YUAg+3RCQcKdBmQTnBcwpmRDnYD4KyAAAASItEJCBBD7YUAg+3RCQqKdBmQTnBcwpmRDnYD4KRAAAAhf8PhKMAAABIi4QkmAAAAEyJfCQITInSMdtJic9OjQQoTDnAD4OBAAAAiVwkGOsTZpBIg8AESIPCBEw5wA+DfwAAAIB4AwB06Q+2CA+2GinZZkE5yXMGZkQ52XIsD7ZIAQ+2WgEp2WZBOclzBmZEOdlyFg+2SAIPtloCKdlmQTnJc69mRDnZc6lMiflMi3wkCIPGAUmDwgREOeZyPTH2TTnyD4L6/v//RTHSTInQSIPEOFteX11BXEFdQV5BX8MPHwCLXCQYSAHqg8MBOfsPhUn////r1Q8fQABNOfJzyTl0JCwPg7n+//9NAfpNOfJztzH26ar+//8=")
+            : "QVdBVkFVQVRVV1ZTSIPsWIuEJNgAAABEi5QkyAAAAESLvCTQAAAAi7Qk4AAAAEmJy0iJ00iLjCTAAAAAhcB0ConCweoQ6ZcAAABF"
+            . "idREifhEidVFD6/nwegCwe0CQQ+vwonqRInnTI0suUSJ10gB0NHvSI0EgUjB5wJMOehzGkyNNDhMOfBzDIB4AwB1MUiDwATr70gB"
+            . "+OvhRInXjUX/RSnUSMHiAinvTAHgSPfaSMHnAkiNBIFI999IjSwQ6xhIKcgx0kjB+AJB9/LrFIB4AwB17EiD6ARIOcVy8UgB+OvY"
+            . "idcPt8APt9JFKfnB5xBFD6/ICcdBiXsIicdBD6/AQQ+v+kgB0EgB10jB4AJEiyy5RInHSIlEJAhEidBEKddIjRSFAAAAAIl8JCRE"
+            . "icdJAflIKcdEiWwkTEiNBL0AAAAAifdOjTSLSIlUJBD330iJRCQYQY1C/zHSZol8JCJIjXwkTEjB4AJMiXQkKEiJfCQ4SIkEJEiJ"
+            . "2EiLfCQoSDn4D4P9AAAAOVQkJHMMSIsUJEgB0OnkAAAASIt8JAhIAcdmhfZ1B0Q7L3Vr63pFMclMi3QkOEIPtiwPRw+2FDFBKepm"
+            . "RDnWcwhmRDtUJCJyRkn/wUmD+QN11+tMSIt8JBhB/8RJAfpFOfx0dUiLfCQQTAHPSIl8JDBIi3wkMEk5+XPZQYB5AwB0TWaF9nUk"
+            . "QYs6QTk5dED/wkiDwAREOcIPglT////rVkmJwkmJyUUx5Ou0Mf9BD7YsOUUPtjQ6RCn1ZjnucwdmO2wkInLJSP/HSIP/A3XeSYPB"
+            . "BEmDwgTrmEgp2EWJwEjB+AJImUn3+EGJQwS4AQAAAEGJE+sJMdLp9f7//zHASIPEWFteX11BXEFdQV5BX8M=")
 
 
 
@@ -3652,9 +3660,9 @@ class ImagePut {
 
          ; Search for the coordinates of the first matching image.
          if (option == 2)
-            address := DllCall(imagesearch2, "ptr", this.ptr, "uint", this.width, "uint", this.height
+            address := DllCall(imagesearch2, "ptr", (result := Buffer(12)).ptr, "ptr", this.ptr, "uint", this.width, "uint", this.height
                      , "ptr", image.ptr, "uint", image.width, "uint", image.height
-                     , "uint", x, "uint", y, "ushort", variation, "cdecl ptr")
+                     , "uint", 0, "ushort", variation, "cdecl uint") ? this.ptr + (NumGet(result, 0, "uint") + NumGet(result, 4, "uint") * this.width) * 4 : this.ptr + this.size
 
          ; Compare the address to the out-of-bounds limit.
          if (address == this.ptr + this.size)
