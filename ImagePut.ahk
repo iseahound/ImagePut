@@ -3613,9 +3613,40 @@ class ImagePut {
          if !(IsObject(image) && image.HasProp("ptr") && image.HasProp("size"))
             image := ImagePutBuffer(image)
 
-         ; Check if the object has the coordinates.
-         x := image.HasProp("x") ? image.x : image.width//2
-         y := image.HasProp("y") ? image.y : image.height//2
+         ; Check if the object has usable coordinates. The focused pixel
+         ; must be opaque, as a transparent one can never match.
+         if (image.HasProp("x") && image.HasProp("y")
+            && 255 == NumGet(image.ptr, 4*(image.x + image.y*image.width) + 3, "uchar")) {
+            x := image.x, y := image.y
+         } else {
+            ; Focus on the opaque pixel whose color is the rarest in the
+            ; needle. The rarest color carries the most information, so it
+            ; is the least likely to match the source and rejects the most
+            ; candidates before reaching sub-image matching.
+            ptr := image.ptr, n := image.width * image.height
+            tally := Map(), best := n + 1, i := -1
+
+            loop n {
+               pixel := NumGet(ptr, 4*(A_Index-1), "uint")
+               if ((pixel >> 24) = 255)
+                  if tally.Has(pixel)
+                     tally[pixel][1] += 1
+                  else
+                     tally[pixel] := [1, A_Index - 1]
+            }
+
+            for color, data in tally
+               if (data[1] < best)
+                  best := data[1], i := data[2]
+
+            ; A fully transparent image never matches, as before.
+            if (i == -1)
+               return False
+
+            ; Cache it, as the needle rarely changes between searches.
+            x := mod(i, image.width), y := i // image.width
+            image.x := x, image.y := y
+         }
 
          if (option == "") {
             if (variation == 0)
