@@ -3613,37 +3613,59 @@ class ImagePut {
          if !(IsObject(image) && image.HasProp("ptr") && image.HasProp("size"))
             image := ImagePutBuffer(image)
 
-         ; Check if the object has usable coordinates. The focused pixel
-         ; must be opaque, as a transparent one can never match.
-         if (image.HasProp("x") && image.HasProp("y")
-            && 255 == NumGet(image.ptr, 4*(image.x + image.y*image.width) + 3, "uchar")) {
-            x := image.x, y := image.y
-         } else {
-            ; Focus on the opaque pixel whose color is the rarest in the
-            ; needle. The rarest color carries the most information, so it
-            ; is the least likely to match the source and rejects the most
-            ; candidates before reaching sub-image matching.
-            ptr := image.ptr, n := image.width * image.height
-            tally := Map(), best := n + 1, i := -1
+         ; Check if the object has the coordinates.
+         x := image.HasProp("x") ? image.x : image.width//2
+         y := image.HasProp("y") ? image.y : image.height//2
 
-            loop n {
-               pixel := NumGet(ptr, 4*(A_Index-1), "uint")
+         ; The focused pixel cannot be transparent, as it would never match.
+         ; Fall back to the opaque pixel whose color is the rarest, as the rarest
+         ; color rejects the most candidates before sub-image matching. Sampling
+         ; 128 pixels picks a color as good as a full scan at a fraction of the
+         ; cost. Opaque images cost a single byte read and skip all of this.
+         if (255 != NumGet(image.ptr, 4*(x + y*image.width) + 3, "uchar")) {
+            ptr := image.ptr, n := image.width * image.height
+            samples := (n < 128) ? n : 128
+
+            ; A step coprime with n walks the whole image, not a few columns.
+            step := n // samples
+            loop {
+               a := step, b := n
+               while b
+                  t := b, b := mod(a, b), a := t
+               if (a == 1)
+                  break
+               step += 1
+            }
+
+            tally := Map(), best := n + 1, i := -1, pos := 0
+            loop samples {
+               pixel := NumGet(ptr, 4*pos, "uint")
                if ((pixel >> 24) = 255)
                   if tally.Has(pixel)
                      tally[pixel][1] += 1
                   else
-                     tally[pixel] := [1, A_Index - 1]
+                     tally[pixel] := [1, pos]
+               pos := mod(pos + step, n)
             }
 
             for color, data in tally
                if (data[1] < best)
                   best := data[1], i := data[2]
 
+            ; The sample can miss a sparse subject. Any opaque pixel will do,
+            ; as they are rare by construction when 128 samples found none.
+            if (i == -1)
+               loop n
+                  if (255 == NumGet(ptr, 4*(A_Index-1) + 3, "uchar")) {
+                     i := A_Index - 1
+                     break
+                  }
+
             ; A fully transparent image never matches, as before.
             if (i == -1)
                return False
 
-            ; Cache it, as the needle rarely changes between searches.
+            ; Cache it, as the image rarely changes between searches.
             x := mod(i, image.width), y := i // image.width
             image.x := x, image.y := y
          }
