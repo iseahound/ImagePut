@@ -3116,7 +3116,7 @@ class ImagePut {
          (key == "sentinel") && key := NumGet(this.ptr, "uint")
 
          ; Replaces one ARGB color with another.
-         DllCall(code, "ptr", this.ptr, "uint", this.ptr + this.size, "uint", key, "uint", value, "cdecl")
+         DllCall(code, "ptr", this.ptr, "ptr", this.ptr + this.size, "uint", key, "uint", value, "cdecl")
       }
 
       SetAlpha(alpha := 0xFF) {
