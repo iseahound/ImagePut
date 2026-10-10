@@ -3786,7 +3786,7 @@ class ImagePut {
       WS_CAPTION                :=   0xC00000   ; Titlebar.
       WS_SYSMENU                :=    0x80000   ; Close button. Comes with Alt+Space menu.
       WS_EX_TOPMOST             :=        0x8   ; Always on top.
-      WS_EX_DLGMODALFRAME       :=        0x1   ; Removes small icon in titlebar with A_ScriptHwnd as parent.
+      WS_EX_DLGMODALFRAME       :=        0x1   ; Removes titlebar icon.
 
       ; Child Window
       WS_CHILD                  := 0x40000000   ; Creates a child window.
@@ -3896,7 +3896,7 @@ class ImagePut {
 
       ; Extended Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/extended-window-styles
       WS_EX_TOPMOST             :=        0x8   ; Always on top.
-      WS_EX_TOOLWINDOW          :=       0x80   ; Hides from Alt+Tab menu. Removes small icon.
+      WS_EX_TOOLWINDOW          :=       0x80   ; Hides from Alt+Tab menu. Removes titlebar icon.
       WS_EX_LAYERED             :=    0x80000   ; For UpdateLayeredWindow.
 
       ; Default parameters can be overwritten by previous functions.
