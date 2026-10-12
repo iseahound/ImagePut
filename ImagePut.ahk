@@ -2878,15 +2878,12 @@ class ImagePut {
 
          alloc_pointers:
 
-      DllCall("ole32\CLSIDFromString", "wstr", "{6FDDC324-4E03-4BFE-B185-3D77768DC910}", "ptr", GUID_WICPixelFormat32bppPBGRA := Buffer(16), "hresult")
-      DllCall("windowscodecs\WICCreateBitmapFromSectionEx"
-         , "uint", this.width, "uint", this.height, "ptr", GUID_WICPixelFormat32bppPBGRA
-         , "ptr", this.section, "uint", this.stride, "uint", 0
-         , "uint", 3 ; WICSectionAccessLevelReadWrite.
-         , "ptr*", &wicbitmap := 0, "hresult")
+         ; Create a source WIC Bitmap that borrows its memory. The pixel format is 32-bit ARGB.
+         DllCall("ole32\CLSIDFromString", "wstr", "{6FDDC324-4E03-4BFE-B185-3D77768DC90F}", "ptr", GUID_WICPixelFormat32bppBGRA := Buffer(16), "hresult")
+         DllCall("windowscodecs\WICCreateBitmapFromSectionEx", "uint", this.width, "uint", this.height, "ptr", GUID_WICPixelFormat32bppBGRA
+            , "ptr", this.section, "uint", this.stride, "uint", 0, "uint", 3, "ptr*", &wicbitmap := 0, "hresult") ; WICSectionAccessLevelReadWrite
 
-
-         ; Create a source GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
+         ; Create a source GDI+ Bitmap that borrows its memory. The pixel format is 32-bit ARGB.
          DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.width, "int", this.height, "int", this.stride, "int", 0x26200A, "ptr", this.ptr, "ptr*", &pBitmap:=0)
 
          this._.ptr := this.ptr
