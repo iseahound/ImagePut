@@ -1059,7 +1059,7 @@ class ImagePut {
    }
 
    BitmapCrop(ByRef pBitmap, crop) {
-      local format
+
 
       if not (IsObject(crop)
       && crop[1] ~= "^-?\d+(\.\d*)?%?$" && crop[2] ~= "^-?\d+(\.\d*)?%?$"
@@ -1123,7 +1123,7 @@ class ImagePut {
    }
 
    BitmapScale(ByRef pBitmap, scale, direction := 0, bound := "", outDimensions := "") {
-      local format
+
 
       ; min() specifies the greatest lower bound or the maximum size, fitting the image to the bounding box.
       ; max() specifies the least upper bound or the minimum size, filling the image to the bounding box.
@@ -2063,7 +2063,7 @@ class ImagePut {
    }
 
    FileToStream(image) {
-      local file := FileOpen(image, "r")
+      file := FileOpen(image, "r")
       file.pos := 0
       handle := DllCall("GlobalAlloc", "uint", 0x2, "uptr", file.length, "ptr")
       ptr := DllCall("GlobalLock", "ptr", handle, "ptr")
@@ -2376,7 +2376,7 @@ class ImagePut {
    }
 
    WICBitmapToBitmap(image) {
-      local format
+
 
       IWICBitmap := image
 
@@ -2854,7 +2854,7 @@ class ImagePut {
       }
 
       __Delete() {
-         DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap)
+         this.FreePointers()
          this.Cleanup()
          ImagePut.gdiplusShutdown()
       }
@@ -2885,23 +2885,39 @@ class ImagePut {
       renew() {  ; Making pointers dynamic ensure that changes due to extrenal APIs and buffers are propagated.
          ; Check for first run
          if !(this._.HasKey("ptr") || this._.HasKey("size") || this._.HasKey("width") || this._.HasKey("height"))
-            goto alloc_pointers
+            return this.AllocPointers()
 
          ; Test for corruption
          try if DllCall("gdiplus\GdipGetImageType", "ptr", this._.pBitmap, "ptr*", _type:=0) or (_type != 1)
-            goto free_pointers
+            return this.AllocFree()
          catch
-            goto free_pointers
+            return this.AllocFree()
 
          ; Track changes made by user
          if this.ptr != this._.ptr || this.size != this._.size || this.width != this._.width || this.height != this._.height
-            goto free_pointers
+            return this.AllocFree()
 
          ; Everything is good, do nothing.
          return this
+      }
+
+      FreePointers() {
+         return this.AllocFree(1)
+      }
+
+      AllocPointers() {
+         return this.AllocFree(2)
+      }
+
+      AllocFree(state := 1) {
+         if (state = 2)
+            goto alloc_pointers
 
          free_pointers: ; (In reverse order of allocation)
          DllCall("gdiplus\GdipDisposeImage", "ptr", this._.pBitmap)
+
+         if (state = 0)
+            return this
 
          alloc_pointers:
          ; Create a source GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
@@ -3024,7 +3040,7 @@ class ImagePut {
       }
 
       Crop(x, y, w, h) {
-         local format
+
          DllCall("gdiplus\GdipGetImagePixelFormat", "ptr", this.pBitmap, "int*", format:=0)
          DllCall("gdiplus\GdipCloneBitmapAreaI", "int", x, "int", y, "int", w, "int", h, "int", format, "ptr", this.pBitmap, "ptr*", pBitmap:=0)
          try return ImagePut.BitmapToBuffer(pBitmap)
@@ -3888,7 +3904,7 @@ class ImagePut {
    }
 
    Show(pBitmap, title:="", pos:="", style:="", styleEx:="", parent:="", playback:="", cache:="") {
-      local number, type
+
 
       ; Window Styles - https://docs.microsoft.com/en-us/windows/win32/winmsg/window-styles
       WS_POPUP                  := 0x80000000   ; Allow small windows.
@@ -4231,7 +4247,7 @@ class ImagePut {
       return cls
    }
    WindowProc(uMsg, wParam, lParam) {
-      local number
+
 
       static ll := A_ListLines
       ListLines 0

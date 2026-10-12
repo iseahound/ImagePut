@@ -2835,10 +2835,69 @@ class ImagePut {
       DllCall("gdiplus\GdipBitmapUnlockBits", "ptr", pBitmap, "ptr", BitmapData)
 
       ; Free the pixels later.
-      buf := ImagePut.BitmapBuffer(pMap, size, width, height) ; Stride can be calculated via size // height
-      buf.free := () => (DllCall("UnmapViewOfFile", "ptr", pMap), DllCall("CloseHandle", "ptr", hMap))
+      buf := ImagePut.SectionBuffer(hMap, pMap, size, width, height) ; Stride can be calculated via size // height
       buf.name := name
       return buf
+   }
+
+   class SectionBuffer extends ImagePut.BitmapBuffer {
+
+      __New(section := "", ptr:="", size:="", width:="", height:="") {
+         ImagePut.gdiplusStartup()
+
+         ; It's best to pass an existing mapped view of memory when possible because it's expensive!
+         (section && !ptr) && ptr := DllCall("MapViewOfFile", "ptr", section, "uint", 0x2, "uint", 0, "uint", 0, "uptr", 0, "ptr")
+
+         ; Wrap the pointer without copying the data.
+         (ptr != "") && this.ptr := ptr
+         (size != "") && this.size := size
+         (width != "") && this.width := width
+         (height != "") && this.height := height
+         (section != "") && this.section := section
+      }
+
+      __Delete() {
+         this.FreePointers()
+         this.Cleanup()
+         DllCall("UnmapViewOfFile", "ptr", this.ptr)
+         DllCall("CloseHandle", "ptr", this.section)
+         ImagePut.gdiplusShutdown()
+      }
+
+      AllocFree(state := 1) {
+         if (state = 2)
+            goto alloc_pointers
+
+         free_pointers: ; (In reverse order of allocation)
+         DllCall("gdiplus\GdipDisposeImage", "ptr", this._.pBitmap)
+
+         ObjRelease(this._.wicBitmap)
+
+         if (state = 0)
+            return this
+
+         alloc_pointers:
+
+      DllCall("ole32\CLSIDFromString", "wstr", "{6FDDC324-4E03-4BFE-B185-3D77768DC910}", "ptr", GUID_WICPixelFormat32bppPBGRA := Buffer(16), "hresult")
+      DllCall("windowscodecs\WICCreateBitmapFromSectionEx"
+         , "uint", this.width, "uint", this.height, "ptr", GUID_WICPixelFormat32bppPBGRA
+         , "ptr", this.section, "uint", this.stride, "uint", 0
+         , "uint", 3 ; WICSectionAccessLevelReadWrite.
+         , "ptr*", &wicbitmap := 0, "hresult")
+
+
+         ; Create a source GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
+         DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.width, "int", this.height, "int", this.stride, "int", 0x26200A, "ptr", this.ptr, "ptr*", &pBitmap:=0)
+
+         this._.ptr := this.ptr
+         this._.size := this.size
+         this._.width := this.width
+         this._.height := this.height
+         this._.pBitmap := pBitmap
+         this._.wicbitmap := wicbitmap
+
+         return this
+      }
    }
 
    class BitmapBuffer {
@@ -2854,7 +2913,7 @@ class ImagePut {
       }
 
       __Delete() {
-         DllCall("gdiplus\GdipDisposeImage", "ptr", this.pBitmap)
+         this.FreePointers()
          this.Cleanup()
          ImagePut.gdiplusShutdown()
       }
@@ -2882,26 +2941,48 @@ class ImagePut {
 
 
 
+      wicBitmap {
+         get => this.renew()._.wicBitmap
+      }
+
+
+
       renew() {  ; Making pointers dynamic ensure that changes due to extrenal APIs and buffers are propagated.
          ; Check for first run
          if !(this._.HasProp("ptr") || this._.HasProp("size") || this._.HasProp("width") || this._.HasProp("height"))
-            goto alloc_pointers
+            return this.AllocPointers()
 
          ; Test for corruption
          try if DllCall("gdiplus\GdipGetImageType", "ptr", this._.pBitmap, "ptr*", &_type:=0) or (_type != 1)
-            goto free_pointers
+            return this.AllocFree()
          catch
-            goto free_pointers
+            return this.AllocFree()
 
          ; Track changes made by user
          if this.ptr != this._.ptr || this.size != this._.size || this.width != this._.width || this.height != this._.height
-            goto free_pointers
+            return this.AllocFree()
 
          ; Everything is good, do nothing.
          return this
+      }
+
+      FreePointers() {
+         return this.AllocFree(0)
+      }
+
+      AllocPointers() {
+         return this.AllocFree(2)
+      }
+
+      AllocFree(state := 1) {
+         if (state = 2)
+            goto alloc_pointers
 
          free_pointers: ; (In reverse order of allocation)
          DllCall("gdiplus\GdipDisposeImage", "ptr", this._.pBitmap)
+
+         if (state = 0)
+            return this
 
          alloc_pointers:
          ; Create a source GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
