@@ -465,8 +465,7 @@ class ImagePut {
          return "Wallpaper"
 
       ; A Cursor is the name of a known cursor name.
-      if (designator ~= "(?i)^A_Cursor|Unknown|(IDC_)?(AppStarting|Arrow|Cross|Hand(writing)?|"
-      . "Help|IBeam|No|Pin|Person|SizeAll|SizeNESW|SizeNS|SizeNWSE|SizeWE|UpArrow|Wait)$")
+      if (designator ~= "(?i)^(IDC_)?(A_Cursor|Unknown|AppStarting|Arrow|Cross|Hand(writing)?|Help|IBeam|No|Pin|Person|SizeAll|SizeNESW|SizeNS|SizeNWSE|SizeWE|UpArrow|Wait)$")
          return "Cursor"
 
       ; A URL satisfies the url format.
