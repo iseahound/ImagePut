@@ -2963,7 +2963,7 @@ class ImagePut {
       }
 
       FreePointers() {
-         return this.AllocFree(0)
+         return this._.HasProp("pBitmap") ? this.AllocFree(0) : this
       }
 
       AllocPointers() {
