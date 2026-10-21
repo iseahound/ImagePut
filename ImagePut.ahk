@@ -2863,19 +2863,38 @@ class ImagePut {
          ImagePut.gdiplusShutdown()
       }
 
-      AllocFree(state := 1) {
-         if (state = 2)
+      AllocFree(action := "") {
+         ; fn free() : 1 → 0
+         free_pointers:
+
+         if (action = "alloc")
             goto alloc_pointers
 
-         free_pointers: ; (In reverse order of allocation)
+         ; Contract: State must be greater than 0.
+         if not this.state = 1
+            goto alloc_pointers
+
+         ; --- start of free() ---
+
          DllCall("gdiplus\GdipDisposeImage", "ptr", this._.pBitmap)
 
          ObjRelease(this._.wicBitmap)
 
-         if (state = 0)
+         ; --- end of free() ---
+
+         this.state := 0
+
+         ; fn alloc() : 0 → 1
+         alloc_pointers:
+
+         if (action = "free")
             return this
 
-         alloc_pointers:
+         ; Contract: State must be equal to 0.
+         if not this.state = 0
+            return this
+
+         ; --- start of alloc() ---
 
          ; Create a source WIC Bitmap that borrows its memory. The pixel format is 32-bit ARGB.
          DllCall("ole32\CLSIDFromString", "wstr", "{6FDDC324-4E03-4BFE-B185-3D77768DC90F}", "ptr", GUID_WICPixelFormat32bppBGRA := Buffer(16), "hresult")
@@ -2891,6 +2910,10 @@ class ImagePut {
          this._.height := this.height
          this._.pBitmap := pBitmap
          this._.wicbitmap := wicbitmap
+
+         ; --- end of alloc() ---
+
+         this.state := 1
 
          return this
       }
@@ -2913,8 +2936,9 @@ class ImagePut {
          this.Cleanup()
          ImagePut.gdiplusShutdown()
       }
-
-      _ := {} ; Store copies of ptr, size, width, and height to test for changes.
+     
+      state := 0  ; 0 = freed, 1 = allocated
+      _ := {}     ; Store copies of ptr, size, width, and height to test for changes.
 
       stride {
          get => this._.HasProp("stride") ? this._.stride : this._.stride := this.size // this.height
@@ -2945,7 +2969,7 @@ class ImagePut {
 
       renew() {  ; Making pointers dynamic ensure that changes due to extrenal APIs and buffers are propagated.
          ; Check for first run
-         if !(this._.HasProp("ptr") || this._.HasProp("size") || this._.HasProp("width") || this._.HasProp("height"))
+         if (this.state = 0)
             return this.AllocPointers()
 
          ; Test for corruption
@@ -2963,24 +2987,44 @@ class ImagePut {
       }
 
       FreePointers() {
-         return this._.HasProp("pBitmap") ? this.AllocFree(0) : this
+         return this.AllocFree("free")
       }
 
       AllocPointers() {
-         return this.AllocFree(2)
+         return this.AllocFree("alloc")
       }
 
-      AllocFree(state := 1) {
-         if (state = 2)
+      AllocFree(action := "") {
+         ; fn free() : 1 → 0
+         free_pointers:
+
+         if (action = "alloc")
             goto alloc_pointers
 
-         free_pointers: ; (In reverse order of allocation)
+         ; Contract: State must be greater than 0.
+         if not this.state = 1
+            goto alloc_pointers
+
+         ; --- start of free() ---
+
          DllCall("gdiplus\GdipDisposeImage", "ptr", this._.pBitmap)
 
-         if (state = 0)
+         ; --- end of free() ---
+
+         this.state := 0
+
+         ; fn alloc() : 0 → 1
+         alloc_pointers:
+
+         if (action = "free")
             return this
 
-         alloc_pointers:
+         ; Contract: State must be equal to 0.
+         if not this.state = 0
+            return this
+
+         ; --- start of alloc() ---
+
          ; Create a source GDI+ Bitmap that owns its memory. The pixel format is 32-bit ARGB.
          DllCall("gdiplus\GdipCreateBitmapFromScan0", "int", this.width, "int", this.height, "int", this.stride, "int", 0x26200A, "ptr", this.ptr, "ptr*", &pBitmap:=0)
 
@@ -2989,6 +3033,10 @@ class ImagePut {
          this._.width := this.width
          this._.height := this.height
          this._.pBitmap := pBitmap
+
+         ; --- end of alloc() ---
+
+         this.state := 1
 
          return this
       }
